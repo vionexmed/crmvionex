@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, Monitor, Clock, RefreshCw, LogOut} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Shield, RefreshCw } from "lucide-react";
+import SessionsPanel from "@/components/settings/SessionsPanel";
+import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SecuritySettings() {
@@ -139,58 +140,42 @@ function AuditLogTab({ orgId }: { orgId: string | null }) {
 }
 
 function SessionsTab() {
-  const { toast } = useToast();
-
-  const handleSignOutAll = async () => {
-    await supabase.auth.signOut({ scope: "global" });
-    toast({ title: "Todas as sessões foram encerradas" });
-    window.location.href = "/login";
-  };
+  // isAdmin vem do papel real na organização: administrador vê as sessões de
+  // todos, cada pessoa vê só as suas.
+  const { isAdmin } = useAuth();
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Monitor className="h-4 w-4" />Sessão atual
-          </CardTitle>
-          <CardDescription>Gerenciamento de sessões ativas</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Monitor className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">Este dispositivo</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />Sessão ativa agora
-              </p>
-            </div>
-            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400">Ativa</Badge>
-          </div>
-
-          <Button variant="destructive" size="sm" onClick={handleSignOutAll} className="w-full">
-            <LogOut className="mr-2 h-4 w-4" />Sair de todos os dispositivos
-          </Button>
-        </CardContent>
-      </Card>
+      <SessionsPanel isAdmin={!!isAdmin} />
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Shield className="h-4 w-4" />Política de Senha
+            <Shield className="h-4 w-4" />Política de senha
           </CardTitle>
+          <CardDescription>O que está de fato em vigor</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <ul className="space-y-1.5 text-sm text-muted-foreground">
-            <li>• Mínimo de 8 caracteres</li>
-            <li>• Recomendado: letras maiúsculas, minúsculas, números e símbolos</li>
-            <li>• Senhas comuns são rejeitadas automaticamente</li>
-            <li>• Bloqueio após 5 tentativas de login inválidas</li>
+            <li>• Mínimo de 6 caracteres (padrão do Supabase Auth)</li>
+            <li>• Sessão renovada automaticamente enquanto em uso</li>
+            <li>• Limite de tentativas de login aplicado pelo Supabase por IP</li>
           </ul>
+          {/* Este bloco existia afirmando "bloqueio após 5 tentativas inválidas" e
+              "senhas comuns são rejeitadas automaticamente". Nada disso estava
+              implementado — a tela prometia proteção inexistente. Trocado pelo
+              que é verdade, com o que falta declarado como falta. */}
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
+            <p className="text-xs font-medium">Ainda não ativado</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Exigir 8 caracteres e recusar senha vazada são opções do painel do
+              Supabase, em Authentication → Policies. Enquanto não forem ligadas,
+              não estão valendo.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+

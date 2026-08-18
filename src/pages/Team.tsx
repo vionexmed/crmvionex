@@ -192,18 +192,30 @@ export default function Team() {
   const confirmarRemocao = async () => {
     if (!removendo) return;
     setRemovendoAgora(true);
-    // `remove_org_member` só aparece em types.ts quando o schema for regerado
-    // depois de aplicar a migration; até lá o nome não está na união de RPCs.
-    const chamar = supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, string | null>,
-    ) => Promise<{ data: Record<string, number> | null; error: { message: string } | null }>;
-
-    const { data, error } = await chamar("remove_org_member", {
-      _user_id: removendo.id,
-      _transfer_to: herdeiro || null,
-    });
-    setRemovendoAgora(false);
+    // NÃO extrair `supabase.rpc` para uma variável: o método precisa do `this`
+    // para alcançar `this.rest`, e destacado ele estoura de forma SÍNCRONA —
+    // antes de qualquer await. Foi o que travava este botão em "Removendo…"
+    // para sempre, porque o setRemovendoAgora(false) nunca era alcançado.
+    // O cast tem de ficar na chamada de método, não na função.
+    let data: Record<string, number> | null = null;
+    let error: { message: string } | null = null;
+    try {
+      const r = await (supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, string | null>,
+      ) => Promise<{ data: Record<string, number> | null; error: { message: string } | null }>
+      ).call(supabase, "remove_org_member", {
+        _user_id: removendo.id,
+        _transfer_to: herdeiro || null,
+      });
+      data = r.data;
+      error = r.error;
+    } catch (e) {
+      // Rede fora, função ausente, qualquer estouro: o botão precisa voltar.
+      error = { message: e instanceof Error ? e.message : String(e) };
+    } finally {
+      setRemovendoAgora(false);
+    }
 
     if (error) {
       toast({ title: "Não foi possível remover", description: error.message, variant: "destructive" });
