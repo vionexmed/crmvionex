@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrg } from "@/hooks/useOrg";
 import { useIndustries } from "@/hooks/useIndustries";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent} from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Edit2, X, Save, Building2, Globe, Users, DollarSign, Trophy } from "lucide-react";
+import { Edit2, X, Save, Building2, Globe, Users, DollarSign} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -35,7 +34,6 @@ interface CompanyDrawerProps {
 }
 
 export function CompanyDrawer({ company, onClose, onUpdate, members }: CompanyDrawerProps) {
-  const { orgId } = useOrg();
   const { toast } = useToast();
   const { industries } = useIndustries();
 

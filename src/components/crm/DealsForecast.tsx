@@ -87,7 +87,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pipeline Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Valor em aberto</CardTitle>
           </CardHeader>
           <CardContent>
             <span className="text-2xl font-bold text-foreground">{formatCurrency(totals.pipeline)}</span>
@@ -115,7 +115,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-muted-foreground" />
-                    <span className="text-muted-foreground">Pipeline:</span>
+                    <span className="text-muted-foreground">Em aberto:</span>
                     <span className="font-semibold">{formatCurrency(bucket.pipeline)}</span>
                   </div>
                 </div>

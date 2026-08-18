@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { BarChart3 as BarChart3Icon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -23,7 +22,6 @@ import { CustomReportBuilder } from "@/components/reports/CustomReportBuilder";
 
 export default function Reports() {
   const { orgId } = useOrg();
-  const navigate = useNavigate();
 
   const [deals, setDeals] = useState<Deal[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -32,7 +30,7 @@ export default function Reports() {
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Global filters
   const [period, setPeriod] = useState<PeriodFilter>("this_month");

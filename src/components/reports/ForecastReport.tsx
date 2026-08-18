@@ -82,7 +82,7 @@ export function ForecastReport({ deals, stages, members, ownerFilter, pipelineFi
         <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Pessimista (≥80%)</p><p className="text-xl font-bold text-destructive">{fmt(totals.pessimist)}</p></CardContent></Card>
         <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Realista (≥50%)</p><p className="text-xl font-bold text-primary">{fmt(totals.realist)}</p></CardContent></Card>
         <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Otimista (≥30%)</p><p className="text-xl font-bold text-success">{fmt(totals.optimist)}</p></CardContent></Card>
-        <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Pipeline Total</p><p className="text-xl font-bold">{fmt(totals.pipeline)}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Valor em aberto</p><p className="text-xl font-bold">{fmt(totals.pipeline)}</p></CardContent></Card>
       </div>
 
       {/* Comparison chart */}

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Edit2, Check, X, Phone, Mail, FileText, CheckSquare, CalendarDays,
-  Building2, Briefcase, Save, MapPin, Globe, Star, MessageCircle,
+  Edit2, X, Phone, Mail, FileText, CheckSquare, CalendarDays,
+  Building2, Briefcase, Save, MapPin, Star, MessageCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";

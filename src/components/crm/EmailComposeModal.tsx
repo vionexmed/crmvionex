@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState} from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -16,7 +15,7 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { Send, FileText, ChevronDown, X, Variable, Sparkles, Loader2 } from "lucide-react";
+import { Send, FileText, Variable, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEmailConnections } from "@/hooks/queries/useEmails";
 
@@ -68,8 +67,6 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiSubjects, setAiSubjects] = useState<string[]>([]);
   const [knownEmails, setKnownEmails] = useState<{ email: string; name?: string }[]>([]);
-  const [toFocusField, setToFocusField] = useState<"to" | "cc" | "bcc" | null>(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     if (!open || !orgId) return;

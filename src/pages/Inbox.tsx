@@ -160,10 +160,6 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
     return c;
   }, [emails]);
 
-  const inboxUnread = useMemo(() =>
-    emails.filter((e) => !e.is_read && !e.is_archived && !e.is_spam && !e.is_trashed && e.direction === "inbound").length,
-  [emails]);
-
   const updateEmail = async (id: string, patch: Partial<Email>) => {
     if (selectedEmail?.id === id) setSelectedEmail((prev) => prev ? { ...prev, ...patch } : prev);
     try {
@@ -284,7 +280,7 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
 
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
-  // Caixa de marketing sem conta conectada → CTA para Integrações
+  // Caixa de marketing sem conta conectada → é conta da EMPRESA, só admin liga.
   if (purpose === "marketing" && !account) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
@@ -300,6 +296,29 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
         </div>
         <Button asChild>
           <Link to="/settings/integrations">Conectar em Integrações</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // Caixa pessoal sem conta conectada. Antes esta tela não existia: o usuário
+  // caía numa caixa vazia sem entender por quê, e a única CTA apontava para
+  // Integrações — rota de admin, que um vendedor nem abre.
+  if (purpose !== "marketing" && !account) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+          <Mail className="h-6 w-6 text-primary" />
+        </div>
+        <div>
+          <p className="font-semibold">Seu e-mail ainda não está conectado</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            Conecte sua conta para ler aqui as conversas com seus contatos e enviar
+            pelo seu próprio endereço. Ninguém da equipe vê a sua caixa.
+          </p>
+        </div>
+        <Button asChild>
+          <Link to="/settings/email">Conectar meu e-mail</Link>
         </Button>
       </div>
     );

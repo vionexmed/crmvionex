@@ -18,7 +18,7 @@ export function NotificationsTab({ orgId, userId }: { orgId: string | null; user
     notify_task_overdue: true, notify_mention: true, notify_assignment: true,
     email_daily_summary: true, email_deal_won: false, email_task_overdue: false,
   });
-  const [loaded, setLoaded] = useState(false);
+  const [, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!orgId || !userId) return;

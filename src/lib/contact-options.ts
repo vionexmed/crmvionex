@@ -33,6 +33,39 @@ export const PAISES = [
 ];
 
 /**
+ * Estágio do CICLO DE VIDA do contato — a relação com a pessoa, que só avança.
+ * Não confundir com o estágio do funil (deals.stage_id), que é o progresso de
+ * UM negócio e pode voltar. Antes desta separação, contacts.status fazia os
+ * dois papéis ao mesmo tempo, mais o roteamento entre as telas Leads e Contatos.
+ *
+ * Valores em inglês no banco (coerente com os outros enums); rótulos aqui.
+ */
+export type LifecycleStage =
+  | "lead" | "contacted" | "qualified" | "opportunity" | "customer" | "disqualified";
+
+export const LIFECYCLE_LABELS: Record<LifecycleStage, string> = {
+  lead: "Novo lead",
+  contacted: "Contatado",
+  qualified: "Qualificado",
+  opportunity: "Em negociação",
+  customer: "Cliente",
+  disqualified: "Descartado",
+};
+
+/** Cor da bolinha do selo de ciclo de vida, na ordem do avanço. */
+export const LIFECYCLE_COLORS: Record<LifecycleStage, string> = {
+  lead: "#64748B",
+  contacted: "#2563EB",
+  qualified: "#7C3AED",
+  opportunity: "#D97706",
+  customer: "#059669",
+  disqualified: "#DC2626",
+};
+
+/** Estágios que a tela de Leads mostra — antes de o lead ser qualificado. */
+export const LEAD_STAGES: LifecycleStage[] = ["lead", "contacted"];
+
+/**
  * Origem do contato, derivada de metadata.source. Usada para diferenciar
  * visualmente (selo colorido) de onde cada contato veio, e para filtrar.
  */

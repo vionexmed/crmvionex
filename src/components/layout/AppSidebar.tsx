@@ -27,7 +27,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { title: "Dashboard",  url: "/dashboard",  icon: LayoutDashboard },
       { title: "Contatos",   url: "/contacts",   icon: Users },
       { title: "Empresas",   url: "/companies",  icon: Building2 },
-      { title: "Negócios",   url: "/deals",      icon: Handshake },
+      { title: "Funil de vendas", url: "/deals",      icon: Handshake },
       { title: "Atividades", url: "/activities", icon: Activity },
       { title: "Tarefas",    url: "/tasks",      icon: CheckSquare },
     ],
@@ -35,8 +35,10 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Atendimento",
     items: [
-      { title: "Conversas",        url: "/conversations",   icon: MessageSquare, adminOnly: true },
-      { title: "Email Atendimento", url: "/inbox",          icon: Inbox,         adminOnly: true },
+      // Os dois CANAIS de atendimento, em paralelo: WhatsApp e e-mail.
+      // Cada pessoa vê só a própria caixa — a RLS impede ver a do colega.
+      { title: "WhatsApp",         url: "/conversations",   icon: MessageSquare },
+      { title: "E-mail",           url: "/inbox",           icon: Inbox },
       { title: "Templates",        url: "/email-templates", icon: FileText,      adminOnly: true },
       { title: "Sequências",       url: "/email-sequences", icon: Zap,           adminOnly: true },
     ],
@@ -60,8 +62,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Admin",
     items: [
-      { title: "Equipe",       url: "/team",                  icon: Users,    adminOnly: true },
-      { title: "Configurações", url: "/settings",             icon: Settings, adminOnly: true },
+      // Todo mundo vê quem é da equipe; só admin consegue alterar.
+      { title: "Equipe",       url: "/team",                  icon: Users },
+      // Abas de empresa só aparecem para admin dentro da própria página.
+      { title: "Configurações", url: "/settings",             icon: Settings },
+      // Conectar a conta é configuração pessoal, não operação de atendimento.
+      { title: "Conectar e-mail", url: "/settings/email",       icon: Mail },
       { title: "Integrações",  url: "/settings/integrations", icon: Plug,     adminOnly: true },
       { title: "Segurança",    url: "/settings/security",     icon: Shield,   adminOnly: true },
     ],

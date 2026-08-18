@@ -28,7 +28,7 @@ const STEPS = [
 ];
 
 export function OnboardingModal() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -43,9 +43,15 @@ export function OnboardingModal() {
   // Track which user we've loaded persisted state for, so logout+login resets cleanly.
   const persistenceLoadedForUserRef = useRef<string | null>(null);
 
-  // Reactive open/close: depends ONLY on profile.onboarding_completed.
+  // Abre para owner/admin com onboarding pendente. NUNCA para funcionário.
+  //
+  // Antes a única condição era `onboarding_completed`, sem checagem de papel —
+  // e este wizard é bloqueante (sem Escape, sem fechar) e configura a EMPRESA:
+  // CompanyStep renomeia a organização do dono, ou cria uma nova se org_id for
+  // null; PipelineStep troca o pipeline padrão de todo mundo. Um convidado que
+  // caísse aqui destruía a configuração da empresa.
   useEffect(() => {
-    if (!user || !profile) {
+    if (!user || !profile || !isAdmin) {
       setIsOpen(false);
       return;
     }
@@ -58,7 +64,7 @@ export function OnboardingModal() {
     }
 
     setIsOpen(true);
-  }, [user, profile]);
+  }, [user, profile, isAdmin]);
 
   // Load persisted state once per user.id (resets on logout/login).
   useEffect(() => {
@@ -108,11 +114,6 @@ export function OnboardingModal() {
       document.body.style.overflow = "";
     };
   }, [isOpen]);
-
-  const saveProgress = useCallback(async (step: number) => {
-    if (!user) return;
-    await supabase.from("profiles").update({ onboarding_step: step + 1 } as any).eq("id", user.id);
-  }, [user]);
 
   const advancingRef = useRef(false);
 

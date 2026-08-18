@@ -12,29 +12,34 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-sales-manager`;
 
 const SUGGESTIONS = [
-  "Faça uma análise geral do meu pipeline",
-  "Quais negócios preciso priorizar hoje?",
-  "Como está minha taxa de conversão?",
-  "Quais contatos estão esfriando e precisam de atenção?",
+  "Como está minha operação de prospecção neste período?",
+  "Onde estou perdendo lead no funil?",
+  "Minha taxa de resposta está boa? Como melhorar?",
+  "Tenho lead esperando atendimento? O que priorizar agora?",
+  "Meu tempo de resposta está aceitável?",
   "Me dê um plano de ação para esta semana",
-  "Analise os negócios em risco e sugira próximos passos",
 ];
 
+/**
+ * Métricas do painel de SDR. `null` significa que a métrica não é calculável —
+ * ou não tem fonte no banco, ou o período não tem dado. O contexto diz isso ao
+ * modelo em texto, para ele não tratar ausência como zero.
+ */
 interface CrmData {
-  wonRevenue: number;
-  pipelineValue: number;
-  openDealsCount: number;
-  winRate: number;
-  avgTicket: number;
-  avgCycle: number;
-  wonDealsCount: number;
-  lostDealsCount: number;
-  pendingActivities: number;
-  newLeadsCount: number;
-  atRiskDeals: { title: string; value: number; daysSinceUpdate: number }[];
-  closingSoonDeals: { title: string; value: number; daysLeft: number; probability: number }[];
-  topPerformers: { name: string; deals: number; revenue: number }[];
-  funnelData: { name: string; count: number; value: number }[];
+  periodo: string;
+  leadsRecebidos: number | null;
+  abordagens: number | null;
+  taxaEntrega: number | null;
+  taxaResposta: number | null;
+  conversasIniciadas: number | null;
+  reunioes: number | null;
+  oportunidades: number | null;
+  vendasSdr: number | null;
+  tempoRespostaMin: number | null;
+  aguardandoHumano: number | null;
+  leadsWhatsapp: number | null;
+  /** Métricas exibidas na tela como "sem fonte" — o modelo não deve inventá-las. */
+  semFonte: string[];
 }
 
 interface DashboardAIChatProps {
@@ -42,46 +47,50 @@ interface DashboardAIChatProps {
 }
 
 function buildCrmContext(data: CrmData): string {
-  const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+  const num = (v: number | null, sufixo = "") =>
+    v === null ? "não disponível" : `${new Intl.NumberFormat("pt-BR").format(v)}${sufixo}`;
 
-  let ctx = `RESUMO DO CRM (dados em tempo real):
-- Receita ganha no período: ${fmt(data.wonRevenue)} (${data.wonDealsCount} deals ganhos)
-- Pipeline aberto: ${fmt(data.pipelineValue)} (${data.openDealsCount} deals)
-- Win rate: ${data.winRate}%
-- Ticket médio: ${fmt(data.avgTicket)}
-- Ciclo médio de vendas: ${data.avgCycle} dias
-- Deals perdidos no período: ${data.lostDealsCount}
-- Atividades pendentes: ${data.pendingActivities}
-- Novos leads no período: ${data.newLeadsCount}`;
+  const duracao = (v: number | null) => {
+    if (v === null) return "não disponível";
+    if (v < 60) return `${v} min`;
+    const h = Math.floor(v / 60);
+    return h < 24 ? `${h}h ${v % 60}min` : `${Math.floor(h / 24)}d ${h % 24}h`;
+  };
 
-  if (data.funnelData.length > 0) {
-    ctx += `\n\nFUNIL DO PIPELINE:`;
-    data.funnelData.forEach((s) => {
-      ctx += `\n- ${s.name}: ${s.count} deals (${fmt(s.value)})`;
-    });
+  const taxa = (v: number | null) => (v === null ? "não disponível" : `${v}%`);
+
+  let ctx = `PAINEL DE SDR — ${data.periodo} (dados em tempo real).
+A operação de prospecção hoje é feita por uma pessoa do comercial; a automação por IA ainda não existe.
+
+ENTRADA
+- Leads recebidos: ${num(data.leadsRecebidos)}
+- Leads que chegaram por WhatsApp: ${num(data.leadsWhatsapp)}
+
+ABORDAGEM
+- Abordagens realizadas: ${num(data.abordagens)}
+- Taxa de entrega (WhatsApp): ${taxa(data.taxaEntrega)}
+- Taxa de resposta (WhatsApp): ${taxa(data.taxaResposta)}
+- Conversas iniciadas: ${num(data.conversasIniciadas)}
+
+CONVERSÃO
+- Reuniões geradas: ${num(data.reunioes)}
+- Oportunidades geradas: ${num(data.oportunidades)}
+- Vendas originadas pelo SDR: ${num(data.vendasSdr)}
+
+OPERAÇÃO
+- Tempo médio de resposta: ${duracao(data.tempoRespostaMin)}
+- Leads aguardando atendimento (fila atual, sem nenhuma abordagem): ${num(data.aguardandoHumano)}`;
+
+  if (data.semFonte.length > 0) {
+    ctx += `\n\nMÉTRICAS SEM FONTE DE DADO (não existem no banco — NUNCA estime ou invente valor para elas; se perguntado, diga que falta instrumentar):
+${data.semFonte.map((m) => `- ${m}`).join("\n")}`;
   }
 
-  if (data.atRiskDeals.length > 0) {
-    ctx += `\n\nNEGÓCIOS EM RISCO (inativos):`;
-    data.atRiskDeals.forEach((d) => {
-      ctx += `\n- "${d.title}" — ${fmt(d.value)} — ${d.daysSinceUpdate} dias sem atividade`;
-    });
-  }
-
-  if (data.closingSoonDeals.length > 0) {
-    ctx += `\n\nNEGÓCIOS COM FECHAMENTO PRÓXIMO (prob < 50%):`;
-    data.closingSoonDeals.forEach((d) => {
-      ctx += `\n- "${d.title}" — ${fmt(d.value)} — ${d.daysLeft <= 0 ? "vencido" : `${d.daysLeft} dias`} — ${d.probability}% probabilidade`;
-    });
-  }
-
-  if (data.topPerformers.length > 0) {
-    ctx += `\n\nTOP PERFORMERS:`;
-    data.topPerformers.forEach((p, i) => {
-      ctx += `\n${i + 1}. ${p.name}: ${p.deals} deals — ${fmt(p.revenue)}`;
-    });
-  }
+  ctx += `\n\nRESSALVAS que você deve considerar ao analisar:
+- Taxa de entrega e de resposta cobrem apenas WhatsApp. E-mail não tem captura de entrega.
+- Reuniões só existem se alguém registrar a atividade; não há integração de agenda.
+- "Vendas originadas pelo SDR" é aproximação: negócio ganho com contato vinculado.
+- Onde aparecer "não disponível", trate como ausência de dado, nunca como zero.`;
 
   return ctx;
 }

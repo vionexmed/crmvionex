@@ -29,7 +29,6 @@ export function StepComplete({ completedSteps, onFinish }: StepCompleteProps) {
     return completedSteps.has(key);
   };
 
-  const completedCount = CHECKLIST.filter((item) => isCompleted(item.key)).length;
 
   return (
     <div className="space-y-6 text-center">

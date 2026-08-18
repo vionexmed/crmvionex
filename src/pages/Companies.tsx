@@ -4,11 +4,9 @@ import { Building2 as Building2Icon } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +30,6 @@ import { useCompanies, useDeleteCompany, companiesKeys } from "@/hooks/queries/u
 import { useMembers } from "@/hooks/queries/useMembers";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 type SortKey = "name" | "domain" | "industry" | "size" | "revenue" | "created_at";
 type SortDir = "asc" | "desc";
@@ -47,7 +44,6 @@ interface CompanyFilters {
 
 export default function Companies() {
   const { orgId } = useOrg();
-  const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
 

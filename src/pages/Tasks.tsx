@@ -21,8 +21,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, CheckSquare, Clock, AlertTriangle, Trash2, Edit2, MoreHorizontal,
-  Search, User, Users, Calendar,
+  Plus, Clock, AlertTriangle, Trash2, Edit2, MoreHorizontal,
+  Search, User, Users,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {

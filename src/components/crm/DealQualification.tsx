@@ -1,16 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState} from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrg } from "@/hooks/useOrg";
-import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 

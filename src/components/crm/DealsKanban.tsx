@@ -289,8 +289,8 @@ export function DealsKanban({
     return (
       <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-20">
         <div className="text-center">
-          <p className="text-muted-foreground">Nenhum pipeline configurado</p>
-          <p className="text-sm text-muted-foreground">Vá em Configurações → Pipelines para criar</p>
+          <p className="text-muted-foreground">Nenhum funil configurado</p>
+          <p className="text-sm text-muted-foreground">Vá em Configurações → Funis e etapas para criar</p>
         </div>
       </div>
     );

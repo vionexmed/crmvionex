@@ -34,7 +34,6 @@ import type { EditingStage } from "@/lib/api/pipelines";
 export type { DealWithRelations } from "@/lib/api/deals";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
-type DealStatus = Database["public"]["Enums"]["deal_status"];
 type ViewMode = "kanban" | "list" | "forecast";
 
 export default function Deals() {
@@ -87,7 +86,7 @@ export default function Deals() {
   const [form, setForm] = useState<Partial<Deal>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<DealFilters>({});
-  const [presetStageId, setPresetStageId] = useState<string | null>(null);
+  const [, setPresetStageId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Loss reason modal
@@ -177,13 +176,6 @@ export default function Deals() {
     setSheetOpen(true);
   };
 
-  const openEdit = (deal: Deal) => {
-    setEditing(deal);
-    setPresetStageId(null);
-    setForm(deal);
-    setSheetOpen(true);
-  };
-
   const handleSave = async () => {
     if (!orgId || !form.title) return;
     try {
@@ -266,7 +258,7 @@ export default function Deals() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight">Negócios</h1>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight">Funil de vendas</h1>
           <div className="flex rounded-md border border-border bg-muted/50 p-0.5">
             {[
               { mode: "kanban" as const, icon: Kanban, label: "Kanban" },

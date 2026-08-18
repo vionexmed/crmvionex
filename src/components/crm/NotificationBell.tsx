@@ -2,8 +2,6 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -17,9 +15,6 @@ type ActivityType = Database["public"]["Enums"]["activity_type"];
 
 const typeIcons: Record<ActivityType, React.ComponentType<{ className?: string }>> = {
   call: Phone, email: Mail, meeting: Calendar, note: FileText, task: CheckSquare,
-};
-const typeLabels: Record<ActivityType, string> = {
-  call: "Ligação", email: "Email", meeting: "Reunião", note: "Nota", task: "Tarefa",
 };
 
 export function NotificationBell() {

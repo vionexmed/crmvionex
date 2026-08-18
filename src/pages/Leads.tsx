@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useLeads, useUpdateContactsStatus } from "@/hooks/queries/useContacts";
+import { useLeads, useUpdateContactsStatus, useUpdateContactOwner } from "@/hooks/queries/useContacts";
 import { usePipelines } from "@/hooks/queries/usePipelines";
+import { useMembers } from "@/hooks/queries/useMembers";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { contactsKeys } from "@/hooks/queries/useContacts";
 import { Button } from "@/components/ui/button";
@@ -26,11 +27,13 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import {
   UserPlus, Phone, Building2, FileText, Zap, Trash2, CheckCircle2,
   Clock, Globe, RefreshCw, Eye, XCircle, MessageCircle, Calendar,
-  Briefcase, AlignLeft, Mail,
+  Briefcase, AlignLeft, Mail, UserCog,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CADASTRO_FIELDS } from "@/lib/contact-options";
+import {
+  CADASTRO_FIELDS, LIFECYCLE_LABELS, LIFECYCLE_COLORS, type LifecycleStage,
+} from "@/lib/contact-options";
 
 type Lead = {
   id: string;
@@ -40,8 +43,12 @@ type Lead = {
   phone: string | null;
   title: string | null;
   created_at: string;
+  owner_id: string | null;
+  lifecycle_stage: LifecycleStage;
   metadata: Record<string, string> | null;
-  companies: { name: string } | null;
+  // Vem do embed `companies:companies(name)` em listLeads — não existe no tipo
+  // gerado da tabela, por isso opcional.
+  companies?: { name: string } | null;
 };
 
 const sourceLabel = (src: string) => {
@@ -65,6 +72,14 @@ export default function Leads() {
 
   const { data: leads = [], isLoading: loading, refetch } = useLeads();
   const { data: pipelines = [] } = usePipelines();
+  const { data: members = [] } = useMembers();
+  const { mutate: assignOwner } = useUpdateContactOwner();
+
+  const ownerName = (ownerId: string | null) => {
+    if (!ownerId) return null;
+    const m = members.find((x) => x.id === ownerId);
+    return m?.name || m?.email || "Desconhecido";
+  };
 
   const [viewing, setViewing] = useState<Lead | null>(null);
   const [qualifying, setQualifying] = useState<Lead | null>(null);
@@ -242,12 +257,13 @@ export default function Leads() {
         </Card>
       ) : (
         <div className="rounded-md border border-border overflow-hidden">
-          <div className="grid grid-cols-[auto_2fr_1.4fr_1.4fr_2fr_1fr_1fr_auto] gap-3 px-4 py-2.5 bg-muted/50 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-muted-foreground items-center">
+          <div className="grid grid-cols-[auto_1.8fr_1.2fr_1.2fr_1.1fr_1.4fr_1fr_0.9fr_auto] gap-3 px-4 py-2.5 bg-muted/50 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-muted-foreground items-center">
             <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todos" />
             <span>Nome</span>
             <span className="flex items-center gap-1"><Phone className="h-3 w-3" />Telefone</span>
             <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />Empresa</span>
-            <span className="flex items-center gap-1"><FileText className="h-3 w-3" />Necessidade</span>
+            <span className="flex items-center gap-1"><FileText className="h-3 w-3" />Estágio</span>
+            <span className="flex items-center gap-1"><UserCog className="h-3 w-3" />Responsável</span>
             <span className="flex items-center gap-1"><Globe className="h-3 w-3" />Origem</span>
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Recebido</span>
             <span>Ações</span>
@@ -256,7 +272,7 @@ export default function Leads() {
           {leads.map((lead, i) => (
             <div
               key={lead.id}
-              className={`grid grid-cols-[auto_2fr_1.4fr_1.4fr_2fr_1fr_1fr_auto] gap-3 px-4 py-3 items-center text-sm border-b border-border last:border-0 hover:bg-muted/30 transition-colors ${selected.has(lead.id) ? "bg-primary/5" : i % 2 !== 0 ? "bg-muted/10" : ""}`}
+              className={`grid grid-cols-[auto_1.8fr_1.2fr_1.2fr_1.1fr_1.4fr_1fr_0.9fr_auto] gap-3 px-4 py-3 items-center text-sm border-b border-border last:border-0 hover:bg-muted/30 transition-colors ${selected.has(lead.id) ? "bg-primary/5" : i % 2 !== 0 ? "bg-muted/10" : ""}`}
             >
               <Checkbox checked={selected.has(lead.id)} onCheckedChange={() => toggleOne(lead.id)} aria-label={`Selecionar ${fullName(lead as Lead)}`} />
               <div className="flex items-center gap-2 min-w-0">
@@ -266,8 +282,39 @@ export default function Leads() {
                 <span className="font-medium truncate">{fullName(lead as Lead)}</span>
               </div>
               <span className="text-muted-foreground font-mono text-xs">{lead.phone || "—"}</span>
-              <span className="text-muted-foreground truncate">{(lead.companies as any)?.name || meta(lead as Lead, "company") || "—"}</span>
-              <span className="text-muted-foreground text-xs truncate" title={meta(lead as Lead, "notes")}>{meta(lead as Lead, "notes") || "—"}</span>
+              <span className="text-muted-foreground truncate">{(lead as Lead).companies?.name || meta(lead as Lead, "company") || "—"}</span>
+              {/* Estágio do ciclo de vida — antes não existia: /leads mostrava
+                  tudo como "Lead" sem distinguir quem já foi abordado. */}
+              <span className="flex items-center gap-1.5 text-xs">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: LIFECYCLE_COLORS[(lead as Lead).lifecycle_stage] }}
+                />
+                <span className="truncate">{LIFECYCLE_LABELS[(lead as Lead).lifecycle_stage]}</span>
+              </span>
+              {/* Responsável — atribuível pelo admin. Sem dono, a RLS esconde o
+                  lead de todo vendedor, então isto não é enfeite. */}
+              {isAdmin ? (
+                <Select
+                  value={(lead as Lead).owner_id ?? "none"}
+                  onValueChange={(v) => assignOwner({ id: lead.id, ownerId: v === "none" ? null : v })}
+                >
+                  <SelectTrigger className="h-7 text-[11px]" aria-label={`Responsável por ${fullName(lead as Lead)}`}>
+                    <SelectValue placeholder="Sem responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem responsável</SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <span className="truncate text-xs text-muted-foreground">
+                  {ownerName((lead as Lead).owner_id) ?? "—"}
+                </span>
+              )}
               <Badge variant="outline" className="text-[10px] font-medium w-fit">{sourceLabel(meta(lead as Lead, "source"))}</Badge>
               <span className="text-[11px] text-muted-foreground whitespace-nowrap">
                 {formatDistanceToNow(new Date(lead.created_at), { locale: ptBR, addSuffix: true })}
@@ -440,7 +487,7 @@ export default function Leads() {
               </label>
               {pipelines.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Nenhum pipeline encontrado. Crie um em Negócios primeiro.
+                  Nenhum funil encontrado. Crie um em Configurações → Funis e etapas.
                 </p>
               ) : (
                 <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>

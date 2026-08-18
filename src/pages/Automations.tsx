@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback} from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -22,12 +22,11 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus, Zap, Play, Pause, Trash2, MoreHorizontal, ArrowRight, Clock,
+  Plus, Zap, Play, Trash2, MoreHorizontal, ArrowRight, Clock,
   CheckCircle2, XCircle, AlertTriangle, Copy, ChevronDown, ChevronUp,
-  Workflow, History, LayoutTemplate, Settings2, GripVertical, X,
+  Workflow, History, LayoutTemplate, Settings2, X,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
@@ -546,8 +545,6 @@ export default function Automations() {
           )}
           {automations.map((auto) => {
             const triggerInfo = TRIGGER_LABELS[auto.trigger.type] || { label: auto.trigger.type, icon: "⚙️" };
-            const autoLogs = logs.filter((l) => l.automation_id === auto.id);
-            const lastLog = autoLogs[0];
             return (
               <Card key={auto.id} className={`group transition-colors ${auto.is_active ? "border-primary/20" : "opacity-60"}`}>
                 <CardContent className="p-4">

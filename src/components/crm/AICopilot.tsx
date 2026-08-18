@@ -7,9 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent,
 } from "@/components/ui/dialog";
-import { Bot, Send, X, Sparkles, Loader2, User } from "lucide-react";
+import { Bot, Send, Sparkles, Loader2, User } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 

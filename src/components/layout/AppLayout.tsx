@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect} from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -12,7 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, profile, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -43,6 +43,23 @@ export function AppLayout() {
 
   if (!user) return null;
 
+  // Perfil ausente significa que o trigger que cria o perfil falhou. Antes o
+  // app "consertava" inserindo um perfil sem organização, o que jogava a pessoa
+  // no wizard de empresa. Melhor parar e mostrar o que houve.
+  if (!profile) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background p-6">
+        <div className="max-w-sm space-y-2 text-center">
+          <p className="font-heading text-base font-semibold">Não foi possível carregar seu perfil</p>
+          <p className="text-sm text-muted-foreground">
+            Sua conta existe, mas o cadastro dentro da empresa não foi concluído. Peça a um
+            administrador para reenviar seu convite.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -57,7 +74,8 @@ export function AppLayout() {
       {isMobile && <MobileBottomNav />}
       <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       <AICopilot />
-      <OnboardingModal />
+      {/* Configuração de empresa é do dono. Funcionário herda e nunca configura. */}
+      {isAdmin && <OnboardingModal />}
     </SidebarProvider>
   );
 }

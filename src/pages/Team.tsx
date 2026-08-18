@@ -4,10 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOrg } from "@/hooks/useOrg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -49,11 +52,16 @@ export default function Team() {
   const { orgId } = useOrg();
   const { toast } = useToast();
 
-  const [members, setMembers] = useState<(Profile & { role?: string })[]>([]);
+  const [members, setMembers] = useState<(Profile & { role?: string; receives_leads?: boolean })[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [inviting, setInviting] = useState(false);
+
+  // Remoção de membro: quem sai e para quem vai o trabalho dele
+  const [removendo, setRemovendo] = useState<(Profile & { role?: string }) | null>(null);
+  const [herdeiro, setHerdeiro] = useState<string>("");
+  const [removendoAgora, setRemovendoAgora] = useState(false);
 
   // Teams
   const [teams, setTeams] = useState<any[]>([]);
@@ -66,6 +74,11 @@ export default function Team() {
   }, [members, user]);
 
   const isAdmin = currentUserRole === "owner" || currentUserRole === "admin";
+  // Só proprietário mexe em papel e em rodízio de lead. Não é escolha de tela:
+  // as policies "Owners can update/delete roles" são owner-only desde março, e
+  // a aba Permissões já documentava a regra. Antes o seletor aparecia para
+  // admin também, e ele tomava erro do banco ao tentar usar.
+  const isOwner = currentUserRole === "owner";
 
   const fetchAll = useCallback(async () => {
     if (!orgId) return;
@@ -81,12 +94,32 @@ export default function Team() {
     setTeamMembers(tmem || []);
     const merged = (profs || []).map((p) => {
       const r = (rl || []).find((r: any) => r.user_id === p.id);
-      return { ...p, role: r?.role || "member" };
+      return {
+        ...p,
+        role: r?.role || "member",
+        // Quem não tem linha em user_roles não está no rodízio de jeito nenhum.
+        receives_leads: r ? r.receives_leads !== false : false,
+      };
     });
     setMembers(merged);
   }, [orgId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  /** Liga/desliga o membro do rodízio de distribuição de lead. */
+  const toggleReceivesLeads = async (uid: string, valor: boolean) => {
+    if (!orgId) return;
+    const { error } = await supabase
+      .from("user_roles")
+      .update({ receives_leads: valor })
+      .eq("user_id", uid)
+      .eq("org_id", orgId);
+    if (error) {
+      toast({ title: "Erro ao alterar", description: error.message, variant: "destructive" });
+      return;
+    }
+    fetchAll();
+  };
 
   const sendInvite = async () => {
     if (!orgId || !inviteEmail) return;
@@ -126,6 +159,10 @@ export default function Team() {
 
   const changeRole = async (userId: string, newRole: string) => {
     if (!orgId) return;
+    if (!isOwner) {
+      toast({ title: "Só o proprietário pode alterar papéis", variant: "destructive" });
+      return;
+    }
     if (userId === user?.id) {
       toast({ title: "Você não pode alterar seu próprio papel", variant: "destructive" });
       return;
@@ -143,16 +180,48 @@ export default function Team() {
     }
   };
 
-  const removeMember = async (uid: string) => {
-    if (!orgId) return;
-    if (uid === user?.id) {
-      toast({ title: "Você não pode remover a si mesmo", variant: "destructive" });
+  /**
+   * Remove de verdade: transfere o trabalho, corta o acesso e desliga o vínculo.
+   *
+   * Tudo numa função no banco (`remove_org_member`). Não é preferência de
+   * organização de código: limpar o `org_id` de outra pessoa é impossível pelo
+   * cliente, porque a policy de `profiles` é `USING (id = auth.uid())`. Era por
+   * isso que a lixeira não removia nada — apagava o papel, engolia o erro do
+   * resto e ainda dizia "Membro removido".
+   */
+  const confirmarRemocao = async () => {
+    if (!removendo) return;
+    setRemovendoAgora(true);
+    // `remove_org_member` só aparece em types.ts quando o schema for regerado
+    // depois de aplicar a migration; até lá o nome não está na união de RPCs.
+    const chamar = supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, string | null>,
+    ) => Promise<{ data: Record<string, number> | null; error: { message: string } | null }>;
+
+    const { data, error } = await chamar("remove_org_member", {
+      _user_id: removendo.id,
+      _transfer_to: herdeiro || null,
+    });
+    setRemovendoAgora(false);
+
+    if (error) {
+      toast({ title: "Não foi possível remover", description: error.message, variant: "destructive" });
       return;
     }
-    await supabase.from("user_roles").delete().eq("user_id", uid).eq("org_id", orgId);
-    await supabase.from("profiles").update({ org_id: null }).eq("id", uid);
+
+    const r = data ?? {};
+    const movidos = (r.contatos ?? 0) + (r.negocios ?? 0) + (r.empresas ?? 0) + (r.tarefas ?? 0);
+    const destino = members.find((m) => m.id === (herdeiro || user?.id));
+    setRemovendo(null);
+    setHerdeiro("");
     fetchAll();
-    toast({ title: "Membro removido" });
+    toast({
+      title: "Membro removido",
+      description: movidos === 0
+        ? "A pessoa não tinha registros sob responsabilidade."
+        : `${movidos} ${movidos === 1 ? "registro transferido" : "registros transferidos"} para ${destino?.name || "você"}.`,
+    });
   };
 
   const cancelInvite = async (id: string) => {
@@ -201,7 +270,11 @@ export default function Team() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Equipe</h1>
-        <p className="text-muted-foreground text-sm">Gerencie membros, convites e permissões</p>
+        <p className="text-muted-foreground text-sm">
+          {isAdmin
+            ? "Gerencie membros, convites e permissões"
+            : "Quem faz parte da equipe. Só administradores podem alterar."}
+        </p>
       </div>
 
       <Tabs defaultValue="members">
@@ -300,7 +373,25 @@ export default function Team() {
                       <p className="text-sm font-medium truncate">{m.name || "Sem nome"}</p>
                       <p className="text-xs text-muted-foreground truncate">{m.email} {m.title ? `· ${m.title}` : ""}</p>
                     </div>
-                    {isAdmin && m.id !== user?.id ? (
+                    {/* Rodízio de lead. Desligue para conta funcional que tem
+                        login mas não prospecta (marketing@, financeiro@) —
+                        senão lead novo cai na caixa dela. */}
+                    {isOwner && (
+                      <label
+                        className="flex shrink-0 items-center gap-1.5"
+                        title="Entra no rodízio de distribuição de lead"
+                      >
+                        <Switch
+                          checked={m.receives_leads ?? false}
+                          onCheckedChange={(v) => toggleReceivesLeads(m.id, v)}
+                          aria-label={`${m.name || m.email} recebe lead`}
+                        />
+                        <span className="hidden text-[9px] uppercase tracking-wider text-muted-foreground lg:inline">
+                          Recebe lead
+                        </span>
+                      </label>
+                    )}
+                    {isOwner && m.id !== user?.id ? (
                       <Select value={m.role || "member"} onValueChange={(v) => changeRole(m.id, v)}>
                         <SelectTrigger className={`h-7 text-[11px] w-36 gap-1 ${roleColor(m.role || "member")}`}>
                           {roleIcon(m.role || "member")}
@@ -318,8 +409,8 @@ export default function Team() {
                         {ROLES.find((r) => r.value === m.role)?.label || "Comercial"}
                       </Badge>
                     )}
-                    {isAdmin && m.id !== user?.id && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeMember(m.id)}>
+                    {isOwner && m.id !== user?.id && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setRemovendo(m); setHerdeiro(""); }}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -459,6 +550,58 @@ export default function Team() {
           )}
         </TabsContent>
       </Tabs>
+      {/* Remoção de membro — diz o que vai acontecer antes de acontecer, porque
+          transferir a carteira de alguém não tem botão de desfazer. */}
+      <Dialog open={!!removendo} onOpenChange={(aberto) => { if (!aberto) setRemovendo(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover {removendo?.name || "membro"}?</DialogTitle>
+            <DialogDescription className="space-y-2 pt-1 text-left">
+              <span className="block">
+                Perde o acesso ao CRM na hora e sai da lista. A conta continua existindo — você
+                pode convidar de novo depois.
+              </span>
+              <span className="block">
+                Os contatos, negócios, empresas e tarefas sob responsabilidade dela precisam de um
+                novo dono, senão ficam invisíveis para o time.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">Transferir o trabalho para</label>
+            <Select value={herdeiro || user?.id || ""} onValueChange={setHerdeiro}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {members
+                  .filter((m) => m.id !== removendo?.id)
+                  .map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name || m.email}
+                      {m.id === user?.id && " (você)"}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              A caixa de e-mail e o histórico dela não são transferidos: continuam restritos a
+              administradores.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setRemovendo(null)} disabled={removendoAgora}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmarRemocao} disabled={removendoAgora}>
+              {removendoAgora ? "Removendo…" : "Remover e transferir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }

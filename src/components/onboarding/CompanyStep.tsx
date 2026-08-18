@@ -25,7 +25,7 @@ const TIMEZONES = [
 
 export function CompanyStep({ orgId, userId, setCanContinue, onNext, setOrgId, setStepData }: OnboardingStepProps) {
   const { toast } = useToast();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, isAdmin } = useAuth();
   const [name, setName] = useState("");
   const [segment, setSegment] = useState("");
   const [teamSize, setTeamSize] = useState("");
@@ -74,10 +74,26 @@ export function CompanyStep({ orgId, userId, setCanContinue, onNext, setOrgId, s
 
   const handleSubmit = useCallback(async () => {
     if (!isValid || loading) return;
+
+    // Defesa em profundidade: este passo RENOMEIA a organização, ou cria uma
+    // nova se não houver org_id. Se um não-admin chegasse aqui por qualquer
+    // caminho, destruiria a configuração da empresa do dono.
+    if (!isAdmin) {
+      toast({
+        title: "Sem permissão",
+        description: "A configuração da empresa é definida pelo administrador.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "org";
-      const settings = { segment, team_size: teamSize, default_currency: currency };
+      // `currency` e `default_currency` são chaves diferentes do mesmo JSON:
+      // o onboarding gravava uma e Settings a outra, e nenhuma via a da outra.
+      // Grava as duas até a unificação.
+      const settings = { segment, team_size: teamSize, default_currency: currency, currency };
 
       if (orgId) {
         await supabase.from("organizations").update({ name: name.trim(), settings } as any).eq("id", orgId);
@@ -100,7 +116,7 @@ export function CompanyStep({ orgId, userId, setCanContinue, onNext, setOrgId, s
       toast({ title: "Erro ao salvar empresa", description: err?.message, variant: "destructive" });
     }
     setLoading(false);
-  }, [name, segment, teamSize, currency, timezone, orgId, userId, isValid, loading, onNext, setOrgId, setStepData, setCanContinue, toast, refreshProfile]);
+  }, [name, segment, teamSize, currency, timezone, orgId, userId, isValid, loading, onNext, setOrgId, setStepData, setCanContinue, toast, refreshProfile, isAdmin]);
 
   // Override the footer "Continue" button - submit form first
   useEffect(() => {

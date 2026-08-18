@@ -3,7 +3,7 @@ import {
   LayoutGrid, Facebook, Chrome, TrendingUp, TrendingDown,
   ArrowUpRight, DollarSign, Target as TargetIcon, MousePointerClick,
   Eye, Users as UsersIcon, Zap, Activity, BarChart3, RefreshCw,
-  Calendar, Database, Sparkles, PlugZap,
+  Calendar, Database, PlugZap,
 } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -12,7 +12,7 @@ import {
 
 import {
   sumBy, fmtBRL, fmtNum, fmtPct,
-  periodDays, type PeriodKey, type FunnelStage, type LeadSource,
+  periodDays, type PeriodKey, type FunnelStage,
 } from "@/lib/marketing-utils";
 import { useMarketingData, type MarketingSource } from "@/hooks/useMarketingData";
 
@@ -57,7 +57,6 @@ export default function MarketingOverview() {
   const days = periodDays(period, customDays);
 
   const horaAtualizacao = data.updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  const anySourceReal = data.meta.source === "real" || data.google.source === "real";
 
   return (
     <div className="space-y-5 p-5 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
@@ -377,7 +376,6 @@ function PanelMeta({ data, days }: PanelProps) {
   const cpm = imp ? (inv / imp) * 1000 : 0;
   const freq = reach ? imp / reach : 0;
   const cpl = conv ? inv / conv : 0;
-  const ctr = imp ? (clicks / imp) * 100 : 0;
 
   // Série diária REAL vinda do meta_insights (antes era uma curva sintética)
   const trend = data.daily.map((d) => ({ day: d.day, Investido: d.spend, Leads: d.conversions }));
@@ -467,8 +465,6 @@ function PanelGoogle({ data, days }: PanelProps) {
   const clicks = sumBy(rows, "cliques");
   const conv = sumBy(rows, "conversoes");
   const cpc = clicks ? inv / clicks : 0;
-  const ctr = imp ? (clicks / imp) * 100 : 0;
-  const cvr = clicks ? (conv / clicks) * 100 : 0;
   const qsAvg = rows.length ? rows.reduce((s, r) => s + (r.quality_score || 0), 0) / rows.length : 0;
   const isAvg = rows.length ? rows.reduce((s, r) => s + (r.impression_share || 0), 0) / rows.length : 0;
 

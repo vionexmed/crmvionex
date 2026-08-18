@@ -10,16 +10,17 @@ import { useAuth } from "@/contexts/AuthContext";
 const mainItems = [
   { title: "Home", url: "/", icon: LayoutDashboard },
   { title: "Contatos", url: "/contacts", icon: Users },
-  { title: "Negócios", url: "/deals", icon: Handshake },
+  { title: "Funil de vendas", url: "/deals", icon: Handshake },
   { title: "Tarefas", url: "/activities", icon: CheckSquare },
 ];
 
 const moreItems = [
   { title: "Empresas", url: "/companies" },
-  { title: "Caixa de Entrada", url: "/inbox", adminOnly: true },
+  { title: "E-mail", url: "/inbox" },
+  { title: "WhatsApp", url: "/conversations" },
   { title: "Relatórios", url: "/reports" },
   { title: "Automações", url: "/automations", adminOnly: true },
-  { title: "Configurações", url: "/settings", adminOnly: true },
+  { title: "Configurações", url: "/settings" },
 ];
 
 export function MobileBottomNav() {

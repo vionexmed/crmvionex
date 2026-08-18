@@ -56,7 +56,9 @@ export const emailsApi = {
       .order("created_at", { ascending: false })
       .limit(200); // carga inicial menor; paginação por pasta fica para iteração futura
     if (error) throw error;
-    return (data as Email[]) ?? [];
+    // O tipo local Email é um recorte da linha gerada; não se sobrepõe o
+    // bastante para cast direto depois que a tabela ganhou colunas novas.
+    return (data as unknown as Email[]) ?? [];
   },
 
   update: async (id: string, patch: Partial<Email>): Promise<void> => {

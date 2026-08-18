@@ -383,16 +383,21 @@ export type Database = {
           avatar_url: string | null
           company_id: string | null
           created_at: string | null
+          disqualified_at: string | null
           email: string | null
           first_name: string
           id: string
           last_name: string | null
           lead_score: number | null
+          lifecycle_changed_at: string
+          lifecycle_stage: Database["public"]["Enums"]["lifecycle_stage"]
           linkedin_url: string | null
           metadata: Json
           org_id: string
           owner_id: string | null
           phone: string | null
+          qualified_at: string | null
+          qualified_by: string | null
           status: Database["public"]["Enums"]["contact_status"] | null
           title: string | null
           updated_at: string | null
@@ -401,16 +406,21 @@ export type Database = {
           avatar_url?: string | null
           company_id?: string | null
           created_at?: string | null
+          disqualified_at?: string | null
           email?: string | null
           first_name: string
           id?: string
           last_name?: string | null
           lead_score?: number | null
+          lifecycle_changed_at?: string
+          lifecycle_stage?: Database["public"]["Enums"]["lifecycle_stage"]
           linkedin_url?: string | null
           metadata?: Json
           org_id: string
           owner_id?: string | null
           phone?: string | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           status?: Database["public"]["Enums"]["contact_status"] | null
           title?: string | null
           updated_at?: string | null
@@ -419,16 +429,21 @@ export type Database = {
           avatar_url?: string | null
           company_id?: string | null
           created_at?: string | null
+          disqualified_at?: string | null
           email?: string | null
           first_name?: string
           id?: string
           last_name?: string | null
           lead_score?: number | null
+          lifecycle_changed_at?: string
+          lifecycle_stage?: Database["public"]["Enums"]["lifecycle_stage"]
           linkedin_url?: string | null
           metadata?: Json
           org_id?: string
           owner_id?: string | null
           phone?: string | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           status?: Database["public"]["Enums"]["contact_status"] | null
           title?: string | null
           updated_at?: string | null
@@ -628,17 +643,22 @@ export type Database = {
           email_address: string
           from_name: string | null
           id: string
+          daily_send_limit: number
           is_active: boolean | null
           label: string
           last_synced_at: string | null
           org_id: string
           provider: string
           purpose: string
+          scope_type: string
+          sent_today: number
+          sent_today_date: string | null
           signature_html: string | null
           user_id: string
         }
         Insert: {
           connected_at?: string | null
+          daily_send_limit?: number
           email_address: string
           from_name?: string | null
           id?: string
@@ -648,11 +668,15 @@ export type Database = {
           org_id: string
           provider: string
           purpose?: string
+          scope_type?: string
+          sent_today?: number
+          sent_today_date?: string | null
           signature_html?: string | null
           user_id: string
         }
         Update: {
           connected_at?: string | null
+          daily_send_limit?: number
           email_address?: string
           from_name?: string | null
           id?: string
@@ -662,6 +686,9 @@ export type Database = {
           org_id?: string
           provider?: string
           purpose?: string
+          scope_type?: string
+          sent_today?: number
+          sent_today_date?: string | null
           signature_html?: string | null
           user_id?: string
         }
@@ -925,6 +952,7 @@ export type Database = {
           cc_emails: Json | null
           click_count: number | null
           company_id: string | null
+          connection_id: string | null
           contact_id: string | null
           created_at: string | null
           deal_id: string | null
@@ -960,6 +988,7 @@ export type Database = {
           cc_emails?: Json | null
           click_count?: number | null
           company_id?: string | null
+          connection_id?: string | null
           contact_id?: string | null
           created_at?: string | null
           deal_id?: string | null
@@ -995,6 +1024,7 @@ export type Database = {
           cc_emails?: Json | null
           click_count?: number | null
           company_id?: string | null
+          connection_id?: string | null
           contact_id?: string | null
           created_at?: string | null
           deal_id?: string | null
@@ -2236,18 +2266,21 @@ export type Database = {
         Row: {
           id: string
           org_id: string
+          receives_leads: boolean
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           id?: string
           org_id: string
+          receives_leads?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           id?: string
           org_id?: string
+          receives_leads?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -2466,6 +2499,57 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      next_round_robin_owner: {
+        Args: { _org_id: string }
+        Returns: string
+      }
+      reserve_email_send: {
+        Args: { _connection_id: string }
+        Returns: boolean
+      }
+      sdr_by_channel: {
+        Args: { _from?: string; _org_id: string; _to?: string }
+        Returns: { canal: string; total: number }[]
+      }
+      sdr_by_owner: {
+        Args: { _from?: string; _org_id: string; _to?: string }
+        Returns: {
+          abordagens: number
+          leads: number
+          pessoa: string
+          reunioes: number
+          vendas: number
+        }[]
+      }
+      sdr_funnel: {
+        Args: { _from?: string; _org_id: string; _to?: string }
+        Returns: { etapa: string; ordem: number; total: number }[]
+      }
+      sdr_series: {
+        Args: { _from?: string; _org_id: string; _to?: string }
+        Returns: {
+          abordagens: number
+          dia: string
+          leads: number
+          respostas: number
+        }[]
+      }
+      sdr_metrics: {
+        Args: { _from?: string; _org_id: string; _to?: string }
+        Returns: {
+          abordagens: number
+          aguardando_humano: number
+          conversas_iniciadas: number
+          leads_recebidos: number
+          leads_whatsapp: number
+          oportunidades: number
+          reunioes: number
+          taxa_entrega: number | null
+          taxa_resposta: number | null
+          tempo_resposta_min: number | null
+          vendas_sdr: number
+        }[]
+      }
       qualify_lead: {
         Args: { p_contact_id: string; p_pipeline_id: string }
         Returns: string
@@ -2480,6 +2564,13 @@ export type Database = {
       app_role: "owner" | "admin" | "member"
       contact_status: "lead" | "prospect" | "customer" | "churned"
       deal_status: "open" | "won" | "lost"
+      lifecycle_stage:
+        | "lead"
+        | "contacted"
+        | "qualified"
+        | "opportunity"
+        | "customer"
+        | "disqualified"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2611,6 +2702,14 @@ export const Constants = {
       app_role: ["owner", "admin", "member"],
       contact_status: ["lead", "prospect", "customer", "churned"],
       deal_status: ["open", "won", "lost"],
+      lifecycle_stage: [
+        "lead",
+        "contacted",
+        "qualified",
+        "opportunity",
+        "customer",
+        "disqualified",
+      ],
     },
   },
 } as const

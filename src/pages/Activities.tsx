@@ -24,13 +24,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Phone, Mail, Calendar, FileText, CheckSquare, List,
-  CalendarDays, Clock, AlertTriangle, Trash2, Edit2, MoreHorizontal,
+  CalendarDays, Trash2, Edit2, MoreHorizontal,
   ChevronLeft, ChevronRight, Search,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
 import {
-  useActivities, useCreateActivity, useUpdateActivity, useDeleteActivities, activitiesKeys,
+  useActivities, useCreateActivity, useUpdateActivity, useDeleteActivities,
 } from "@/hooks/queries/useActivities";
 import { useMembers } from "@/hooks/queries/useMembers";
 import { useContacts } from "@/hooks/queries/useContacts";
@@ -87,9 +86,7 @@ function getWeekRange(offset: number) {
 
 export default function Activities() {
   const { orgId } = useOrg();
-  const { user } = useAuth();
   const { toast } = useToast();
-  const qc = useQueryClient();
 
   const { data: activities = [] } = useActivities();
   const { data: contactsResult } = useContacts({ pageSize: 1000 });

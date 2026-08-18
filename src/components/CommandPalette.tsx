@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Building2, Handshake, Activity, BarChart3, Settings,
-  Inbox, FileText, Zap, Target, Search as SearchIcon,
+  Inbox, FileText, Zap, Target, Search as SearchIcon, MessageSquare,
 } from "lucide-react";
 import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator,
@@ -16,10 +16,11 @@ const pages = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Contatos", icon: Users, path: "/contacts" },
   { label: "Empresas", icon: Building2, path: "/companies" },
-  { label: "Negócios", icon: Handshake, path: "/deals" },
+  { label: "Funil de vendas", icon: Handshake, path: "/deals" },
   { label: "Atividades", icon: Activity, path: "/activities" },
   { label: "Atividades", icon: Activity, path: "/activities" },
-  { label: "Caixa de Entrada", icon: Inbox, path: "/inbox" },
+  { label: "E-mail", icon: Inbox, path: "/inbox" },
+  { label: "WhatsApp", icon: MessageSquare, path: "/conversations" },
   { label: "Templates de Email", icon: FileText, path: "/email-templates" },
   { label: "Sequências", icon: Zap, path: "/email-sequences" },
   { label: "Lead Scoring", icon: Target, path: "/lead-scoring" },
@@ -103,7 +104,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         )}
 
         {deals.length > 0 && (
-          <CommandGroup heading="Negócios">
+          <CommandGroup heading="Funil de vendas">
             {deals.map((d) => (
               <CommandItem key={d.id} onSelect={() => handleSelect(`/deals/${d.id}`)} className="gap-2">
                 <Handshake className="h-4 w-4 text-muted-foreground" />

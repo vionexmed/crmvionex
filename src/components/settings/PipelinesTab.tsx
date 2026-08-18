@@ -47,7 +47,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
     setNewPipelineName("");
     if (data) setSelectedPipeline(data.id);
     fetchAll();
-    toast({ title: "Pipeline criado" });
+    toast({ title: "Funil criado" });
   };
 
   const deletePipeline = async (id: string) => {
@@ -55,7 +55,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
     await supabase.from("pipelines").delete().eq("id", id);
     setSelectedPipeline("");
     fetchAll();
-    toast({ title: "Pipeline excluído" });
+    toast({ title: "Funil excluído" });
   };
 
   const addStage = async () => {
@@ -107,12 +107,12 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Pipelines</CardTitle>
-          <CardDescription className="text-[10px]">Gerencie seus pipelines de vendas</CardDescription>
+          <CardTitle className="text-sm">Funis e etapas</CardTitle>
+          <CardDescription className="text-[10px]">Gerencie seus funis de venda e as etapas de cada um</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
-            <Input placeholder="Nome do pipeline" value={newPipelineName} onChange={(e) => setNewPipelineName(e.target.value)} className="h-8 text-xs" />
+            <Input placeholder="Nome do funil" value={newPipelineName} onChange={(e) => setNewPipelineName(e.target.value)} className="h-8 text-xs" />
             <Button size="sm" className="h-8 text-xs" onClick={createPipeline}><Plus className="mr-1 h-3 w-3" />Criar</Button>
           </div>
           {pipelines.length > 0 && (
@@ -137,7 +137,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Estágios</CardTitle>
-            <CardDescription className="text-[10px]">Configure estágios do pipeline selecionado. Arraste para reordenar.</CardDescription>
+            <CardDescription className="text-[10px]">Configure as etapas do funil selecionado. Arraste para reordenar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">

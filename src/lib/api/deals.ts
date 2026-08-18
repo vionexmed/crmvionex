@@ -3,8 +3,8 @@ import { TABLES, DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import type { Database } from "@/integrations/supabase/types";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
-type DealInsert = Database["public"]["Tables"]["deals"]["Insert"];
-type DealUpdate = Database["public"]["Tables"]["deals"]["Update"];
+export type DealInsert = Database["public"]["Tables"]["deals"]["Insert"];
+export type DealUpdate = Database["public"]["Tables"]["deals"]["Update"];
 type DealStatus = Database["public"]["Enums"]["deal_status"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -115,7 +115,9 @@ export const dealsApi = {
       .eq("id", id)
       .maybeSingle(); // negócio inexistente → null (sem 3 retries de erro)
     if (error) throw error;
-    return data as DealWithRelations;
+    // O embed de owner/contact/company não é inferível pelo tipo gerado, então
+    // a forma do retorno não se sobrepõe o bastante para um cast direto.
+    return data as unknown as DealWithRelations;
   },
 
   delete: async (id: string): Promise<void> => {

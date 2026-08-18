@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TABLES, DEFAULT_PAGE_SIZE } from "@/lib/constants";
+import { LEAD_STAGES, type LifecycleStage } from "@/lib/contact-options";
 import type { Database } from "@/integrations/supabase/types";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -43,7 +44,8 @@ const buildListQuery = (orgId: string, params: ContactListParams) => {
     .eq("org_id", orgId)
     .neq("status", "lead");
 
-  if (status && status !== "all") query = query.eq("status", status);
+  // `status` chega como string do filtro da UI; o PostgREST espera o enum.
+  if (status && status !== "all") query = query.eq("status", status as ContactStatus);
   if (ownerId && ownerId !== "all") query = query.eq("owner_id", ownerId);
   if (companyId && companyId !== "all") query = query.eq("company_id", companyId);
   if (createdFrom) query = query.gte("created_at", createdFrom);
@@ -163,14 +165,27 @@ export const contactsApi = {
     if (error) throw error;
   },
 
+  /**
+   * Leads = ciclo de vida ainda antes da qualificação. Filtra por
+   * lifecycle_stage, não por status: 'status' é legado e faz papel duplo.
+   */
   listLeads: async (orgId: string): Promise<Contact[]> => {
     const { data, error } = await supabase
       .from(TABLES.CONTACTS)
       .select("*, companies:companies(name)")
       .eq("org_id", orgId)
-      .eq("status", "lead")
+      .in("lifecycle_stage", LEAD_STAGES)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data ?? [];
+  },
+
+  /** Move o contato no ciclo de vida. O trigger no banco cuida da auditoria. */
+  updateLifecycleStage: async (ids: string[], stage: LifecycleStage): Promise<void> => {
+    const { error } = await supabase
+      .from(TABLES.CONTACTS)
+      .update({ lifecycle_stage: stage })
+      .in("id", ids);
+    if (error) throw error;
   },
 };

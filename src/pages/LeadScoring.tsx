@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -22,8 +21,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Zap, Edit2, Trash2, MoreHorizontal, Download, Users, Filter,
-  TrendingUp, TrendingDown, Target, Search, X,
+  Plus, Edit2, Trash2, MoreHorizontal, Download, Users,
+  TrendingUp, Target, Search,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LeadScoreBadge } from "@/components/crm/DealQualification";
@@ -83,7 +82,7 @@ export default function LeadScoring() {
   const [rules, setRules] = useState<ScoringRule[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [history, setHistory] = useState<ScoreHistory[]>([]);
-  const [members, setMembers] = useState<Profile[]>([]);
+  const [, setMembers] = useState<Profile[]>([]);
   const [search, setSearch] = useState("");
 
   // Segment form

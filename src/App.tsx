@@ -54,6 +54,7 @@ const DealDetail       = lazyChunk(() => import("./pages/DealDetail"));
 const Activities       = lazyChunk(() => import("./pages/Activities"));
 const Tasks            = lazyChunk(() => import("./pages/Tasks"));
 const Inbox            = lazyChunk(() => import("./pages/Inbox"));
+const MyEmail          = lazyChunk(() => import("./pages/MyEmail"));
 const Conversations    = lazyChunk(() => import("./pages/Conversations"));
 const EmailTemplates   = lazyChunk(() => import("./pages/EmailTemplates"));
 const EmailSequences   = lazyChunk(() => import("./pages/EmailSequences"));
@@ -123,7 +124,11 @@ const App = () => (
               <Route path="/" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
-              <Route path="/setup" element={<SuspenseRoute><Setup /></SuspenseRoute>} />
+              {/* /setup configura a EMPRESA inteira (pipeline, integrações,
+                  chaves de API). Antes ficava aberto por URL para qualquer papel. */}
+              <Route element={<RequireAdmin />}>
+                <Route path="/setup" element={<SuspenseRoute><Setup /></SuspenseRoute>} />
+              </Route>
               
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<SuspenseRoute><Dashboard /></SuspenseRoute>} />
@@ -137,10 +142,21 @@ const App = () => (
                 <Route path="/reports" element={<SuspenseRoute><Reports /></SuspenseRoute>} />
                 <Route path="/sales-goals" element={<SuspenseRoute><SalesGoals /></SuspenseRoute>} />
 
+                {/* Cada pessoa tem a própria conta de e-mail e a própria caixa.
+                    A RLS garante que ninguém vê o e-mail nem a conversa do outro. */}
+                <Route path="/settings/email" element={<SuspenseRoute><MyEmail /></SuspenseRoute>} />
+                <Route path="/inbox" element={<SuspenseRoute><Inbox /></SuspenseRoute>} />
+                <Route path="/conversations" element={<SuspenseRoute><Conversations /></SuspenseRoute>} />
+
+                {/* Todo mundo vê quem é da equipe. As ações (trocar papel, remover,
+                    convidar) já são protegidas por isAdmin dentro da própria página. */}
+                <Route path="/team" element={<SuspenseRoute><Team /></SuspenseRoute>} />
+
+                {/* A própria página mostra só as abas pessoais para quem não é admin. */}
+                <Route path="/settings" element={<SuspenseRoute><Settings /></SuspenseRoute>} />
+
                 {/* Rotas restritas a owner/admin — Comercial é redirecionado */}
                 <Route element={<RequireAdmin />}>
-                  <Route path="/inbox" element={<SuspenseRoute><Inbox /></SuspenseRoute>} />
-                  <Route path="/conversations" element={<SuspenseRoute><Conversations /></SuspenseRoute>} />
                   <Route path="/email-templates" element={<SuspenseRoute><EmailTemplates /></SuspenseRoute>} />
                   <Route path="/email-sequences" element={<SuspenseRoute><EmailSequences /></SuspenseRoute>} />
                   <Route path="/lead-scoring" element={<SuspenseRoute><LeadScoring /></SuspenseRoute>} />
@@ -149,10 +165,8 @@ const App = () => (
                     <Route path="visao-geral" element={<SuspenseRoute><MarketingOverview /></SuspenseRoute>} />
                     <Route path="inbox" element={<SuspenseRoute><InboxMarketing /></SuspenseRoute>} />
                   </Route>
-                  <Route path="/settings" element={<SuspenseRoute><Settings /></SuspenseRoute>} />
                   <Route path="/settings/integrations" element={<SuspenseRoute><Integrations /></SuspenseRoute>} />
                   <Route path="/settings/security" element={<SuspenseRoute><SecuritySettings /></SuspenseRoute>} />
-                  <Route path="/team" element={<SuspenseRoute><Team /></SuspenseRoute>} />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

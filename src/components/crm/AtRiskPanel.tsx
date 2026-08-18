@@ -13,9 +13,6 @@ import { AlertTriangle, Clock, TrendingDown, Settings2, User, Briefcase, Activit
 import { RiskRulesManager, type RiskRule } from "./RiskRulesManager";
 import type { Database } from "@/integrations/supabase/types";
 
-type Deal = Database["public"]["Tables"]["deals"]["Row"];
-type Contact = Database["public"]["Tables"]["contacts"]["Row"];
-type ActivityRow = Database["public"]["Tables"]["activities"]["Row"];
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
 function formatCurrency(v: number, c: string = "BRL") {

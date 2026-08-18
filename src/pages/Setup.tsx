@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Check, ArrowLeft, ArrowRight, Rocket, SkipForward, Loader2 } from "lucide-react";
+import { Check, ArrowLeft, Rocket, SkipForward, Loader2 } from "lucide-react";
 import { StepPipeline } from "@/components/setup/StepPipeline";
 import { StepContacts } from "@/components/setup/StepContacts";
 import { StepAI } from "@/components/setup/StepAI";

@@ -84,29 +84,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Last-resort self-repair: if profile still missing after all retries,
-    // attempt a direct insert (RLS allows id = auth.uid()). Trigger may have failed.
+    // Antes havia um "auto-reparo" aqui que inseria um profile com
+    // onboarding_completed: false e SEM org_id quando o trigger do banco
+    // demorava. Isso era pior que o problema: o usuário caía no wizard de
+    // empresa e o CompanyStep criava uma ORGANIZAÇÃO NOVA, tirando a pessoa da
+    // empresa dela. Falha de trigger é rara e precisa ser visível, não
+    // remendada com um perfil órfão.
     if (!result) {
-      console.warn("[AuthContext] profile still null after retries; attempting self-repair", userId);
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user?.id === userId) {
-        const fallbackName =
-          (userData.user.user_metadata as any)?.full_name ||
-          (userData.user.user_metadata as any)?.name ||
-          (userData.user.email?.split("@")[0] ?? "");
-        const { data: inserted } = await supabase
-          .from("profiles")
-          .insert({
-            id: userId,
-            email: userData.user.email,
-            name: fallbackName,
-            onboarding_completed: false,
-            onboarding_step: 1,
-          } as any)
-          .select("*")
-          .maybeSingle();
-        if (inserted) result = inserted as Profile;
-      }
+      console.error(
+        "[AuthContext] profile não encontrado após todas as tentativas para",
+        userId,
+        "— o trigger handle_new_user provavelmente falhou.",
+      );
     }
 
     // Carregar o papel do usuário na org (member = Comercial, acesso restrito)

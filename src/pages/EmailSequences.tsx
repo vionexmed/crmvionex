@@ -7,9 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent} from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -20,8 +18,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Zap, Edit2, Trash2, MoreHorizontal, Users, Play, Pause,
-  ArrowDown, Mail, Clock, CheckCircle2, AlertCircle,
+  Plus, Trash2, MoreHorizontal, Users, Play, Pause, Mail, Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 

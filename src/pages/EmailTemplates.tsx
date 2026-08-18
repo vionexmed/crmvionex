@@ -14,7 +14,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Edit2, Trash2, MoreHorizontal, Copy, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, MoreHorizontal, Copy, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Template = {

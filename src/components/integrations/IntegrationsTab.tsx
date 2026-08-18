@@ -125,8 +125,8 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   };
 
   const [slackConnecting, setSlackConnecting] = useState(false);
-  const [slackChannels, setSlackChannels] = useState<{ id: string; name: string }[]>([]);
-  const [slackWorkspace, setSlackWorkspace] = useState<string | null>(null);
+  const [, setSlackChannels] = useState<{ id: string; name: string }[]>([]);
+  const [, setSlackWorkspace] = useState<string | null>(null);
   const [slackSetupGuide, setSlackSetupGuide] = useState(false);
 
   const handleSlackConnect = async () => {
