@@ -22,28 +22,119 @@ export default function AcceptInvite() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [erro, setErro] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+
   useEffect(() => {
-    // O magic link autentica via hash; aguarda a sessão existir
+    let cancelado = false;
+    let tentativas = 0;
+    // 15 × 400ms = 6s. Antes o laço era infinito: quando a sessão não vinha
+    // (link expirado, já usado, domínio fora da lista do Supabase), a pessoa
+    // ficava olhando um spinner para sempre, sem nenhuma explicação. Era o que
+    // fazia o convite "não funcionar" sem deixar pista.
+    const MAX = 15;
+
     const check = async () => {
+      if (cancelado) return;
+
       const { data: { session } } = await supabase.auth.getSession();
+
       if (!session) {
-        // Sem sessão e sem token de convite no hash → volta pro login
-        if (!window.location.hash.includes("access_token")) {
-          navigate("/");
+        // O Supabase entrega a credencial de duas formas, dependendo do fluxo:
+        // no HASH (#access_token=..., fluxo implícito) ou na QUERY (?code=...,
+        // fluxo PKCE). Antes só o hash era reconhecido, então um link com
+        // ?code= mandava a pessoa direto para o login — clicava no convite e
+        // caía na tela de entrada.
+        const hash = window.location.hash;
+        const code = new URLSearchParams(window.location.search).get("code");
+        const erroUrl =
+          new URLSearchParams(window.location.search).get("error_description") ||
+          new URLSearchParams(hash.replace(/^#/, "")).get("error_description");
+
+        if (erroUrl) {
+          setErro(decodeURIComponent(erroUrl.replace(/\+/g, " ")));
+          setChecking(false);
           return;
         }
-        // Dá tempo do supabase-js processar o hash
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            setErro(`Este link não é mais válido: ${error.message}`);
+            setChecking(false);
+            return;
+          }
+          // Sessão criada; recomeça para seguir o fluxo normal.
+          setTimeout(check, 50);
+          return;
+        }
+
+        if (!hash.includes("access_token")) {
+          setErro(
+            "O link do convite não trouxe credencial nenhuma. Links de convite " +
+            "valem uma vez só e expiram — peça um novo para quem te convidou.",
+          );
+          setChecking(false);
+          return;
+        }
+
+        if (++tentativas >= MAX) {
+          setErro(
+            "Não conseguimos validar o link. Ele pode ter expirado ou já ter " +
+            "sido usado. Peça um novo convite.",
+          );
+          setChecking(false);
+          return;
+        }
+
         setTimeout(check, 400);
         return;
       }
-      // Garante org + papel do convite (auto-cura caso o trigger não tenha
-      // encontrado o convite na criação do usuário)
-      try { await supabase.rpc("claim_pending_invitation"); } catch { /* migration ausente */ }
+
+      setEmail(session.user.email ?? null);
+
+      // Garante organização e papel do convite. Cobre o caso de quem JÁ tinha
+      // conta: aí o trigger handle_new_user não roda, porque ele só dispara na
+      // criação do usuário.
+      let motivo: string | null = null;
+      try {
+        const r = await supabase.rpc("claim_pending_invitation");
+        const d = r.data as { claimed?: boolean; reason?: string } | null;
+        if (d && d.claimed === false) motivo = d.reason ?? null;
+      } catch {
+        // Função ausente no banco: segue, porque quem não tinha conta já foi
+        // colocado na organização pelo trigger.
+      }
+
+      if (motivo === "user_already_in_active_org") {
+        setErro(
+          "Esta conta já pertence a outra empresa no CRM. Um administrador " +
+          "precisa transferi-la — não dá para entrar em duas ao mesmo tempo.",
+        );
+        setChecking(false);
+        return;
+      }
+
+      // Sem organização, o CRM não tem o que mostrar. Melhor dizer aqui.
+      const { data: perfil } = await supabase
+        .from("profiles").select("org_id").eq("id", session.user.id).maybeSingle();
+
+      if (!perfil?.org_id) {
+        setErro(
+          "Você entrou, mas a conta não ficou ligada a nenhuma empresa. " +
+          "Provavelmente o convite expirou antes do clique. Peça um novo.",
+        );
+        setChecking(false);
+        return;
+      }
+
       const metaName = (session.user.user_metadata as Record<string, string> | null)?.full_name;
       if (metaName) setName(metaName);
       setChecking(false);
     };
+
     check();
+    return () => { cancelado = true; };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,6 +162,24 @@ export default function AcceptInvite() {
     }
   };
 
+  if (erro) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-base">Não foi possível abrir o convite</CardTitle>
+            <CardDescription className="pt-1 leading-relaxed">{erro}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
+              Ir para a tela de entrada
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -91,7 +200,10 @@ export default function AcceptInvite() {
         <Card>
           <CardHeader>
             <CardTitle>Concluir cadastro</CardTitle>
-            <CardDescription>Defina seu nome e uma senha para acessar o CRM</CardDescription>
+            <CardDescription>
+              Defina seu nome e uma senha para acessar o CRM
+              {email && <> — entrando como <span className="font-medium">{email}</span></>}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
