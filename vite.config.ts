@@ -25,23 +25,102 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
+      // Blindagem 1 — uma cópia só, sempre.
+      // Se qualquer dependência transitiva trouxer a própria versão destas
+      // libs, o contexto do React/Router/Query passa a ser registrado numa
+      // instância e lido de outra. Os sintomas são sempre de contexto perdido:
+      //   "null is not an object (evaluating 'dispatcher.useContext')"
+      //   "No QueryClient set, use QueryClientProvider to set one"
+      //   "useNavigate() may be used only in the context of a <Router>"
+      dedupe: ["react", "react-dom", "react-router-dom", "@tanstack/react-query"],
+    },
+
+    // Blindagem 2 — pré-empacotar tudo que é compartilhado, de uma vez.
+    // As páginas entram por import() dinâmico, então o Vite ia descobrindo
+    // dependência nova a cada navegação e RE-OTIMIZANDO no meio da sessão.
+    // A cada re-otimização o hash `?v=` muda: a aba já aberta continua com os
+    // módulos antigos e mistura com os novos — duas cópias vivas ao mesmo
+    // tempo. Declarando aqui, a descoberta acontece no arranque e o hash não
+    // muda mais durante o uso.
+    optimizeDeps: {
+      include: [
+      // Import estático do main.tsx. Fora da lista, o Vite o descobria em
+      // tempo de execução, re-otimizava e trocava o hash `?v=` — dois React na
+      // mesma sessão, que é o que estoura `dispatcher` nulo.
+      "@sentry/react",
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react-router-dom",
+        "@tanstack/react-query",
+        "@supabase/supabase-js",
+        "recharts",
+        "lucide-react",
+        "date-fns",
+        "date-fns/locale",
+        "sonner",
+        "cmdk",
+        "react-markdown",
+        "canvas-confetti",
+        "libphonenumber-js",
+        "dompurify",
+        "class-variance-authority",
+        "clsx",
+        "tailwind-merge",
+        "@dnd-kit/core",
+        "@dnd-kit/sortable",
+        "@dnd-kit/utilities",
+        // Radix: cada primitivo é um pacote, e cada um descoberto tarde
+        // dispara uma re-otimização.
+        "@radix-ui/react-avatar", "@radix-ui/react-checkbox", "@radix-ui/react-dialog",
+        "@radix-ui/react-dropdown-menu", "@radix-ui/react-label", "@radix-ui/react-popover",
+        "@radix-ui/react-progress", "@radix-ui/react-scroll-area", "@radix-ui/react-select",
+        "@radix-ui/react-separator", "@radix-ui/react-slot", "@radix-ui/react-switch",
+        "@radix-ui/react-tabs", "@radix-ui/react-toast", "@radix-ui/react-tooltip",
+      ],
     },
     build: {
       rollupOptions: {
         output: {
           // Divide as libs pesadas em chunks próprios (cacheáveis entre deploys)
           // — o chunk principal caía tudo junto e passava de 880KB
-          manualChunks: {
-            recharts: ["recharts"],
-            supabase: ["@supabase/supabase-js"],
-            radix: [
-              "@radix-ui/react-avatar", "@radix-ui/react-checkbox", "@radix-ui/react-dialog",
-              "@radix-ui/react-dropdown-menu", "@radix-ui/react-label", "@radix-ui/react-popover",
-              "@radix-ui/react-progress", "@radix-ui/react-scroll-area", "@radix-ui/react-select",
-              "@radix-ui/react-separator", "@radix-ui/react-slot", "@radix-ui/react-switch",
-              "@radix-ui/react-tabs", "@radix-ui/react-toast", "@radix-ui/react-tooltip",
-            ],
-            sentry: ["@sentry/react"],
+          // Formato de FUNÇÃO, não de objeto. O formato de objeto só casa com o
+          // id exato do módulo, e por isso não alcançava as cópias de
+          // interoperabilidade CJS que o recharts embute (o shim do
+          // use-sync-external-store). Resultado: o chunk do radix importava do
+          // chunk do recharts, e QUALQUER página com uma aba ou um diálogo
+          // baixava os 394 kB de gráfico. Era o que anulava, na prática, a
+          // saída do recharts do painel.
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+
+            // Compartilhados primeiro: quem os reivindica define o acoplamento.
+            // clsx/tailwind-merge/cva são usados por TODO componente de UI (via
+            // `cn`). Sem reivindicá-los aqui, o Rollup os deixava no chunk do
+            // recharts e a ENTRADA passava a importar de lá — carregando 392 kB
+            // de gráfico em toda visita, inclusive no login.
+            if (/node_modules\/(clsx|tailwind-merge|class-variance-authority)\//.test(id)) return "shared";
+            if (id.includes("use-sync-external-store") || id.includes("react-is")) return "shared";
+
+            // React em chunk próprio garante a ordem de execução pelo grafo —
+            // sem isso, um chunk dependente rodava antes de o React inicializar
+            // e qualquer hook estourava com "dispatcher is null".
+            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return "react";
+            if (id.includes("react-router")) return "react";
+
+            if (id.includes("recharts") || id.includes("/d3-") || id.includes("victory-vendor")) return "recharts";
+            if (id.includes("@supabase")) return "supabase";
+            if (id.includes("@radix-ui")) return "radix";
+            if (id.includes("@sentry")) return "sentry";
+            if (id.includes("@dnd-kit")) return "dnd";
+            if (id.includes("@tanstack")) return "query";
+
+            // Resto do node_modules num chunk só. Sem esta linha eu devolvia
+            // `undefined` e o Rollup decidia sozinho onde pôr cada módulo
+            // compartilhado — e às vezes decidia pelo chunk do recharts, o que
+            // fazia a ENTRADA importar de lá e baixar 392 kB de gráfico em toda
+            // visita. Reivindicar tudo remove a decisão do acaso.
+            return "vendor";
           },
         },
       },
