@@ -16,32 +16,69 @@ import ResetPassword from "./pages/ResetPassword";
 import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
 
+const TRAVA_RECARGA = "chunk_reload";
+
 /**
- * Wrapper para lazy() que detecta falha de chunk (erro de MIME type após novo deploy)
- * e força reload automático para buscar os novos arquivos.
+ * Marca que já recarregamos, e devolve se ESTA chamada pode recarregar.
+ *
+ * Sem storage (navegação privada, cookies bloqueados) não há como impedir laço
+ * de recarga — aí é melhor mostrar o erro do que recarregar para sempre.
+ */
+function podeRecarregar(): boolean {
+  try {
+    if (sessionStorage.getItem(TRAVA_RECARGA)) return false;
+    sessionStorage.setItem(TRAVA_RECARGA, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Storage indisponível não pode transformar carregamento bom em falha. */
+function liberaRecarga(): void {
+  try {
+    sessionStorage.removeItem(TRAVA_RECARGA);
+  } catch {
+    /* nada a limpar */
+  }
+}
+
+/**
+ * Wrapper para lazy() que detecta falha de chunk (erro de MIME type após novo
+ * deploy) e força reload automático para buscar os novos arquivos.
+ *
+ * O chunk some porque o nome carrega hash do conteúdo: a aba aberta pede o
+ * arquivo do deploy anterior, que não existe mais. E o rewrite do vercel.json
+ * manda TUDO para o index.html, então o pedido volta 200 com HTML em vez de
+ * 404 — daí a mensagem "'text/html' is not a valid JavaScript MIME type".
+ *
+ * A trava só serve para não recarregar em laço quando o chunk realmente não
+ * existe. Ela PRECISA ser liberada quando um chunk carrega: antes ficava
+ * ligada para o resto da sessão, então a recuperação valia uma vez só e o
+ * deploy seguinte caía no ErrorBoundary.
  */
 function lazyChunk<T extends React.ComponentType<unknown>>(
   factory: () => Promise<{ default: T }>
 ) {
   return lazy(() =>
-    factory().catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (
-        msg.includes("mime") ||
-        msg.includes("MIME") ||
-        msg.includes("Failed to fetch") ||
-        msg.includes("Loading chunk") ||
-        msg.includes("dynamically imported module")
-      ) {
-        // Reload uma vez para pegar os novos chunks do deploy
-        const reloaded = sessionStorage.getItem("chunk_reload");
-        if (!reloaded) {
-          sessionStorage.setItem("chunk_reload", "1");
-          window.location.reload();
+    factory()
+      .then((mod) => {
+        liberaRecarga();
+        return mod;
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (
+          msg.includes("mime") ||
+          msg.includes("MIME") ||
+          msg.includes("Failed to fetch") ||
+          msg.includes("Loading chunk") ||
+          msg.includes("dynamically imported module")
+        ) {
+          if (podeRecarregar()) window.location.reload();
         }
-      }
-      throw err;
-    })
+        throw err;
+      })
   );
 }
 
