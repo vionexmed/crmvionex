@@ -33,3 +33,9 @@ supabase/migrations/.claude-flow/
 # Extra lockfiles (projeto usa npm)
 bun.lock
 bun.lockb
+
+# Estado local da CLI do Supabase — não versionar (vaza a referência do projeto)
+supabase/.temp/
+
+# Config local do agente — contém chaves service_role em texto puro. NUNCA versionar.
+.claude/
