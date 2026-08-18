@@ -49,15 +49,19 @@ export interface StatCardProps {
   /** Destaque: usado na faixa das métricas principais. */
   emphasis?: boolean;
   /**
-   * Envolve o valor com o painel que revela as linhas por trás do número.
-   * Recebe o valor já formatado.
-   *
-   * Quando presente, o card NÃO navega por `href`: a interação passa a ser o
-   * próprio número. Duas ações concorrendo no mesmo card — clicar no fundo leva
-   * para uma lista, clicar no número abre outra coisa — é o tipo de coisa que o
-   * usuário descobre errando.
+   * Envolve o valor com a prévia que revela as linhas por trás do número, no
+   * hover. Recebe o valor já formatado.
    */
   drilldown?: (valor: ReactNode) => ReactNode;
+  /**
+   * Ação ao clicar no card. Tem precedência sobre `href`.
+   *
+   * Existe porque um card com drill-down não deve navegar para uma lista que
+   * ignora o período — mas também não pode virar área morta com um alvo de
+   * clique do tamanho de um dígito. O card inteiro abre o detalhe; o hover no
+   * número dá a prévia.
+   */
+  onCardClick?: () => void;
 }
 
 /**
@@ -129,10 +133,11 @@ export function StatCard({
   trend,
   emphasis = false,
   drilldown,
+  onCardClick,
 }: StatCardProps) {
   const navigate = useNavigate();
   const theme = ACCENT[accent];
-  const clickable = !!href && !noSource && !drilldown;
+  const clickable = (!!onCardClick || !!href) && !noSource;
   const delta = noSource || noComparison ? null : variation(value, previous);
   const mostrarTendencia = !noSource && value !== null && (trend?.length ?? 0) > 1;
 
@@ -147,7 +152,7 @@ export function StatCard({
         clickable && "cursor-pointer hover:shadow-md",
         noSource && "opacity-60",
       )}
-      onClick={clickable ? () => navigate(href!) : undefined}
+      onClick={clickable ? () => (onCardClick ? onCardClick() : navigate(href!)) : undefined}
     >
       <div className={cn("h-[3px] w-full", noSource ? "bg-muted" : theme.bar)} />
       <CardContent className="p-4">

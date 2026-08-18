@@ -39,6 +39,7 @@ import {
 import { useSdrCharts, sdrChartsKeys } from "@/hooks/useSdrCharts";
 import { sdrMetricLeadsKeys, type MetricDrilldownKey } from "@/hooks/useSdrMetricLeads";
 import { MetricDrilldown } from "@/components/dashboard/MetricDrilldown";
+import { MetricLeadsSheet } from "@/components/dashboard/MetricLeadsSheet";
 // Import ESTÁTICO: os gráficos agora são SVG puro, sem biblioteca. Não há mais
 // peso a postergar, então carregar sob demanda só adicionava uma espera — os
 // gráficos entram na mesma pintura dos números.
@@ -170,6 +171,8 @@ export default function Dashboard() {
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState<SdrPeriod>("this_month");
+  /** Métrica com o painel lateral aberto. Um painel serve os quatro tiles. */
+  const [painelDe, setPainelDe] = useState<MetricDrilldownKey | null>(null);
 
   const { data, isFetching, isLoading, dataUpdatedAt, error } = useSdrMetrics(period);
   const { data: charts, isLoading: loadingCharts } = useSdrCharts(period);
@@ -291,6 +294,7 @@ export default function Dashboard() {
                   href={tile.href}
                   hint={tile.hint}
                   trend={trendDe(tile.key)}
+                  onCardClick={tile.drilldown ? () => setPainelDe(tile.drilldown!) : undefined}
                   drilldown={
                     tile.drilldown
                       ? (valor) => (
@@ -298,6 +302,7 @@ export default function Dashboard() {
                             metric={tile.drilldown!}
                             period={period}
                             total={metrics?.[tile.key]?.value ?? null}
+                            onVerTodos={() => setPainelDe(tile.drilldown!)}
                           >
                             {valor}
                           </MetricDrilldown>
@@ -310,6 +315,8 @@ export default function Dashboard() {
           </div>
 
           <SdrChartsPanel charts={charts} carregando={loadingCharts} isAdmin={isAdmin} />
+
+          <MetricLeadsSheet metric={painelDe} period={period} onClose={() => setPainelDe(null)} />
         </TabsContent>
 
         {/* ── Consultar um número ── */}
