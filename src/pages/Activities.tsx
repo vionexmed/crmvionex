@@ -59,7 +59,27 @@ const typeColors: Record<ActivityType, string> = {
 };
 
 type ViewMode = "list" | "calendar";
-type DateFilter = "todo" | "overdue" | "today" | "tomorrow" | "this_week" | "next_week" | "next_30_days";
+type DateFilter =
+  | "todo" | "overdue" | "today" | "tomorrow" | "this_week" | "next_week" | "next_30_days"
+  // Concluída não cabia em nenhum dos filtros acima: todos exigem
+  // !completed_at, então atividade feita ficava invisível na página inteira —
+  // inclusive no calendário, que agrupa por due_date. O painel contava a
+  // abordagem (por created_at) e aqui não havia como encontrá-la.
+  | "feitas" | "todas";
+
+/** Visões de histórico: ordenam por quando aconteceu, não por vencimento. */
+const HISTORICO: DateFilter[] = ["feitas", "todas"];
+
+const dataCurta = (iso: string) =>
+  new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
+const dataLonga = (iso: string) =>
+  new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
+/** Quando a atividade de fato aconteceu. due_date é previsão, não registro. */
+function aconteceuEm(a: Activity): number {
+  const d = a.completed_at || a.created_at;
+  return d ? new Date(d).getTime() : 0;
+}
 
 const dateFilterLabels: Record<DateFilter, string> = {
   todo: "Para fazer",
@@ -69,6 +89,8 @@ const dateFilterLabels: Record<DateFilter, string> = {
   this_week: "Esta semana",
   next_week: "Próxima semana",
   next_30_days: "Próximos 30 dias",
+  feitas: "Concluídas",
+  todas: "Todas",
 };
 
 function startOfDay(d: Date) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
@@ -150,7 +172,7 @@ export default function Activities() {
     const nextWeek = getWeekRange(1);
     const next30End = endOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 30));
 
-    return activities.filter((a) => {
+    const lista = activities.filter((a) => {
       // Type filter
       if (typeFilter !== "all" && a.type !== typeFilter) return false;
 
@@ -183,9 +205,20 @@ export default function Activities() {
           return !a.completed_at && dueDate !== null && dueDate >= nextWeek.start && dueDate <= nextWeek.end;
         case "next_30_days":
           return !a.completed_at && dueDate !== null && dueDate >= todayStart && dueDate <= next30End;
+        case "feitas":
+          return !!a.completed_at;
+        case "todas":
+          return true;
       }
       return true;
     });
+
+    // Ordem por vencimento (a do servidor) não serve para histórico: atividade
+    // registrada costuma ter due_date NULL, e nulo vai para o fim da lista.
+    // Aqui o que interessa é a mais recente primeiro.
+    return HISTORICO.includes(dateFilter)
+      ? lista.sort((x, y) => aconteceuEm(y) - aconteceuEm(x))
+      : lista;
   }, [activities, typeFilter, dateFilter, ownerFilter, search, contacts, deals]);
 
   // Count per date filter (for badges)
@@ -208,6 +241,8 @@ export default function Activities() {
       this_week: pending.filter((a) => a.due_date && new Date(a.due_date) >= thisWeek.start && new Date(a.due_date) <= thisWeek.end).length,
       next_week: pending.filter((a) => a.due_date && new Date(a.due_date) >= nextWeek.start && new Date(a.due_date) <= nextWeek.end).length,
       next_30_days: pending.filter((a) => a.due_date && new Date(a.due_date) >= todayStart && new Date(a.due_date) <= next30End).length,
+      feitas: activities.length - pending.length,
+      todas: activities.length,
     };
   }, [activities]);
 
@@ -364,7 +399,7 @@ export default function Activities() {
                 <TableHead>E-mail</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Organização</TableHead>
-                <TableHead>Data de venc.</TableHead>
+                <TableHead>Data</TableHead>
                 <TableHead>Atribuído a</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
@@ -429,15 +464,46 @@ export default function Activities() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {a.due_date && (
-                        <span className={`text-xs whitespace-nowrap ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                          {new Date(a.due_date).toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
+                      {/* Três datas diferentes, do mais informativo para o
+                          menos: vencimento, conclusão, criação. Antes só o
+                          vencimento era mostrado, então atividade concluída —
+                          que costuma ter due_date NULL — aparecia sem data
+                          nenhuma, e "o que foi feito" ficava sem quando. */}
+                      {a.due_date ? (
+                        <span
+                          title={`Vence em ${dataLonga(a.due_date)}`}
+                          className={`text-xs whitespace-nowrap ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}
+                        >
+                          {dataCurta(a.due_date)}
                         </span>
-                      )}
+                      ) : a.completed_at ? (
+                        <span
+                          title={`Concluída em ${dataLonga(a.completed_at)}`}
+                          className="whitespace-nowrap text-xs font-medium text-success"
+                        >
+                          ✓ {dataCurta(a.completed_at)}
+                        </span>
+                      ) : a.created_at ? (
+                        <span
+                          title={`Registrada em ${dataLonga(a.created_at)}`}
+                          className="whitespace-nowrap text-xs text-muted-foreground/70"
+                        >
+                          {dataCurta(a.created_at)}
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell>
-                      {member && (
+                      {/* Quem fez. O banco não guarda um "concluída por"
+                          separado, então user_id é a melhor fonte que existe. */}
+                      {member ? (
                         <span className="text-xs text-muted-foreground">{member.name || member.email}</span>
+                      ) : (
+                        <span
+                          className="text-xs text-muted-foreground/50"
+                          title={a.user_id ? "Conta não está mais na equipe" : "Nenhuma conta registrada"}
+                        >
+                          —
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
