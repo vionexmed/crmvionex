@@ -100,13 +100,25 @@ export default defineConfig(({ mode }) => {
             // recharts e a ENTRADA passava a importar de lá — carregando 392 kB
             // de gráfico em toda visita, inclusive no login.
             if (/node_modules\/(clsx|tailwind-merge|class-variance-authority)\//.test(id)) return "shared";
-            if (id.includes("use-sync-external-store") || id.includes("react-is")) return "shared";
+
 
             // React em chunk próprio garante a ordem de execução pelo grafo —
             // sem isso, um chunk dependente rodava antes de o React inicializar
             // e qualquer hook estourava com "dispatcher is null".
-            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return "react";
-            if (id.includes("react-router")) return "react";
+            // use-sync-external-store e react-is ficam JUNTO do React, não num
+            // chunk aparte. O shim faz `const ur = React.useState` no escopo do
+            // módulo — leitura imediata, na hora de carregar. Separado em outro
+            // chunk, ele executava antes do React inicializar e a produção
+            // subia em branco com "Cannot read properties of undefined
+            // (reading 'useState')". Shim de React pertence ao chunk do React.
+            if (/node_modules\/(react|react-dom|scheduler|react-is|use-sync-external-store)\//.test(id)) return "react";
+            // react-router NÃO entra no chunk do React. Ele depende de
+            // @remix-run/router, que caía no `vendor`, e isso fazia o chunk do
+            // React importar do vendor — fechando o ciclo react → vendor →
+            // radix → react. Com ciclo, o radix executava antes do React e a
+            // produção subia em branco com `forwardRef` de undefined.
+            // O chunk do React precisa ser FOLHA: não importa nada.
+            if (id.includes("react-router") || id.includes("@remix-run")) return "router";
 
             if (id.includes("recharts") || id.includes("/d3-") || id.includes("victory-vendor")) return "recharts";
             if (id.includes("@supabase")) return "supabase";
