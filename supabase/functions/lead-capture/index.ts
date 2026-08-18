@@ -213,14 +213,29 @@ serve(async (req) => {
     }
   }
 
-  // Create deal if pipeline_id provided
+  // Todo lead nasce com negócio no funil de entrada.
+  // Sem isso o lead não tem onde guardar estágio, preço, objeção, próxima ação
+  // nem motivo de perda — esses campos só existem em deals.
+  // Se o chamador não indicar o pipeline, usa o pipeline padrão da org.
+  let resolvedPipelineId: string | null = pipeline_id ?? null;
+  if (!resolvedPipelineId) {
+    const { data: defaultPipeline } = await sb
+      .from("pipelines")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("is_default", true)
+      .limit(1)
+      .maybeSingle();
+    resolvedPipelineId = defaultPipeline?.id ?? null;
+  }
+
   let dealId: string | null = null;
-  if (pipeline_id) {
+  if (resolvedPipelineId) {
     // Get first stage of the pipeline
     const { data: firstStage } = await sb
       .from("pipeline_stages")
       .select("id")
-      .eq("pipeline_id", pipeline_id)
+      .eq("pipeline_id", resolvedPipelineId)
       .eq("org_id", orgId)
       .order("order", { ascending: true })
       .limit(1)
@@ -248,7 +263,7 @@ serve(async (req) => {
         await fireWebhooks(sb, orgId, "deal.created", {
           deal_id: deal.id,
           contact_id: contact.id,
-          pipeline_id,
+          pipeline_id: resolvedPipelineId,
           source: source ?? null,
         });
       }

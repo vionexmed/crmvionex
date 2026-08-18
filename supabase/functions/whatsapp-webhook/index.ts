@@ -58,7 +58,15 @@ Deno.serve(async (req) => {
       for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expected.charCodeAt(i)
       if (diff !== 0) return new Response('Forbidden', { status: 403 })
     } else {
-      console.warn('META_APP_SECRET not configured — webhook signature verification skipped')
+      // FALHA FECHADA. Antes isto só avisava e seguia processando o corpo, o
+      // que deixava qualquer pessoa na internet injetar mensagem falsa de
+      // WhatsApp no CRM — criando contato, conversa e histórico. Sem o segredo
+      // não há como distinguir a Meta de um impostor, então recusa.
+      console.error('META_APP_SECRET ausente — webhook recusado')
+      return new Response(
+        JSON.stringify({ error: 'Webhook não configurado: META_APP_SECRET ausente' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } },
+      )
     }
     const body = JSON.parse(rawBody)
     // Each entry can have multiple changes

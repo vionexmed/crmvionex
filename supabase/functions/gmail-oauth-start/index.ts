@@ -1,14 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { signState } from "../_shared/oauth-state.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// gmail.readonly foi removido: é redundante com gmail.modify, que já inclui
+// leitura. Pedir os dois não muda nada na verificação e aumenta o que o usuário
+// vê na tela de consentimento sem motivo.
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
-  "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.modify",
   "https://www.googleapis.com/auth/userinfo.email",
 ].join(" ");
@@ -40,7 +43,10 @@ serve(async (req) => {
     }
     const userId = claims.claims.sub;
 
-    const { return_to, label, purpose } = await req.json().catch(() => ({}));
+    const { return_to, label, purpose, scope_type } = await req.json().catch(() => ({}));
+
+    // 'user' = caixa pessoal de quem chamou; 'org' = caixa compartilhada.
+    const scopeType = scope_type === "org" ? "org" : "user";
 
     // Derive org_id server-side from authenticated profile (never trust client)
     const supabaseAdmin = createClient(
@@ -55,6 +61,22 @@ serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Conectar a caixa da EMPRESA exige owner/admin. Antes não havia checagem de
+    // papel nenhuma aqui: a proteção era só o RequireAdmin do front, então
+    // qualquer membro podia chamar a função direto e tomar o slot da empresa.
+    if (scopeType === "org") {
+      const { data: isAdmin } = await supabaseAdmin.rpc("is_org_admin", {
+        _user_id: userId,
+        _org_id: org_id,
+      });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Só owner ou admin pode conectar a caixa da empresa." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // Prefer per-org credentials saved in integration_configs, fallback to env secret
@@ -76,14 +98,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const redirectUri = `${supabaseUrl}/functions/v1/gmail-oauth-callback`;
 
-    const state = btoa(JSON.stringify({
+    // Assinado com HMAC e com expiração conferida no callback.
+    const state = await signState({
       user_id: userId,
       org_id,
-      return_to: return_to || "/settings/integrations",
+      return_to: return_to || (scopeType === "user" ? "/settings/email" : "/settings/integrations"),
       label: label || "Principal",
       purpose: purpose || "sales",
-      t: Date.now(),
-    }));
+      scope_type: scopeType,
+    });
 
     const params = new URLSearchParams({
       client_id: clientId,

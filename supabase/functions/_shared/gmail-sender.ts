@@ -77,8 +77,14 @@ export interface OrgEmailOptions {
 }
 
 /**
- * Envia um e-mail pela conta da org e registra na tabela emails.
- * Lança erro claro se a conta da finalidade não estiver conectada.
+ * Envia um e-mail de automação/sequência e registra na tabela emails.
+ *
+ * A conta usada é a do RESPONSÁVEL PELO CONTATO, não uma caixa da empresa —
+ * a operação não tem caixa compartilhada, e o e-mail de cadência deve sair do
+ * endereço da pessoa que cuida do lead. Sem conexão ou com o teto diário
+ * estourado, LANÇA erro com motivo legível para quem chama registrar em
+ * automation_logs — nunca falha em silêncio.
+ *
  * @param admin supabase client com service role
  */
 export async function sendViaOrgAccount(admin: any, opts: OrgEmailOptions): Promise<{ id: string | null }> {
@@ -92,16 +98,59 @@ export async function sendViaOrgAccount(admin: any, opts: OrgEmailOptions): Prom
     .maybeSingle();
   const cfg: Record<string, unknown> = (cfgRow?.config as Record<string, unknown>) ?? {};
 
-  const { data: connection } = await admin
-    .from("email_connections")
-    .select("*")
-    .eq("org_id", opts.orgId)
-    .eq("provider", "gmail")
-    .eq("purpose", purpose)
-    .eq("is_active", true)
-    .maybeSingle();
+  // Quem é o responsável pelo contato desta mensagem.
+  let ownerId: string | null = opts.userId ?? null;
+  if (!ownerId && opts.contactId) {
+    const { data: contato } = await admin
+      .from("contacts").select("owner_id").eq("id", opts.contactId).maybeSingle();
+    ownerId = (contato?.owner_id as string) ?? null;
+  }
+
+  let connection: Record<string, unknown> | null = null;
+
+  if (ownerId) {
+    const { data: contaDoDono } = await admin
+      .from("email_connections")
+      .select("*")
+      .eq("org_id", opts.orgId)
+      .eq("provider", "gmail")
+      .eq("scope_type", "user")
+      .eq("user_id", ownerId)
+      .eq("is_active", true)
+      .maybeSingle();
+    connection = contaDoDono;
+  }
+
+  // Reserva: caixa compartilhada da empresa, se algum dia existir.
   if (!connection) {
-    throw new Error(`Conta Gmail ${purpose === "marketing" ? "Marketing" : "Comercial"} da empresa não conectada`);
+    const { data: contaEmpresa } = await admin
+      .from("email_connections")
+      .select("*")
+      .eq("org_id", opts.orgId)
+      .eq("provider", "gmail")
+      .eq("scope_type", "org")
+      .eq("purpose", purpose)
+      .eq("is_active", true)
+      .maybeSingle();
+    connection = contaEmpresa;
+  }
+
+  if (!connection) {
+    throw new Error(
+      "O responsável pelo contato não tem Gmail conectado, e não há caixa da empresa. "
+      + "Peça a ele para conectar em Configurações › Meu e-mail.",
+    );
+  }
+
+  // Mesmo teto diário do envio manual.
+  const { data: temVaga } = await admin.rpc("reserve_email_send", {
+    _connection_id: connection.id,
+  });
+  if (!temVaga) {
+    throw new Error(
+      `Limite diário de envio da conta ${connection.email_address} atingido `
+      + `(${connection.daily_send_limit}). O envio foi pulado, não perdido.`,
+    );
   }
 
   const { data: tokenRow } = await admin
@@ -112,7 +161,7 @@ export async function sendViaOrgAccount(admin: any, opts: OrgEmailOptions): Prom
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (!tokenRow) throw new Error("Token OAuth da conta não encontrado — reconecte em Integrações");
+  if (!tokenRow) throw new Error("Token OAuth da conta não encontrado — reconecte a conta de e-mail");
 
   let accessToken = tokenRow.access_token as string;
   if (new Date(tokenRow.expires_at).getTime() - Date.now() < 60_000) {
@@ -132,9 +181,12 @@ export async function sendViaOrgAccount(admin: any, opts: OrgEmailOptions): Prom
   const finalHtml = `${opts.html}${signature}`;
 
   // Pré-registra para obter o id do rastreio de abertura/clique
-  const { data: preInserted } = await admin.from("emails").insert({
+  const { data: preInserted, error: preErr } = await admin.from("emails").insert({
     org_id: opts.orgId,
-    user_id: opts.userId ?? null,
+    // Dono do registro: sem isto a policy emails_select esconde o e-mail de
+    // quem não é admin, inclusive do próprio responsável pelo contato.
+    user_id: opts.userId ?? ownerId ?? null,
+    connection_id: connection.id,
     contact_id: opts.contactId ?? null,
     deal_id: opts.dealId ?? null,
     direction: "outbound",
@@ -149,6 +201,8 @@ export async function sendViaOrgAccount(admin: any, opts: OrgEmailOptions): Prom
     is_read: true,
     synced_from: fromEmail,
   }).select("id").maybeSingle();
+  // O erro era engolido: o e-mail saía pelo Gmail e nunca era registrado.
+  if (preErr) throw new Error(`Falha ao registrar o e-mail antes do envio: ${preErr.message}`);
   const emailId: string | null = preInserted?.id ?? null;
 
   let trackedHtml = finalHtml;

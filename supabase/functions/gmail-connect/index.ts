@@ -12,12 +12,60 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { org_id, from_name, signature } = await req.json();
-    if (!org_id) {
-      return new Response(JSON.stringify({ error: "missing_org_id" }), {
-        status: 400,
+    // Antes: esta função lia org_id do CORPO, sem nenhum header de autorização,
+    // e escrevia em integration_configs com service role. Qualquer um com a URL
+    // marcava a integração de qualquer organização como conectada.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claims } = await supabaseAuth.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    const userId = claims?.claims?.sub;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { from_name, signature } = await req.json();
+
+    // org_id vem do perfil autenticado, nunca do corpo da requisição.
+    const supabaseOrg = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: callerProfile } = await supabaseOrg
+      .from("profiles").select("org_id").eq("id", userId).maybeSingle();
+    const org_id = callerProfile?.org_id;
+    if (!org_id) {
+      return new Response(JSON.stringify({ error: "No organization" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Conectar a integração da empresa é ação de administrador.
+    const { data: isAdmin } = await supabaseOrg.rpc("is_org_admin", {
+      _user_id: userId,
+      _org_id: org_id,
+    });
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: "forbidden", message: "Só owner ou admin pode conectar a integração da empresa." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

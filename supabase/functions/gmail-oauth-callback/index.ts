@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyState } from "../_shared/oauth-state.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,18 +56,24 @@ serve(async (req) => {
   const stateParam = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");
 
-  let returnToRaw = "/settings/integrations";
-  let state: any = {};
-  try {
-    if (stateParam) state = JSON.parse(atob(stateParam));
-    if (state.return_to) returnToRaw = state.return_to;
-  } catch (_) { /* ignore */ }
+  // O state agora é assinado com HMAC e tem expiração conferida. Antes era
+  // base64 puro: forjável, e user_id/org_id vindos dele iam direto para INSERT
+  // com service role.
+  const state: any = stateParam ? (await verifyState<any>(stateParam)) ?? {} : {};
+  const returnToRaw = state.return_to || "/settings/integrations";
 
   const origin = req.headers.get("referer")?.split("/").slice(0, 3).join("/") ?? "";
   const sanitizedReturn = sanitizeReturnTo(returnToRaw, origin);
   const finalReturn = sanitizedReturn.startsWith("http") ? sanitizedReturn : `${origin}${sanitizedReturn}`;
 
   if (errorParam) return htmlResponse(`Google retornou: ${errorParam}`, false, finalReturn || sanitizedReturn);
+  if (stateParam && !state.user_id) {
+    return htmlResponse(
+      "O link de autorização é inválido ou expirou. Tente conectar novamente.",
+      false,
+      finalReturn || sanitizedReturn,
+    );
+  }
   if (!code || !state.user_id || !state.org_id) {
     return htmlResponse("Parâmetros inválidos.", false, finalReturn || sanitizedReturn);
   }
@@ -138,24 +145,36 @@ serve(async (req) => {
       return htmlResponse("Erro ao salvar tokens.", false, finalReturn);
     }
 
-    // Conta da EMPRESA: uma conta ativa por finalidade (sales/marketing).
-    // Desativa a conta anterior do slot (se outra) antes de ativar a nova.
     const purpose = state.purpose || "sales";
-    await supabaseAdmin
+    const scopeType = state.scope_type === "org" ? "org" : "user";
+
+    // Desativa apenas a conexão anterior DO MESMO ESCOPO. Antes isto desativava
+    // por (org_id, purpose), então a segunda pessoa a conectar derrubava a
+    // conexão da primeira — o bug que impedia uma conta por vendedor.
+    const desativar = supabaseAdmin
       .from("email_connections")
       .update({ is_active: false })
       .eq("org_id", state.org_id)
-      .eq("purpose", purpose)
+      .eq("scope_type", scopeType)
       .eq("is_active", true)
       .neq("email_address", email);
 
+    if (scopeType === "user") {
+      // Conta pessoal: só a conta anterior da MESMA pessoa sai.
+      await desativar.eq("user_id", state.user_id);
+    } else {
+      // Caixa da empresa: uma ativa por finalidade.
+      await desativar.eq("purpose", purpose);
+    }
+
     await supabaseAdmin.from("email_connections").upsert({
-      user_id: state.user_id, // quem conectou (auditoria)
+      user_id: state.user_id,
       org_id: state.org_id,
       provider: "gmail",
       email_address: email,
       label: state.label || "Principal",
       purpose,
+      scope_type: scopeType,
       is_active: true,
       connected_at: new Date().toISOString(),
     }, { onConflict: "org_id,provider,email_address" });

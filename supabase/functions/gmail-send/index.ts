@@ -112,7 +112,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const { contact_id, deal_id, to, cc, bcc, subject, html, text } = body;
-    let purpose: string = body.purpose === "marketing" ? "marketing" : "sales";
+    const purpose: string = body.purpose === "marketing" ? "marketing" : "sales";
     if (!to || !subject || (!html && !text)) {
       return new Response(JSON.stringify({ error: "to, subject and html/text required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -134,12 +134,9 @@ serve(async (req) => {
       });
     }
 
-    // Comercial (member) só envia pela conta comercial da empresa
-    const { data: roleRow } = await supabaseAdmin
-      .from("user_roles").select("role").eq("user_id", userId).eq("org_id", org_id).maybeSingle();
-    const isAdmin = roleRow?.role === "owner" || roleRow?.role === "admin";
-    if (!isAdmin) purpose = "sales";
-
+    // Antes: `if (!isAdmin) purpose = "sales"` forçava todo vendedor a enviar
+    // pela conta da empresa, e o remetente saía como o endereço corporativo.
+    // Agora cada pessoa envia pela própria conta — a resolução está abaixo.
 
     // Load integration config first to decide auth mode (connector vs oauth_byok)
     const { data: cfgRow } = await supabaseAdmin
@@ -169,21 +166,54 @@ serve(async (req) => {
       useConnector = true;
       fromEmail = cfg.email || "";
     } else {
-      // Conta da EMPRESA pela finalidade (sales = comercial, marketing)
-      const { data: conn } = await supabaseAdmin
+      // 1º: a conta pessoal de quem está enviando. É o que faz o e-mail sair do
+      // endereço da própria pessoa.
+      const { data: minhaConta } = await supabaseAdmin
         .from("email_connections")
         .select("*")
         .eq("org_id", org_id)
         .eq("provider", "gmail")
-        .eq("purpose", purpose)
+        .eq("scope_type", "user")
+        .eq("user_id", userId)
         .eq("is_active", true)
         .maybeSingle();
-      connection = conn;
+
+      connection = minhaConta;
+
+      // 2º: caixa compartilhada da empresa, se existir para esta finalidade.
+      if (!connection) {
+        const { data: contaEmpresa } = await supabaseAdmin
+          .from("email_connections")
+          .select("*")
+          .eq("org_id", org_id)
+          .eq("provider", "gmail")
+          .eq("scope_type", "org")
+          .eq("purpose", purpose)
+          .eq("is_active", true)
+          .maybeSingle();
+        connection = contaEmpresa;
+      }
 
       if (!connection) {
-        const label = purpose === "marketing" ? "Marketing" : "Comercial";
-        return new Response(JSON.stringify({ error: "gmail_not_connected", message: `A conta Gmail ${label} da empresa não está conectada. Peça a um administrador para conectá-la em Integrações.` }), {
+        return new Response(JSON.stringify({
+          error: "gmail_not_connected",
+          message: "Você ainda não conectou seu Gmail. Conecte em Configurações › Meu e-mail.",
+        }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Teto diário por conexão. Sem isto, uma automação em laço consome a cota
+      // do Gmail (2.000/dia no Workspace) e sinaliza a reputação do domínio.
+      const { data: temVaga } = await supabaseAdmin.rpc("reserve_email_send", {
+        _connection_id: connection.id,
+      });
+      if (!temVaga) {
+        return new Response(JSON.stringify({
+          error: "daily_limit_reached",
+          message: `Limite diário de ${connection.daily_send_limit} envios desta conta foi atingido. Ele reinicia amanhã.`,
+        }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -280,9 +310,10 @@ serve(async (req) => {
     const bccList = bcc ? (Array.isArray(bcc) ? bcc : String(bcc).split(",").map((s: string) => s.trim()).filter(Boolean)) : [];
 
     // Pré-registra o e-mail para obter o id usado no rastreio de abertura/clique
-    const { data: preInserted } = await supabaseAdmin.from("emails").insert({
+    const { data: preInserted, error: preErr } = await supabaseAdmin.from("emails").insert({
       org_id,
       user_id: userId,
+      connection_id: connection?.id ?? null,
       contact_id: contact_id ?? null,
       deal_id: deal_id ?? null,
       direction: "outbound",
@@ -297,6 +328,15 @@ serve(async (req) => {
       is_read: true,
       synced_from: fromEmail,
     }).select("id").maybeSingle();
+    // O erro era engolido aqui: o e-mail era enviado e nunca registrado, porque
+    // o CHECK de status não aceitava 'sending' (corrigido na migração).
+    if (preErr) {
+      console.error("pre-insert email error:", preErr);
+      return new Response(JSON.stringify({
+        error: "email_not_recorded",
+        message: `Não foi possível registrar o e-mail antes do envio: ${preErr.message}`,
+      }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const emailId = preInserted?.id as string | undefined;
 
     // Injeta pixel de abertura + reescreve links para contagem de cliques
