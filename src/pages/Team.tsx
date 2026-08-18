@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -62,6 +63,10 @@ export default function Team() {
   const [removendo, setRemovendo] = useState<(Profile & { role?: string }) | null>(null);
   const [herdeiro, setHerdeiro] = useState<string>("");
   const [removendoAgora, setRemovendoAgora] = useState(false);
+  // Apagar a conta é irreversível e não deve ser efeito colateral de remover:
+  // é escolha marcada de propósito. Ligado por padrão porque, sem isso,
+  // convidar o mesmo e-mail de novo falha com "already been registered".
+  const [apagarConta, setApagarConta] = useState(true);
 
   // Teams
   const [teams, setTeams] = useState<any[]>([]);
@@ -197,17 +202,18 @@ export default function Team() {
     // antes de qualquer await. Foi o que travava este botão em "Removendo…"
     // para sempre, porque o setRemovendoAgora(false) nunca era alcançado.
     // O cast tem de ficar na chamada de método, não na função.
-    let data: Record<string, number> | null = null;
+    let data: Record<string, number | boolean> | null = null;
     let error: { message: string } | null = null;
     try {
       const r = await (supabase.rpc as unknown as (
         fn: string,
         args: Record<string, string | null>,
-      ) => Promise<{ data: Record<string, number> | null; error: { message: string } | null }>
+      ) => Promise<{ data: Record<string, number | boolean> | null; error: { message: string } | null }>
       ).call(supabase, "remove_org_member", {
         _user_id: removendo.id,
         _transfer_to: herdeiro || null,
-      });
+        _apagar_conta: apagarConta,
+      } as unknown as Record<string, string | null>);
       data = r.data;
       error = r.error;
     } catch (e) {
@@ -222,17 +228,22 @@ export default function Team() {
       return;
     }
 
-    const r = data ?? {};
+    const r = (data ?? {}) as Record<string, number>;
+    const contaApagada = Boolean((data as Record<string, unknown> | null)?.conta_apagada);
     const movidos = (r.contatos ?? 0) + (r.negocios ?? 0) + (r.empresas ?? 0) + (r.tarefas ?? 0);
     const destino = members.find((m) => m.id === (herdeiro || user?.id));
     setRemovendo(null);
     setHerdeiro("");
     fetchAll();
+    const oQueFoi = movidos === 0
+      ? "A pessoa não tinha registros sob responsabilidade."
+      : `${movidos} ${movidos === 1 ? "registro transferido" : "registros transferidos"} para ${destino?.name || "você"}.`;
+
     toast({
-      title: "Membro removido",
-      description: movidos === 0
-        ? "A pessoa não tinha registros sob responsabilidade."
-        : `${movidos} ${movidos === 1 ? "registro transferido" : "registros transferidos"} para ${destino?.name || "você"}.`,
+      title: contaApagada ? "Membro e conta excluídos" : "Membro removido",
+      description: contaApagada
+        ? `${oQueFoi} O e-mail está livre para ser convidado de novo.`
+        : oQueFoi,
     });
   };
 
@@ -603,12 +614,32 @@ export default function Team() {
             </p>
           </div>
 
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border p-3">
+            <Checkbox
+              checked={apagarConta}
+              onCheckedChange={(v) => setApagarConta(v === true)}
+              className="mt-0.5"
+            />
+            <span className="text-xs leading-relaxed">
+              <span className="font-medium">Excluir a conta também</span>
+              <span className="mt-0.5 block text-muted-foreground">
+                {apagarConta
+                  ? "O e-mail fica livre para ser convidado de novo. É irreversível: a conta deixa de existir."
+                  : "A conta continua existindo. Convidar este e-mail de novo vai falhar com “já registrado”."}
+              </span>
+            </span>
+          </label>
+
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setRemovendo(null)} disabled={removendoAgora}>
               Cancelar
             </Button>
             <Button variant="destructive" onClick={confirmarRemocao} disabled={removendoAgora}>
-              {removendoAgora ? "Removendo…" : "Remover e transferir"}
+              {removendoAgora
+                ? "Removendo…"
+                : apagarConta
+                  ? "Excluir conta e transferir"
+                  : "Remover e transferir"}
             </Button>
           </DialogFooter>
         </DialogContent>

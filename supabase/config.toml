@@ -9,3 +9,10 @@ verify_jwt = false
 # Rastreio de abertura/clique — acessado pelo e-mail do destinatário, sem JWT
 [functions.email-track]
 verify_jwt = false
+
+# A Meta não envia JWT nas chamadas de webhook. Sem isto, a plataforma devolve
+# 401 antes de o código rodar, e o webhook fica inalcançável para ela.
+# A proteção real é a assinatura HMAC (X-Hub-Signature-256), verificada no
+# código — e agora com falha fechada quando META_APP_SECRET não existe.
+[functions.whatsapp-webhook]
+verify_jwt = false
