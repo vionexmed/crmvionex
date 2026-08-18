@@ -70,7 +70,6 @@ const Setup            = lazyChunk(() => import("./pages/Setup"));
 const Leads            = lazyChunk(() => import("./pages/Leads"));
 const Marketing        = lazyChunk(() => import("./pages/Marketing"));
 const MarketingOverview = lazyChunk(() => import("./pages/marketing/Overview"));
-const InboxMarketing   = lazyChunk(() => import("./pages/InboxMarketing"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -163,7 +162,6 @@ const App = () => (
                   <Route path="/automations" element={<SuspenseRoute><Automations /></SuspenseRoute>} />
                   <Route path="/marketing" element={<SuspenseRoute><Marketing /></SuspenseRoute>}>
                     <Route path="visao-geral" element={<SuspenseRoute><MarketingOverview /></SuspenseRoute>} />
-                    <Route path="inbox" element={<SuspenseRoute><InboxMarketing /></SuspenseRoute>} />
                   </Route>
                   <Route path="/settings/integrations" element={<SuspenseRoute><Integrations /></SuspenseRoute>} />
                   <Route path="/settings/security" element={<SuspenseRoute><SecuritySettings /></SuspenseRoute>} />

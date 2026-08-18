@@ -31,7 +31,6 @@ interface Props {
   defaultContactId?: string;
   defaultDealId?: string;
   /** Conta da empresa usada no envio (sales = comercial). Admin pode trocar no modal. */
-  defaultPurpose?: "sales" | "marketing";
 }
 
 const VARIABLES = [
@@ -42,12 +41,11 @@ const VARIABLES = [
   { key: "{{dono_nome}}", label: "Nome do dono" },
 ];
 
-export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defaultContactId, defaultDealId, defaultPurpose = "sales" }: Props) {
+export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defaultContactId, defaultDealId }: Props) {
   const { orgId } = useOrg();
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const { data: connections = [] } = useEmailConnections();
-  const [purpose, setPurpose] = useState<"sales" | "marketing">(defaultPurpose);
 
   const [to, setTo] = useState(defaultTo || "");
   const [cc, setCc] = useState("");
@@ -72,7 +70,6 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
     if (!open || !orgId) return;
     setTo(defaultTo || ""); setSubject(""); setBody(""); setCc(""); setBcc("");
     setContactId(defaultContactId || "none"); setDealId(defaultDealId || "none");
-    setPurpose(defaultPurpose);
     Promise.all([
       supabase.from("contacts").select("id,first_name,last_name,email,org_id").eq("org_id", orgId),
       supabase.from("deals").select("id,title,org_id,contact_id").eq("org_id", orgId),
@@ -188,7 +185,6 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
         bcc: bcc ? bcc.split(",").map((e) => e.trim()).filter(Boolean) : [],
         subject,
         html: htmlBody,
-        purpose, // conta da empresa que envia (comercial é travado em sales no servidor)
       },
     });
     setSending(false);
@@ -253,33 +249,25 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             </div>
           </div>
 
-          {/* De (conta da empresa) */}
+          {/* De: sempre a própria conta.
+              Antes havia um seletor entre a conta "comercial" e a de
+              "marketing" da empresa — modelo de duas caixas que foi substituído
+              por uma conta por pessoa. O servidor já resolve assim:
+              gmail-send/index.ts busca scope_type = 'user' de quem chama. */}
           {(() => {
-            const salesConn = connections.find((c) => c.purpose === "sales");
-            const mktConn = connections.find((c) => c.purpose === "marketing");
-            const current = purpose === "marketing" ? mktConn : salesConn;
-            if (isAdmin && salesConn && mktConn) {
-              return (
-                <div className="space-y-1">
-                  <Label className="text-xs">De</Label>
-                  <Select value={purpose} onValueChange={(v) => setPurpose(v as "sales" | "marketing")}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sales">Comercial · {salesConn.email_address}</SelectItem>
-                      <SelectItem value="marketing">Marketing · {mktConn.email_address}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              );
-            }
-            if (current) {
+            const minha = connections.find((c) => c.user_id === user?.id);
+            if (minha) {
               return (
                 <p className="text-[11px] text-muted-foreground">
-                  De: <span className="font-medium">{current.email_address}</span>
+                  De: <span className="font-medium">{minha.email_address}</span>
                 </p>
               );
             }
-            return null;
+            return (
+              <p className="text-[11px] text-warning">
+                Você ainda não conectou seu e-mail — conecte em Configurações → Conectar e-mail.
+              </p>
+            );
           })()}
 
           {/* To */}

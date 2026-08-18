@@ -47,7 +47,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Marketing",
     items: [
       { title: "Visão Geral",     url: "/marketing/visao-geral", icon: Megaphone, adminOnly: true },
-      { title: "Email Marketing", url: "/marketing/inbox",       icon: Mail,      adminOnly: true },
     ],
   },
   {

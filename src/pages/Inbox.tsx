@@ -52,12 +52,7 @@ const FOLDERS: { id: Folder; label: string; icon: any }[] = [
   { id: "all", label: "Todos", icon: Mail },
 ];
 
-interface InboxProps {
-  /** Qual caixa da empresa exibir: sales (comercial) ou marketing */
-  purpose?: "sales" | "marketing";
-}
-
-export default function Inbox({ purpose = "sales" }: InboxProps) {
+export default function Inbox() {
   const { orgId } = useOrg();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,23 +62,19 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
   const { data: connections = [] } = useEmailConnections();
   const { data: contacts = [] } = useInboxContacts();
 
-  const account = connections.find((c) => c.purpose === purpose);
+  // A conta é SEMPRE a da própria pessoa. Antes vinha por `purpose`
+  // (sales/marketing), do modelo de duas caixas da empresa — que foi
+  // substituído por uma conta por pessoa (scope_type = 'user').
+  const account = connections.find((c) => c.user_id === user?.id);
 
-  // Separa as caixas: marketing mostra só o que veio da conta de marketing;
-  // comercial mostra o resto (inclui e-mails legados sem synced_from)
+  // Cada pessoa vê o que a própria conta sincronizou. Os e-mails antigos, sem
+  // `synced_from`, continuam aparecendo — senão o histórico desapareceria da
+  // tela ao trocar o modelo.
   const emails = useMemo(() => {
-    const marketingAddrs = connections
-      .filter((c) => c.purpose === "marketing")
-      .map((c) => c.email_address.toLowerCase());
-    if (purpose === "marketing") {
-      return allEmails.filter(
-        (e) => e.synced_from && marketingAddrs.includes(e.synced_from.toLowerCase())
-      );
-    }
-    return allEmails.filter(
-      (e) => !e.synced_from || !marketingAddrs.includes(e.synced_from.toLowerCase())
-    );
-  }, [allEmails, connections, purpose]);
+    const meu = account?.email_address?.toLowerCase();
+    if (!meu) return allEmails;
+    return allEmails.filter((e) => !e.synced_from || e.synced_from.toLowerCase() === meu);
+  }, [allEmails, account]);
   const updateEmailMutation = useUpdateEmail();
   const deleteEmailMutation = useDeleteEmail();
   const batchUpdateMutation = useBatchUpdateEmails();
@@ -211,7 +202,6 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
         cc: ccList,
         subject: `${mode === "forward" ? "Fwd:" : "Re:"} ${selectedEmail.subject || ""}`,
         html: replyBody,
-        purpose, // responde pela conta da caixa atual (comercial/marketing)
       },
     });
     if (error || (data as any)?.error) {
@@ -229,7 +219,7 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
     if (!orgId) return;
     setSyncing(true);
     const { data, error } = await supabase.functions.invoke("gmail-sync", {
-      body: { org_id: orgId, max: 50, purpose },
+      body: { org_id: orgId, max: 50 },
     });
     setSyncing(false);
     if (error || (data as any)?.error) {
@@ -280,31 +270,10 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
 
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
-  // Caixa de marketing sem conta conectada → é conta da EMPRESA, só admin liga.
-  if (purpose === "marketing" && !account) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <Mail className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <p className="font-semibold">Conta de Email Marketing não conectada</p>
-          <p className="text-sm text-muted-foreground mt-1 max-w-md">
-            Conecte a conta Gmail de marketing da empresa para receber e enviar
-            e-mails de marketing separados da caixa comercial.
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/settings/integrations">Conectar em Integrações</Link>
-        </Button>
-      </div>
-    );
-  }
-
   // Caixa pessoal sem conta conectada. Antes esta tela não existia: o usuário
   // caía numa caixa vazia sem entender por quê, e a única CTA apontava para
   // Integrações — rota de admin, que um vendedor nem abre.
-  if (purpose !== "marketing" && !account) {
+  if (!account) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
@@ -682,7 +651,7 @@ export default function Inbox({ purpose = "sales" }: InboxProps) {
         </>
       )}
 
-      <EmailComposeModal open={composeOpen} onOpenChange={setComposeOpen} defaultPurpose={purpose} onSent={() => { if (orgId) qc.invalidateQueries({ queryKey: emailsKeys.all(orgId) }); }} />
+      <EmailComposeModal open={composeOpen} onOpenChange={setComposeOpen} onSent={() => { if (orgId) qc.invalidateQueries({ queryKey: emailsKeys.all(orgId) }); }} />
     </div>
   );
 }
