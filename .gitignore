@@ -39,3 +39,8 @@ supabase/.temp/
 
 # Config local do agente — contém chaves service_role em texto puro. NUNCA versionar.
 .claude/
+
+# Backups do banco — contêm dados de contatos. Nunca versionar.
+backup*.sql
+*.dump
+backup-*/
