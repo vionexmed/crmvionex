@@ -85,11 +85,42 @@ Deno.serve(async (req) => {
     }
 
     // Send magic link invite → landing na página de aceite (nome + senha)
+    //
+    // O destino NÃO é opcional. Antes, sem origin, o redirectTo simplesmente
+    // não era enviado — e aí o Supabase usa o Site URL do projeto, que é a
+    // raiz. O convidado entrava JÁ AUTENTICADO no CRM sem nunca passar pela
+    // página que define a senha. O convite parecia funcionar e deixava atrás
+    // uma conta sem senha, sem erro em lugar nenhum.
+    //
+    // Recusar o envio é melhor que enviar para o lugar errado: convite se
+    // reenvia, conta sem senha só se resolve pelo "esqueci minha senha".
+    //
+    // ATENÇÃO: isto cobre só metade da falha. Se o destino for enviado mas não
+    // estiver na allowlist de Redirect URLs do projeto, o Supabase o descarta
+    // em silêncio e cai no Site URL do mesmo jeito — e não há como detectar
+    // isso daqui. A allowlist precisa conter o domínio de produção e o de
+    // desenvolvimento.
     const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "";
+    if (!origin) {
+      // O convite foi registrado acima; sem envio ele viraria pendência morta.
+      await serviceClient.from("invitations").delete()
+        .eq("org_id", org_id).ilike("email", email).is("accepted_at", null);
+      return new Response(
+        JSON.stringify({
+          error:
+            "Não foi possível determinar o endereço de retorno do convite, então " +
+            "nada foi enviado — um convite sem destino cria conta sem senha. " +
+            "Defina SITE_URL nas variáveis das Edge Functions do Supabase.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const destino = `${origin}/accept-invite`;
+
     const { data: inviteData, error: inviteError } =
       await serviceClient.auth.admin.inviteUserByEmail(email, {
         data: { org_id, role: role || "member" },
-        ...(origin ? { redirectTo: `${origin}/accept-invite` } : {}),
+        redirectTo: destino,
       });
 
     if (inviteError) {
@@ -123,7 +154,7 @@ Deno.serve(async (req) => {
         );
         const { error: otpError } = await plainClient.auth.signInWithOtp({
           email,
-          options: origin ? { emailRedirectTo: `${origin}/accept-invite` } : undefined,
+          options: { emailRedirectTo: destino },
         });
         if (otpError) {
           await serviceClient.from("invitations").delete()
