@@ -37,6 +37,8 @@ import {
   type SdrPeriod, type MetricKey,
 } from "@/hooks/useSdrMetrics";
 import { useSdrCharts, sdrChartsKeys } from "@/hooks/useSdrCharts";
+import { sdrMetricLeadsKeys, type MetricDrilldownKey } from "@/hooks/useSdrMetricLeads";
+import { MetricDrilldown } from "@/components/dashboard/MetricDrilldown";
 // Import ESTÁTICO: os gráficos agora são SVG puro, sem biblioteca. Não há mais
 // peso a postergar, então carregar sob demanda só adicionava uma espera — os
 // gráficos entram na mesma pintura dos números.
@@ -52,6 +54,8 @@ type TileConfig = {
   hint?: string;
   noSource?: boolean;
   noComparison?: boolean;
+  /** Métrica com lista por trás do número. Ver useSdrMetricLeads. */
+  drilldown?: MetricDrilldownKey;
 };
 
 type Group = { title: string; description: string; tiles: TileConfig[] };
@@ -62,7 +66,7 @@ const GROUPS: Group[] = [
     description: "De onde e quanto lead está chegando",
     tiles: [
       {
-        key: "leadsRecebidos", label: "Leads recebidos", icon: UserPlus, accent: "primary", href: "/leads",
+        key: "leadsRecebidos", label: "Leads recebidos", icon: UserPlus, accent: "primary", href: "/leads", drilldown: "leadsRecebidos",
         hint: "Contatos criados no período. Conta por data de criação, não por status — a qualificação sobrescreve lead → prospect e apagaria o histórico.",
       },
       {
@@ -88,7 +92,7 @@ const GROUPS: Group[] = [
     description: "O que saiu para o lead e o que voltou",
     tiles: [
       {
-        key: "abordagens", label: "Abordagens realizadas", icon: Send, accent: "primary", href: "/activities",
+        key: "abordagens", label: "Abordagens realizadas", icon: Send, accent: "primary", href: "/activities", drilldown: "abordagens",
         hint: "Toda tentativa de contato no período: ligação, reunião e e-mail registrados como atividade, mais e-mails e mensagens de WhatsApp enviados. Inclui automático e manual — hoje é tudo manual.",
       },
       {
@@ -96,7 +100,7 @@ const GROUPS: Group[] = [
         hint: "Mensagens de WhatsApp entregues ou lidas sobre o total enviado, pelos callbacks da Meta. Cobre só WhatsApp: e-mail não tem captura de bounce, e envio que falha é apagado do registro.",
       },
       {
-        key: "taxaResposta", label: "Taxa de resposta", icon: Reply, accent: "success", format: "percent",
+        key: "taxaResposta", label: "Taxa de resposta", icon: Reply, accent: "success", format: "percent", drilldown: "taxaResposta",
         hint: "Leads que responderam depois de serem abordados, sobre os abordados no período — por WhatsApp. Resposta que chega fora da janela do período não é contada.",
       },
       {
@@ -114,7 +118,7 @@ const GROUPS: Group[] = [
         hint: "Atividades do tipo reunião criadas no período. Depende de alguém registrar: nada cria reunião automaticamente e não há integração de agenda.",
       },
       {
-        key: "oportunidades", label: "Oportunidades geradas", icon: Briefcase, accent: "primary", href: "/deals",
+        key: "oportunidades", label: "Oportunidades geradas", icon: Briefcase, accent: "primary", href: "/deals", drilldown: "oportunidades",
         hint: "Negócios criados no período, por data de criação.",
       },
       {
@@ -195,6 +199,7 @@ export default function Dashboard() {
     if (!orgId) return;
     queryClient.invalidateQueries({ queryKey: sdrMetricsKeys.all(orgId) });
     queryClient.invalidateQueries({ queryKey: sdrChartsKeys.all(orgId) });
+    queryClient.invalidateQueries({ queryKey: sdrMetricLeadsKeys.all(orgId) });
   };
 
   const tiles = GROUPS.flatMap((g) => g.tiles);
@@ -286,6 +291,19 @@ export default function Dashboard() {
                   href={tile.href}
                   hint={tile.hint}
                   trend={trendDe(tile.key)}
+                  drilldown={
+                    tile.drilldown
+                      ? (valor) => (
+                          <MetricDrilldown
+                            metric={tile.drilldown!}
+                            period={period}
+                            total={metrics?.[tile.key]?.value ?? null}
+                          >
+                            {valor}
+                          </MetricDrilldown>
+                        )
+                      : undefined
+                  }
                 />
               ),
             )}

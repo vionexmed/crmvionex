@@ -73,7 +73,8 @@ export default defineConfig(({ mode }) => {
         // Radix: cada primitivo é um pacote, e cada um descoberto tarde
         // dispara uma re-otimização.
         "@radix-ui/react-avatar", "@radix-ui/react-checkbox", "@radix-ui/react-dialog",
-        "@radix-ui/react-dropdown-menu", "@radix-ui/react-label", "@radix-ui/react-popover",
+        "@radix-ui/react-dropdown-menu", "@radix-ui/react-hover-card", "@radix-ui/react-label",
+        "@radix-ui/react-popover",
         "@radix-ui/react-progress", "@radix-ui/react-scroll-area", "@radix-ui/react-select",
         "@radix-ui/react-separator", "@radix-ui/react-slot", "@radix-ui/react-switch",
         "@radix-ui/react-tabs", "@radix-ui/react-toast", "@radix-ui/react-tooltip",

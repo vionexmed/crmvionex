@@ -2550,6 +2550,26 @@ export type Database = {
           vendas_sdr: number
         }[]
       }
+      sdr_metric_leads: {
+        Args: {
+          _from?: string
+          _limite?: number
+          _metric: string
+          _org_id: string
+          _to?: string
+        }
+        Returns: {
+          detalhe: string | null
+          id: string
+          quando: string | null
+          respondeu: boolean | null
+          subtitulo: string | null
+          tipo: string
+          titulo: string
+          toques: number
+          valor: number | null
+        }[]
+      }
       qualify_lead: {
         Args: { p_contact_id: string; p_pipeline_id: string }
         Returns: string

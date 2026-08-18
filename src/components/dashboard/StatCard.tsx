@@ -10,6 +10,7 @@
  *  - não calculável → "—" discreto, quando o período não tem dado (ex.: taxa
  *                     de entrega sem nenhum envio). Não é 0 — 0 seria mentira.
  */
+import type { ReactNode } from "react";
 import { LucideIcon, TrendingUp, TrendingDown, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,6 +48,16 @@ export interface StatCardProps {
   trend?: number[];
   /** Destaque: usado na faixa das métricas principais. */
   emphasis?: boolean;
+  /**
+   * Envolve o valor com o painel que revela as linhas por trás do número.
+   * Recebe o valor já formatado.
+   *
+   * Quando presente, o card NÃO navega por `href`: a interação passa a ser o
+   * próprio número. Duas ações concorrendo no mesmo card — clicar no fundo leva
+   * para uma lista, clicar no número abre outra coisa — é o tipo de coisa que o
+   * usuário descobre errando.
+   */
+  drilldown?: (valor: ReactNode) => ReactNode;
 }
 
 /**
@@ -117,10 +128,11 @@ export function StatCard({
   noComparison = false,
   trend,
   emphasis = false,
+  drilldown,
 }: StatCardProps) {
   const navigate = useNavigate();
   const theme = ACCENT[accent];
-  const clickable = !!href && !noSource;
+  const clickable = !!href && !noSource && !drilldown;
   const delta = noSource || noComparison ? null : variation(value, previous);
   const mostrarTendencia = !noSource && value !== null && (trend?.length ?? 0) > 1;
 
@@ -172,15 +184,21 @@ export function StatCard({
           </div>
         </div>
 
-        <p
-          className={cn(
-            "font-heading font-bold tracking-tight",
-            emphasis ? "text-[30px] leading-none" : "text-[22px]",
-            value === null ? "text-muted-foreground" : "text-foreground",
-          )}
-        >
-          {value === null ? "—" : formatValue(value, format)}
-        </p>
+        {(() => {
+          const valor = (
+            <span
+              className={cn(
+                "block font-heading font-bold tracking-tight",
+                emphasis ? "text-[30px] leading-none" : "text-[22px]",
+                value === null ? "text-muted-foreground" : "text-foreground",
+              )}
+            >
+              {value === null ? "—" : formatValue(value, format)}
+            </span>
+          );
+          // Sem fonte de dado não há linha para revelar — o "—" não é clicável.
+          return drilldown && !noSource && value !== null ? drilldown(valor) : valor;
+        })()}
 
         {mostrarTendencia && (
           <Sparkline points={trend!} className={cn("mt-2", theme.icon)} />

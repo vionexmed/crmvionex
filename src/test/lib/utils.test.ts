@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cn } from "@/lib/utils";
+import { cn, initials } from "@/lib/utils";
 
 describe("cn()", () => {
   it("returns a single class unchanged", () => {
@@ -47,5 +47,34 @@ describe("cn()", () => {
   it("does not duplicate classes", () => {
     const result = cn("flex", "flex");
     expect(result.split(" ").filter((c) => c === "flex")).toHaveLength(1);
+  });
+});
+
+describe("initials()", () => {
+  it("takes first and last initial from a full name", () => {
+    expect(initials("Ana Prado")).toBe("AP");
+  });
+
+  it("uses the LAST term, not the second — nomes compostos", () => {
+    expect(initials("Ana Maria Prado")).toBe("AP");
+  });
+
+  it("returns a single letter for a single term", () => {
+    expect(initials("Ana")).toBe("A");
+  });
+
+  it("uppercases", () => {
+    expect(initials("ana prado")).toBe("AP");
+  });
+
+  it("collapses extra whitespace", () => {
+    expect(initials("  Ana   Prado ")).toBe("AP");
+  });
+
+  it("falls back to ? for empty, whitespace, null and undefined", () => {
+    expect(initials("")).toBe("?");
+    expect(initials("   ")).toBe("?");
+    expect(initials(null)).toBe("?");
+    expect(initials(undefined)).toBe("?");
   });
 });
