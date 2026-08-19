@@ -43,7 +43,7 @@ function ContactCardVisual({
     <Card
       className={
         arrastando
-          ? "border-primary bg-card shadow-lg"
+          ? "cursor-grabbing border-primary bg-card shadow-lg"
           : "border-border bg-card transition-all hover:shadow-md"
       }
     >
@@ -271,16 +271,20 @@ export function ContactsKanbanByOwner({
       </div>
 
       <DragOverlay>
+        {/*
+          Sem largura própria, de propósito. O DragOverlay já mede o card
+          arrastado e aplica width/height no wrapper dele — qualquer w-[...]
+          aqui dentro briga com essa medida, e a diferença aparece como o clone
+          fugindo do cursor. Deixar o filho preencher é o que mantém clone e
+          original do mesmo tamanho, inclusive quando a coluna ganha barra de
+          rolagem e fica alguns pixels mais estreita.
+        */}
         {activeContact && (
-          // Largura da coluna menos o p-2 do corpo, para o clone ter o mesmo
-          // tamanho do card que saiu do lugar.
-          <div className="w-[244px] cursor-grabbing sm:w-[264px]">
-            <ContactCardVisual
-              contact={activeContact}
-              company={companies.find((c) => c.id === activeContact.company_id)}
-              arrastando
-            />
-          </div>
+          <ContactCardVisual
+            contact={activeContact}
+            company={companies.find((c) => c.id === activeContact.company_id)}
+            arrastando
+          />
         )}
       </DragOverlay>
     </DndContext>
