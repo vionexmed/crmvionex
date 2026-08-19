@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,63 @@ const statusLabels: Record<ContactStatus, string> = {
   lead: "Lead", prospect: "Prospect", customer: "Cliente", churned: "Churned",
 };
 
+/**
+ * Só o visual do card. Serve a lista E o clone que segue o cursor durante o
+ * arraste — antes o clone era um card simplificado, sem avatar, empresa nem
+ * selo, então o que você pegava e o que você arrastava não eram a mesma coisa.
+ */
+function ContactCardVisual({
+  contact,
+  company,
+  arrastando = false,
+}: {
+  contact: Contact;
+  company?: Company | null;
+  arrastando?: boolean;
+}) {
+  return (
+    <Card
+      className={
+        arrastando
+          ? "border-primary bg-card shadow-lg"
+          : "border-border bg-card transition-all hover:shadow-md"
+      }
+    >
+      <CardContent className="p-3">
+        <div className="flex items-start gap-2">
+          {/* Dica visual de que dá para arrastar. Sem listeners: o alvo é o
+              card inteiro, este ícone só anuncia. */}
+          <GripVertical
+            aria-hidden
+            className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-opacity ${
+              arrastando ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+          />
+          <div className="flex-1 overflow-hidden space-y-1">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6 shrink-0">
+                <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                  {contact.first_name?.[0] || "?"}{contact.last_name?.[0] || ""}
+                </AvatarFallback>
+              </Avatar>
+              <p className="truncate text-sm font-medium">{contact.first_name} {contact.last_name}</p>
+            </div>
+            {company && (
+              <p className="truncate text-xs text-muted-foreground">{company.name}</p>
+            )}
+            {contact.email && (
+              <p className="truncate text-xs text-muted-foreground">{contact.email}</p>
+            )}
+            <Badge variant="secondary" className={`text-[10px] ${statusColors[contact.status || "lead"]}`}>
+              {statusLabels[contact.status || "lead"]}
+            </Badge>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ContactCard({
   contact,
   company,
@@ -36,44 +93,35 @@ function ContactCard({
 }) {
   // O clone visual do drag é o DragOverlay — o card original só fica translúcido
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: contact.id });
-  const style = isDragging ? { opacity: 0.4 } : undefined;
+
+  // Ao soltar, o navegador ainda dispara um `click` no elemento de origem — e
+  // sem isto ele abria a gaveta do contato logo depois de cada arraste. Zerado
+  // a cada pointerdown para um arraste abortado não engolir o clique seguinte.
+  const arrastou = useRef(false);
+  useEffect(() => {
+    if (isDragging) arrastou.current = true;
+  }, [isDragging]);
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} className="group">
-      <Card
-        className="cursor-pointer border-border bg-card transition-all hover:shadow-md"
-        onClick={onClick}
-      >
-        <CardContent className="p-3">
-          <div className="flex items-start gap-2">
-            <button
-              {...listeners}
-              className="mt-0.5 cursor-grab text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
-            <div className="flex-1 overflow-hidden space-y-1">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6 shrink-0">
-                  <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
-                    {contact.first_name?.[0] || "?"}{contact.last_name?.[0] || ""}
-                  </AvatarFallback>
-                </Avatar>
-                <p className="truncate text-sm font-medium">{contact.first_name} {contact.last_name}</p>
-              </div>
-              {company && (
-                <p className="truncate text-xs text-muted-foreground">{company.name}</p>
-              )}
-              {contact.email && (
-                <p className="truncate text-xs text-muted-foreground">{contact.email}</p>
-              )}
-              <Badge variant="secondary" className={`text-[10px] ${statusColors[contact.status || "lead"]}`}>
-                {statusLabels[contact.status || "lead"]}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div
+      ref={setNodeRef}
+      style={isDragging ? { opacity: 0.4 } : undefined}
+      {...attributes}
+      {...listeners}
+      onPointerDown={(e) => {
+        arrastou.current = false;
+        listeners?.onPointerDown?.(e);
+      }}
+      onClick={() => {
+        if (arrastou.current) {
+          arrastou.current = false;
+          return;
+        }
+        onClick();
+      }}
+      className="group cursor-grab active:cursor-grabbing"
+    >
+      <ContactCardVisual contact={contact} company={company} />
     </div>
   );
 }
@@ -224,15 +272,14 @@ export function ContactsKanbanByOwner({
 
       <DragOverlay>
         {activeContact && (
-          <div className="w-[260px] opacity-90">
-            <Card className="border-primary bg-card shadow-lg">
-              <CardContent className="p-3">
-                <p className="text-sm font-medium">
-                  {activeContact.first_name} {activeContact.last_name}
-                </p>
-                <p className="text-xs text-muted-foreground">{activeContact.email}</p>
-              </CardContent>
-            </Card>
+          // Largura da coluna menos o p-2 do corpo, para o clone ter o mesmo
+          // tamanho do card que saiu do lugar.
+          <div className="w-[244px] cursor-grabbing sm:w-[264px]">
+            <ContactCardVisual
+              contact={activeContact}
+              company={companies.find((c) => c.id === activeContact.company_id)}
+              arrastando
+            />
           </div>
         )}
       </DragOverlay>
