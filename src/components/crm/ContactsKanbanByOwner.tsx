@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -270,23 +271,32 @@ export function ContactsKanbanByOwner({
         ))}
       </div>
 
-      <DragOverlay>
-        {/*
-          Sem largura própria, de propósito. O DragOverlay já mede o card
-          arrastado e aplica width/height no wrapper dele — qualquer w-[...]
-          aqui dentro briga com essa medida, e a diferença aparece como o clone
-          fugindo do cursor. Deixar o filho preencher é o que mantém clone e
-          original do mesmo tamanho, inclusive quando a coluna ganha barra de
-          rolagem e fica alguns pixels mais estreita.
-        */}
-        {activeContact && (
-          <ContactCardVisual
-            contact={activeContact}
-            company={companies.find((c) => c.id === activeContact.company_id)}
-            arrastando
-          />
-        )}
-      </DragOverlay>
+      {/*
+        Portal para o body. O DragOverlay é `position: fixed` com coordenadas de
+        viewport, e `fixed` se ancora no ancestral mais próximo que tenha
+        transform/filter/perspective — não na viewport. O <main> tem .vx-page,
+        cuja animação de entrada mexe em transform, então o clone se ancorava
+        nele e ganhava de offset a largura da sidebar: parecia fugir do cursor.
+        O fill-mode do .vx-page foi corrigido, mas durante os 0,25s da animação
+        o transform existe de verdade — e qualquer transform futuro em algum
+        ancestral traria o problema de volta. No body não há do que fugir.
+
+        Sem largura própria também de propósito: o DragOverlay mede o card
+        arrastado e aplica width/height no wrapper dele. Qualquer w-[...] aqui
+        dentro briga com essa medida.
+      */}
+      {createPortal(
+        <DragOverlay>
+          {activeContact && (
+            <ContactCardVisual
+              contact={activeContact}
+              company={companies.find((c) => c.id === activeContact.company_id)}
+              arrastando
+            />
+          )}
+        </DragOverlay>,
+        document.body,
+      )}
     </DndContext>
   );
 }

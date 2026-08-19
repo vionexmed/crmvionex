@@ -343,7 +343,24 @@
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.vx-page { animation: vxPageIn 0.25s cubic-bezier(0.21, 0.61, 0.35, 1) both; }
+/*
+ * ATENÇÃO ao fill-mode das animações que mexem em `transform`.
+ *
+ * `both` = backwards + forwards, e o `forwards` PERSISTE o estado final. Como o
+ * estado final aqui é `transform: translateY(0)` — um transform diferente de
+ * `none` —, o elemento vira BLOCO DE CONTENÇÃO para todo `position: fixed`
+ * descendente, para sempre.
+ *
+ * Isso quebrou o arraste do kanban: `.vx-page` está no <main> que envolve todas
+ * as páginas, então o clone do dnd-kit (position: fixed com coordenadas de
+ * viewport) passou a se ancorar no <main> e ganhava de offset a largura da
+ * sidebar — parecia fugir do cursor para a direita.
+ *
+ * `backwards` sozinho basta: aplica o estado inicial durante o delay (o que o
+ * .vx-stagger precisa) e devolve `transform: none` ao terminar. Visualmente
+ * idêntico, porque o estado final já é o natural do elemento.
+ */
+.vx-page { animation: vxPageIn 0.25s cubic-bezier(0.21, 0.61, 0.35, 1) backwards; }
 
 /* Fade up para cards em stagger */
 @keyframes vxFadeUp {
@@ -373,8 +390,8 @@
   to   { transform: translateX(0); opacity: 1; }
 }
 
-.vx-fade-up  { animation: vxFadeUp  0.4s cubic-bezier(.21,.61,.35,1) both; }
-.vx-scale-in { animation: vxScaleIn 0.3s cubic-bezier(.21,.61,.35,1) both; }
+.vx-fade-up  { animation: vxFadeUp  0.4s cubic-bezier(.21,.61,.35,1) backwards; }
+.vx-scale-in { animation: vxScaleIn 0.3s cubic-bezier(.21,.61,.35,1) backwards; }
 .vx-grow-w   { animation: vxGrowWidth  0.9s cubic-bezier(.21,.61,.35,1) both; }
 .vx-grow-h   { animation: vxGrowHeight 0.8s cubic-bezier(.21,.61,.35,1) both; }
 .vx-shimmer {
@@ -385,7 +402,7 @@
 .vx-pulse-dot { animation: vxPulseSoft 1.8s ease-in-out infinite; }
 
 /* Stagger de entrada para listas de cards */
-.vx-stagger > * { animation: vxFadeUp 0.4s cubic-bezier(.21,.61,.35,1) both; }
+.vx-stagger > * { animation: vxFadeUp 0.4s cubic-bezier(.21,.61,.35,1) backwards; }
 .vx-stagger > *:nth-child(1) { animation-delay: 0.03s; }
 .vx-stagger > *:nth-child(2) { animation-delay: 0.07s; }
 .vx-stagger > *:nth-child(3) { animation-delay: 0.11s; }
