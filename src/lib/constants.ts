@@ -21,6 +21,9 @@ export const TABLES = {
   AUDIT_LOGS: "audit_logs",
   SALES_GOALS: "sales_goals",
   LEAD_SCORES: "lead_scores",
+  WHATSAPP_BUSINESS_ACCOUNTS: "whatsapp_business_accounts",
+  WHATSAPP_CONNECTIONS: "whatsapp_connections",
+  WHATSAPP_MESSAGES: "whatsapp_messages",
 } as const;
 
 export type TableName = (typeof TABLES)[keyof typeof TABLES];

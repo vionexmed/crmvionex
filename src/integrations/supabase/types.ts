@@ -2341,6 +2341,115 @@ export type Database = {
           },
         ]
       }
+      whatsapp_business_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          org_id: string
+          provider: string
+          server_url: string | null
+          updated_at: string
+          waba_id: string | null
+          webhook_verify_token: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          org_id: string
+          provider?: string
+          server_url?: string | null
+          updated_at?: string
+          waba_id?: string | null
+          webhook_verify_token: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          provider?: string
+          server_url?: string | null
+          updated_at?: string
+          waba_id?: string | null
+          webhook_verify_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_business_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_connections: {
+        Row: {
+          connected_at: string
+          daily_send_limit: number
+          display_phone_number: string | null
+          id: string
+          instance_name: string | null
+          is_active: boolean
+          label: string
+          org_id: string
+          phone_number_id: string
+          provider: string
+          scope_type: string
+          sent_today: number
+          sent_today_date: string | null
+          user_id: string
+          verified_name: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          connected_at?: string
+          daily_send_limit?: number
+          display_phone_number?: string | null
+          id?: string
+          instance_name?: string | null
+          is_active?: boolean
+          label?: string
+          org_id: string
+          phone_number_id: string
+          provider?: string
+          scope_type?: string
+          sent_today?: number
+          sent_today_date?: string | null
+          user_id: string
+          verified_name?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          connected_at?: string
+          daily_send_limit?: number
+          display_phone_number?: string | null
+          id?: string
+          instance_name?: string | null
+          is_active?: boolean
+          label?: string
+          org_id?: string
+          phone_number_id?: string
+          provider?: string
+          scope_type?: string
+          sent_today?: number
+          sent_today_date?: string | null
+          user_id?: string
+          verified_name?: string | null
+          waba_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_connections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_config: {
         Row: {
           created_at: string
@@ -2383,6 +2492,7 @@ export type Database = {
       whatsapp_messages: {
         Row: {
           body: string | null
+          connection_id: string | null
           contact_id: string | null
           created_at: string
           deal_id: string | null
@@ -2395,10 +2505,12 @@ export type Database = {
           raw: Json | null
           status: string
           to_number: string
+          user_id: string | null
           wa_message_id: string | null
         }
         Insert: {
           body?: string | null
+          connection_id?: string | null
           contact_id?: string | null
           created_at?: string
           deal_id?: string | null
@@ -2411,10 +2523,12 @@ export type Database = {
           raw?: Json | null
           status?: string
           to_number: string
+          user_id?: string | null
           wa_message_id?: string | null
         }
         Update: {
           body?: string | null
+          connection_id?: string | null
           contact_id?: string | null
           created_at?: string
           deal_id?: string | null
@@ -2427,9 +2541,39 @@ export type Database = {
           raw?: Json | null
           status?: string
           to_number?: string
+          user_id?: string | null
           wa_message_id?: string | null
         }
         Relationships: []
+      }
+      whatsapp_secrets: {
+        Row: {
+          access_token: string
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_secrets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_templates: {
         Row: {
@@ -2504,6 +2648,10 @@ export type Database = {
         Returns: string
       }
       reserve_email_send: {
+        Args: { _connection_id: string }
+        Returns: boolean
+      }
+      reserve_whatsapp_send: {
         Args: { _connection_id: string }
         Returns: boolean
       }
