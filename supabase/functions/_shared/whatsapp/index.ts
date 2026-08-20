@@ -6,6 +6,7 @@ import { provedorMeta } from "./meta.ts";
 import { provedorEvolution } from "./evolution.ts";
 
 export * from "./types.ts";
+export * from "./credencial.ts";
 
 export function resolverProvedor(provider: string | null | undefined): ProvedorWhatsApp {
   // Default é a Meta: é o provedor implementado, e coluna nula não deve
