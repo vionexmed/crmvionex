@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolverCredencialGoogle } from "../_shared/google-credentials.ts";
+import { resolverCredencialGoogle, validarCredencialGoogle } from "../_shared/google-credentials.ts";
 import { signState } from "../_shared/oauth-state.ts";
 
 const corsHeaders = {
@@ -84,7 +84,7 @@ serve(async (req) => {
     // aqui é o que produz invalid_client depois. Ver _shared/google-credentials.
     const cred = await resolverCredencialGoogle(supabaseAdmin, org_id);
     const clientId = cred.clientId;
-    if (!clientId) {
+    if (!clientId || !cred.clientSecret) {
       return new Response(JSON.stringify({
         error: "gmail_sem_credencial",
         // A mensagem antiga mandava o admin para "Integrações > Gmail" e citava
@@ -92,6 +92,22 @@ serve(async (req) => {
         message: "A credencial do Google não está cadastrada. Um administrador precisa cadastrá-la em Integrações.",
       }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Não envie o usuário para accounts.google.com com uma credencial expirada,
+    // apagada ou de outro projeto. Sem esta checagem o Google só exibe o opaco
+    // "401 invalid_client" depois de ele escolher a conta, e o CRM não consegue
+    // explicar nem corrigir a causa. O teste usa um refresh token propositalmente
+    // inválido: `invalid_grant` confirma que o par de credenciais é válido.
+    const teste = await validarCredencialGoogle(clientId, cred.clientSecret);
+    if (!teste.ok) {
+      return new Response(JSON.stringify({
+        error: "gmail_credencial_invalida",
+        message: `A credencial OAuth do Google configurada para esta organização não é válida. Um administrador deve atualizá-la em Integrações. ${teste.erro ?? ""}`.trim(),
+      }), {
+        status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

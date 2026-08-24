@@ -64,6 +64,19 @@ const motivoDe = (codigo: string | null) =>
     explicacao: "O acesso ao Gmail deixou de funcionar.",
   };
 
+/** A API de Edge Functions devolve o JSON da falha em `context`; sem ler esse
+ * corpo, a tela mostrava apenas "Edge Function returned a non-2xx status code".
+ */
+async function mensagemDaFalha(e: unknown): Promise<string> {
+  const resposta = (e as { context?: unknown })?.context;
+  if (resposta instanceof Response) {
+    const corpo = await resposta.clone().json().catch((): null => null) as { message?: unknown; error?: unknown } | null;
+    if (typeof corpo?.message === "string") return corpo.message;
+    if (typeof corpo?.error === "string") return corpo.error;
+  }
+  return e instanceof Error ? e.message : "Não foi possível iniciar a conexão.";
+}
+
 export default function MyEmail() {
   const { user } = useAuth();
   const { orgId } = useOrg();
@@ -115,7 +128,7 @@ export default function MyEmail() {
     } catch (e) {
       toast({
         title: "Não foi possível iniciar a conexão",
-        description: (e as Error).message,
+        description: await mensagemDaFalha(e),
         variant: "destructive",
       });
       setConectando(false);

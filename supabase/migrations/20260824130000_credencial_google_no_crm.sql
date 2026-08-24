@@ -68,6 +68,23 @@ CREATE INDEX IF NOT EXISTS idx_email_connections_invalidas
 --
 -- Só as duas chaves de credencial saem. O operador `-` em jsonb remove chave
 -- preservando todo o resto.
+--
+-- IMPORTANTE: copiar primeiro. A versão inicial desta migração apenas removia
+-- as chaves de `integration_configs`; para organizações que ainda usavam o
+-- cadastro antigo isso apagava a única cópia e levava o navegador ao erro
+-- Google 401 `invalid_client`. Não sobrescrevemos uma credencial já cadastrada
+-- na nova tabela: ela é a escolha mais recente e explícita do administrador.
+INSERT INTO public.google_oauth_secrets (org_id, client_id, client_secret)
+SELECT
+  ic.org_id,
+  ic.config ->> 'client_id',
+  ic.config ->> 'client_secret'
+FROM public.integration_configs ic
+WHERE ic.provider = 'gmail'
+  AND coalesce(ic.config ->> 'client_id', '') <> ''
+  AND coalesce(ic.config ->> 'client_secret', '') <> ''
+ON CONFLICT (org_id) DO NOTHING;
+
 DO $$
 DECLARE
   v_linhas int;
