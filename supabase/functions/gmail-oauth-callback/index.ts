@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolverCredencialGoogle } from "../_shared/google-credentials.ts";
-import { verifyState } from "../_shared/oauth-state.ts";
+import { verifyStateDetalhado, type FalhaState } from "../_shared/oauth-state.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,20 +12,34 @@ function escapeHtml(s: string) {
   return String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
-// Only allow safe return URLs: relative paths starting with '/', or absolute URLs on an allowlisted host.
-function sanitizeReturnTo(raw: string | undefined | null, origin: string): string {
-  const fallback = "/settings/integrations";
+/**
+ * Base para onde devolver a pessoa depois do callback.
+ *
+ * TEM de ser APP_BASE_URL, nunca o referer. No callback do OAuth o referer é
+ * `accounts.google.com` — foi o Google que redirecionou o navegador até aqui.
+ * Usar o referer como base transformava o caminho relativo em
+ * `https://accounts.google.com/settings/integrations`, ou seja, mandava a
+ * pessoa para dentro do Google. Pior: o referer também entrava na lista de
+ * hosts confiáveis, o que é redirecionamento aberto — o valor vem do navegador.
+ */
+function baseDoApp(): string {
+  const appBase = Deno.env.get("APP_BASE_URL");
+  if (appBase) {
+    try { return new URL(appBase).origin; } catch { /* cai no vazio */ }
+  }
+  return "";
+}
+
+/** Caminho relativo, ou URL absoluta no host do próprio app. Nada mais. */
+function sanitizeReturnTo(raw: string | undefined | null): string {
+  const fallback = "/settings/email";
   if (!raw || typeof raw !== "string") return fallback;
   if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
   try {
     const u = new URL(raw);
-    const allowed = new Set<string>();
-    if (origin) { try { allowed.add(new URL(origin).host); } catch (_) { /* ignore */ } }
-    const appBase = Deno.env.get("APP_BASE_URL");
-    if (appBase) { try { allowed.add(new URL(appBase).host); } catch (_) { /* ignore */ } }
-    if (u.host.endsWith(".lovable.app") || u.host === "lovable.app") return u.toString();
-    if (allowed.has(u.host)) return u.toString();
-  } catch (_) { /* ignore */ }
+    const base = baseDoApp();
+    if (base && u.host === new URL(base).host) return u.toString();
+  } catch { /* ignore */ }
   return fallback;
 }
 
@@ -45,7 +59,12 @@ function htmlResponse(message: string, ok: boolean, returnTo: string) {
     <a href="${safeReturn}">Voltar ao app</a></div>
     <script>setTimeout(()=>{window.location.href=${JSON.stringify(returnTo)}},1800)</script>
     </body></html>`,
-    { headers: { "Content-Type": "text/html; charset=utf-8" }, status: ok ? 200 : 400 },
+    // 200 mesmo na falha, de propósito. Isto é uma PÁGINA para uma pessoa ler,
+    // não resposta de API: o navegador só renderiza o que vier. E com status de
+    // erro a plataforma reescrevia o Content-Type para text/plain, o que somado
+    // ao nosniff fazia o HTML aparecer como código-fonte, com os acentos
+    // quebrados. O sucesso ou fracasso é dito pelo conteúdo.
+    { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 },
   );
 }
 
@@ -60,23 +79,36 @@ serve(async (req) => {
   // O state agora é assinado com HMAC e tem expiração conferida. Antes era
   // base64 puro: forjável, e user_id/org_id vindos dele iam direto para INSERT
   // com service role.
-  const state: any = stateParam ? (await verifyState<any>(stateParam)) ?? {} : {};
-  const returnToRaw = state.return_to || "/settings/integrations";
+  const resultadoState = stateParam
+    ? await verifyStateDetalhado<any>(stateParam)
+    : ({ ok: false, motivo: "formato" } as const);
+  const state: any = resultadoState.ok ? resultadoState.payload : {};
 
-  const origin = req.headers.get("referer")?.split("/").slice(0, 3).join("/") ?? "";
-  const sanitizedReturn = sanitizeReturnTo(returnToRaw, origin);
-  const finalReturn = sanitizedReturn.startsWith("http") ? sanitizedReturn : `${origin}${sanitizedReturn}`;
+  const base = baseDoApp();
+  const sanitizedReturn = sanitizeReturnTo(state.return_to);
+  const finalReturn = sanitizedReturn.startsWith("http")
+    ? sanitizedReturn
+    : `${base}${sanitizedReturn}`;
 
-  if (errorParam) return htmlResponse(`Google retornou: ${errorParam}`, false, finalReturn || sanitizedReturn);
-  if (stateParam && !state.user_id) {
-    return htmlResponse(
-      "O link de autorização é inválido ou expirou. Tente conectar novamente.",
-      false,
-      finalReturn || sanitizedReturn,
-    );
+  if (errorParam) return htmlResponse(`Google retornou: ${errorParam}`, false, finalReturn);
+
+  if (stateParam && !resultadoState.ok) {
+    // Cada motivo pede uma ação diferente. Antes os três viravam a mesma frase,
+    // e quem lia não sabia se era só tentar de novo ou se havia algo errado.
+    const explicacao: Record<FalhaState, string> = {
+      expirado:
+        "A autorização demorou mais do que a janela permitida. Volte ao CRM e clique em Conectar de novo — agora você tem 30 minutos.",
+      assinatura:
+        "A assinatura do link não confere. Isso costuma acontecer quando o link foi reaproveitado de uma tentativa antiga. Comece de novo pelo CRM.",
+      formato: "O link de autorização veio incompleto. Comece de novo pelo CRM.",
+      erro: "Não foi possível ler o link de autorização. Comece de novo pelo CRM.",
+    };
+    // Vai para o log da função: é o que permite diagnosticar sem pedir print.
+    console.error("gmail-oauth-callback: state recusado", { motivo: resultadoState.motivo });
+    return htmlResponse(explicacao[resultadoState.motivo], false, finalReturn);
   }
   if (!code || !state.user_id || !state.org_id) {
-    return htmlResponse("Parâmetros inválidos.", false, finalReturn || sanitizedReturn);
+    return htmlResponse("Parâmetros inválidos.", false, finalReturn);
   }
 
   try {

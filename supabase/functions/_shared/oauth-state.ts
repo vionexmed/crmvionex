@@ -54,8 +54,63 @@ export async function signState(payload: Record<string, unknown>): Promise<strin
   return `${body}.${toBase64Url(new Uint8Array(mac))}`;
 }
 
-/** Padrão: 10 minutos. O usuário leva segundos para autorizar no Google. */
-const MAX_AGE_MS = 10 * 60 * 1000;
+/**
+ * Janela de validade do state.
+ *
+ * Eram 10 minutos, com a justificativa de que "o usuário leva segundos para
+ * autorizar". Não leva, na primeira vez: escolher a conta, entrar com senha,
+ * eventual verificação em duas etapas e ler a tela de consentimento passam de
+ * 10 minutos com facilidade — e o resultado é "link inválido ou expirou" sem
+ * ninguém ter feito nada errado.
+ *
+ * 30 minutos continua seguro: o state é assinado, carrega quem pediu, e sozinho
+ * não autoriza nada — o código do Google é que faz isso, e ele é de uso único.
+ */
+const MAX_AGE_MS = 30 * 60 * 1000;
+
+/** Por que um state foi recusado. "expirado" e "adulterado" pedem ações diferentes. */
+export type FalhaState = "formato" | "assinatura" | "expirado" | "erro";
+
+export type ResultadoState<T> =
+  | { ok: true; payload: T }
+  | { ok: false; motivo: FalhaState };
+
+/**
+ * Versão detalhada: diz POR QUE recusou.
+ *
+ * A versão que só devolvia null juntava três causas muito diferentes numa
+ * mensagem só — "inválido ou expirou" —, e quem via não tinha como saber se
+ * devia apenas tentar de novo (expirado) ou se havia algo errado na
+ * configuração (assinatura). O motivo também vai para o log do servidor.
+ */
+export async function verifyStateDetalhado<T extends { t?: number }>(
+  state: string,
+  maxAgeMs: number = MAX_AGE_MS,
+): Promise<ResultadoState<T>> {
+  try {
+    const [body, signature] = state.split(".");
+    if (!body || !signature) return { ok: false, motivo: "formato" };
+
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      await hmacKey(),
+      fromBase64Url(signature),
+      encoder.encode(body),
+    );
+    if (!valid) return { ok: false, motivo: "assinatura" };
+
+    const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(body))) as T;
+
+    // A expiração que o código antigo gravava e nunca conferia.
+    if (typeof payload.t !== "number" || Date.now() - payload.t > maxAgeMs) {
+      return { ok: false, motivo: "expirado" };
+    }
+
+    return { ok: true, payload };
+  } catch {
+    return { ok: false, motivo: "erro" };
+  }
+}
 
 /**
  * Devolve o payload quando a assinatura confere E o state não expirou.
@@ -66,25 +121,6 @@ export async function verifyState<T extends { t?: number }>(
   state: string,
   maxAgeMs: number = MAX_AGE_MS,
 ): Promise<T | null> {
-  try {
-    const [body, signature] = state.split(".");
-    if (!body || !signature) return null;
-
-    const valid = await crypto.subtle.verify(
-      "HMAC",
-      await hmacKey(),
-      fromBase64Url(signature),
-      encoder.encode(body),
-    );
-    if (!valid) return null;
-
-    const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(body))) as T;
-
-    // A expiração que o código antigo gravava e nunca conferia.
-    if (typeof payload.t !== "number" || Date.now() - payload.t > maxAgeMs) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
+  const r = await verifyStateDetalhado<T>(state, maxAgeMs);
+  return r.ok ? r.payload : null;
 }
