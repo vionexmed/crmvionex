@@ -42,22 +42,41 @@ describe("retorno do callback OAuth", () => {
     expect(semComentarios).toMatch(/Deno\.env\.get\(\s*["']APP_BASE_URL["']\s*\)/);
   });
 
-  it("a página do callback responde 200, não status de erro", () => {
-    // Com status >= 400 a plataforma reescreve o Content-Type para text/plain;
-    // somado ao nosniff, o HTML aparecia como código-fonte e com acento quebrado.
-    expect(semComentarios).toMatch(/status:\s*200/);
-    expect(semComentarios).not.toMatch(/status:\s*ok\s*\?\s*200\s*:\s*400/);
+  it("redireciona em vez de renderizar HTML", () => {
+    // Medido na função implantada: resposta JSON mantém application/json, mas
+    // text/html é rebaixado para text/plain com nosniff — proteção da plataforma
+    // contra phishing no domínio compartilhado *.supabase.co. O HTML aparecia
+    // como código-fonte, com os acentos quebrados.
+    expect(semComentarios).toMatch(/status:\s*302/);
+    expect(semComentarios).toMatch(/Location/);
+    expect(
+      semComentarios,
+      "text/html não renderiza em edge function do Supabase. Redirecione para o app.",
+    ).not.toMatch(/text\/html/);
   });
 
-  it("declara text/html com charset", () => {
-    expect(semComentarios).toMatch(/text\/html;\s*charset=utf-8/);
-  });
-
-  it("distingue os motivos de state recusado", () => {
-    // Antes os três viravam "inválido ou expirou", e quem lia não sabia se era
-    // só tentar de novo ou se havia algo errado na configuração.
-    for (const motivo of ["expirado", "assinatura", "formato", "erro"]) {
+  it("manda o motivo como código, não como frase pronta", () => {
+    // A tela traduz, igual ao invalid_reason. Frase no backend fica congelada.
+    for (const motivo of ["google_recusou", "sem_credencial", "troca_de_token"]) {
       expect(semComentarios).toContain(motivo);
     }
+  });
+
+  it("a tela traduz todos os códigos que o callback pode devolver", () => {
+    const tela = readFileSync("src/pages/MyEmail.tsx", "utf8");
+
+    // Os literais.
+    const literais = [...semComentarios.matchAll(/falhar\([^,]+,\s*["']([a-z_]+)["']/g)]
+      .map((m) => m[1]);
+    expect(literais.length).toBeGreaterThan(4);
+
+    // Mais os montados por template: `state_${motivo}`, cujos valores são os
+    // membros de FalhaState.
+    const doTemplate = semComentarios.includes("state_${resultadoState.motivo}")
+      ? ["state_expirado", "state_assinatura", "state_formato", "state_erro"]
+      : [];
+
+    const semTraducao = [...literais, ...doTemplate].filter((c) => !tela.includes(c));
+    expect(semTraducao, "código sem tradução vira aviso genérico").toEqual([]);
   });
 });

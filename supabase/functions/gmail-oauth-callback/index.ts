@@ -1,16 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolverCredencialGoogle } from "../_shared/google-credentials.ts";
-import { verifyStateDetalhado, type FalhaState } from "../_shared/oauth-state.ts";
+import { verifyStateDetalhado } from "../_shared/oauth-state.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-function escapeHtml(s: string) {
-  return String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c] as string));
-}
 
 /**
  * Base para onde devolver a pessoa depois do callback.
@@ -43,30 +39,45 @@ function sanitizeReturnTo(raw: string | undefined | null): string {
   return fallback;
 }
 
-function htmlResponse(message: string, ok: boolean, returnTo: string) {
-  const color = ok ? "#16a34a" : "#dc2626";
-  const title = ok ? "Gmail conectado!" : "Falha ao conectar";
-  const safeReturn = escapeHtml(returnTo);
-  const safeMsg = escapeHtml(message);
-  return new Response(
-    `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
-    <style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0b0b0c;color:#fff}
-    .card{max-width:420px;text-align:center;padding:32px;border:1px solid #27272a;border-radius:12px;background:#111}
-    h1{color:${color};margin:0 0 8px;font-size:18px}
-    p{color:#a1a1aa;font-size:13px;margin:0 0 16px}
-    a{display:inline-block;background:#fff;color:#000;padding:8px 14px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500}</style></head>
-    <body><div class="card"><h1>${title}</h1><p>${safeMsg}</p>
-    <a href="${safeReturn}">Voltar ao app</a></div>
-    <script>setTimeout(()=>{window.location.href=${JSON.stringify(returnTo)}},1800)</script>
-    </body></html>`,
-    // 200 mesmo na falha, de propósito. Isto é uma PÁGINA para uma pessoa ler,
-    // não resposta de API: o navegador só renderiza o que vier. E com status de
-    // erro a plataforma reescrevia o Content-Type para text/plain, o que somado
-    // ao nosniff fazia o HTML aparecer como código-fonte, com os acentos
-    // quebrados. O sucesso ou fracasso é dito pelo conteúdo.
-    { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 200 },
-  );
+/**
+ * Devolve a pessoa ao CRM com o resultado nos parâmetros da URL.
+ *
+ * NÃO renderiza HTML aqui, e não é escolha de estilo: a plataforma de Edge
+ * Functions rebaixa `text/html` para `text/plain` e manda `nosniff` junto —
+ * proteção contra phishing no domínio compartilhado *.supabase.co. Comprovado:
+ * uma resposta JSON mantém `application/json`, uma resposta HTML vira texto.
+ * Resultado: a página de "Gmail conectado" aparecia como código-fonte, com os
+ * acentos quebrados.
+ *
+ * Redirecionar resolve de vez e ainda é melhor: a pessoa cai direto no CRM sem
+ * a espera de 1,8s, e a mensagem é renderizada pelo app — no idioma e no visual
+ * dele, não num HTML solto dentro de uma edge function.
+ *
+ * Os motivos viajam como CÓDIGO. Quem traduz é a tela, igual ao invalid_reason
+ * de email_connections.
+ */
+function redirecionar(destino: string, params: Record<string, string>) {
+  const base = baseDoApp();
+
+  // Sem APP_BASE_URL não há para onde voltar. Aqui o texto puro é aceitável: é
+  // erro de configuração do servidor, não fluxo normal.
+  if (!base) {
+    return new Response(
+      "O CRM não sabe para onde te devolver: falta configurar APP_BASE_URL nos "
+        + "secrets do projeto. Avise um administrador.",
+      { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } },
+    );
+  }
+
+  const url = new URL(destino.startsWith("http") ? destino : `${base}${destino}`);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+
+  return new Response(null, { status: 302, headers: { Location: url.toString() } });
 }
+
+/** Falha: volta ao CRM com o código do motivo. */
+const falhar = (destino: string, motivo: string, detalhe?: string) =>
+  redirecionar(destino, { gmail: "erro", motivo, ...(detalhe ? { detalhe: detalhe.slice(0, 200) } : {}) });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -90,25 +101,15 @@ serve(async (req) => {
     ? sanitizedReturn
     : `${base}${sanitizedReturn}`;
 
-  if (errorParam) return htmlResponse(`Google retornou: ${errorParam}`, false, finalReturn);
+  if (errorParam) return falhar(finalReturn, "google_recusou", errorParam);
 
   if (stateParam && !resultadoState.ok) {
-    // Cada motivo pede uma ação diferente. Antes os três viravam a mesma frase,
-    // e quem lia não sabia se era só tentar de novo ou se havia algo errado.
-    const explicacao: Record<FalhaState, string> = {
-      expirado:
-        "A autorização demorou mais do que a janela permitida. Volte ao CRM e clique em Conectar de novo — agora você tem 30 minutos.",
-      assinatura:
-        "A assinatura do link não confere. Isso costuma acontecer quando o link foi reaproveitado de uma tentativa antiga. Comece de novo pelo CRM.",
-      formato: "O link de autorização veio incompleto. Comece de novo pelo CRM.",
-      erro: "Não foi possível ler o link de autorização. Comece de novo pelo CRM.",
-    };
     // Vai para o log da função: é o que permite diagnosticar sem pedir print.
     console.error("gmail-oauth-callback: state recusado", { motivo: resultadoState.motivo });
-    return htmlResponse(explicacao[resultadoState.motivo], false, finalReturn);
+    return falhar(finalReturn, `state_${resultadoState.motivo}`);
   }
   if (!code || !state.user_id || !state.org_id) {
-    return htmlResponse("Parâmetros inválidos.", false, finalReturn);
+    return falhar(finalReturn, "parametros_invalidos");
   }
 
   try {
@@ -121,7 +122,7 @@ serve(async (req) => {
     const cred = await resolverCredencialGoogle(supabaseAdmin, state.org_id);
     const clientId = cred.clientId;
     const clientSecret = cred.clientSecret;
-    if (!clientId || !clientSecret) return htmlResponse("Credenciais OAuth não configuradas.", false, finalReturn);
+    if (!clientId || !clientSecret) return falhar(finalReturn, "sem_credencial");
 
     // `cfg` segue sendo lido adiante para preservar assinatura e demais chaves
     // do integration_configs no upsert final. Não carrega mais credencial: a
@@ -150,7 +151,7 @@ serve(async (req) => {
     const tok = await tokenRes.json();
     if (!tokenRes.ok) {
       console.error("token exchange failed:", tok);
-      return htmlResponse(tok.error_description || "Falha na troca de tokens.", false, finalReturn);
+      return falhar(finalReturn, "troca_de_token", tok.error_description || tok.error);
     }
 
     // Fetch user email
@@ -159,7 +160,7 @@ serve(async (req) => {
     });
     const prof = await profRes.json();
     const email = prof.email;
-    if (!email) return htmlResponse("Não foi possível obter o e-mail Google.", false, finalReturn);
+    if (!email) return falhar(finalReturn, "sem_email");
 
     const expiresAt = new Date(Date.now() + (tok.expires_in ?? 3600) * 1000).toISOString();
 
@@ -180,7 +181,7 @@ serve(async (req) => {
 
     if (upErr) {
       console.error("upsert tokens error:", upErr);
-      return htmlResponse("Erro ao salvar tokens.", false, finalReturn);
+      return falhar(finalReturn, "falha_ao_salvar");
     }
 
     const purpose = state.purpose || "sales";
@@ -242,9 +243,9 @@ serve(async (req) => {
       });
     }
 
-    return htmlResponse(`${email} conectado com sucesso.`, true, finalReturn);
+    return redirecionar(finalReturn, { gmail: "conectado", conta: email });
   } catch (err) {
     console.error("callback error:", err);
-    return htmlResponse((err as Error).message, false, finalReturn);
+    return falhar(finalReturn, "erro_inesperado", (err as Error).message);
   }
 });

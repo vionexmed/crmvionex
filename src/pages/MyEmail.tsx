@@ -8,6 +8,7 @@
  * Esta tela é acessível a qualquer membro — é o ponto do Plano 2.
  */
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,6 +59,32 @@ const MOTIVO: Record<string, { titulo: string; explicacao: string }> = {
   },
 };
 
+/**
+ * Motivos que o callback do OAuth devolve na URL.
+ *
+ * O callback NÃO renderiza página: a plataforma de Edge Functions rebaixa
+ * text/html para text/plain, então o HTML aparecia como código-fonte. Ele
+ * redireciona para cá com o código do motivo, e a tradução mora aqui — mesmo
+ * princípio do invalid_reason.
+ */
+const MOTIVO_CALLBACK: Record<string, string> = {
+  state_expirado:
+    "A autorização demorou mais que a janela permitida. Clique em Conectar de novo — você tem 30 minutos.",
+  state_assinatura:
+    "O link de autorização não confere. Isso costuma ser link reaproveitado de uma tentativa antiga. Comece de novo.",
+  state_formato: "O link de autorização veio incompleto. Comece de novo.",
+  state_erro: "Não foi possível ler o link de autorização. Comece de novo.",
+  google_recusou: "O Google recusou a autorização.",
+  parametros_invalidos: "O retorno do Google veio incompleto. Tente de novo.",
+  sem_credencial:
+    "A credencial do Google da empresa não está cadastrada. Peça a um administrador.",
+  troca_de_token:
+    "O Google recusou a troca do código de autorização. Se persistir, a credencial da empresa pode estar desatualizada.",
+  sem_email: "Não foi possível ler o endereço da conta Google autorizada.",
+  falha_ao_salvar: "A autorização funcionou, mas não conseguimos guardar o acesso. Tente de novo.",
+  erro_inesperado: "Algo deu errado ao concluir a conexão.",
+};
+
 const motivoDe = (codigo: string | null) =>
   (codigo && MOTIVO[codigo]) || {
     titulo: "Sua conexão precisa ser renovada",
@@ -82,6 +109,7 @@ export default function MyEmail() {
   const { orgId } = useOrg();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [conexao, setConexao] = useState<MinhaConexao | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -111,6 +139,36 @@ export default function MyEmail() {
   }, [orgId, user?.id, queryClient]);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  // Ler → agir → limpar: sem remover os parâmetros, recarregar a página
+  // repetiria o aviso como se tivesse acontecido de novo.
+  useEffect(() => {
+    const resultado = searchParams.get("gmail");
+    if (!resultado) return;
+
+    if (resultado === "conectado") {
+      toast({
+        title: "Gmail conectado",
+        description: searchParams.get("conta") ?? undefined,
+      });
+    } else {
+      const codigo = searchParams.get("motivo") ?? "";
+      const detalhe = searchParams.get("detalhe");
+      toast({
+        title: "Não foi possível conectar",
+        description:
+          (MOTIVO_CALLBACK[codigo] ?? "A conexão com o Gmail não foi concluída.")
+          + (detalhe ? ` (${detalhe})` : ""),
+        variant: "destructive",
+      });
+    }
+
+    searchParams.delete("gmail");
+    searchParams.delete("motivo");
+    searchParams.delete("conta");
+    searchParams.delete("detalhe");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams, toast]);
 
   async function conectar() {
     setConectando(true);
