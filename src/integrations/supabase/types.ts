@@ -655,6 +655,7 @@ export type Database = {
           scope_type: string
           sent_today: number
           sent_today_date: string | null
+          signature_fields: Json
           signature_html: string | null
           user_id: string
         }
@@ -675,6 +676,7 @@ export type Database = {
           scope_type?: string
           sent_today?: number
           sent_today_date?: string | null
+          signature_fields?: Json
           signature_html?: string | null
           user_id: string
         }
@@ -695,6 +697,7 @@ export type Database = {
           scope_type?: string
           sent_today?: number
           sent_today_date?: string | null
+          signature_fields?: Json
           signature_html?: string | null
           user_id?: string
         }

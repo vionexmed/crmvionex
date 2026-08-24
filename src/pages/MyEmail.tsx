@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOrg } from "@/hooks/useOrg";
 import { useToast } from "@/hooks/use-toast";
 import { emailsKeys } from "@/hooks/queries/useEmails";
+import { MinhaAssinatura } from "@/components/settings/MinhaAssinatura";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -331,6 +332,12 @@ export default function MyEmail() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* A assinatura só faz sentido com conta conectada: ela é gravada na
+          conexão, e sem conta não há onde guardar nem de onde sair. */}
+      {conexao && !carregando && (
+        <MinhaAssinatura connectionId={conexao.id} emailDaConta={conexao.email_address} />
       )}
 
       <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
