@@ -8,10 +8,16 @@ export function LogoUploadField({
   value,
   onChange,
   bucket = "email-logos",
+  rotulo = "logo",
+  redondo = false,
 }: {
   value: string;
   onChange: (url: string) => void;
   bucket?: string;
+  /** Aparece nos botões e avisos. "logo" da empresa, "foto" da pessoa. */
+  rotulo?: string;
+  /** Prévia redonda, para foto de pessoa. */
+  redondo?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -36,7 +42,7 @@ export function LogoUploadField({
       if (error) throw error;
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);
       onChange(data.publicUrl);
-      toast({ title: "Logo enviada" });
+      toast({ title: `${rotulo[0].toUpperCase()}${rotulo.slice(1)} enviada` });
     } catch (e: any) {
       toast({ title: "Erro ao enviar", description: e.message, variant: "destructive" });
     } finally {
@@ -47,8 +53,8 @@ export function LogoUploadField({
   return (
     <div className="flex items-center gap-3">
       {value ? (
-        <div className="relative h-16 w-16 rounded border border-border bg-muted/40 flex items-center justify-center overflow-hidden">
-          <img src={value} alt="Logo" className="max-h-full max-w-full object-contain" />
+        <div className={`relative h-16 w-16 border border-border bg-muted/40 flex items-center justify-center overflow-hidden ${redondo ? "rounded-full" : "rounded"}`}>
+          <img src={value} alt="" className={redondo ? "h-full w-full object-cover" : "max-h-full max-w-full object-contain"} />
           <button
             type="button"
             onClick={() => onChange("")}
@@ -59,7 +65,7 @@ export function LogoUploadField({
           </button>
         </div>
       ) : (
-        <div className="h-16 w-16 rounded border border-dashed border-border bg-muted/40 flex items-center justify-center">
+        <div className={`h-16 w-16 border border-dashed border-border bg-muted/40 flex items-center justify-center ${redondo ? "rounded-full" : "rounded"}`}>
           <Upload className="h-5 w-5 text-muted-foreground" />
         </div>
       )}
@@ -83,7 +89,7 @@ export function LogoUploadField({
           disabled={uploading}
           className="h-7 text-xs"
         >
-          {uploading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Enviando...</> : <><Upload className="mr-1 h-3 w-3" />{value ? "Trocar" : "Enviar logo"}</>}
+          {uploading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Enviando...</> : <><Upload className="mr-1 h-3 w-3" />{value ? "Trocar" : `Enviar ${rotulo}`}</>}
         </Button>
         <p className="text-[10px] text-muted-foreground">PNG ou JPG, máx. 2MB</p>
       </div>

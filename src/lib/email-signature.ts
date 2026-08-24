@@ -18,7 +18,8 @@ export type DadosAssinatura = {
   telefone?: string;
   email?: string;
   site?: string;
-  logoUrl?: string;
+  /** Foto de quem assina. Redonda, ao lado do texto. */
+  fotoUrl?: string;
   extra?: string;
 };
 
@@ -35,7 +36,7 @@ const limpo = (v: string | undefined) => (typeof v === "string" ? v.trim() : "")
 
 /** Há algo para desenhar? Assinatura vazia não deve virar um traço solto. */
 export function temAssinatura(d: DadosAssinatura): boolean {
-  return [d.nome, d.cargo, d.empresa, d.telefone, d.email, d.site, d.logoUrl, d.extra]
+  return [d.nome, d.cargo, d.empresa, d.telefone, d.email, d.site, d.fotoUrl, d.extra]
     .some((v) => limpo(v) !== "");
 }
 
@@ -55,7 +56,7 @@ export function montarAssinaturaHtml(d: DadosAssinatura): string {
   const telefone = limpo(d.telefone);
   const email = limpo(d.email);
   const site = limpo(d.site);
-  const logoUrl = limpo(d.logoUrl);
+  const fotoUrl = limpo(d.fotoUrl);
   const extra = limpo(d.extra);
 
   const linhas: string[] = [];
@@ -112,10 +113,17 @@ export function montarAssinaturaHtml(d: DadosAssinatura): string {
     );
   }
 
-  // Com logo: duas colunas, separadas por uma barra da cor de destaque.
-  // Sem logo: uma coluna com a barra à esquerda.
-  const abertura = logoUrl
-    ? `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:22px;vertical-align:top;border-right:4px solid ${ACCENT}"><img src="${escapar(logoUrl)}" alt="" style="max-height:120px;max-width:220px;display:block"/></td><td style="width:22px"></td><td style="vertical-align:top">`
+  // COM FOTO: retrato redondo à esquerda, texto à direita.
+  //
+  // `width` e `height` como ATRIBUTOS além do estilo: vários clientes de e-mail
+  // ignoram dimensão em CSS e renderizam a imagem no tamanho original, o que
+  // estouraria a assinatura. O border-radius arredonda no Gmail, Apple Mail e
+  // na maioria dos webmails; o Outlook para desktop ignora e mostra quadrada —
+  // degrada bem, então não vale usar imagem pré-recortada por causa dele.
+  //
+  // SEM FOTO: uma coluna, com a barra de destaque à esquerda.
+  const abertura = fotoUrl
+    ? `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:18px;vertical-align:top"><img src="${escapar(fotoUrl)}" alt="" width="84" height="84" style="width:84px;height:84px;border-radius:50%;display:block;border:0;object-fit:cover"/></td><td style="vertical-align:top;border-left:4px solid ${ACCENT};padding-left:18px">`
     : `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:0;vertical-align:top;border-left:4px solid ${ACCENT};padding-left:18px">`;
 
   return `<div style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:16px">${abertura}${linhas.join("")}</td></tr></table></div>`;

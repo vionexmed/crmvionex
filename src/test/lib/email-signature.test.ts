@@ -86,16 +86,28 @@ describe("montarAssinaturaHtml() — estrutura para cliente de e-mail", () => {
     expect(montarAssinaturaHtml({ nome: "Ana" }).startsWith("<br")).toBe(false);
   });
 
-  it("com logo, a imagem entra em coluna própria", () => {
-    const html = montarAssinaturaHtml({ nome: "Ana", logoUrl: "https://x.com/l.png" });
+  it("com foto, a imagem vem redonda e em coluna própria", () => {
+    const html = montarAssinaturaHtml({ nome: "Ana", fotoUrl: "https://x.com/a.png" });
     expect(html).toContain("<img");
-    expect(html).toContain("border-right");
+    expect(html).toContain("border-radius:50%");
   });
 
-  it("sem logo, a barra fica à esquerda do texto", () => {
+  it("a foto traz width e height como ATRIBUTO, não só em CSS", () => {
+    // Vários clientes de e-mail ignoram dimensão em CSS e renderizam a imagem
+    // no tamanho original — o que estouraria a largura da assinatura.
+    const html = montarAssinaturaHtml({ fotoUrl: "https://x.com/a.png" });
+    expect(html).toMatch(/<img[^>]*\swidth="84"/);
+    expect(html).toMatch(/<img[^>]*\sheight="84"/);
+  });
+
+  it("sem foto, a barra fica à esquerda do texto e não há imagem", () => {
     const html = montarAssinaturaHtml({ nome: "Ana" });
     expect(html).not.toContain("<img");
     expect(html).toContain("border-left");
+  });
+
+  it("a foto sozinha já conta como assinatura", () => {
+    expect(montarAssinaturaHtml({ fotoUrl: "https://x.com/a.png" })).not.toBe("");
   });
 
   it("quebra de linha do texto adicional vira <br/>", () => {

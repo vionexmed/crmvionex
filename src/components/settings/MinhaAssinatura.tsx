@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Save, Eraser } from "lucide-react";
+import { LogoUploadField } from "@/components/crm/LogoUploadField";
 import {
   montarAssinaturaHtml,
   temAssinatura,
@@ -34,7 +35,6 @@ const CAMPOS: { chave: keyof DadosAssinatura; rotulo: string; exemplo: string }[
   { chave: "telefone", rotulo: "Telefone", exemplo: "+55 11 99999-9999" },
   { chave: "email", rotulo: "E-mail", exemplo: "ana@vionex.med.br" },
   { chave: "site", rotulo: "Site", exemplo: "vionex.med.br" },
-  { chave: "logoUrl", rotulo: "URL do logo", exemplo: "https://.../logo.png" },
 ];
 
 export function MinhaAssinatura({
@@ -129,6 +129,21 @@ export function MinhaAssinatura({
                   />
                 </div>
               ))}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium">Foto</label>
+                <LogoUploadField
+                  value={dados.fotoUrl ?? ""}
+                  onChange={(url) => setDados({ ...dados, fotoUrl: url })}
+                  rotulo="foto"
+                  redondo
+                />
+                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                  Um retrato quadrado fica melhor — a foto é recortada em círculo. Muitos
+                  clientes de e-mail só carregam imagens depois que a pessoa autoriza, então
+                  a assinatura precisa continuar legível sem ela.
+                </p>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-[10px] font-medium" htmlFor="sig-extra">
                   Texto adicional
