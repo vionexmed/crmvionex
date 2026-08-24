@@ -46,23 +46,6 @@ function encodeRaw(opts: { to: string; from: string; subject: string; html: stri
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-async function refreshAccessToken(refreshToken: string, cfg: Record<string, unknown>) {
-  const clientId = (cfg.client_id as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-  const clientSecret = (cfg.client_secret as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`token refresh failed: ${JSON.stringify(data)}`);
-  return data as { access_token: string; expires_in: number };
-}
 
 export interface OrgEmailOptions {
   orgId: string;
@@ -165,7 +148,24 @@ export async function sendViaOrgAccount(admin: any, opts: OrgEmailOptions): Prom
 
   let accessToken = tokenRow.access_token as string;
   if (new Date(tokenRow.expires_at).getTime() - Date.now() < 60_000) {
-    const refreshed = await refreshAccessToken(tokenRow.refresh_token as string, cfg);
+    // Resolvedor único: a MESMA ordem do gmail-oauth-start e do callback.
+    const cred = await resolverCredencialGoogle(admin, opts.orgId);
+    const renovado = await renovarAccessToken(tokenRow.refresh_token as string, cred);
+    if (!renovado.ok) {
+      await admin
+        .from("email_connections")
+        .update({ invalid_since: new Date().toISOString(), invalid_reason: renovado.motivo })
+        .eq("id", connection.id)
+        .is("invalid_since", null);
+      // Lança em vez de engolir: quem chama grava em automation_logs, e assim o
+      // log diz o motivo em vez de "falhou".
+      throw new Error(
+        renovado.motivo === "credenciais_trocadas"
+          ? "A credencial do Google da empresa mudou. O responsável pelo contato precisa reconectar em Configurações › Conectar e-mail."
+          : "O acesso Google do responsável pelo contato expirou ou foi revogado. Ele precisa reconectar em Configurações › Conectar e-mail.",
+      );
+    }
+    const refreshed = { access_token: renovado.accessToken, expires_in: renovado.expiraEm };
     accessToken = refreshed.access_token;
     await admin.from("gmail_oauth_tokens").update({
       access_token: accessToken,

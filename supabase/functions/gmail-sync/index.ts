@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolverCredencialGoogle, renovarAccessToken } from "../_shared/google-credentials.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,23 +106,6 @@ async function oauthFetch(path: string, accessToken: string) {
 
 // O refresh usa as MESMAS credenciais que emitiram o token (BYOK da org
 // quando houver, senão as do ambiente) — senão o Google dá invalid_client.
-async function refreshAccessToken(refreshToken: string, cfg: Record<string, unknown> = {}) {
-  const clientId = (cfg.client_id as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-  const clientSecret = (cfg.client_secret as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`refresh failed: ${JSON.stringify(data)}`);
-  return data as { access_token: string; expires_in: number };
-}
 
 type GmailMessageFetcher = (path: string) => Promise<any>;
 
@@ -264,7 +248,20 @@ async function syncOrg(
 
       let accessToken = tokenRow.access_token as string;
       if (new Date(tokenRow.expires_at).getTime() - Date.now() < 60_000) {
-        const refreshed = await refreshAccessToken(tokenRow.refresh_token as string, cfg);
+        const cred = await resolverCredencialGoogle(supabaseAdmin, orgId);
+        const renovado = await renovarAccessToken(tokenRow.refresh_token as string, cred);
+        if (!renovado.ok) {
+          // Não interrompe o laço: uma conta inválida não pode impedir a
+          // sincronização das outras. Marca o motivo e segue.
+          await supabaseAdmin
+            .from("email_connections")
+            .update({ invalid_since: new Date().toISOString(), invalid_reason: renovado.motivo })
+            .eq("id", conn.id)
+            .is("invalid_since", null);
+          perAccount[conn.email_address] = `invalida:${renovado.motivo}`;
+          continue;
+        }
+        const refreshed = { access_token: renovado.accessToken, expires_in: renovado.expiraEm };
         accessToken = refreshed.access_token;
         await supabaseAdmin.from("gmail_oauth_tokens").update({
           access_token: accessToken,

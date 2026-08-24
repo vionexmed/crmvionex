@@ -644,6 +644,8 @@ export type Database = {
           from_name: string | null
           id: string
           daily_send_limit: number
+          invalid_reason: string | null
+          invalid_since: string | null
           is_active: boolean | null
           label: string
           last_synced_at: string | null
@@ -662,6 +664,8 @@ export type Database = {
           email_address: string
           from_name?: string | null
           id?: string
+          invalid_reason?: string | null
+          invalid_since?: string | null
           is_active?: boolean | null
           label?: string
           last_synced_at?: string | null
@@ -680,6 +684,8 @@ export type Database = {
           email_address?: string
           from_name?: string | null
           id?: string
+          invalid_reason?: string | null
+          invalid_since?: string | null
           is_active?: boolean | null
           label?: string
           last_synced_at?: string | null
@@ -1122,6 +1128,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      google_oauth_secrets: {
+        Row: {
+          client_id: string
+          client_secret: string
+          id: string
+          org_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          client_id: string
+          client_secret: string
+          id?: string
+          org_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          client_id?: string
+          client_secret?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_oauth_secrets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       integration_configs: {
         Row: {
@@ -2634,6 +2675,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      gmail_invalidar_conexoes: {
+        Args: { _motivo: string; _org_id: string }
+        Returns: number
       }
       initialize_org_owner: {
         Args: { p_org_id: string; p_user_id: string }

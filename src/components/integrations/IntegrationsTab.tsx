@@ -20,6 +20,7 @@ function MetaIcon({ className }: { className?: string }) {
   );
 }
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { LogoUploadField } from "@/components/crm/LogoUploadField";
 import { WhatsAppOfficialCard } from "@/components/crm/WhatsAppOfficialCard";
 
@@ -31,10 +32,15 @@ type IntegrationConfig = {
 type EmailConnection = {
   id: string; user_id: string; provider: string; email_address: string | null;
   label: string; purpose: string; is_active: boolean; created_at: string | null;
+  connected_at: string | null;
+  // Nulo = saudável. Preenchidos quando a renovação do token falha, ou quando a
+  // credencial da empresa é trocada. Ver migração 20260824130000.
+  invalid_since: string | null; invalid_reason: string | null;
 };
 
 export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userId?: string }) {
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [configs, setConfigs] = useState<IntegrationConfig[]>([]);
   const [editProvider, setEditProvider] = useState<string | null>(null);
   const [editConfig, setEditConfig] = useState<any>({});
@@ -52,7 +58,11 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
    * `client_secret_configured` é booleano de propósito: gmail-get-defaults nunca
    * devolve o segredo, só se ele existe.
    */
-  const [servidor, setServidor] = useState<{ client_id: string; client_secret_configured: boolean } | null>(null);
+  const [servidor, setServidor] = useState<{ client_id: string; client_secret_configured: boolean; origem?: string } | null>(null);
+  const [formAberto, setFormAberto] = useState(false);
+  const [formId, setFormId] = useState("");
+  const [formSecret, setFormSecret] = useState("");
+  const [salvandoCred, setSalvandoCred] = useState(false);
 
   const fetchConfigs = useCallback(async () => {
     if (!orgId) return;
@@ -83,6 +93,43 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   useEffect(() => { fetchConfigs(); fetchEmailConnections(); fetchDefaultsServidor(); }, [fetchConfigs, fetchEmailConnections, fetchDefaultsServidor]);
 
   const getConfig = (provider: string) => configs.find((c) => c.provider === provider);
+
+  /**
+   * A credencial NÃO passa por integration_configs: vai para google_oauth_secrets
+   * por edge function, que valida contra o Google antes de gravar e marca as
+   * conexões existentes com o motivo da invalidação.
+   */
+  async function salvarCredencialGoogle() {
+    setSalvandoCred(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-credentials-save", {
+        body: { client_id: formId.trim(), client_secret: formSecret.trim() },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Não foi possível salvar.");
+
+      const invalidadas = Number(data.conexoes_invalidadas ?? 0);
+      toast({
+        title: "Credencial validada e salva",
+        description: invalidadas > 0
+          ? `${invalidadas} ${invalidadas === 1 ? "conta precisa" : "contas precisam"} reconectar — cada pessoa verá o motivo em Conectar e-mail.`
+          : "Nenhuma conta conectada foi afetada.",
+      });
+
+      setFormAberto(false);
+      setFormId("");
+      setFormSecret("");
+      await Promise.all([fetchDefaultsServidor(), fetchEmailConnections()]);
+    } catch (e) {
+      toast({
+        title: "Credencial recusada",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setSalvandoCred(false);
+    }
+  }
 
   const saveConfig = async (provider: string) => {
     // Slack não grava direto: a URL do webhook é credencial e vai para
@@ -117,19 +164,6 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
     }
 
     if (!orgId) return;
-    // gmail_credentials salva como provider "gmail" no banco
-    if (provider === "gmail_credentials") {
-      const existing = getConfig("gmail") || getConfig("gmail_credentials");
-      if (existing) {
-        await supabase.from("integration_configs").update({ config: editConfig } as any).eq("id", existing.id);
-      } else {
-        await supabase.from("integration_configs").insert({ org_id: orgId, provider: "gmail", config: editConfig, connected_by: userId } as any);
-      }
-      toast({ title: "Credenciais Gmail salvas — agora você pode conectar as contas" });
-      setEditProvider(null);
-      fetchConfigs();
-      return;
-    }
     if (provider === "meta") {
       const existing = getConfig("meta");
       if (existing) {
@@ -138,22 +172,6 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
         await supabase.from("integration_configs").insert({ org_id: orgId, provider: "meta", config: editConfig, is_active: true, connected_by: userId } as any);
       }
       toast({ title: "Meta Ads configurado — clique em Sincronizar para importar campanhas" });
-      setEditProvider(null);
-      fetchConfigs();
-      return;
-    }
-    if (provider === "gmail") {
-      // Save optional credentials, display name and signature fields; OAuth handled by Conectar
-      const existing = getConfig("gmail");
-      const sigKeys = ["client_id","client_secret","from_name","signature","signature_name","signature_role","signature_company","signature_phone","signature_email","signature_website","signature_extra","signature_logo_url"];
-      const merged: any = { ...(existing?.config || {}) };
-      for (const k of sigKeys) merged[k] = editConfig[k] ?? merged[k] ?? null;
-      if (existing) {
-        await supabase.from("integration_configs").update({ config: merged } as any).eq("id", existing.id);
-      } else {
-        await supabase.from("integration_configs").insert({ org_id: orgId, provider: "gmail", config: merged, connected_by: userId } as any);
-      }
-      toast({ title: "Configurações do Gmail salvas" });
       setEditProvider(null);
       fetchConfigs();
       return;
@@ -293,32 +311,6 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
       ],
     },
     {
-      // ESCONDIDA: renderizava um segundo card idêntico ao "Google — credenciais
-      // OAuth" logo acima, os dois gravando em integration_configs com provider
-      // "gmail". Dois cards para a mesma coisa, sem dizer qual usar. A entrada
-      // permanece porque é daqui que o diálogo tira os campos.
-      hidden: true,
-      provider: "gmail_credentials", name: "Google — credenciais OAuth", icon: Mail,
-      description: "Configure Client ID e Client Secret para conectar contas Gmail",
-      fields: [
-        { key: "client_id", label: "Google OAuth Client ID", placeholder: "xxxxxxx.apps.googleusercontent.com", type: "secret" as const,
-          helpText: "Crie credenciais OAuth 2.0 em",
-          helpUrl: "https://console.cloud.google.com/apis/credentials",
-          helpLabel: "Google Cloud Console" },
-        { key: "client_secret", label: "Google OAuth Client Secret", placeholder: "GOCSPX-...", type: "secret" as const },
-        { key: "from_name", label: "Nome de exibição (opcional)", placeholder: "Equipe Comercial" },
-        { key: "_signature_section", label: "Assinatura de email", type: "section" as const },
-        { key: "signature_logo_url", label: "Logo da assinatura", type: "logo" as const },
-        { key: "signature_name", label: "Nome", placeholder: "João Silva" },
-        { key: "signature_role", label: "Cargo", placeholder: "Diretor Comercial" },
-        { key: "signature_company", label: "Empresa", placeholder: "Minha Empresa Ltda" },
-        { key: "signature_phone", label: "Telefone", placeholder: "+55 11 99999-9999" },
-        { key: "signature_email", label: "E-mail", placeholder: "joao@empresa.com" },
-        { key: "signature_website", label: "Website", placeholder: "https://empresa.com" },
-        { key: "signature_extra", label: "Texto adicional (opcional)", placeholder: "Endereço, redes sociais, etc.", type: "textarea" as const },
-      ],
-    },
-    {
       provider: "slack", name: "Slack", icon: MessageSquare,
       description: "Resumo do dia no canal, todo dia às 20h",
       connectAction: handleSlackConnect,
@@ -352,13 +344,11 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
     },
   ];
 
-  const gmailCredentials = getConfig("gmail") || getConfig("gmail_credentials");
-  // Duas origens possíveis, e a da tabela GANHA da do servidor na resolução das
-  // edge functions. Distinguir importa: só olhar a tabela acusava falta de
-  // credencial com o secret corretamente configurado no Supabase.
-  const credNaTabela = !!(gmailCredentials?.config?.client_id && gmailCredentials?.config?.client_secret);
-  const credNoServidor = !!(servidor?.client_id && servidor?.client_secret_configured);
-  const hasGmailCredentials = credNaTabela || credNoServidor;
+  // Uma fonte de verdade: gmail-get-defaults chama o MESMO resolvedor que o
+  // envio usa, então o que a tela mostra é o que vai ser usado de verdade.
+  // Antes esta checagem lia integration_configs pelo navegador e acusava falta
+  // de credencial quando ela estava corretamente configurada no servidor.
+  const hasGmailCredentials = !!(servidor?.client_id && servidor?.client_secret_configured);
 
   return (
     <div className="space-y-6">
@@ -396,24 +386,25 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                       Credenciais configuradas — a equipe já pode conectar as contas
                     </p>
                     <p className="mt-0.5 text-[10px] text-success/80">
-                      {credNaTabela
-                        ? "Origem: preenchidas aqui, nesta tela."
-                        : "Origem: secrets do servidor (GOOGLE_OAUTH_CLIENT_ID). O segredo nunca chega ao navegador."}
+                      {servidor?.origem === "crm"
+                        ? "Origem: cadastrada aqui no CRM, guardada fora do alcance do navegador."
+                        : servidor?.origem === "legado"
+                          ? "Origem: configuração antiga do banco. Recadastre aqui para movê-la para o compartimento protegido."
+                          : "Origem: secrets do servidor. O segredo nunca chega ao navegador."}
                     </p>
                   </div>
                 </div>
-                {/* Duas fontes da mesma chave é pior que uma: a tabela ganha do
-                    secret, então se os valores divergirem as contas já conectadas
-                    param de renovar o token — e o sintoma aparece dias depois,
-                    sem relação aparente com o que foi mexido. */}
-                {credNaTabela && credNoServidor && (
+                {/* Credencial em integration_configs é herança: aquela tabela é
+                    lida pelo navegador do admin. A migração 20260824130000 tirou
+                    as chaves de lá, mas alguém pode reintroduzir por SQL. */}
+                {servidor?.origem === "legado" && (
                   <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
                     <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>
-                      A credencial está em <strong>dois lugares</strong>: nesta tela e nos secrets do
-                      servidor. Os valores daqui têm prioridade. Se forem diferentes dos do servidor,
-                      as contas já conectadas deixam de renovar o acesso. Recomendado: apagar os
-                      campos aqui e deixar só o secret.
+                      Esta credencial está numa <strong>tabela que o navegador lê</strong>, herança da
+                      configuração antiga. Clique em <strong>Trocar credencial</strong> e recadastre o
+                      mesmo par para movê-la ao compartimento protegido. As contas conectadas não são
+                      afetadas se o valor for o mesmo.
                     </span>
                   </div>
                 )}
@@ -442,27 +433,103 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
               )}
             </div>
 
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-[10px]"
-                onClick={() => {
-                  setEditProvider("gmail_credentials");
-                  // O client_id é público e pode ser pré-preenchido do servidor.
-                  // O secret NÃO vem: gmail-get-defaults devolve apenas se ele
-                  // existe. O código anterior lia `data.client_secret`, campo que
-                  // a função nunca retornou — o prefill era no-op silencioso.
-                  const salvo = (gmailCredentials?.config || {}) as Record<string, unknown>;
-                  setEditConfig({
-                    ...salvo,
-                    client_id: salvo.client_id || servidor?.client_id || "",
-                  });
-                }}
-              >
-                {hasGmailCredentials ? "Editar credenciais" : "Configurar credenciais"}
-              </Button>
-            </div>
+            {/* Quem conectou e quem está com problema. Só admin: o RLS de
+                email_connections mostra ao admin as conexões de todos e ao
+                comercial apenas a dele — sem esta guarda, um não-admin veria a
+                equipe inteira como "não conectada" e concluiria que está tudo
+                quebrado. */}
+            {isAdmin && emailConnections.length > 0 && (
+              <div className="rounded-md border border-border">
+                <p className="border-b border-border px-3 py-2 text-[11px] font-medium">
+                  Contas conectadas
+                </p>
+                <div className="divide-y divide-border">
+                  {emailConnections.map((c) => (
+                    <div key={c.id} className="flex items-center gap-2 px-3 py-2">
+                      <span className="min-w-0 flex-1 truncate text-[11px]">{c.email_address}</span>
+                      {c.invalid_since ? (
+                        <Badge variant="destructive" className="shrink-0 text-[9px]">
+                          {c.invalid_reason === "credenciais_trocadas"
+                            ? "reconectar: credencial trocada"
+                            : c.invalid_reason === "token_revogado"
+                              ? "reconectar: acesso revogado"
+                              : "reconectar"}
+                        </Badge>
+                      ) : (
+                        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                          {c.connected_at
+                            ? new Date(c.connected_at).toLocaleDateString("pt-BR")
+                            : "—"}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Formulário próprio, não o diálogo compartilhado. O diálogo
+                gravava direto em integration_configs, tabela que o navegador LÊ
+                — e junto arrastava dez campos de assinatura que duplicavam
+                Configurações → Assinatura, sobrescrevendo sem merge. Aqui são
+                dois campos, e eles vão para uma edge function. */}
+            {!formAberto ? (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" className="h-7 text-[10px]"
+                  onClick={() => { setFormAberto(true); setFormId(""); setFormSecret(""); }}>
+                  {hasGmailCredentials ? "Trocar credencial" : "Cadastrar credencial"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium" htmlFor="g-cid">Client ID</label>
+                  <Input id="g-cid" autoComplete="off" className="h-8 font-mono text-xs"
+                    placeholder="000000000000-xxxx.apps.googleusercontent.com"
+                    value={formId} onChange={(e) => setFormId(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-medium" htmlFor="g-csec">Client Secret</label>
+                  <Input id="g-csec" type="password" autoComplete="off" className="h-8 font-mono text-xs"
+                    placeholder="GOCSPX-..."
+                    value={formSecret} onChange={(e) => setFormSecret(e.target.value)} />
+                </div>
+
+                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                  Guardado em um compartimento que o navegador não lê — nem admin consegue
+                  recuperar depois. Por isso os campos vêm vazios em vez de fingir
+                  pré-preenchimento. Validamos com o Google antes de salvar.
+                </p>
+
+                {/* Avisar ANTES, não descobrir depois: trocar a credencial invalida
+                    todo token já emitido, porque o Google exige que a renovação use
+                    as mesmas credenciais da emissão. */}
+                {hasGmailCredentials && emailConnections.length > 0 && (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                    <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span>
+                      {emailConnections.length === 1
+                        ? "1 conta conectada precisará reconectar"
+                        : `${emailConnections.length} contas conectadas precisarão reconectar`}
+                      {" "}depois da troca. Cada pessoa verá o motivo em Conectar e-mail.
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" className="h-7 text-[10px]"
+                    onClick={() => setFormAberto(false)} disabled={salvandoCred}>
+                    Cancelar
+                  </Button>
+                  <Button size="sm" className="h-7 text-[10px]"
+                    onClick={salvarCredencialGoogle}
+                    disabled={salvandoCred || !formId.trim() || !formSecret.trim()}>
+                    {salvandoCred && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                    Validar e salvar
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -500,16 +567,9 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                         </Button>
                       )}
                       <Button variant="outline" size="sm" className="ml-auto h-7 text-[10px]"
-                        onClick={async () => {
+                        onClick={() => {
                           setEditProvider(intg.provider);
-                          let base = cfg.config || {};
-                          if (intg.provider === "gmail" && (!base.client_id || !base.client_secret)) {
-                            try {
-                              const { data } = await supabase.functions.invoke("gmail-get-defaults");
-                              if (data) base = { client_id: base.client_id || data.client_id, client_secret: base.client_secret || data.client_secret, ...base };
-                            } catch { /* ignore */ }
-                          }
-                          setEditConfig(base);
+                          setEditConfig(cfg.config || {});
                         }}>
                         Configurar
                       </Button>
@@ -517,17 +577,10 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                   ) : (
                     <Button size="sm" className="h-7 text-[10px]"
                       disabled={intg.connectLoading}
-                      onClick={async () => {
+                      onClick={() => {
                         if (intg.connectAction) return intg.connectAction();
                         setEditProvider(intg.provider);
-                        let base: any = {};
-                        if (intg.provider === "gmail") {
-                          try {
-                            const { data } = await supabase.functions.invoke("gmail-get-defaults");
-                            if (data) base = { client_id: data.client_id, client_secret: data.client_secret };
-                          } catch { /* ignore */ }
-                        }
-                        setEditConfig(base);
+                        setEditConfig({});
                       }}>
                       {intg.connectLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Conectando...</> : <><Plus className="mr-1 h-3 w-3" />Conectar</>}
                     </Button>
@@ -552,11 +605,6 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
               <div className="rounded-md border border-[#1877F2]/30 bg-[#EEF4FF] p-3 text-[11px] text-[#1877F2]">
                 Preencha só a seção que você usa — <strong>Meta Ads</strong> para campanhas, <strong>WhatsApp</strong> para mensagens, ou ambas.
                 O token é gerado no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="underline font-medium">Meta Graph API Explorer</a>.
-              </div>
-            )}
-            {editProvider === "gmail" && (
-              <div className="rounded-md border border-border bg-muted/40 p-2 text-[11px] text-muted-foreground">
-                Use <strong>Conectar</strong> no card para autorizar via Google OAuth. Os campos abaixo são opcionais — preencha sua assinatura com logo e dados de contato para aparecer em todos os emails enviados.
               </div>
             )}
             {integrations.find((i) => i.provider === editProvider)?.fields.map((field) => {

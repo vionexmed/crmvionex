@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolverCredencialGoogle, renovarAccessToken } from "../_shared/google-credentials.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,23 +8,6 @@ const corsHeaders = {
 };
 
 // Refresh com as MESMAS credenciais que emitiram o token (BYOK ou env)
-async function refreshAccessToken(refreshToken: string, cfg: Record<string, unknown> = {}) {
-  const clientId = (cfg.client_id as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-  const clientSecret = (cfg.client_secret as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`refresh failed: ${JSON.stringify(data)}`);
-  return data as { access_token: string; expires_in: number };
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -121,7 +105,16 @@ serve(async (req) => {
 
     let accessToken = tokenRow.access_token as string;
     if (new Date(tokenRow.expires_at).getTime() - Date.now() < 60_000) {
-      const refreshed = await refreshAccessToken(tokenRow.refresh_token as string, cfg);
+      const cred = await resolverCredencialGoogle(supabaseAdmin, orgId);
+      const renovado = await renovarAccessToken(tokenRow.refresh_token as string, cred);
+      if (!renovado.ok) {
+        return new Response(JSON.stringify({
+          error: "gmail_conexao_invalida",
+          reason: renovado.motivo,
+          message: "A conexão do Gmail precisa ser renovada para baixar este anexo.",
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const refreshed = { access_token: renovado.accessToken, expires_in: renovado.expiraEm };
       accessToken = refreshed.access_token;
       await supabaseAdmin.from("gmail_oauth_tokens").update({
         access_token: accessToken,

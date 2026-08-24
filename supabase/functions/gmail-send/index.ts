@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolverCredencialGoogle, renovarAccessToken } from "../_shared/google-credentials.ts";
 import { captureException } from "../_shared/sentry.ts";
 
 const corsHeaders = {
@@ -64,26 +65,6 @@ function encodeRaw(opts: { to: string; from: string; cc?: string; bcc?: string; 
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// IMPORTANTE: o refresh precisa usar as MESMAS credenciais que emitiram o
-// token (BYOK da org quando houver, senão as do ambiente) — senão o Google
-// responde invalid_client.
-async function refreshAccessToken(refreshToken: string, cfg: Record<string, unknown> = {}) {
-  const clientId = (cfg.client_id as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-  const clientSecret = (cfg.client_secret as string) || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`refresh failed: ${JSON.stringify(data)}`);
-  return data as { access_token: string; expires_in: number; scope?: string };
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -147,6 +128,10 @@ serve(async (req) => {
       .maybeSingle();
     const cfg: any = cfgRow?.config ?? {};
     const mode: string = cfg.mode || "oauth_byok";
+
+    // Resolvida uma vez, usada na renovação abaixo. Mesma ordem do
+    // gmail-oauth-start e do callback — ver _shared/google-credentials.
+    const cred = await resolverCredencialGoogle(supabaseAdmin, org_id);
 
     let accessToken = "";
     let fromEmail = "";
@@ -235,7 +220,25 @@ serve(async (req) => {
 
       accessToken = tokenRow.access_token as string;
       if (new Date(tokenRow.expires_at).getTime() - Date.now() < 60_000) {
-        const refreshed = await refreshAccessToken(tokenRow.refresh_token as string, cfg);
+        const renovado = await renovarAccessToken(tokenRow.refresh_token as string, cred);
+        if (!renovado.ok) {
+          // Marca o motivo ANTES de devolver erro, para a tela da pessoa
+          // explicar o que aconteceu em vez de só falhar o envio.
+          await supabaseAdmin
+            .from("email_connections")
+            .update({ invalid_since: new Date().toISOString(), invalid_reason: renovado.motivo })
+            .eq("id", connection.id)
+            .is("invalid_since", null);
+
+          return new Response(JSON.stringify({
+            error: "gmail_conexao_invalida",
+            reason: renovado.motivo,
+            message: renovado.motivo === "credenciais_trocadas"
+              ? "A credencial do Google da empresa mudou. Reconecte sua conta em Configurações › Conectar e-mail."
+              : "O acesso da sua conta Google expirou ou foi revogado. Reconecte em Configurações › Conectar e-mail.",
+          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const refreshed = { access_token: renovado.accessToken, expires_in: renovado.expiraEm };
         accessToken = refreshed.access_token;
         await supabaseAdmin.from("gmail_oauth_tokens").update({
           access_token: accessToken,

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolverCredencialGoogle } from "../_shared/google-credentials.ts";
 import { signState } from "../_shared/oauth-state.ts";
 
 const corsHeaders = {
@@ -79,17 +80,17 @@ serve(async (req) => {
       }
     }
 
-    // Prefer per-org credentials saved in integration_configs, fallback to env secret
-    const { data: cfgRow } = await supabaseAdmin
-      .from("integration_configs")
-      .select("config")
-      .eq("org_id", org_id)
-      .eq("provider", "gmail")
-      .maybeSingle();
-    const cfg: any = cfgRow?.config ?? {};
-    const clientId = cfg.client_id || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+    // Resolvedor único: a MESMA ordem usada no callback e no refresh. Divergir
+    // aqui é o que produz invalid_client depois. Ver _shared/google-credentials.
+    const cred = await resolverCredencialGoogle(supabaseAdmin, org_id);
+    const clientId = cred.clientId;
     if (!clientId) {
-      return new Response(JSON.stringify({ error: "Google OAuth Client ID não configurado. Adicione em Integrações > Gmail." }), {
+      return new Response(JSON.stringify({
+        error: "gmail_sem_credencial",
+        // A mensagem antiga mandava o admin para "Integrações > Gmail" e citava
+        // um formulário que gravava a credencial onde o navegador lê.
+        message: "A credencial do Google não está cadastrada. Um administrador precisa cadastrá-la em Integrações.",
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

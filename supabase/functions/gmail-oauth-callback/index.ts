@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolverCredencialGoogle } from "../_shared/google-credentials.ts";
 import { verifyState } from "../_shared/oauth-state.ts";
 
 const corsHeaders = {
@@ -84,17 +85,22 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Prefer per-org credentials, fallback to env secrets
+    // Resolvedor único — a mesma ordem do gmail-oauth-start e do refresh.
+    const cred = await resolverCredencialGoogle(supabaseAdmin, state.org_id);
+    const clientId = cred.clientId;
+    const clientSecret = cred.clientSecret;
+    if (!clientId || !clientSecret) return htmlResponse("Credenciais OAuth não configuradas.", false, finalReturn);
+
+    // `cfg` segue sendo lido adiante para preservar assinatura e demais chaves
+    // do integration_configs no upsert final. Não carrega mais credencial: a
+    // migração 20260824130000 removeu client_id/client_secret de lá.
     const { data: cfgRow } = await supabaseAdmin
       .from("integration_configs")
       .select("config")
       .eq("org_id", state.org_id)
       .eq("provider", "gmail")
       .maybeSingle();
-    const cfg: any = cfgRow?.config ?? {};
-    const clientId = cfg.client_id || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
-    const clientSecret = cfg.client_secret || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
-    if (!clientId || !clientSecret) return htmlResponse("Credenciais OAuth não configuradas.", false, finalReturn);
+    const cfg: Record<string, unknown> = (cfgRow?.config as Record<string, unknown>) ?? {};
 
     const redirectUri = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/gmail-oauth-callback`;
 

@@ -31,7 +31,38 @@ type MinhaConexao = {
   daily_send_limit: number;
   sent_today: number;
   sent_today_date: string | null;
+  invalid_since: string | null;
+  invalid_reason: string | null;
 };
+
+/**
+ * O banco guarda CÓDIGO em invalid_reason, não frase — texto em português dentro
+ * de migração fica congelado. A tradução mora aqui.
+ */
+const MOTIVO: Record<string, { titulo: string; explicacao: string }> = {
+  credenciais_trocadas: {
+    titulo: "Sua conexão precisa ser renovada",
+    explicacao:
+      "A credencial do Google da empresa foi trocada. Por segurança, o Google invalida os acessos "
+      + "emitidos com a credencial anterior — nada de errado aconteceu com a sua conta.",
+  },
+  token_revogado: {
+    titulo: "O acesso da sua conta foi revogado",
+    explicacao:
+      "Isso acontece quando a permissão é retirada na conta Google, a senha muda, ou o acesso "
+      + "fica muito tempo sem uso.",
+  },
+  refresh_invalido: {
+    titulo: "Não conseguimos renovar o acesso",
+    explicacao: "O Google recusou a renovação por um motivo que não soubemos classificar.",
+  },
+};
+
+const motivoDe = (codigo: string | null) =>
+  (codigo && MOTIVO[codigo]) || {
+    titulo: "Sua conexão precisa ser renovada",
+    explicacao: "O acesso ao Gmail deixou de funcionar.",
+  };
 
 export default function MyEmail() {
   const { user } = useAuth();
@@ -50,7 +81,7 @@ export default function MyEmail() {
     // A RLS já restringe ao próprio usuário; o filtro é para deixar explícito.
     const { data } = await supabase
       .from("email_connections")
-      .select("id, email_address, is_active, last_synced_at, connected_at, daily_send_limit, sent_today, sent_today_date")
+      .select("id, email_address, is_active, last_synced_at, connected_at, daily_send_limit, sent_today, sent_today_date, invalid_since, invalid_reason")
       .eq("org_id", orgId)
       .eq("user_id", user.id)
       .eq("scope_type", "user")
@@ -145,10 +176,42 @@ export default function MyEmail() {
                     : "Ainda não sincronizada"}
                 </CardDescription>
               </div>
-              <Badge className="shrink-0 text-[9px]">Conectada</Badge>
+              {conexao.invalid_since ? (
+                <Badge variant="destructive" className="shrink-0 text-[9px]">Precisa reconectar</Badge>
+              ) : (
+                <Badge className="shrink-0 text-[9px]">Conectada</Badge>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Sem isto, conexão morta aparecia como conectada e o e-mail
+                simplesmente não saía — a pessoa não tinha como saber por quê. */}
+            {conexao.invalid_since && (
+              <div className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                <div className="flex items-start gap-2">
+                  <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-xs font-medium text-destructive">
+                      {motivoDe(conexao.invalid_reason).titulo}
+                    </p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      {motivoDe(conexao.invalid_reason).explicacao}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Desde {new Date(conexao.invalid_since).toLocaleString("pt-BR")}. Enquanto
+                      isso, e-mail enviado por você e pelas automações dos seus leads não sai.
+                    </p>
+                  </div>
+                </div>
+                <Button size="sm" className="h-7 text-[11px]" onClick={conectar} disabled={conectando}>
+                  {conectando
+                    ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                    : <Plug className="mr-1.5 h-3 w-3" />}
+                  Reconectar agora
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between text-[11px]">
                 <span className="font-medium">Envios hoje</span>
