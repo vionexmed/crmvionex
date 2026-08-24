@@ -8,10 +8,12 @@
  * Esta tela é acessível a qualquer membro — é o ponto do Plano 2.
  */
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrg } from "@/hooks/useOrg";
 import { useToast } from "@/hooks/use-toast";
+import { emailsKeys } from "@/hooks/queries/useEmails";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +37,7 @@ export default function MyEmail() {
   const { user } = useAuth();
   const { orgId } = useOrg();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [conexao, setConexao] = useState<MinhaConexao | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -55,7 +58,13 @@ export default function MyEmail() {
       .maybeSingle();
     setConexao((data as MinhaConexao) ?? null);
     setCarregando(false);
-  }, [orgId, user?.id]);
+
+    // A Inbox e o compositor decidem se há conta conectada por uma consulta de
+    // react-query com staleTime de 60s. Esta tela usa estado local, então sem
+    // invalidar a chave a pessoa conectava aqui e a Inbox continuava dizendo
+    // "nenhuma conta conectada" por até um minuto — parecia que não funcionou.
+    if (orgId) queryClient.invalidateQueries({ queryKey: emailsKeys.connections(orgId) });
+  }, [orgId, user?.id, queryClient]);
 
   useEffect(() => { carregar(); }, [carregar]);
 
@@ -86,8 +95,10 @@ export default function MyEmail() {
     if (!conexao) return;
     setDesconectando(true);
     try {
+      // connection_id, não email: é o que a função exige. Mandando `email` ela
+      // respondia 400 "connection_id required" — o botão nunca funcionou.
       const { error } = await supabase.functions.invoke("gmail-disconnect", {
-        body: { email: conexao.email_address },
+        body: { connection_id: conexao.id },
       });
       if (error) throw error;
       toast({ title: "Conta desconectada" });

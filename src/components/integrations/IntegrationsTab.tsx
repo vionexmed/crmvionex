@@ -40,12 +40,34 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   const [editConfig, setEditConfig] = useState<any>({});
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [emailConnections, setEmailConnections] = useState<EmailConnection[]>([]);
+  /**
+   * Credencial do Google que vive nos secrets do Supabase.
+   *
+   * Existe porque a origem recomendada NÃO é a tabela: o secret do projeto só é
+   * lido pelas edge functions, enquanto integration_configs volta para o
+   * navegador do admin. Sem consultar isto, o card acusava "sem credencial" com
+   * tudo configurado corretamente — falso alarme que manda o admin preencher o
+   * formulário e criar uma segunda fonte da mesma chave.
+   *
+   * `client_secret_configured` é booleano de propósito: gmail-get-defaults nunca
+   * devolve o segredo, só se ele existe.
+   */
+  const [servidor, setServidor] = useState<{ client_id: string; client_secret_configured: boolean } | null>(null);
 
   const fetchConfigs = useCallback(async () => {
     if (!orgId) return;
     const { data } = await supabase.from("integration_configs").select("*").eq("org_id", orgId) as any;
     setConfigs(data || []);
   }, [orgId]);
+
+  const fetchDefaultsServidor = useCallback(async () => {
+    try {
+      const { data } = await supabase.functions.invoke("gmail-get-defaults");
+      if (data && !data.error) setServidor(data as typeof servidor);
+    } catch {
+      // Falha aqui só faz o card cair no que a tabela diz. Não vale toast.
+    }
+  }, []);
 
   const fetchEmailConnections = useCallback(async () => {
     if (!orgId) return;
@@ -58,7 +80,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
     setEmailConnections(data || []);
   }, [orgId]);
 
-  useEffect(() => { fetchConfigs(); fetchEmailConnections(); }, [fetchConfigs, fetchEmailConnections]);
+  useEffect(() => { fetchConfigs(); fetchEmailConnections(); fetchDefaultsServidor(); }, [fetchConfigs, fetchEmailConnections, fetchDefaultsServidor]);
 
   const getConfig = (provider: string) => configs.find((c) => c.provider === provider);
 
@@ -233,6 +255,12 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
     connectAction?: () => void | Promise<void>;
     connectLoading?: boolean;
     fields: CampoIntegracao[];
+    /**
+     * Fora do grid, mas ainda na lista. O diálogo de configuração acha os
+     * campos por `integrations.find(...)`, então a entrada precisa existir
+     * mesmo quando o card próprio dela não deve aparecer.
+     */
+    hidden?: boolean;
   };
 
   const integrations: Integracao[] = [
@@ -265,7 +293,12 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
       ],
     },
     {
-      provider: "gmail_credentials", name: "Gmail — Credenciais OAuth", icon: Mail,
+      // ESCONDIDA: renderizava um segundo card idêntico ao "Google — credenciais
+      // OAuth" logo acima, os dois gravando em integration_configs com provider
+      // "gmail". Dois cards para a mesma coisa, sem dizer qual usar. A entrada
+      // permanece porque é daqui que o diálogo tira os campos.
+      hidden: true,
+      provider: "gmail_credentials", name: "Google — credenciais OAuth", icon: Mail,
       description: "Configure Client ID e Client Secret para conectar contas Gmail",
       fields: [
         { key: "client_id", label: "Google OAuth Client ID", placeholder: "xxxxxxx.apps.googleusercontent.com", type: "secret" as const,
@@ -320,7 +353,12 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   ];
 
   const gmailCredentials = getConfig("gmail") || getConfig("gmail_credentials");
-  const hasGmailCredentials = !!(gmailCredentials?.config?.client_id && gmailCredentials?.config?.client_secret);
+  // Duas origens possíveis, e a da tabela GANHA da do servidor na resolução das
+  // edge functions. Distinguir importa: só olhar a tabela acusava falta de
+  // credencial com o secret corretamente configurado no Supabase.
+  const credNaTabela = !!(gmailCredentials?.config?.client_id && gmailCredentials?.config?.client_secret);
+  const credNoServidor = !!(servidor?.client_id && servidor?.client_secret_configured);
+  const hasGmailCredentials = credNaTabela || credNoServidor;
 
   return (
     <div className="space-y-6">
@@ -350,11 +388,35 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           </CardHeader>
           <CardContent className="space-y-3">
             {hasGmailCredentials ? (
-              <div className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/5 p-3">
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
-                <span className="text-xs font-medium text-success">
-                  Credenciais configuradas — a equipe já pode conectar as contas
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/5 p-3">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-success">
+                      Credenciais configuradas — a equipe já pode conectar as contas
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-success/80">
+                      {credNaTabela
+                        ? "Origem: preenchidas aqui, nesta tela."
+                        : "Origem: secrets do servidor (GOOGLE_OAUTH_CLIENT_ID). O segredo nunca chega ao navegador."}
+                    </p>
+                  </div>
+                </div>
+                {/* Duas fontes da mesma chave é pior que uma: a tabela ganha do
+                    secret, então se os valores divergirem as contas já conectadas
+                    param de renovar o token — e o sintoma aparece dias depois,
+                    sem relação aparente com o que foi mexido. */}
+                {credNaTabela && credNoServidor && (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      A credencial está em <strong>dois lugares</strong>: nesta tela e nos secrets do
+                      servidor. Os valores daqui têm prioridade. Se forem diferentes dos do servidor,
+                      as contas já conectadas deixam de renovar o acesso. Recomendado: apagar os
+                      campos aqui e deixar só o secret.
+                    </span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
@@ -385,15 +447,17 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 variant="outline"
                 size="sm"
                 className="h-7 text-[10px]"
-                onClick={async () => {
-                  const provider = "gmail_credentials";
-                  setEditProvider(provider);
-                  let base = gmailCredentials?.config || {};
-                  try {
-                    const { data } = await supabase.functions.invoke("gmail-get-defaults");
-                    if (data) base = { client_id: base.client_id || data.client_id, client_secret: base.client_secret || data.client_secret, ...base };
-                  } catch { /* ignore */ }
-                  setEditConfig(base);
+                onClick={() => {
+                  setEditProvider("gmail_credentials");
+                  // O client_id é público e pode ser pré-preenchido do servidor.
+                  // O secret NÃO vem: gmail-get-defaults devolve apenas se ele
+                  // existe. O código anterior lia `data.client_secret`, campo que
+                  // a função nunca retornou — o prefill era no-op silencioso.
+                  const salvo = (gmailCredentials?.config || {}) as Record<string, unknown>;
+                  setEditConfig({
+                    ...salvo,
+                    client_id: salvo.client_id || servidor?.client_id || "",
+                  });
                 }}
               >
                 {hasGmailCredentials ? "Editar credenciais" : "Configurar credenciais"}
@@ -402,7 +466,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           </CardContent>
         </Card>
 
-        {integrations.map((intg) => {
+        {integrations.filter((intg) => !intg.hidden).map((intg) => {
           const cfg = getConfig(intg.provider);
           const Icon = intg.icon;
           return (
