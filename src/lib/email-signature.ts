@@ -23,7 +23,15 @@ export type DadosAssinatura = {
   extra?: string;
 };
 
-const ACCENT = "#2563eb";
+/**
+ * Teal da Vionex, o mesmo --vx-teal do tema. Era #2563eb, um azul genérico de
+ * framework que não tem relação com a marca — e assinatura é justamente onde a
+ * identidade importa, porque ela sai da empresa.
+ */
+const ACCENT = "#007B8A";
+const TEXTO_FORTE = "#0F1923";
+const TEXTO_MEDIO = "#4A5568";
+const TEXTO_FRACO = "#9AA3B0";
 
 function escapar(s: string): string {
   return String(s).replace(
@@ -63,18 +71,22 @@ export function montarAssinaturaHtml(d: DadosAssinatura): string {
 
   if (nome) {
     linhas.push(
-      `<div style="font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#0f172a;font-size:22px;line-height:1.2;letter-spacing:-0.02em">${escapar(nome)}</div>`,
+      `<div style="font-family:Arial,Helvetica,sans-serif;font-weight:700;color:${TEXTO_FORTE};font-size:20px;line-height:1.25;letter-spacing:-0.01em">${escapar(nome)}</div>`,
     );
   }
 
   if (cargo || empresa) {
-    const c = cargo ? `<span style="color:#475569">${escapar(cargo)}</span>` : "";
-    const sep = cargo && empresa ? `<span style="color:#cbd5e1;margin:0 8px">•</span>` : "";
+    // Cargo e empresa numa linha só, com a empresa destacada: é a informação
+    // que identifica de onde a pessoa fala.
+    const c = cargo ? `<span style="color:${TEXTO_MEDIO}">${escapar(cargo)}</span>` : "";
+    const sep = cargo && empresa
+      ? `<span style="color:${TEXTO_FRACO};padding:0 7px">|</span>`
+      : "";
     const e = empresa
-      ? `<span style="color:${ACCENT};font-weight:600">${escapar(empresa)}</span>`
+      ? `<span style="color:${ACCENT};font-weight:700">${escapar(empresa)}</span>`
       : "";
     linhas.push(
-      `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;margin-top:4px">${c}${sep}${e}</div>`,
+      `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.4;margin-top:5px">${c}${sep}${e}</div>`,
     );
   }
 
@@ -87,22 +99,29 @@ export function montarAssinaturaHtml(d: DadosAssinatura): string {
   //
   // Rótulo curto em maiúscula resolve com tipografia: identifica a linha, é
   // legível em qualquer fonte, e não depende de suporte a caractere nenhum.
+  //
+  // Cada contato é uma LINHA DE TABELA, não uma div com span de largura fixa.
+  // `display:inline-block` com width é ignorado pelo Outlook, que renderiza com
+  // motor do Word: os rótulos saíam desalinhados e o valor colado neles. Célula
+  // de tabela com width funciona em todos.
   const contatos: string[] = [];
-  const rotulo = `display:inline-block;width:52px;color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;vertical-align:middle`;
-  const linhaContato = `font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#334155;margin-top:7px`;
+  const rotulo = `font-family:Arial,Helvetica,sans-serif;color:${TEXTO_FRACO};font-size:10px;font-weight:700;letter-spacing:0.1em;padding:3px 12px 3px 0;white-space:nowrap;vertical-align:middle`;
+  const valor = `font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${TEXTO_MEDIO};padding:3px 0;vertical-align:middle`;
+  const linha = (r: string, v: string) =>
+    `<tr><td style="${rotulo}">${r}</td><td style="${valor}">${v}</td></tr>`;
 
   if (telefone) {
     // O href só aceita dígitos e o "+" do código do país; o texto visível
     // mantém a formatação que a pessoa digitou.
     const discar = telefone.replace(/[^+\d]/g, "");
     contatos.push(
-      `<div style="${linhaContato}"><span style="${rotulo}">Tel</span><a href="tel:${escapar(discar)}" style="color:#334155;text-decoration:none;vertical-align:middle">${escapar(telefone)}</a></div>`,
+      linha("TEL", `<a href="tel:${escapar(discar)}" style="color:${TEXTO_MEDIO};text-decoration:none">${escapar(telefone)}</a>`),
     );
   }
 
   if (email) {
     contatos.push(
-      `<div style="${linhaContato}"><span style="${rotulo}">E-mail</span><a href="mailto:${escapar(email)}" style="color:#334155;text-decoration:none;vertical-align:middle">${escapar(email)}</a></div>`,
+      linha("E-MAIL", `<a href="mailto:${escapar(email)}" style="color:${TEXTO_MEDIO};text-decoration:none">${escapar(email)}</a>`),
     );
   }
 
@@ -111,15 +130,19 @@ export function montarAssinaturaHtml(d: DadosAssinatura): string {
     const url = site.startsWith("http") ? site : `https://${site}`;
     const visivel = site.replace(/^https?:\/\//, "");
     contatos.push(
-      `<div style="${linhaContato}"><span style="${rotulo}">Site</span><a href="${escapar(url)}" style="color:${ACCENT};text-decoration:none;font-weight:600;vertical-align:middle">${escapar(visivel)}</a></div>`,
+      linha("SITE", `<a href="${escapar(url)}" style="color:${ACCENT};text-decoration:none;font-weight:600">${escapar(visivel)}</a>`),
     );
   }
 
-  if (contatos.length) linhas.push(`<div style="margin-top:16px">${contatos.join("")}</div>`);
+  if (contatos.length) {
+    linhas.push(
+      `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:14px">${contatos.join("")}</table>`,
+    );
+  }
 
   if (extra) {
     linhas.push(
-      `<div style="font-family:Arial,Helvetica,sans-serif;color:#64748b;font-size:14px;margin-top:14px;line-height:1.5">${escapar(extra).replace(/\n/g, "<br/>")}</div>`,
+      `<div style="font-family:Arial,Helvetica,sans-serif;color:${TEXTO_FRACO};font-size:12px;margin-top:14px;line-height:1.55">${escapar(extra).replace(/\n/g, "<br/>")}</div>`,
     );
   }
 
@@ -145,5 +168,5 @@ export function montarAssinaturaHtml(d: DadosAssinatura): string {
     ? `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:22px;vertical-align:middle"><img src="${escapar(fotoUrl)}" alt="" width="110" height="110" style="width:110px;height:110px;border-radius:8px;display:block;border:0;object-fit:contain"/></td><td style="vertical-align:middle;border-left:3px solid ${ACCENT};padding-left:22px">`
     : `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:0;vertical-align:middle;border-left:3px solid ${ACCENT};padding-left:20px">`;
 
-  return `<div style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:16px">${abertura}${linhas.join("")}</td></tr></table></div>`;
+  return `<div style="border-top:1px solid #E4E7EC;padding-top:18px;margin-top:18px">${abertura}${linhas.join("")}</td></tr></table></div>`;
 }

@@ -136,9 +136,25 @@ describe("montarAssinaturaHtml() — estrutura para cliente de e-mail", () => {
 
   it("identifica cada contato por rótulo legível", () => {
     const html = montarAssinaturaHtml({ telefone: "11999999999", email: "a@b.com", site: "x.com" });
-    expect(html).toContain(">Tel<");
-    expect(html).toContain(">E-mail<");
-    expect(html).toContain(">Site<");
+    expect(html).toContain(">TEL<");
+    expect(html).toContain(">E-MAIL<");
+    expect(html).toContain(">SITE<");
+  });
+
+  it("alinha os contatos por tabela, não por span de largura fixa", () => {
+    // display:inline-block com width é ignorado pelo Outlook, que renderiza com
+    // o motor do Word — os rótulos saíam desalinhados e o valor colado neles.
+    const html = montarAssinaturaHtml({ telefone: "11999999999", email: "a@b.com" });
+    expect(html).toContain("<tr>");
+    expect(html).toContain("<td");
+  });
+
+  it("usa o teal da marca, não um azul genérico", () => {
+    // Assinatura é onde a identidade importa: ela sai da empresa. O template
+    // nasceu com #2563eb, azul padrão de framework sem relação com a Vionex.
+    const html = montarAssinaturaHtml({ empresa: "Vionex" });
+    expect(html).toContain("#007B8A");
+    expect(html).not.toContain("#2563eb");
   });
 
   it("quebra de linha do texto adicional vira <br/>", () => {

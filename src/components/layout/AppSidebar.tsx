@@ -121,7 +121,21 @@ export function AppSidebar() {
             <img
               src={vionexLogo}
               alt="VIONEX"
-              className={collapsed ? "h-10 w-10 object-contain" : "w-full max-w-[160px] h-auto object-contain"}
+              /*
+               * Recolhida, mostra SÓ o símbolo. O arquivo é a marca horizontal
+               * (338x122): com object-contain num quadrado de 40px ele encolhe
+               * para ~40x14 e o "vionex" vira um borrão ilegível.
+               *
+               * `object-cover` + `object-left` recorta em vez de encolher — o
+               * navegador escala pela altura e corta a largura, e como o símbolo
+               * ocupa o terço esquerdo do arquivo, sobra exatamente ele. Evita
+               * manter um segundo arquivo só para este estado.
+               */
+              className={
+                collapsed
+                  ? "h-9 w-9 object-cover object-left"
+                  : "w-full max-w-[160px] h-auto object-contain"
+              }
             />
           </div>
         </SidebarHeader>
@@ -172,7 +186,9 @@ export function AppSidebar() {
 
           {/* Nav groups */}
           {visibleGroups.map((group) => (
-            <SidebarGroup key={group.label}>
+            // Sem rótulo, o espaço que o separava some e os grupos encostam.
+            // Uma margem menor mantém a leitura de blocos sem o vão do texto.
+            <SidebarGroup key={group.label} className={collapsed ? "mt-2 py-0" : ""}>
               <SidebarGroupContent>
                 {!collapsed && (
                   <p className="mb-1 mt-3 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">
