@@ -79,6 +79,12 @@ const MOTIVO_CALLBACK: Record<string, string> = {
   parametros_invalidos: "O retorno do Google veio incompleto. Tente de novo.",
   sem_credencial:
     "A credencial do Google da empresa não está cadastrada. Peça a um administrador.",
+  codigo_usado_ou_expirado:
+    "O Google recusou o código de autorização (invalid_grant). Quase sempre é código já usado — acontece ao recarregar a página de retorno, voltar no navegador ou reaproveitar um link antigo. Comece de novo pelo botão Conectar, numa aba só.",
+  uri_divergente:
+    "O endereço de retorno cadastrado no Google Cloud não é o mesmo que o CRM usa. Um administrador precisa conferir a URI de redirecionamento autorizada.",
+  credencial_recusada:
+    "O Google não reconheceu a credencial da empresa. Um administrador precisa recadastrá-la em Integrações.",
   troca_de_token:
     "O Google recusou a troca do código de autorização. Se persistir, a credencial da empresa pode estar desatualizada.",
   sem_email: "Não foi possível ler o endereço da conta Google autorizada.",

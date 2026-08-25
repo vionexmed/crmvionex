@@ -150,8 +150,23 @@ serve(async (req) => {
     });
     const tok = await tokenRes.json();
     if (!tokenRes.ok) {
-      console.error("token exchange failed:", tok);
-      return falhar(finalReturn, "troca_de_token", tok.error_description || tok.error);
+      // O objeto inteiro vai para o log; o usuário recebe só o código.
+      console.error("token exchange failed:", { status: tokenRes.status, tok, redirectUri });
+
+      // O `error_description` do Google costuma ser "Bad Request" — texto que
+      // não diz nada e não sugere ação. Quem carrega a informação útil é o
+      // campo `error`, então é ele que decide a mensagem.
+      const codigo = typeof tok?.error === "string" ? tok.error : "";
+      const motivo =
+        codigo === "invalid_grant"
+          ? "codigo_usado_ou_expirado"
+          : codigo === "redirect_uri_mismatch"
+            ? "uri_divergente"
+            : codigo === "invalid_client"
+              ? "credencial_recusada"
+              : "troca_de_token";
+
+      return falhar(finalReturn, motivo, codigo || `HTTP ${tokenRes.status}`);
     }
 
     // Fetch user email
