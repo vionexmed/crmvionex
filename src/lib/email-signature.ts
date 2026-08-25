@@ -67,106 +67,85 @@ export function montarAssinaturaHtml(d: DadosAssinatura): string {
   const fotoUrl = limpo(d.fotoUrl);
   const extra = limpo(d.extra);
 
+  const FONTE = "Arial,Helvetica,sans-serif";
   const linhas: string[] = [];
 
   if (nome) {
     linhas.push(
-      `<div style="font-family:Arial,Helvetica,sans-serif;font-weight:700;color:${TEXTO_FORTE};font-size:20px;line-height:1.25;letter-spacing:-0.01em">${escapar(nome)}</div>`,
+      `<div style="font-family:${FONTE};font-size:19px;font-weight:600;color:${TEXTO_FORTE};line-height:1.3;letter-spacing:-0.01em">${escapar(nome)}</div>`,
     );
   }
 
   if (cargo || empresa) {
-    // Cargo e empresa numa linha só, com a empresa destacada: é a informação
-    // que identifica de onde a pessoa fala.
-    const c = cargo ? `<span style="color:${TEXTO_MEDIO}">${escapar(cargo)}</span>` : "";
-    const sep = cargo && empresa
-      ? `<span style="color:${TEXTO_FRACO};padding:0 7px">|</span>`
-      : "";
+    // Ponto médio em vez de barra: separa sem desenhar. A empresa é a única
+    // palavra em destaque na assinatura inteira — é o que identifica de onde a
+    // pessoa fala, e um único ponto de cor pesa mais que vários.
+    const c = cargo ? escapar(cargo) : "";
+    const sep = cargo && empresa ? `<span style="color:${TEXTO_FRACO};padding:0 6px">·</span>` : "";
     const e = empresa
-      ? `<span style="color:${ACCENT};font-weight:700">${escapar(empresa)}</span>`
+      ? `<span style="color:${ACCENT};font-weight:600">${escapar(empresa)}</span>`
       : "";
     linhas.push(
-      `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.4;margin-top:5px">${c}${sep}${e}</div>`,
+      `<div style="font-family:${FONTE};font-size:14px;color:${TEXTO_MEDIO};line-height:1.45;margin-top:3px">${c}${sep}${e}</div>`,
     );
   }
 
-  // SEM ÍCONES, e é decisão, não esquecimento.
-  //
-  // O template usava ✆ (U+2706), um dingbat raro que quase nenhuma fonte de
-  // sistema traz — o cliente substitui pelo glifo mais próximo e sai um símbolo
-  // estranho. E 🌐 é emoji: colorido no Apple Mail, monocromático no Outlook,
-  // quadrado vazio em fontes antigas. Ícone que não se pode garantir é ruído.
-  //
-  // Rótulo curto em maiúscula resolve com tipografia: identifica a linha, é
-  // legível em qualquer fonte, e não depende de suporte a caractere nenhum.
-  //
-  // Cada contato é uma LINHA DE TABELA, não uma div com span de largura fixa.
-  // `display:inline-block` com width é ignorado pelo Outlook, que renderiza com
-  // motor do Word: os rótulos saíam desalinhados e o valor colado neles. Célula
-  // de tabela com width funciona em todos.
+  // SEM RÓTULOS. Telefone, e-mail e site se identificam sozinhos — um tem @,
+  // outro tem dígitos, outro é domínio. "TEL", "E-MAIL" e "SITE" na frente
+  // dobravam a quantidade de texto para dizer o que já estava dito, e era isso
+  // que dava peso de formulário a um bloco que deveria ser um cartão.
   const contatos: string[] = [];
-  const rotulo = `font-family:Arial,Helvetica,sans-serif;color:${TEXTO_FRACO};font-size:10px;font-weight:700;letter-spacing:0.1em;padding:3px 12px 3px 0;white-space:nowrap;vertical-align:middle`;
-  const valor = `font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${TEXTO_MEDIO};padding:3px 0;vertical-align:middle`;
-  const linha = (r: string, v: string) =>
-    `<tr><td style="${rotulo}">${r}</td><td style="${valor}">${v}</td></tr>`;
+  const contato = `font-family:${FONTE};font-size:13px;line-height:1.5;margin-top:4px`;
 
   if (telefone) {
     // O href só aceita dígitos e o "+" do código do país; o texto visível
     // mantém a formatação que a pessoa digitou.
     const discar = telefone.replace(/[^+\d]/g, "");
     contatos.push(
-      linha("TEL", `<a href="tel:${escapar(discar)}" style="color:${TEXTO_MEDIO};text-decoration:none">${escapar(telefone)}</a>`),
+      `<div style="${contato}"><a href="tel:${escapar(discar)}" style="color:${TEXTO_MEDIO};text-decoration:none">${escapar(telefone)}</a></div>`,
     );
   }
 
   if (email) {
     contatos.push(
-      linha("E-MAIL", `<a href="mailto:${escapar(email)}" style="color:${TEXTO_MEDIO};text-decoration:none">${escapar(email)}</a>`),
+      `<div style="${contato}"><a href="mailto:${escapar(email)}" style="color:${TEXTO_MEDIO};text-decoration:none">${escapar(email)}</a></div>`,
     );
   }
 
   if (site) {
     // Sem protocolo o link vira relativo e quebra dentro do cliente de e-mail.
     const url = site.startsWith("http") ? site : `https://${site}`;
-    const visivel = site.replace(/^https?:\/\//, "");
+    const visivel = site.replace(/^https?:\/\//, "").replace(/\/$/, "");
     contatos.push(
-      linha("SITE", `<a href="${escapar(url)}" style="color:${ACCENT};text-decoration:none;font-weight:600">${escapar(visivel)}</a>`),
+      `<div style="${contato}"><a href="${escapar(url)}" style="color:${ACCENT};text-decoration:none">${escapar(visivel)}</a></div>`,
     );
   }
 
-  if (contatos.length) {
-    linhas.push(
-      `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:14px">${contatos.join("")}</table>`,
-    );
-  }
+  if (contatos.length) linhas.push(`<div style="margin-top:12px">${contatos.join("")}</div>`);
 
   if (extra) {
     linhas.push(
-      `<div style="font-family:Arial,Helvetica,sans-serif;color:${TEXTO_FRACO};font-size:12px;margin-top:14px;line-height:1.55">${escapar(extra).replace(/\n/g, "<br/>")}</div>`,
+      `<div style="font-family:${FONTE};color:${TEXTO_FRACO};font-size:11px;margin-top:14px;line-height:1.55">${escapar(extra).replace(/\n/g, "<br/>")}</div>`,
     );
   }
 
-  // COM IMAGEM: à esquerda, CENTRALIZADA na altura do bloco de texto.
+  // SEM BARRA VERTICAL entre imagem e texto. Ela era decoração: não separava
+  // nada que o espaço não separe, e puxava o olho para si em vez de para o
+  // nome. Sobra um respiro maior, que é o que dá ar ao bloco.
   //
-  // `vertical-align:middle` nas DUAS células: alinhada ao topo, a imagem ficava
-  // encostada na primeira linha enquanto o texto seguia por mais quatro — e a
-  // assinatura parecia torta.
-  //
-  // 110px em vez de 84: no tamanho anterior um logotipo virava um borrão.
+  // `vertical-align:middle` nas DUAS células: alinhada ao topo, a imagem
+  // encostava na primeira linha enquanto o texto seguia por mais quatro.
   //
   // `width` e `height` como ATRIBUTO além do estilo, porque vários clientes de
   // e-mail ignoram dimensão em CSS e renderizam no tamanho original — uma
   // imagem de 2000px estouraria a largura inteira.
   //
-  // Canto levemente arredondado em vez de círculo: o recorte circular serve a
-  // retrato e desfigura logotipo, e o campo aceita os dois. O Outlook ignora
-  // border-radius e mostra quadrado — com 8px a diferença é imperceptível,
-  // enquanto com 50% seria gritante.
-  //
-  // SEM IMAGEM: uma coluna, com a barra de destaque à esquerda.
+  // Canto levemente arredondado em vez de círculo: o campo aceita retrato E
+  // logotipo, e recorte circular desfigura o segundo. O Outlook ignora
+  // border-radius e mostra quadrado — com 6px a diferença é imperceptível.
   const abertura = fotoUrl
-    ? `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:22px;vertical-align:middle"><img src="${escapar(fotoUrl)}" alt="" width="110" height="110" style="width:110px;height:110px;border-radius:8px;display:block;border:0;object-fit:contain"/></td><td style="vertical-align:middle;border-left:3px solid ${ACCENT};padding-left:22px">`
-    : `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:0;vertical-align:middle;border-left:3px solid ${ACCENT};padding-left:20px">`;
+    ? `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="padding-right:22px;vertical-align:middle"><img src="${escapar(fotoUrl)}" alt="" width="104" height="104" style="width:104px;height:104px;border-radius:6px;display:block;border:0;object-fit:contain"/></td><td style="vertical-align:middle">`
+    : `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="vertical-align:middle">`;
 
-  return `<div style="border-top:1px solid #E4E7EC;padding-top:18px;margin-top:18px">${abertura}${linhas.join("")}</td></tr></table></div>`;
+  return `<div style="border-top:1px solid #E4E7EC;padding-top:20px;margin-top:24px">${abertura}${linhas.join("")}</td></tr></table></div>`;
 }

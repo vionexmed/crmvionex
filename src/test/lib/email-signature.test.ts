@@ -106,14 +106,16 @@ describe("montarAssinaturaHtml() — estrutura para cliente de e-mail", () => {
     // Vários clientes de e-mail ignoram dimensão em CSS e renderizam a imagem
     // no tamanho original — o que estouraria a largura da assinatura.
     const html = montarAssinaturaHtml({ fotoUrl: "https://x.com/a.png" });
-    expect(html).toMatch(/<img[^>]*\swidth="110"/);
-    expect(html).toMatch(/<img[^>]*\sheight="110"/);
+    expect(html).toMatch(/<img[^>]*\swidth="104"/);
+    expect(html).toMatch(/<img[^>]*\sheight="104"/);
   });
 
-  it("sem foto, a barra fica à esquerda do texto e não há imagem", () => {
+  it("sem imagem, não sobra célula nem borda vazia", () => {
     const html = montarAssinaturaHtml({ nome: "Ana" });
     expect(html).not.toContain("<img");
-    expect(html).toContain("border-left");
+    // A barra vertical entre imagem e texto saiu: era decoração, e sem imagem
+    // virava um traço solto ao lado do nome.
+    expect(html).not.toContain("border-left");
   });
 
   it("a foto sozinha já conta como assinatura", () => {
@@ -134,19 +136,28 @@ describe("montarAssinaturaHtml() — estrutura para cliente de e-mail", () => {
     }
   });
 
-  it("identifica cada contato por rótulo legível", () => {
+  it("não rotula os contatos — eles se identificam sozinhos", () => {
+    // "TEL", "E-MAIL" e "SITE" na frente dobravam o texto para dizer o que já
+    // estava dito: um tem @, outro tem dígitos, outro é domínio. Era isso que
+    // dava peso de formulário a um bloco que deveria ser um cartão.
     const html = montarAssinaturaHtml({ telefone: "11999999999", email: "a@b.com", site: "x.com" });
-    expect(html).toContain(">TEL<");
-    expect(html).toContain(">E-MAIL<");
-    expect(html).toContain(">SITE<");
+    expect(html).not.toContain(">TEL<");
+    expect(html).not.toContain(">E-MAIL<");
+    expect(html).not.toContain(">SITE<");
   });
 
-  it("alinha os contatos por tabela, não por span de largura fixa", () => {
-    // display:inline-block com width é ignorado pelo Outlook, que renderiza com
-    // o motor do Word — os rótulos saíam desalinhados e o valor colado neles.
-    const html = montarAssinaturaHtml({ telefone: "11999999999", email: "a@b.com" });
-    expect(html).toContain("<tr>");
-    expect(html).toContain("<td");
+  it("cada contato é clicável", () => {
+    const html = montarAssinaturaHtml({ telefone: "11999999999", email: "a@b.com", site: "x.com" });
+    expect(html).toContain("href=\"tel:");
+    expect(html).toContain("href=\"mailto:");
+    expect(html).toContain("href=\"https://x.com\"");
+  });
+
+  it("um único ponto de cor: a empresa e o site", () => {
+    // Assinatura minimalista tem UM acento. Nome e cargo em neutro; o teal
+    // marca a empresa e o link, que é o que se quer que a pessoa clique.
+    const html = montarAssinaturaHtml({ nome: "Ana", cargo: "Consultora", empresa: "Vionex" });
+    expect(html.match(/#007B8A/g)?.length).toBe(1);
   });
 
   it("usa o teal da marca, não um azul genérico", () => {
