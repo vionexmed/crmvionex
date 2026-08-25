@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolverCredencialGoogle, renovarAccessToken } from "../_shared/google-credentials.ts";
+import { montarAssinaturaHtml } from "../_shared/email-signature.ts";
 import { captureException } from "../_shared/sentry.ts";
 
 const corsHeaders = {
@@ -261,42 +262,27 @@ serve(async (req) => {
       .maybeSingle();
     const fallbackSignatureHtml: string = sigRow?.html ?? "";
 
-    const escapeHtml = (s: string) => s.replace(/[<>&"']/g, (c) => ({ "<":"&lt;",">":"&gt;","&":"&amp;","\"":"&quot;","'":"&#39;" }[c] as string));
     const buildSignatureHtml = (): string => {
-      // Assinatura por CONTA tem prioridade sobre a assinatura da org
+      // 1º: a assinatura DA PESSOA, montada na tela e guardada pronta.
       if (connection?.signature_html) return `<br/><br/>${connection.signature_html}`;
-      const hasStructured = cfg.signature_name || cfg.signature_role || cfg.signature_company || cfg.signature_phone || cfg.signature_email || cfg.signature_website || cfg.signature_logo_url || cfg.signature_extra;
-      if (hasStructured) {
-        const accent = "#2563eb";
-        const rows: string[] = [];
-        if (cfg.signature_name) rows.push(`<div style="font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#0f172a;font-size:24px;line-height:1.25;letter-spacing:-0.01em">${escapeHtml(cfg.signature_name)}</div>`);
-        if (cfg.signature_role || cfg.signature_company) {
-          const role = cfg.signature_role ? `<span style="color:#475569">${escapeHtml(cfg.signature_role)}</span>` : "";
-          const sep = cfg.signature_role && cfg.signature_company ? `<span style="color:#cbd5e1;margin:0 8px">•</span>` : "";
-          const company = cfg.signature_company ? `<span style="color:${accent};font-weight:600">${escapeHtml(cfg.signature_company)}</span>` : "";
-          rows.push(`<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;margin-top:4px">${role}${sep}${company}</div>`);
-        }
-        const contactRows: string[] = [];
-        const iconStyle = "display:inline-block;width:18px;color:" + accent + ";font-weight:700;margin-right:10px;text-align:center;font-size:16px";
-        if (cfg.signature_phone) contactRows.push(`<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#334155;margin-top:8px"><span style="${iconStyle}">✆</span><a href="tel:${escapeHtml(String(cfg.signature_phone).replace(/[^+\d]/g,""))}" style="color:#334155;text-decoration:none">${escapeHtml(cfg.signature_phone)}</a></div>`);
-        if (cfg.signature_email) contactRows.push(`<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#334155;margin-top:6px"><span style="${iconStyle}">✉</span><a href="mailto:${escapeHtml(cfg.signature_email)}" style="color:#334155;text-decoration:none">${escapeHtml(cfg.signature_email)}</a></div>`);
-        if (cfg.signature_website) {
-          const url = String(cfg.signature_website).startsWith("http") ? cfg.signature_website : `https://${cfg.signature_website}`;
-          const display = String(cfg.signature_website).replace(/^https?:\/\//, "");
-          contactRows.push(`<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#334155;margin-top:6px"><span style="${iconStyle}">🌐</span><a href="${escapeHtml(url)}" style="color:${accent};text-decoration:none;font-weight:500">${escapeHtml(display)}</a></div>`);
-        }
-        if (contactRows.length) rows.push(`<div style="margin-top:14px">${contactRows.join("")}</div>`);
-        if (cfg.signature_extra) rows.push(`<div style="font-family:Arial,Helvetica,sans-serif;color:#64748b;font-size:14px;margin-top:14px;line-height:1.5">${escapeHtml(cfg.signature_extra).replace(/\n/g,"<br/>")}</div>`);
-        const logo = cfg.signature_logo_url
-          ? `<td style="padding-right:22px;vertical-align:top;border-right:4px solid ${accent}"><img src="${escapeHtml(cfg.signature_logo_url)}" alt="" style="max-height:120px;max-width:220px;display:block"/></td><td style="width:22px"></td>`
-          : `<td style="padding-right:0;vertical-align:top;border-left:4px solid ${accent};padding-left:18px">`;
-        const open = cfg.signature_logo_url ? "" : "";
-        const wrapperOpen = cfg.signature_logo_url
-          ? `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr>${logo}<td style="vertical-align:top">`
-          : `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr>${logo}`;
-        const wrapperClose = `</td></tr></table>`;
-        return `<br/><br/><div style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:16px">${wrapperOpen}${rows.join("")}${wrapperClose}</div>`;
-      }
+
+      // 2º: a da organização. Antes era renderizada aqui por um segundo
+      // template — e os dois divergiram: a tela mostrava um desenho e o e-mail
+      // enviado saía com ícones que não renderizam em cliente nenhum e um azul
+      // que não é da marca. Agora os dois usam o MESMO construtor.
+      const daOrg = montarAssinaturaHtml({
+        nome: cfg.signature_name as string | undefined,
+        cargo: cfg.signature_role as string | undefined,
+        empresa: cfg.signature_company as string | undefined,
+        telefone: cfg.signature_phone as string | undefined,
+        email: cfg.signature_email as string | undefined,
+        site: cfg.signature_website as string | undefined,
+        fotoUrl: cfg.signature_logo_url as string | undefined,
+        extra: cfg.signature_extra as string | undefined,
+      });
+      if (daOrg) return `<br/><br/>${daOrg}`;
+
+      // 3º e 4º: formatos antigos, mantidos para quem ainda os tem gravados.
       if (cfg.signature) return `<br/><br/>${(cfg.signature as string).replace(/\n/g, "<br/>")}`;
       if (fallbackSignatureHtml) return `<br/><br/>${fallbackSignatureHtml}`;
       return "";
