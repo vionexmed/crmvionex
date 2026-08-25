@@ -133,7 +133,7 @@ export function AppSidebar() {
                */
               className={
                 collapsed
-                  ? "h-9 w-9 object-cover object-left"
+                  ? "h-10 w-10 object-cover object-left"
                   : "w-full max-w-[160px] h-auto object-contain"
               }
             />
