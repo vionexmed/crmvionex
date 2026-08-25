@@ -135,10 +135,9 @@ export function MinhaAssinatura({
                   value={dados.fotoUrl ?? ""}
                   onChange={(url) => setDados({ ...dados, fotoUrl: url })}
                   rotulo="foto"
-                  redondo
                 />
                 <p className="text-[10px] leading-relaxed text-muted-foreground">
-                  Um retrato quadrado fica melhor — a foto é recortada em círculo. Muitos
+                  Serve foto ou logotipo — a imagem aparece inteira, sem recorte. Muitos
                   clientes de e-mail só carregam imagens depois que a pessoa autoriza, então
                   a assinatura precisa continuar legível sem ela.
                 </p>

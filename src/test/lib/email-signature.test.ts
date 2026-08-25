@@ -86,18 +86,28 @@ describe("montarAssinaturaHtml() — estrutura para cliente de e-mail", () => {
     expect(montarAssinaturaHtml({ nome: "Ana" }).startsWith("<br")).toBe(false);
   });
 
-  it("com foto, a imagem vem redonda e em coluna própria", () => {
+  it("com imagem, ela fica centralizada na altura do texto", () => {
+    // Alinhada ao topo, a imagem encostava na primeira linha enquanto o texto
+    // seguia por mais quatro — a assinatura parecia torta.
     const html = montarAssinaturaHtml({ nome: "Ana", fotoUrl: "https://x.com/a.png" });
     expect(html).toContain("<img");
-    expect(html).toContain("border-radius:50%");
+    expect(html.match(/vertical-align:middle/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("a foto traz width e height como ATRIBUTO, não só em CSS", () => {
+  it("a imagem não é recortada em círculo", () => {
+    // O campo aceita retrato E logotipo. Recorte circular serve ao primeiro e
+    // desfigura o segundo; canto levemente arredondado serve aos dois.
+    const html = montarAssinaturaHtml({ fotoUrl: "https://x.com/a.png" });
+    expect(html).not.toContain("border-radius:50%");
+    expect(html).toContain("object-fit:contain");
+  });
+
+  it("a imagem traz width e height como ATRIBUTO, não só em CSS", () => {
     // Vários clientes de e-mail ignoram dimensão em CSS e renderizam a imagem
     // no tamanho original — o que estouraria a largura da assinatura.
     const html = montarAssinaturaHtml({ fotoUrl: "https://x.com/a.png" });
-    expect(html).toMatch(/<img[^>]*\swidth="84"/);
-    expect(html).toMatch(/<img[^>]*\sheight="84"/);
+    expect(html).toMatch(/<img[^>]*\swidth="110"/);
+    expect(html).toMatch(/<img[^>]*\sheight="110"/);
   });
 
   it("sem foto, a barra fica à esquerda do texto e não há imagem", () => {
@@ -108,6 +118,27 @@ describe("montarAssinaturaHtml() — estrutura para cliente de e-mail", () => {
 
   it("a foto sozinha já conta como assinatura", () => {
     expect(montarAssinaturaHtml({ fotoUrl: "https://x.com/a.png" })).not.toBe("");
+  });
+
+  it("não usa dingbat nem emoji nos contatos", () => {
+    // ✆ (U+2706) quase nenhuma fonte de sistema traz, e o cliente substitui pelo
+    // glifo mais próximo — sai um símbolo estranho. 🌐 é emoji: colorido no
+    // Apple Mail, monocromático no Outlook, quadrado vazio em fonte antiga.
+    const html = montarAssinaturaHtml({
+      telefone: "11999999999",
+      email: "a@b.com",
+      site: "x.com",
+    });
+    for (const glifo of ["✆", "✉", "🌐", "☎", "📧", "📱"]) {
+      expect(html, `${glifo} não renderiza igual em todo cliente de e-mail`).not.toContain(glifo);
+    }
+  });
+
+  it("identifica cada contato por rótulo legível", () => {
+    const html = montarAssinaturaHtml({ telefone: "11999999999", email: "a@b.com", site: "x.com" });
+    expect(html).toContain(">Tel<");
+    expect(html).toContain(">E-mail<");
+    expect(html).toContain(">Site<");
   });
 
   it("quebra de linha do texto adicional vira <br/>", () => {
