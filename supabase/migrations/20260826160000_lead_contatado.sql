@@ -148,19 +148,17 @@ CREATE TRIGGER whatsapp_contatou
 
 -- ---------- 5. Índices ----------
 --
--- ANTES do backfill, de propósito: é ele que faz três EXISTS por contato, e sem
--- índice cada um vira varredura completa da tabela. O trigger também consulta
--- por contact_id em toda mensagem enviada.
+-- Nenhum. Eu havia criado três aqui, afirmando que `emails` e
+-- `whatsapp_messages` não tinham índice por contact_id. Tinham:
 --
--- `emails` e `whatsapp_messages` não tinham índice por contact_id nenhum.
-CREATE INDEX IF NOT EXISTS idx_emails_contact_direction
-  ON public.emails (contact_id, direction) WHERE contact_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_contact_direction
-  ON public.whatsapp_messages (contact_id, direction) WHERE contact_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_activities_contact_completed
-  ON public.activities (contact_id, completed_at) WHERE contact_id IS NOT NULL;
+--   idx_activities_contact_id       (20260315232842)
+--   idx_emails_contact_id           (20260315235301)
+--   idx_whatsapp_messages_contact   (20260513181405)
+--
+-- Os três cobrem tanto o EXISTS do backfill quanto a consulta do trigger.
+-- Acrescentar (contact_id, direction) por cima de (contact_id) daria ganho
+-- desprezível -- contact_id já é seletivo o bastante, são poucas linhas por
+-- contato -- e custaria escrita e disco em três das tabelas que mais crescem.
 
 -- ---------- 6. Quem já foi abordado antes destes triggers existirem ----------
 --

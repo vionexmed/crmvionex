@@ -76,8 +76,28 @@ describe("useDeleteContacts()", () => {
   it("calls contactsApi.deleteMany with the given ids", async () => {
     mockContactsApi.deleteMany.mockResolvedValue(undefined);
     const { result } = renderHook(() => useDeleteContacts(), { wrapper });
-    await result.current.mutateAsync(["id-1", "id-2"]);
-    expect(mockContactsApi.deleteMany).toHaveBeenCalledWith(["id-1", "id-2"]);
+    await result.current.mutateAsync({ ids: ["id-1", "id-2"] });
+    expect(mockContactsApi.deleteMany).toHaveBeenCalledWith(["id-1", "id-2"], undefined);
+  });
+
+  /**
+   * `comVinculos` apaga negócios e atividades junto. O default TEM de ser não
+   * apagar: um chamador que esqueça o parâmetro não pode destruir histórico por
+   * omissão.
+   */
+  it("não apaga vínculos por omissão", async () => {
+    mockContactsApi.deleteMany.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useDeleteContacts(), { wrapper });
+    await result.current.mutateAsync({ ids: ["id-1"] });
+    const [, comVinculos] = mockContactsApi.deleteMany.mock.calls.at(-1)!;
+    expect(comVinculos).toBeFalsy();
+  });
+
+  it("apaga vínculos quando pedido explicitamente", async () => {
+    mockContactsApi.deleteMany.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useDeleteContacts(), { wrapper });
+    await result.current.mutateAsync({ ids: ["id-1"], comVinculos: true });
+    expect(mockContactsApi.deleteMany).toHaveBeenCalledWith(["id-1"], true);
   });
 });
 

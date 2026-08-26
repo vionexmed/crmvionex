@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, User, Handshake } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { mensagemErro } from "@/lib/erro-supabase";
 
 /**
  * Página de aceite de convite. O convidado chega aqui autenticado pelo
@@ -154,7 +155,7 @@ export default function AcceptInvite() {
     } catch (err: unknown) {
       toast({
         title: "Erro ao concluir cadastro",
-        description: err instanceof Error ? err.message : String(err),
+        description: mensagemErro(err),
         variant: "destructive",
       });
     } finally {

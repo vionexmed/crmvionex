@@ -59,8 +59,15 @@ export function useDeleteContacts() {
   const qc = useQueryClient();
   const { orgId } = useOrg();
   return useMutation({
-    mutationFn: (ids: string[]) => contactsApi.deleteMany(ids),
-    onSuccess: () => qc.invalidateQueries({ queryKey: contactsKeys.all(orgId ?? "") }),
+    mutationFn: ({ ids, comVinculos }: { ids: string[]; comVinculos?: boolean }) =>
+      contactsApi.deleteMany(ids, comVinculos),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: contactsKeys.all(orgId ?? "") });
+      // A exclusão em cascata apaga negócios e atividades: sem invalidar, o
+      // funil continuaria mostrando negócio de contato que não existe mais.
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
+    },
   });
 }
 

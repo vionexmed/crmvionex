@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
+import { mensagemErro } from "@/lib/erro-supabase";
 
 const TRAVA_RECARGA = "chunk_reload";
 
@@ -67,7 +68,7 @@ function lazyChunk<T extends React.ComponentType<unknown>>(
         return mod;
       })
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = mensagemErro(err);
         if (
           msg.includes("mime") ||
           msg.includes("MIME") ||

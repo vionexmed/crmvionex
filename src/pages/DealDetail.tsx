@@ -21,14 +21,17 @@ import {
   Phone, Mail, FileText, CheckSquare, CalendarDays, Edit2, Check, X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useDeal, useUpdateDeal, useUpdateDealStatus, useUpdateDealStage } from "@/hooks/queries/useDeals";
+import { useDeal, useUpdateDeal, useUpdateDealStatus, useUpdateDealStage, dealsKeys } from "@/hooks/queries/useDeals";
 import { useDealActivities, useCreateActivity, activitiesKeys } from "@/hooks/queries/useActivities";
 import { usePipelineStages } from "@/hooks/queries/usePipelines";
 import { useMembers } from "@/hooks/queries/useMembers";
+import { useCompanies } from "@/hooks/queries/useCompanies";
+import { ContactDrawer } from "@/components/crm/ContactDrawer";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
 
 type ActivityType = Database["public"]["Enums"]["activity_type"];
+type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];
 
 function formatCurrency(value: number, currency: string = "BRL") {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
@@ -55,6 +58,7 @@ export default function DealDetail() {
   // O responsável vem daqui, não por embed: não existe FK deals->profiles.
   // Mesmo join cliente-side de Deals.tsx. Ver o comentário em lib/api/deals.ts.
   const { data: members = [] } = useMembers();
+  const { data: companies = [] } = useCompanies();
 
   const updateDeal = useUpdateDeal();
   const updateDealStatus = useUpdateDealStatus();
@@ -72,6 +76,9 @@ export default function DealDetail() {
   const [lossModalOpen, setLossModalOpen] = useState(false);
   const [lossReason, setLossReason] = useState("");
   const [lossNote, setLossNote] = useState("");
+
+  // Painel da pessoa. O contato já vem no embed do negócio.
+  const [contatoNoPainel, setContatoNoPainel] = useState<ContactRow | null>(null);
 
   // Add activity
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, title: "", body: "" });
@@ -400,7 +407,14 @@ export default function DealDetail() {
             </CardHeader>
             <CardContent>
               {contact ? (
-                <div className="flex items-center gap-2">
+                // Clicável: abre o painel da pessoa. Antes era um cartão morto --
+                // o nome estava ali e não levava a lugar nenhum, então para ver o
+                // histórico dela era preciso ir a Contatos e buscar pelo nome.
+                <button
+                  type="button"
+                  onClick={() => setContatoNoPainel(contact)}
+                  className="flex w-full items-center gap-2 rounded-md p-1 text-left transition-colors hover:bg-accent/40"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary/10 text-primary text-xs">
                       {contact.first_name?.[0] || "?"}{contact.last_name?.[0] || ""}
@@ -410,7 +424,7 @@ export default function DealDetail() {
                     <p className="text-sm font-medium">{contact.first_name} {contact.last_name}</p>
                     {contact.email && <p className="text-xs text-muted-foreground">{contact.email}</p>}
                   </div>
-                </div>
+                </button>
               ) : <p className="text-sm text-muted-foreground">Nenhum contato vinculado</p>}
             </CardContent>
           </Card>
@@ -517,6 +531,20 @@ export default function DealDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* O drawer escreve direto no supabase, fora do react-query: `onUpdate`
+          precisa invalidar o negócio TAMBÉM, senão o cartão de contato aqui
+          continuaria mostrando o nome antigo depois de editar. */}
+      <ContactDrawer
+        contact={contatoNoPainel}
+        onClose={() => setContatoNoPainel(null)}
+        onUpdate={() => {
+          qc.invalidateQueries({ queryKey: ["contacts"] });
+          qc.invalidateQueries({ queryKey: dealsKeys.detail(id ?? "") });
+        }}
+        companies={companies}
+        members={members}
+      />
     </div>
   );
 }

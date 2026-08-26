@@ -166,7 +166,43 @@ export const contactsApi = {
     return data;
   },
 
-  deleteMany: async (ids: string[]): Promise<void> => {
+  /**
+   * O que impede a exclusão destes contatos.
+   *
+   * `deals.contact_id` e `activities.contact_id` foram criados sem cláusula
+   * ON DELETE, então valem NO ACTION: o Postgres recusa apagar o contato. Já
+   * `emails.contact_id` e `whatsapp_messages.contact_id` são ON DELETE SET NULL
+   * -- as mensagens sobrevivem sem dono, e por isso não travam nada.
+   *
+   * Contar antes serve para a tela dizer o que vai acontecer em vez de deixar o
+   * banco recusar com "violates foreign key constraint".
+   */
+  contarVinculos: async (ids: string[]): Promise<{ negocios: number; atividades: number }> => {
+    const [d, a] = await Promise.all([
+      supabase.from(TABLES.DEALS).select("id", { count: "exact", head: true }).in("contact_id", ids),
+      supabase.from("activities").select("id", { count: "exact", head: true }).in("contact_id", ids),
+    ]);
+    if (d.error) throw d.error;
+    if (a.error) throw a.error;
+    return { negocios: d.count ?? 0, atividades: a.count ?? 0 };
+  },
+
+  /**
+   * Exclui contatos e, quando `comVinculos`, os negócios e atividades deles.
+   *
+   * A ordem importa: os filhos primeiro, senão o Postgres recusa. E não há
+   * transação aqui -- o PostgREST não expõe uma. Se o passo do contato falhar
+   * depois de apagar negócios, o resultado é um contato sem negócios, não uma
+   * exclusão pela metade que se possa desfazer. É o motivo de a tela pedir
+   * confirmação nomeando o que será apagado.
+   */
+  deleteMany: async (ids: string[], comVinculos = false): Promise<void> => {
+    if (comVinculos) {
+      const { error: eDeals } = await supabase.from(TABLES.DEALS).delete().in("contact_id", ids);
+      if (eDeals) throw eDeals;
+      const { error: eAct } = await supabase.from("activities").delete().in("contact_id", ids);
+      if (eAct) throw eAct;
+    }
     const { error } = await supabase.from(TABLES.CONTACTS).delete().in("id", ids);
     if (error) throw error;
   },

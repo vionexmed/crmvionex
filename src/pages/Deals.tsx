@@ -26,14 +26,17 @@ import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Trash2, Loader2, Che
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { DealsKanban } from "@/components/crm/DealsKanban";
+import { ContactDrawer } from "@/components/crm/ContactDrawer";
 import { DealsList } from "@/components/crm/DealsList";
 import { DealsForecast } from "@/components/crm/DealsForecast";
 import { DealsFilters, type DealFilters } from "@/components/crm/DealsFilters";
 import type { Database } from "@/integrations/supabase/types";
 import type { EditingStage } from "@/lib/api/pipelines";
+import { mensagemErro } from "@/lib/erro-supabase";
 export type { DealWithRelations } from "@/lib/api/deals";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
+type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];
 type ViewMode = "kanban" | "list" | "forecast";
 
 export default function Deals() {
@@ -81,6 +84,9 @@ export default function Deals() {
     () => listDealsResult.data.map((d) => ({ ...d, owner: members.find((m) => m.id === d.owner_id) ?? null })),
     [listDealsResult.data, members]
   );
+  // Painel da pessoa. O contato vem do embed do próprio negócio, então abrir o
+  // painel não custa consulta nenhuma.
+  const [contatoNoPainel, setContatoNoPainel] = useState<ContactRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
   const [form, setForm] = useState<Partial<Deal>>({});
@@ -218,7 +224,7 @@ export default function Deals() {
     setSheetOpen(false);
     toast({ title: editing ? "Negócio atualizado" : "Negócio criado" });
     } catch (e: unknown) {
-      toast({ title: "Erro ao salvar negócio", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao salvar negócio", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -227,7 +233,7 @@ export default function Deals() {
       await updateStatus({ id: dealId, status: "won" });
       toast({ title: "Negócio marcado como ganho! 🎉" });
     } catch (e: unknown) {
-      toast({ title: "Erro ao atualizar negócio", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao atualizar negócio", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -246,7 +252,7 @@ export default function Deals() {
       setLossModalOpen(false);
       toast({ title: "Negócio marcado como perdido" });
     } catch (e: unknown) {
-      toast({ title: "Erro ao atualizar negócio", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao atualizar negócio", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -258,7 +264,7 @@ export default function Deals() {
       const messages = { won: "ganhos", lost: "perdidos", delete: "excluídos" };
       toast({ title: `${ids.length} negócios ${messages[action]}` });
     } catch (e: unknown) {
-      toast({ title: "Erro na ação em lote", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro na ação em lote", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -361,6 +367,7 @@ export default function Deals() {
           stages={pipelineStages}
           onDragEnd={handleDragEnd}
           onDealClick={(d) => navigate(`/deals/${d.id}`)}
+          onContactClick={setContatoNoPainel}
           onAddDeal={openNew}
           onMarkWon={markAsWon}
           onMarkLost={openLossModal}
@@ -574,6 +581,21 @@ export default function Deals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Painel da pessoa, sem sair do quadro.
+          `onUpdate` invalida negócios TAMBÉM: editar a pessoa muda o subtítulo
+          dos cards, e o drawer escreve direto no supabase, fora do react-query --
+          sem isto o card continuaria mostrando o nome antigo. */}
+      <ContactDrawer
+        contact={contatoNoPainel}
+        onClose={() => setContatoNoPainel(null)}
+        onUpdate={() => {
+          qc.invalidateQueries({ queryKey: ["contacts"] });
+          qc.invalidateQueries({ queryKey: ["deals"] });
+        }}
+        companies={companies}
+        members={members}
+      />
     </div>
   );
 }

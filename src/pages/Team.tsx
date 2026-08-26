@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { mensagemErro } from "@/lib/erro-supabase";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -218,7 +219,7 @@ export default function Team() {
       error = r.error;
     } catch (e) {
       // Rede fora, função ausente, qualquer estouro: o botão precisa voltar.
-      error = { message: e instanceof Error ? e.message : String(e) };
+      error = { message: mensagemErro(e) };
     } finally {
       setRemovendoAgora(false);
     }

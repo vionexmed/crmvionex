@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Trophy, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import {
@@ -11,6 +11,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
+type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 
 function formatCurrency(value: number, currency: string = "BRL") {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
@@ -22,10 +23,13 @@ function DealCard({
   deal,
   stageColor,
   onClick,
+  onContactClick,
 }: {
   deal: DealWithRelations;
   stageColor?: string;
   onClick: () => void;
+  /** Abre o painel da PESSOA, sem sair do quadro. */
+  onContactClick?: (contact: Contact) => void;
 }) {
   // O clone visual do drag é o DragOverlay — o card original só fica translúcido
   // (aplicar transform aqui fazia DOIS cards se moverem ao mesmo tempo)
@@ -35,23 +39,70 @@ function DealCard({
     ...(isDragging ? { opacity: 0.4 } : {}),
   };
 
-  const subtitleParts: string[] = [];
-  if (deal.company) subtitleParts.push(deal.company.name);
-  if (deal.contact) subtitleParts.push(`${deal.contact.first_name} ${deal.contact.last_name || ""}`.trim());
-  const subtitle = subtitleParts.join(" · ");
+  // Empresa e pessoa deixaram de ser uma string só: o nome da pessoa agora é
+  // clicável e abre o painel dela. Antes o subtítulo inteiro era texto morto --
+  // o nome estava ali e não levava a nada.
+  const nomeContato = deal.contact
+    ? `${deal.contact.first_name} ${deal.contact.last_name || ""}`.trim()
+    : null;
   const probability = Number(deal.probability) || 0;
 
+  // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
+  // pode abrir painel. Mesmo padrão de ContactsKanbanByOwner.
+  const arrastou = useRef(false);
+  useEffect(() => {
+    if (isDragging) arrastou.current = true;
+  }, [isDragging]);
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="vx-deal-card" onClick={onClick}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="vx-deal-card"
+      onPointerDown={(e) => {
+        arrastou.current = false;
+        listeners?.onPointerDown?.(e);
+      }}
+      onClick={() => {
+        if (arrastou.current) {
+          arrastou.current = false;
+          return;
+        }
+        onClick();
+      }}
+    >
       {/* Title */}
       <p className="truncate text-[13px] font-semibold leading-snug text-foreground mb-0.5">
         {deal.title}
       </p>
 
-      {/* Subtitle */}
-      {subtitle && (
+      {/* Empresa (texto) · Pessoa (clicável) */}
+      {(deal.company || nomeContato) && (
         <p className="truncate text-[11px] text-muted-foreground leading-tight mb-2">
-          {subtitle}
+          {deal.company?.name}
+          {deal.company && nomeContato && " · "}
+          {nomeContato && (
+            onContactClick && deal.contact ? (
+              <button
+                type="button"
+                // stopPropagation senão o clique sobe para o card e navega para o
+                // negócio -- o painel abriria e a rota mudaria no mesmo clique.
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (arrastou.current) return;
+                  onContactClick(deal.contact!);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+              >
+                {nomeContato}
+              </button>
+            ) : (
+              nomeContato
+            )
+          )}
         </p>
       )}
 
@@ -88,11 +139,13 @@ function StageColumn({
   stage,
   deals,
   onDealClick,
+  onContactClick,
   onAddDeal,
 }: {
   stage: Stage;
   deals: DealWithRelations[];
   onDealClick: (d: DealWithRelations) => void;
+  onContactClick?: (contact: Contact) => void;
   onAddDeal: (stageId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
@@ -132,6 +185,7 @@ function StageColumn({
             deal={deal}
             stageColor={stage.color || undefined}
             onClick={() => onDealClick(deal)}
+            onContactClick={onContactClick}
           />
         ))}
 
@@ -245,13 +299,15 @@ interface DealsKanbanProps {
   stages: Stage[];
   onDragEnd: (dealId: string, newStageId: string) => void;
   onDealClick: (deal: DealWithRelations) => void;
+  /** Clique no nome da pessoa: abre o painel dela sem sair do quadro. */
+  onContactClick?: (contact: Contact) => void;
   onAddDeal: (stageId?: string) => void;
   onMarkWon: (dealId: string) => void;
   onMarkLost: (dealId: string) => void;
 }
 
 export function DealsKanban({
-  deals, wonDeals, lostDeals, stages, onDragEnd, onDealClick, onAddDeal, onMarkWon, onMarkLost,
+  deals, wonDeals, lostDeals, stages, onDragEnd, onDealClick, onContactClick, onAddDeal, onMarkWon, onMarkLost,
 }: DealsKanbanProps) {
   const [activeDeal, setActiveDeal] = useState<DealWithRelations | null>(null);
 
@@ -315,6 +371,7 @@ export function DealsKanban({
               stage={stage}
               deals={deals.filter((d) => d.stage_id === stage.id)}
               onDealClick={onDealClick}
+              onContactClick={onContactClick}
               onAddDeal={onAddDeal}
             />
           ))}

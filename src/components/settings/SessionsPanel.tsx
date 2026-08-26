@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Monitor, Smartphone, Tablet, HelpCircle, LogOut, RefreshCw, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { lerUserAgent, tempoRelativo } from "@/lib/user-agent";
+import { mensagemErro } from "@/lib/erro-supabase";
 
 type Sessao = {
   session_id: string;
@@ -60,7 +61,7 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
       data = r.data;
       error = r.error;
     } catch (e) {
-      error = { message: e instanceof Error ? e.message : String(e) };
+      error = { message: mensagemErro(e) };
     }
 
     setCarregando(false);
@@ -84,7 +85,7 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
       ).call(supabase, "revoke_session", { _session_id: s.session_id });
       error = r.error;
     } catch (e) {
-      error = { message: e instanceof Error ? e.message : String(e) };
+      error = { message: mensagemErro(e) };
     } finally {
       setEncerrando(null);
     }

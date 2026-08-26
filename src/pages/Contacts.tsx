@@ -46,6 +46,10 @@ import { ContactDrawer } from "@/components/crm/ContactDrawer";
 import { ContactCreateModal } from "@/components/crm/ContactCreateModal";
 import { CSVImportModal } from "@/components/crm/CSVImportModal";
 import { useDebounce } from "@/hooks/useDebounce";
+import { mensagemErro } from "@/lib/erro-supabase";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import type { Database } from "@/integrations/supabase/types";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -120,6 +124,8 @@ export default function Contacts() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<ContactFilters>({});
+  /** Exclusão aguardando confirmação, com o que será apagado junto. */
+  const [exclusao, setExclusao] = useState<{ ids: string[]; negocios: number; atividades: number } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [drawerContact, setDrawerContact] = useState<Contact | null>(null);
@@ -203,7 +209,7 @@ export default function Contacts() {
       await updateOwner({ id: contactId, ownerId: newOwnerId });
       toast({ title: newOwnerId ? "Responsável atribuído" : "Responsável removido" });
     } catch (e: unknown) {
-      toast({ title: "Erro ao atribuir responsável", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao atribuir responsável", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -223,14 +229,41 @@ export default function Contacts() {
     setSelectedContacts(next);
   };
 
-  const batchDelete = async () => {
+  /**
+   * Passo 1: descobrir o que está vinculado antes de tentar apagar.
+   *
+   * Antes ia direto no DELETE, e o Postgres recusava com violação de chave
+   * estrangeira -- `deals.contact_id` e `activities.contact_id` não têm
+   * ON DELETE. Pior: o `catch` mostrava "[object Object]", porque o erro do
+   * PostgREST é um objeto simples e não passa no `e instanceof Error`. O
+   * usuário via que falhou e nada sobre o motivo, com a informação disponível
+   * no campo `message`.
+   */
+  const pedirExclusao = async () => {
     const ids = Array.from(selectedContacts);
+    if (ids.length === 0) return;
     try {
-      await deleteMany(ids);
-      setSelectedContacts(new Set());
-      toast({ title: `${ids.length} contatos excluídos` });
+      const vinculos = await contactsApi.contarVinculos(ids);
+      if (vinculos.negocios === 0 && vinculos.atividades === 0) {
+        await executarExclusao(ids, false);
+        return;
+      }
+      // Só pergunta quando há o que perder. Confirmação para exclusão sem
+      // consequência é ruído, e ruído treina as pessoas a clicar sem ler.
+      setExclusao({ ids, ...vinculos });
     } catch (e: unknown) {
-      toast({ title: "Erro ao excluir contatos", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao verificar vínculos", description: mensagemErro(e), variant: "destructive" });
+    }
+  };
+
+  const executarExclusao = async (ids: string[], comVinculos: boolean) => {
+    try {
+      await deleteMany({ ids, comVinculos });
+      setSelectedContacts(new Set());
+      setExclusao(null);
+      toast({ title: `${ids.length} contato${ids.length !== 1 ? "s" : ""} excluído${ids.length !== 1 ? "s" : ""}` });
+    } catch (e: unknown) {
+      toast({ title: "Erro ao excluir contatos", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -249,7 +282,7 @@ export default function Contacts() {
       setSelectedContacts(new Set());
       toast({ title: `${ids.length} contatos movidos para ${LIFECYCLE_LABELS[stage]}` });
     } catch (e: unknown) {
-      toast({ title: "Erro ao mover contatos", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao mover contatos", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -285,7 +318,7 @@ export default function Contacts() {
       URL.revokeObjectURL(url);
       toast({ title: `${rows.length} contatos exportados` });
     } catch (e: unknown) {
-      toast({ title: "Erro ao exportar", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao exportar", description: mensagemErro(e), variant: "destructive" });
     } finally {
       setExporting(false);
     }
@@ -438,7 +471,7 @@ export default function Contacts() {
             </DropdownMenuContent>
           </DropdownMenu>
           {isAdmin && (
-            <Button size="sm" variant="destructive" onClick={batchDelete}>
+            <Button size="sm" variant="destructive" onClick={pedirExclusao}>
               <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir
             </Button>
           )}
@@ -586,6 +619,52 @@ export default function Contacts() {
           </div>
         </div>
       )}
+
+      {/* Confirmação nomeando o que será apagado.
+          Sem transação no PostgREST: os filhos são apagados antes do contato, e
+          se o último passo falhar sobra um contato sem negócios. Por isso a
+          contagem aparece aqui, e não um "tem certeza?" genérico. */}
+      <Dialog open={!!exclusao} onOpenChange={(o) => !o && setExclusao(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Excluir {exclusao?.ids.length} contato{(exclusao?.ids.length ?? 0) !== 1 ? "s" : ""}?
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Isto vai apagar também:</p>
+                <ul className="list-disc pl-5">
+                  {!!exclusao?.negocios && (
+                    <li>
+                      {exclusao.negocios} negócio{exclusao.negocios !== 1 ? "s" : ""} — valor e
+                      histórico de etapas incluídos
+                    </li>
+                  )}
+                  {!!exclusao?.atividades && (
+                    <li>
+                      {exclusao.atividades} atividade{exclusao.atividades !== 1 ? "s" : ""} —
+                      ligações, reuniões e notas registradas
+                    </li>
+                  )}
+                </ul>
+                <p className="text-muted-foreground">
+                  E-mails e mensagens de WhatsApp são preservados, apenas deixam de estar
+                  vinculados. Nada disso pode ser desfeito.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExclusao(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => exclusao && executarExclusao(exclusao.ids, true)}
+            >
+              Excluir tudo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ContactDrawer
         contact={drawerContact}

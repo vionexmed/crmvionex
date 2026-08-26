@@ -105,22 +105,15 @@ describe("quem já foi abordado sai da fila", () => {
     expect(bf).toContain("c.lifecycle_stage = 'lead'");
   });
 
-  it("os EXISTS têm índice por contact_id", () => {
-    expect(sql).toContain("idx_emails_contact_direction");
-    expect(sql).toContain("idx_whatsapp_messages_contact_direction");
-    expect(sql).toContain("idx_activities_contact_completed");
-  });
-
   /**
-   * A ordem é o ponto: o backfill faz três EXISTS por contato. Se os índices
-   * fossem criados depois dele, cada EXISTS viraria varredura completa das
-   * tabelas de e-mail e de mensagem -- justamente as maiores. O SQL rodaria
-   * igual, só levaria muito mais tempo, e ninguém ligaria a lentidão à ordem
-   * de duas seções do arquivo.
+   * Eu havia criado três índices nesta migração, afirmando que
+   * emails/whatsapp_messages não tinham índice por contact_id. Tinham, desde
+   * 2026-03. Índice redundante não é neutro: custa escrita e disco em três das
+   * tabelas que mais crescem, e o ganho de (contact_id, direction) sobre
+   * (contact_id) é desprezível quando contact_id já é seletivo.
    */
-  it("os índices são criados ANTES do backfill", () => {
-    expect(sql.indexOf("idx_emails_contact_direction"))
-      .toBeLessThan(sql.indexOf("UPDATE public.contacts c"));
+  it("não recria índice que já existe", () => {
+    expect(sql).not.toContain("CREATE INDEX");
   });
 
   /**

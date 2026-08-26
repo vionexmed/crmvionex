@@ -87,17 +87,65 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
   const [deals, setDeals] = useState<Deal[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, title: "", body: "" });
+  // Carregando e falhou eram indistinguíveis de "não tem nada".
+  const [carregando, setCarregando] = useState(false);
+  const [falhou, setFalhou] = useState(false);
+
+  /**
+   * Uma frase para os três estados que antes eram um só.
+   *
+   * "Nenhum negócio vinculado" era exibido enquanto a consulta rodava E quando
+   * ela falhava. Nos dois casos a tela afirmava um fato que não conhecia.
+   */
+  const EstadoLista = ({ vazio }: { vazio: string }) => {
+    if (carregando) {
+      return (
+        <div className="flex justify-center py-6">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      );
+    }
+    if (falhou) {
+      return (
+        <div className="py-6 text-center">
+          <p className="text-sm text-destructive">Não foi possível carregar</p>
+          <button
+            type="button"
+            onClick={() => fetchRelated()}
+            className="mt-1 text-xs text-muted-foreground underline"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      );
+    }
+    return <p className="text-center text-sm text-muted-foreground py-6">{vazio}</p>;
+  };
 
   const fetchRelated = useCallback(async () => {
     if (!contact) return;
+    setCarregando(true);
+    setFalhou(false);
     const [aRes, dRes, sRes] = await Promise.all([
       supabase.from("activities").select("*").eq("contact_id", contact.id).order("created_at", { ascending: false }),
       supabase.from("deals").select("*").eq("contact_id", contact.id),
       supabase.from("pipeline_stages").select("*").eq("org_id", contact.org_id).order("order"),
     ]);
+    // O erro era descartado aqui: `dRes.data || []` transforma falha em lista
+    // vazia, e a aba Negócios passava a afirmar que a pessoa não tem negócio
+    // nenhum -- afirmação que ela não tinha como sustentar. Um vendedor
+    // decidindo abordar alguém "que não tem negócio aberto" merece saber que a
+    // consulta falhou.
+    const erro = aRes.error || dRes.error || sRes.error;
+    if (erro) {
+      setFalhou(true);
+      setCarregando(false);
+      return;
+    }
     setActivities(aRes.data || []);
     setDeals(dRes.data || []);
     setStages(sRes.data || []);
+    setCarregando(false);
   }, [contact]);
 
   useEffect(() => {
@@ -429,7 +477,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
                   </div>
                 );
               })}
-              {activities.length === 0 && <p className="text-center text-sm text-muted-foreground py-6">Nenhuma atividade</p>}
+              {activities.length === 0 && <EstadoLista vazio="Nenhuma atividade" />}
             </div>
           </TabsContent>
 
@@ -462,7 +510,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
                 </Card>
               );
             })}
-            {deals.length === 0 && <p className="text-center text-sm text-muted-foreground py-6">Nenhum negócio vinculado</p>}
+            {deals.length === 0 && <EstadoLista vazio="Nenhum negócio vinculado" />}
           </TabsContent>
 
           {/* Notes */}
