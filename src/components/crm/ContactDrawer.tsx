@@ -20,7 +20,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { AREAS_ATUACAO, PAISES, CADASTRO_FIELDS } from "@/lib/contact-options";
+import {
+  AREAS_ATUACAO, PAISES, CADASTRO_FIELDS,
+  LIFECYCLE_LABELS, type LifecycleStage,
+} from "@/lib/contact-options";
 import type { Database } from "@/integrations/supabase/types";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -28,16 +31,28 @@ type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
-type ContactStatus = Database["public"]["Enums"]["contact_status"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
-const statusColors: Record<ContactStatus, string> = {
-  lead: "bg-primary/10 text-primary", prospect: "bg-warning/10 text-warning",
-  customer: "bg-success/10 text-success", churned: "bg-destructive/10 text-destructive",
-};
-const statusLabels: Record<ContactStatus, string> = {
-  lead: "Lead", prospect: "Prospect", customer: "Cliente", churned: "Churned",
+/**
+ * O ciclo de vida substituiu o `status` nesta gaveta, e não era só rótulo.
+ *
+ * O Select escrevia a coluna LEGADA, com quatro valores para seis estágios. Dois
+ * defeitos concretos vinham disso:
+ *
+ *  - alguém em 'opportunity' (negócio em andamento) aparecia como "Prospect", e
+ *    escolher "Lead" fazia o trigger REBAIXAR o ciclo de vida -- quebrando o
+ *    invariante "só avança" e devolvendo uma negociação viva para a fila;
+ *  - o valor padrão do Select era "prospect", então salvar um contato sem status
+ *    definido o marcava como qualificado sem ninguém ter qualificado.
+ */
+const LIFECYCLE_BADGE: Record<LifecycleStage, string> = {
+  lead: "bg-muted text-muted-foreground",
+  contacted: "bg-primary/10 text-primary",
+  qualified: "bg-primary/10 text-primary",
+  opportunity: "bg-warning/10 text-warning",
+  customer: "bg-success/10 text-success",
+  disqualified: "bg-destructive/10 text-destructive",
 };
 const activityIcons: Record<ActivityType, React.ComponentType<{ className?: string }>> = {
   call: Phone, email: Mail, meeting: CalendarDays, note: FileText, task: CheckSquare,
@@ -114,7 +129,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
       email: form.email,
       phone: form.phone,
       title: form.title,
-      status: form.status as ContactStatus,
+      lifecycle_stage: form.lifecycle_stage as LifecycleStage,
       linkedin_url: form.linkedin_url,
       company_id: (form as any).company_id || null,
       metadata: {
@@ -159,8 +174,8 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
               <h2 className="text-lg font-bold">{contact.first_name} {contact.last_name}</h2>
               {contact.title && <p className="text-sm text-muted-foreground">{contact.title}</p>}
               <div className="mt-1.5 flex items-center gap-2">
-                <Badge variant="secondary" className={statusColors[contact.status || "lead"]}>
-                  {statusLabels[contact.status || "lead"]}
+                <Badge variant="secondary" className={LIFECYCLE_BADGE[contact.lifecycle_stage ?? "lead"]}>
+                  {LIFECYCLE_LABELS[contact.lifecycle_stage ?? "lead"]}
                 </Badge>
               </div>
             </div>
@@ -251,16 +266,19 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
                 <div className="space-y-1"><Label className="text-xs">Produto / Interesse</Label>
                   <Input value={meta.interesse} onChange={(e) => setMeta({ ...meta, interesse: e.target.value })} placeholder="Ex: Likawave Pro, consultoria..." /></div>
 
-                {/* Status */}
+                {/* Ciclo de vida. Sem valor padrão inventado: cai em 'lead',
+                    que é o default da coluna, em vez de 'prospect'. */}
                 <div className="space-y-1">
-                  <Label className="text-xs">Status</Label>
-                  <Select value={form.status || "prospect"} onValueChange={(v) => setForm({ ...form, status: v as ContactStatus })}>
+                  <Label className="text-xs">Ciclo de vida</Label>
+                  <Select
+                    value={form.lifecycle_stage ?? "lead"}
+                    onValueChange={(v) => setForm({ ...form, lifecycle_stage: v as LifecycleStage })}
+                  >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lead">Lead</SelectItem>
-                      <SelectItem value="prospect">Prospect</SelectItem>
-                      <SelectItem value="customer">Cliente</SelectItem>
-                      <SelectItem value="churned">Churned</SelectItem>
+                      {(Object.keys(LIFECYCLE_LABELS) as LifecycleStage[]).map((e) => (
+                        <SelectItem key={e} value={e}>{LIFECYCLE_LABELS[e]}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

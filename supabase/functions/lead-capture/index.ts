@@ -152,7 +152,8 @@ serve(async (req) => {
     email: email || null,
     phone: phone || null,
     title: title || null, // especialidade / cargo
-    status: "lead",
+    // Sem `status`: o default da coluna é 'lead'. Escrever a coluna legada é o
+    // caminho por onde o ciclo de vida acaba sobrescrito sem querer.
     metadata,
   };
 
@@ -213,12 +214,26 @@ serve(async (req) => {
     }
   }
 
-  // Todo lead nasce com negócio no funil de entrada.
-  // Sem isso o lead não tem onde guardar estágio, preço, objeção, próxima ação
-  // nem motivo de perda — esses campos só existem em deals.
-  // Se o chamador não indicar o pipeline, usa o pipeline padrão da org.
-  let resolvedPipelineId: string | null = pipeline_id ?? null;
-  if (!resolvedPipelineId) {
+  // Negócio só quando o chamador PEDE.
+  //
+  // Antes toda captação criava um negócio no funil de entrada, com o argumento
+  // de que o lead precisa de onde guardar estágio, preço e objeção. O custo era
+  // maior que o benefício: quem preenche um formulário ainda não foi avaliado
+  // por ninguém, e cada envio virava uma oportunidade em aberto -- inflando o
+  // valor total do funil e a contagem de oportunidades com gente que ninguém
+  // olhou. Esses campos passam a existir quando alguém qualifica, pela RPC
+  // qualify_lead, que é onde a decisão de fato acontece.
+  //
+  // Também era a única entrada que se comportava diferente das outras (modal,
+  // CSV, WhatsApp, API pública), o que dava duas regras para explicar.
+  //
+  // Passar `pipeline_id`, `deal_name` ou `deal_value` continua criando o
+  // negócio: aí é pedido explícito, não suposição. Integração que dependia
+  // disso segue funcionando ao nomear o que quer.
+  const querNegocio = Boolean(pipeline_id || deal_name || deal_value !== undefined);
+
+  let resolvedPipelineId: string | null = querNegocio ? (pipeline_id ?? null) : null;
+  if (querNegocio && !resolvedPipelineId) {
     const { data: defaultPipeline } = await sb
       .from("pipelines")
       .select("id")

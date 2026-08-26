@@ -44,7 +44,8 @@ export function StepContacts({ orgId, userId, onComplete, setStepData }: SetupSt
       phone: phone.trim() || null,
       org_id: orgId,
       owner_id: userId,
-      status: "lead",
+      // Sem `status`: o default da coluna já é 'lead'. Escrever a coluna legada
+      // é o caminho por onde o ciclo de vida era sobrescrito sem querer.
     });
     setAlreadyCreated(true);
     setStepData({ contactCreated: true });

@@ -14,13 +14,18 @@ export interface ContactListParams {
   page?: number;
   pageSize?: number;
   search?: string;
-  status?: string;
+  /**
+   * Filtro por ciclo de vida. Substituiu o filtro por `status`, que apontava
+   * para a coluna LEGADA e por isso oferecia só metade dos estágios -- não
+   * existia opção para lead nem para "em negociação".
+   */
+  lifecycleStage?: string;
   ownerId?: string;
   companyId?: string;
   createdFrom?: string;
   createdTo?: string;
   origin?: string; // filtro por origem (metadata.source): cadastro_likawave | landing | manual | import
-  sortKey?: "name" | "email" | "status" | "created_at" | "title";
+  sortKey?: "name" | "email" | "status" | "created_at" | "title";  // "status" mantido: é a coluna de ordenação do cabeçalho da tabela
   sortDir?: "asc" | "desc";
 }
 
@@ -36,16 +41,27 @@ export interface ContactListResult {
 const sanitizeSearch = (s: string) => s.replace(/[,()"\\]/g, " ").trim();
 
 const buildListQuery = (orgId: string, params: ContactListParams) => {
-  const { search, status, ownerId, companyId, createdFrom, createdTo, origin, sortKey = "created_at", sortDir = "desc" } = params;
+  const { search, lifecycleStage, ownerId, companyId, createdFrom, createdTo, origin, sortKey = "created_at", sortDir = "desc" } = params;
 
+  // Contatos é a lista de TODAS as pessoas da organização.
+  //
+  // Havia aqui um `.neq("status", "lead")`, e ele criava uma exclusão mútua com
+  // a tela de Leads (que mostra só lifecycle lead/contacted): quem entrava no
+  // funil desaparecia da lista de pessoas, e vice-versa. O efeito colateral foi
+  // pior que o filtro: para os contatos importados não sumirem daqui, os
+  // caminhos de criação passaram a gravar status 'prospect' -- o que fazia o
+  // trigger marcá-los como 'qualified' sem ninguém ter qualificado, e aí eles
+  // nunca apareciam no funil. A tela escondia gente sem dizer, e a contagem no
+  // topo não era o total de pessoas.
   let query = supabase
     .from(TABLES.CONTACTS)
     .select("*", { count: "exact" })
-    .eq("org_id", orgId)
-    .neq("status", "lead");
+    .eq("org_id", orgId);
 
-  // `status` chega como string do filtro da UI; o PostgREST espera o enum.
-  if (status && status !== "all") query = query.eq("status", status as ContactStatus);
+  // Ciclo de vida: a coluna que vale. `status` é legado.
+  if (lifecycleStage && lifecycleStage !== "all") {
+    query = query.eq("lifecycle_stage", lifecycleStage as LifecycleStage);
+  }
   if (ownerId && ownerId !== "all") query = query.eq("owner_id", ownerId);
   if (companyId && companyId !== "all") query = query.eq("company_id", companyId);
   if (createdFrom) query = query.gte("created_at", createdFrom);

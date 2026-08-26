@@ -80,7 +80,15 @@ export function ContactCreateModal({ open, onOpenChange, onCreated, companies }:
       email: email || null,
       phone: phone || null,
       title: areaAtuacao || null,
-      status: "prospect",
+      // Nem `status` nem `lifecycle_stage`: o default da coluna é 'lead', que é
+      // o certo -- pessoa nova entra na boca do funil.
+      //
+      // Havia `status: "prospect"` aqui, e não era enfeite. O trigger deriva o
+      // ciclo de vida do status no INSERT, e 'prospect' vira 'qualified' -- ou
+      // seja, todo contato cadastrado à mão nascia QUALIFICADO sem ninguém ter
+      // qualificado, e por isso nunca aparecia na tela de Leads. Escrever
+      // 'lead' explicitamente seria inócuo: nesse ramo do trigger o status
+      // vence de todo jeito. O que resolve é não escrever o status.
       owner_id: user?.id,
       company_id: resolvedCompanyId,
       metadata: {

@@ -32,7 +32,7 @@ import {
   useActivities, useCreateActivity, useUpdateActivity, useDeleteActivities,
 } from "@/hooks/queries/useActivities";
 import { useMembers } from "@/hooks/queries/useMembers";
-import { useContacts } from "@/hooks/queries/useContacts";
+import { useAllContacts } from "@/hooks/queries/useContacts";
 import { useCompanies } from "@/hooks/queries/useCompanies";
 import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
@@ -111,8 +111,12 @@ export default function Activities() {
   const { toast } = useToast();
 
   const { data: activities = [] } = useActivities();
-  const { data: contactsResult } = useContacts({ pageSize: 1000 });
-  const contacts: Contact[] = contactsResult?.data ?? [];
+  // `useContacts({pageSize: 1000})` truncava em 1000 EM SILÊNCIO -- passando
+  // disso, o contato simplesmente não aparecia no select e não havia como saber
+  // por quê. Com leads entrando na lista de contatos, o teto deixou de ser
+  // teórico. `useAllContacts` pagina em blocos, sem teto, e devolve o contato
+  // completo (esta tela usa `phone`).
+  const { data: contacts = [] } = useAllContacts();
   const { data: companies = [] } = useCompanies();
   const { data: dealsResult } = useDeals({ pageSize: 1000 });
   const deals: Deal[] = (dealsResult?.data ?? []) as unknown as Deal[];

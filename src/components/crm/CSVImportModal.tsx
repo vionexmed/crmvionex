@@ -133,11 +133,22 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
           }
         });
         if (entityType === "contacts") {
-          // Sem status válido no CSV → 'prospect'. O default do banco é 'lead',
-          // que fazia os contatos importados sumirem da página Contatos
-          // (leads ficam em /leads).
+          // Status vindo da PLANILHA continua valendo. O que saiu foi o
+          // fallback.
+          //
+          // Ele forçava 'prospect' quando a planilha não trazia a coluna, e o
+          // comentário antigo explicava o porquê: com 'lead', o importado sumia
+          // da página Contatos. Era verdade -- a lista filtrava `.neq("status",
+          // "lead")` -- mas a saída trocava um sumiço por outro: o trigger
+          // deriva 'prospect' → lifecycle 'qualified', então o contato passava a
+          // existir em Contatos e a NÃO existir no funil, marcado como
+          // qualificado sem ninguém ter olhado para ele.
+          //
+          // A causa foi removida na origem: Contatos não esconde mais ninguém.
+          // Sem status na planilha, vale o default da coluna: 'lead'.
           const status = String(record.status || "").toLowerCase();
-          record.status = VALID_CONTACT_STATUS.includes(status) ? status : "prospect";
+          if (VALID_CONTACT_STATUS.includes(status)) record.status = status;
+          else delete record.status;
           // Marca a origem para diferenciar na lista de Contatos
           record.metadata = { ...(record.metadata || {}), source: "csv_import" };
         }

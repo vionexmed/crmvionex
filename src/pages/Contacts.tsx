@@ -7,14 +7,17 @@ import { useOrg } from "@/hooks/useOrg";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useContacts, useAllContacts, useLastActivities, useDeleteContacts,
-  useUpdateContactsStatus, useUpdateContactOwner, contactsKeys,
+  useUpdateContactsLifecycle, useUpdateContactOwner, contactsKeys,
 } from "@/hooks/queries/useContacts";
 import { contactsApi } from "@/lib/api/contacts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanies } from "@/hooks/queries/useCompanies";
 import { useMembers } from "@/hooks/queries/useMembers";
 import { PAGE_SIZE } from "@/lib/api/contacts";
-import { getContactOrigin, ORIGIN_OPTIONS } from "@/lib/contact-options";
+import {
+  getContactOrigin, ORIGIN_OPTIONS,
+  LIFECYCLE_LABELS, LIFECYCLE_COLORS, type LifecycleStage,
+} from "@/lib/contact-options";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,24 +49,51 @@ import { useDebounce } from "@/hooks/useDebounce";
 import type { Database } from "@/integrations/supabase/types";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
-type ContactStatus = Database["public"]["Enums"]["contact_status"];
 type SortKey = "name" | "email" | "status" | "created_at" | "title";
 type SortDir = "asc" | "desc";
 type ViewMode = "table" | "cards" | "owner";
 
-const statusLabels: Record<ContactStatus, string> = {
-  lead: "Lead", prospect: "Prospect", customer: "Cliente", churned: "Churned",
-};
-
 const cleanPhone = (p: string | null) => p || "";
 
 interface ContactFilters {
-  status?: string;
+  /**
+   * Ciclo de vida, não `status`.
+   *
+   * Era `status` e ia para a API por `...filters`. Espalhamento não dispara a
+   * checagem de propriedade excedente do TypeScript, então uma chave renomeada
+   * de um lado só some em silêncio do outro -- o filtro pararia de filtrar e
+   * nada acusaria.
+   */
+  lifecycleStage?: string;
   ownerId?: string;
   companyId?: string;
   origin?: string;
   createdFrom?: string;
   createdTo?: string;
+}
+
+/**
+ * Selo de ciclo de vida.
+ *
+ * Substitui o selo por `status`, que mostrava quatro valores ("Lead",
+ * "Prospect", "Cliente", "Churned") para seis estágios reais -- lead e
+ * "contatado" apareciam iguais, e "em negociação" aparecia como "Prospect".
+ *
+ * Mesma marcação de Leads.tsx de propósito: a mesma pessoa era descrita em dois
+ * vocabulários dependendo da tela em que você a olhasse.
+ */
+function LifecycleBadge({ stage }: { stage: LifecycleStage | null }) {
+  const e = stage ?? "lead";
+  return (
+    <span className="flex items-center gap-1.5 text-xs">
+      <span
+        aria-hidden
+        className="h-2 w-2 shrink-0 rounded-full"
+        style={{ backgroundColor: LIFECYCLE_COLORS[e] }}
+      />
+      <span className="truncate">{LIFECYCLE_LABELS[e]}</span>
+    </span>
+  );
 }
 
 /** Selo colorido indicando a origem do contato (de onde veio) */
@@ -142,7 +172,7 @@ export default function Contacts() {
 
   // Mutations
   const { mutateAsync: deleteMany } = useDeleteContacts();
-  const { mutateAsync: updateStatus } = useUpdateContactsStatus();
+  const { mutateAsync: updateLifecycle } = useUpdateContactsLifecycle();
   const { mutateAsync: updateOwner } = useUpdateContactOwner();
 
   // Realtime — invalidate all contact queries on remote changes
@@ -204,14 +234,22 @@ export default function Contacts() {
     }
   };
 
-  const batchChangeStatus = async (status: ContactStatus) => {
+  /**
+   * Move os selecionados no ciclo de vida.
+   *
+   * Escrevia `status` (coluna legada) e deixava o trigger derivar o ciclo de
+   * vida. Com quatro valores para seis estágios, a derivação perde informação:
+   * "prospect" virava sempre 'qualified', então aplicar "Prospect" a alguém em
+   * negociação o REBAIXAVA sem aviso.
+   */
+  const batchChangeLifecycle = async (stage: LifecycleStage) => {
     const ids = Array.from(selectedContacts);
     try {
-      await updateStatus({ ids, status });
+      await updateLifecycle({ ids, stage });
       setSelectedContacts(new Set());
-      toast({ title: `Status atualizado para ${ids.length} contatos` });
+      toast({ title: `${ids.length} contatos movidos para ${LIFECYCLE_LABELS[stage]}` });
     } catch (e: unknown) {
-      toast({ title: "Erro ao atualizar status", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      toast({ title: "Erro ao mover contatos", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     }
   };
 
@@ -235,7 +273,7 @@ export default function Contacts() {
         const comp = companies.find((co) => co.id === (c as Record<string, unknown>).company_id);
         return {
           Nome: c.first_name, Sobrenome: c.last_name || "", Email: c.email || "",
-          Telefone: cleanPhone(c.phone), Cargo: c.title || "", Empresa: comp?.name || "", Status: c.status || "",
+          Telefone: cleanPhone(c.phone), Cargo: c.title || "", Empresa: comp?.name || "", "Ciclo de vida": LIFECYCLE_LABELS[c.lifecycle_stage ?? "lead"],
         };
       });
       const headers = Object.keys(rows[0] || { Nome: "" });
@@ -311,15 +349,21 @@ export default function Contacts() {
       {showFilters && (
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-3">
           <div className="space-y-1">
-            <Label className="text-xs">Status</Label>
-            <Select value={filters.status || "all"} onValueChange={(v) => setFilters({ ...filters, status: v === "all" ? undefined : v })}>
-              <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <Label className="text-xs">Ciclo de vida</Label>
+            {/* Os seis estágios, na ordem do avanço. O seletor antigo era por
+                `status` (coluna legada) e tinha quatro opções, sem lead nem
+                "em negociação" -- então havia gente na lista que nenhum filtro
+                conseguia isolar. */}
+            <Select
+              value={filters.lifecycleStage || "all"}
+              onValueChange={(v) => setFilters({ ...filters, lifecycleStage: v === "all" ? undefined : v })}
+            >
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {/* Leads têm página própria (/leads) e são excluídos desta lista */}
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="prospect">Prospect</SelectItem>
-                <SelectItem value="customer">Cliente</SelectItem>
-                <SelectItem value="churned">Churned</SelectItem>
+                {(Object.keys(LIFECYCLE_LABELS) as LifecycleStage[]).map((e) => (
+                  <SelectItem key={e} value={e}>{LIFECYCLE_LABELS[e]}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -379,10 +423,18 @@ export default function Contacts() {
               <Button size="sm" variant="outline">Mudar Status</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => batchChangeStatus("lead")}>Lead</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => batchChangeStatus("prospect")}>Prospect</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => batchChangeStatus("customer")}>Cliente</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => batchChangeStatus("churned")}>Churned</DropdownMenuItem>
+              {/* "Novo lead" fica por último e nomeado pelo efeito: é o único
+                  item que ANDA PARA TRÁS no ciclo de vida, e devolve a pessoa
+                  para a fila de qualificação. Estava misturado aos outros como
+                  "Lead", indistinguível de um avanço. */}
+              <DropdownMenuItem onClick={() => batchChangeLifecycle("contacted")}>Contatado</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => batchChangeLifecycle("qualified")}>Qualificado</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => batchChangeLifecycle("opportunity")}>Em negociação</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => batchChangeLifecycle("customer")}>Cliente</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => batchChangeLifecycle("disqualified")}>Descartado</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => batchChangeLifecycle("lead")}>
+                Devolver para a fila de leads
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           {isAdmin && (
@@ -460,9 +512,7 @@ export default function Contacts() {
                   <TableCell className="text-muted-foreground hidden md:table-cell text-xs">{c.title || "—"}</TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell text-xs">{cleanPhone(c.phone) || "—"}</TableCell>
                   <TableCell>
-                    <span className={`vx-badge vx-badge-${c.status || "lead"}`}>
-                      {statusLabels[c.status || "lead"]}
-                    </span>
+                    <LifecycleBadge stage={c.lifecycle_stage} />
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
@@ -499,9 +549,7 @@ export default function Contacts() {
                 </div>
                 {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className={`vx-badge vx-badge-${c.status || "lead"}`}>
-                    {statusLabels[c.status || "lead"]}
-                  </span>
+                  <LifecycleBadge stage={c.lifecycle_stage} />
                   <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
                 </div>
               </CardContent>

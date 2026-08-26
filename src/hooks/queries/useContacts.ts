@@ -3,6 +3,7 @@ import { contactsApi } from "@/lib/api/contacts";
 import { activitiesApi } from "@/lib/api/activities";
 import { useOrg } from "@/hooks/useOrg";
 import type { ContactListParams } from "@/lib/api/contacts";
+import type { LifecycleStage } from "@/lib/contact-options";
 import type { Database } from "@/integrations/supabase/types";
 
 type ContactStatus = Database["public"]["Enums"]["contact_status"];
@@ -69,6 +70,26 @@ export function useUpdateContactsStatus() {
   return useMutation({
     mutationFn: ({ ids, status }: { ids: string[]; status: ContactStatus }) =>
       contactsApi.updateStatus(ids, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: contactsKeys.all(orgId ?? "") }),
+  });
+}
+
+/**
+ * Move contatos no ciclo de vida.
+ *
+ * Prefira este a `useUpdateContactsStatus`: escrever `status` vai para a coluna
+ * LEGADA, e o trigger deriva o ciclo de vida a partir dela -- o que só funciona
+ * porque os quatro valores de status mapeiam de volta para quatro dos seis
+ * estágios. Passar por status é como mexer no ciclo de vida com resolução
+ * menor: "prospect" pode significar 'qualified' ou 'opportunity', e a
+ * derivação escolhe 'qualified', rebaixando quem estava em negociação.
+ */
+export function useUpdateContactsLifecycle() {
+  const qc = useQueryClient();
+  const { orgId } = useOrg();
+  return useMutation({
+    mutationFn: ({ ids, stage }: { ids: string[]; stage: LifecycleStage }) =>
+      contactsApi.updateLifecycleStage(ids, stage),
     onSuccess: () => qc.invalidateQueries({ queryKey: contactsKeys.all(orgId ?? "") }),
   });
 }
