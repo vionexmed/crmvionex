@@ -129,13 +129,16 @@ BEGIN
       SELECT e.contact_id,
              e.user_id,
              'e-mail',
-             e.created_at,
+             coalesce(e.sent_at, e.created_at),
              coalesce(nullif(trim(e.subject), ''), '(sem assunto)')
       FROM public.emails e
       WHERE e.org_id = _org_id
         AND e.direction = 'outbound'
-        AND (_from IS NULL OR e.created_at >= _from)
-        AND (_to   IS NULL OR e.created_at <  _to)
+        -- Só o que saiu. 'sending' é pré-registro do gmail-send que ficou órfão
+        -- porque a função morreu antes de o Google responder.
+        AND e.status = 'sent'
+        AND (_from IS NULL OR coalesce(e.sent_at, e.created_at) >= _from)
+        AND (_to   IS NULL OR coalesce(e.sent_at, e.created_at) <  _to)
 
       UNION ALL
 
@@ -148,6 +151,8 @@ BEGIN
       FROM public.whatsapp_messages w
       WHERE w.org_id = _org_id
         AND w.direction = 'outbound'
+        -- Recusada pela Meta não é abordagem.
+        AND w.status IN ('sent', 'delivered', 'read')
         AND (_from IS NULL OR w.created_at >= _from)
         AND (_to   IS NULL OR w.created_at <  _to)
     )

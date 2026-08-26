@@ -213,11 +213,17 @@ describe("abordagem REALIZADA, não apenas registrada", () => {
     expect(ramo).toContain("a.completed_at IS NOT NULL");
   });
 
-  it("e-mail e WhatsApp seguem por created_at", () => {
-    // Ali created_at É a data do envio. Aplicar completed_at nessas tabelas não
-    // faria sentido — elas não têm o conceito.
-    expect(CORRIGE).toMatch(/e\.created_at >= _from/);
+  /**
+   * Este teste já afirmou o contrário, e a justificativa estava errada: dizia
+   * que em `emails` o created_at "É a data do envio". Não é — a linha nasce no
+   * pré-registro do gmail-send, antes de o Google receber qualquer coisa. Quem
+   * sabe a hora do envio é sent_at, e só existe quando o envio deu certo.
+   */
+  it("o e-mail segue pela hora do envio, não do rascunho", () => {
+    expect(CORRIGE).toContain("coalesce(e.sent_at, e.created_at) >= _from");
+    // completed_at não existe em emails; o equivalente é o status.
     expect(CORRIGE).not.toMatch(/e\.completed_at/);
+    expect(CORRIGE).toContain("e.status = 'sent'");
   });
 });
 
@@ -265,5 +271,57 @@ describe("selo de canal", () => {
       expect(rotulo.length).toBeGreaterThan(4);
       expect(rotulo).not.toMatch(/^(ativ|whats|em)$/);
     }
+  });
+});
+
+/**
+ * Card, gráfico e lista contam a MESMA coisa.
+ *
+ * As três vivem em funções SQL separadas, e cada canal tem um campo diferente
+ * dizendo se a abordagem aconteceu de verdade. Basta uma das três esquecer o
+ * filtro para o painel se contradizer: já aconteceu com completed_at, e o card
+ * mostrava reunião de semana que vem como feita hoje.
+ */
+describe("abordagem só conta quando aconteceu", () => {
+  const metrics = readFileSync(
+    "supabase/migrations/20260826140000_abordagem_realizada.sql",
+    "utf8",
+  );
+  const leads = readFileSync(
+    "supabase/migrations/20260826120000_rastrear_abordagens.sql",
+    "utf8",
+  );
+
+  // O card e o gráfico moram no mesmo arquivo; a lista, no outro.
+  const fontes: Array<[string, string]> = [
+    ["sdr_metrics + sdr_series", metrics],
+    ["sdr_metric_leads", leads],
+  ];
+
+  it.each(fontes)("%s exige atividade concluída", (_nome, sql) => {
+    expect(sql).toContain("a.completed_at IS NOT NULL");
+  });
+
+  it.each(fontes)("%s exige e-mail enviado", (_nome, sql) => {
+    expect(sql).toContain("e.status = 'sent'");
+  });
+
+  it.each(fontes)("%s exige WhatsApp aceito pela Meta", (_nome, sql) => {
+    expect(sql).toMatch(/w\.status IN \('sent', 'delivered', 'read'\)|FILTER \(WHERE status IN \('sent', 'delivered', 'read'\)\)/);
+  });
+
+  it.each(fontes)("%s janela o e-mail pela hora do envio", (_nome, sql) => {
+    expect(sql).toContain("coalesce(e.sent_at, e.created_at)");
+  });
+
+  /**
+   * A taxa de entrega precisa contar TODA tentativa no denominador. Se ela
+   * passasse a usar `enviado`, as recusas da Meta sairiam da conta e a taxa
+   * subiria justamente quando o envio estivesse falhando.
+   */
+  it("a taxa de entrega mantém as recusas no denominador", () => {
+    expect(metrics).toContain("count(*) AS total");
+    expect(metrics).toContain("THEN round(entregue * 100.0 / total)");
+    expect(metrics).toContain("(SELECT enviado FROM envio)");
   });
 });

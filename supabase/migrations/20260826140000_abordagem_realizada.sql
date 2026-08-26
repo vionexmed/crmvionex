@@ -1,8 +1,26 @@
 -- ============================================================================
--- "Abordagens realizadas" contava atividade que ninguém realizou
+-- "Abordagens realizadas" contava o que nunca saiu
 -- ============================================================================
 --
--- O card promete REALIZADAS. A parte de atividades contava por `created_at` e
+-- O card promete REALIZADAS, e os três canais falhavam nisso de forma parecida:
+-- cada tabela guarda a INTENÇÃO e a CONCLUSÃO em campos separados, e a métrica
+-- só olhava a intenção.
+--
+--   activities         -- linha existe ao agendar;  completed_at diz se ocorreu
+--   emails             -- linha existe antes do envio; status diz se saiu
+--   whatsapp_messages  -- linha existe na tentativa;   status diz se a Meta aceitou
+--
+-- O caso do e-mail é o mais traiçoeiro: gmail-send grava a linha com status
+-- 'sending' para ter id de rastreio ANTES de falar com o Google. Quando a função
+-- morre no meio -- timeout, cold start, rede -- ela apaga a linha; se ela morre
+-- antes de conseguir apagar, a linha fica em 'sending' e conta como abordagem
+-- para sempre. Ninguém recebeu nada.
+--
+-- Isso também é o que faz teste poluir o painel: quase todo teste morre em
+-- 'sending', 'draft' ou 'failed'. Filtrar por conclusão resolve na origem, e sem
+-- apagar histórico -- a tentativa continua registrada, só não conta como feito.
+--
+-- Parte 1: atividades. A parte de atividades contava por `created_at` e
 -- ignorava `completed_at`: uma reunião agendada para semana que vem aparecia
 -- como abordagem feita hoje, e uma ligação que alguém só planejou entrava na
 -- conta igual a uma que aconteceu.
@@ -83,7 +101,13 @@ BEGIN
     FROM wa_contato k
   ),
   envio AS (
+    -- `total` é o denominador da taxa de entrega e continua contando toda
+    -- tentativa. `enviado` é o que vale como abordagem: whatsapp-send grava
+    -- 'failed' quando a Meta recusa, e mensagem recusada não é abordagem.
+    -- São dois números diferentes de propósito -- juntá-los faria a taxa de
+    -- entrega esconder as recusas em vez de mostrá-las.
     SELECT count(*) AS total,
+           count(*) FILTER (WHERE status IN ('sent', 'delivered', 'read')) AS enviado,
            count(*) FILTER (WHERE status IN ('delivered', 'read')) AS entregue
     FROM wa WHERE direction = 'outbound'
   ),
@@ -113,11 +137,19 @@ BEGIN
           -- feita em agosto apareceria no mês errado.
           AND (_from IS NULL OR a.completed_at >= _from)
           AND (_to   IS NULL OR a.completed_at <  _to))
+      -- Mesmo princípio no e-mail. gmail-send grava a linha com status
+      -- 'sending' ANTES de falar com o Google, para ter id de rastreio. Se a
+      -- função morrer no meio -- timeout, cold start, rede -- a linha fica em
+      -- 'sending' para sempre e contava como abordagem. Nunca saiu e-mail.
+      -- 'draft', 'failed' e 'bounced' entravam pelo mesmo buraco.
       + (SELECT count(*) FROM public.emails e
           WHERE e.org_id = _org_id AND e.direction = 'outbound'
-            AND (_from IS NULL OR e.created_at >= _from)
-            AND (_to   IS NULL OR e.created_at <  _to))
-      + (SELECT total FROM envio)
+            AND e.status = 'sent'
+            -- Pela hora do ENVIO. coalesce porque importação futura pode trazer
+            -- sent_at do Gmail sem passar pelo gmail-send.
+            AND (_from IS NULL OR coalesce(e.sent_at, e.created_at) >= _from)
+            AND (_to   IS NULL OR coalesce(e.sent_at, e.created_at) <  _to))
+      + (SELECT enviado FROM envio)
     )::int,
 
     (SELECT CASE WHEN total > 0 THEN round(entregue * 100.0 / total)::int END FROM envio),
@@ -217,15 +249,19 @@ BEGIN
          AND a.completed_at >= v_ini_ts AND a.completed_at < v_fim_ts
        GROUP BY 1
       UNION ALL
-      SELECT e.created_at::date, count(*)
+      -- Enviado de fato, e pela hora do envio. Igual ao sdr_metrics.
+      SELECT coalesce(e.sent_at, e.created_at)::date, count(*)
         FROM public.emails e
        WHERE e.org_id = _org_id AND e.direction = 'outbound'
-         AND e.created_at >= v_ini_ts AND e.created_at < v_fim_ts
+         AND e.status = 'sent'
+         AND coalesce(e.sent_at, e.created_at) >= v_ini_ts
+         AND coalesce(e.sent_at, e.created_at) <  v_fim_ts
        GROUP BY 1
       UNION ALL
       SELECT w.created_at::date, count(*)
         FROM public.whatsapp_messages w
        WHERE w.org_id = _org_id AND w.direction = 'outbound'
+         AND w.status IN ('sent', 'delivered', 'read')
          AND w.created_at >= v_ini_ts AND w.created_at < v_fim_ts
        GROUP BY 1
     ) t GROUP BY d
