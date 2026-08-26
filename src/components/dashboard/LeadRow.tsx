@@ -8,14 +8,8 @@ import { format } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, initials } from "@/lib/utils";
 import type { LinhaDrilldown } from "@/hooks/useSdrMetricLeads";
+import { CANAL } from "./canais";
 
-/** Rótulo e cor por canal. Uma linha de abordagem sem canal visível obriga a
- *  ler o conteúdo para adivinhar de onde veio. */
-const CANAL: Record<string, { rotulo: string; classe: string }> = {
-  "atividade": { rotulo: "ativ", classe: "bg-primary/10 text-primary" },
-  "e-mail": { rotulo: "e-mail", classe: "bg-warning/10 text-warning" },
-  "whatsapp": { rotulo: "whats", classe: "bg-success/10 text-success" },
-};
 
 const moeda = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -61,7 +55,7 @@ export function LeadRow({
               e-mail ou WhatsApp muda a leitura de tudo que vem depois. */}
           {linha.canal && (
             <span className={cn(
-              "shrink-0 rounded px-1 py-px text-[9px] font-medium uppercase tracking-wide",
+              "shrink-0 rounded px-1.5 py-px text-[9px] font-medium",
               CANAL[linha.canal]?.classe ?? "bg-muted text-muted-foreground",
             )}>
               {CANAL[linha.canal]?.rotulo ?? linha.canal}

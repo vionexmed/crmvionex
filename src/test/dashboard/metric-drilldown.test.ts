@@ -12,6 +12,7 @@ import {
   type LinhaDrilldown,
   type MetricDrilldownKey,
 } from "@/hooks/useSdrMetricLeads";
+import { CANAL } from "@/components/dashboard/canais";
 
 function linha(toques: number, i = 0): LinhaDrilldown {
   return {
@@ -232,5 +233,37 @@ describe("vínculo do e-mail acontece no envio", () => {
     // Criaria contato de endereço interno, de teste e de fornecedor.
     const trecho = ENVIO.slice(ENVIO.indexOf("contatoResolvido"), ENVIO.indexOf("const toList"));
     expect(trecho).not.toContain(".insert(");
+  });
+});
+
+/**
+ * O selo de canal só existe se as duas metades concordarem.
+ *
+ * O banco escolhe a string; o frontend a traduz. Quando o banco passa a emitir
+ * um valor que o mapa não conhece, o selo simplesmente não aparece — nada quebra,
+ * nada avisa, e a linha volta a não dizer de onde veio a abordagem. Foi assim que
+ * "ativ" sobreviveu: ninguém tinha como notar.
+ */
+describe("selo de canal", () => {
+  const sql = readFileSync(
+    "supabase/migrations/20260826120000_rastrear_abordagens.sql",
+    "utf8",
+  );
+  const CANAIS = ["ligacao", "reuniao", "email_manual", "e-mail", "whatsapp"];
+
+  it.each(CANAIS)("o banco emite %s e o frontend sabe traduzir", (canal) => {
+    expect(sql).toContain(`'${canal}'`);
+    expect(CANAL[canal]).toBeTruthy();
+  });
+
+  it("o mapa não tem rótulo além dos canais que o banco emite", () => {
+    expect(Object.keys(CANAL).sort()).toEqual([...CANAIS].sort());
+  });
+
+  it("nenhum rótulo é abreviação obscura", () => {
+    for (const { rotulo } of Object.values(CANAL)) {
+      expect(rotulo.length).toBeGreaterThan(4);
+      expect(rotulo).not.toMatch(/^(ativ|whats|em)$/);
+    }
   });
 });

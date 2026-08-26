@@ -40,7 +40,7 @@ RETURNS TABLE (
   valor     numeric,     -- só oportunidades
   -- ---- rastreabilidade, só em abordagens ----
   autor     text,        -- QUEM fez a abordagem
-  canal     text,        -- POR ONDE: atividade | e-mail | whatsapp
+  canal     text,        -- ligacao | reuniao | email_manual | e-mail | whatsapp
   conteudo  text         -- O QUE foi enviado: assunto, título ou trecho
 )
 LANGUAGE plpgsql
@@ -97,9 +97,23 @@ BEGIN
       -- Concluída, e pela data da conclusão — mesmo critério de sdr_metrics e
       -- sdr_series. Se a lista contasse diferente do card, voltaríamos ao
       -- problema que este drill-down existe para resolver.
+      -- O TIPO da atividade, não "atividade".
+      --
+      -- Dizer só "atividade" descarta a informação que a tabela já tem: quem lê
+      -- a lista precisa saber se foi ligação ou reunião, porque isso muda
+      -- completamente o que aconteceu com aquele lead.
+      --
+      -- 'email_manual' distingue e-mail REGISTRADO à mão de e-mail que o CRM
+      -- enviou de verdade. Os dois são abordagem, mas só um tem conteúdo que o
+      -- sistema conhece — e confundi-los faria alguém procurar no Gmail uma
+      -- mensagem que nunca saiu de lá.
       SELECT a.contact_id,
              a.user_id,
-             'atividade'::text AS canal_ev,
+             (CASE a.type
+                WHEN 'call'    THEN 'ligacao'
+                WHEN 'meeting' THEN 'reuniao'
+                ELSE 'email_manual'
+              END)::text       AS canal_ev,
              a.completed_at    AS quando_ev,
              coalesce(nullif(trim(a.title), ''), a.type::text) AS conteudo_ev
       FROM public.activities a
