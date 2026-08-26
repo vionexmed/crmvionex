@@ -214,22 +214,17 @@ serve(async (req) => {
     }
   }
 
-  // Negócio só quando o chamador PEDE.
+  // O negócio de entrada já existe quando chegamos aqui.
   //
-  // Antes toda captação criava um negócio no funil de entrada, com o argumento
-  // de que o lead precisa de onde guardar estágio, preço e objeção. O custo era
-  // maior que o benefício: quem preenche um formulário ainda não foi avaliado
-  // por ninguém, e cada envio virava uma oportunidade em aberto -- inflando o
-  // valor total do funil e a contagem de oportunidades com gente que ninguém
-  // olhou. Esses campos passam a existir quando alguém qualifica, pela RPC
-  // qualify_lead, que é onde a decisão de fato acontece.
+  // Um gatilho no banco (20260826170000) cria um negócio na etapa inicial para
+  // TODO contato, venha de onde vier -- modal, CSV, WhatsApp, API pública ou
+  // daqui. Cobrir o caminho no banco em vez de em seis telas é o que garante
+  // que ninguém entre no CRM sem aparecer no funil.
   //
-  // Também era a única entrada que se comportava diferente das outras (modal,
-  // CSV, WhatsApp, API pública), o que dava duas regras para explicar.
-  //
-  // Passar `pipeline_id`, `deal_name` ou `deal_value` continua criando o
-  // negócio: aí é pedido explícito, não suposição. Integração que dependia
-  // disso segue funcionando ao nomear o que quer.
+  // Então esta função não INSERE mais: ela AJUSTA o negócio que o gatilho criou,
+  // quando o chamador manda título, valor ou funil próprios. Inserir de novo
+  // deixaria o contato com duas fichas idênticas no quadro -- nada no banco
+  // impede N negócios por contato.
   const querNegocio = Boolean(pipeline_id || deal_name || deal_value !== undefined);
 
   let resolvedPipelineId: string | null = querNegocio ? (pipeline_id ?? null) : null;
@@ -258,19 +253,24 @@ serve(async (req) => {
 
     if (firstStage) {
       const fullName = [resolvedFirstName, resolvedLastName].filter(Boolean).join(" ");
+
+      // O gatilho já criou o negócio de entrada; aqui só sobrescrevemos o que o
+      // chamador informou. `.select()` depois do update confirma que achamos a
+      // linha -- se o gatilho não rodou (organização sem funil, por exemplo),
+      // não há o que ajustar e devolvemos deal_id nulo, formato que a resposta
+      // já suportava.
       const { data: deal, error: dealError } = await sb
         .from("deals")
-        .insert({
-          org_id: orgId,
+        .update({
           title: deal_name || `Lead: ${fullName}`,
           value: deal_value ?? 0,
           stage_id: firstStage.id,
-          contact_id: contact.id,
           company_id: companyId,
-          status: "open",
         })
+        .eq("contact_id", contact.id)
+        .eq("status", "open")
         .select("id")
-        .single();
+        .maybeSingle();
 
       if (!dealError && deal) {
         dealId = deal.id;

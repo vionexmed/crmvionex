@@ -41,6 +41,10 @@
 -- Os três lugares que contam abordagem mudam JUNTOS. Corrigir só um faria o
 -- card, o gráfico e a lista discordarem entre si.
 
+-- DEPENDÊNCIA: esta função usa public.etapa_de_entrada, criada em
+-- 20260826170000_contato_entra_no_funil.sql. Num banco novo a ordem por nome de
+-- arquivo resolve (o corpo plpgsql não é validado na criação, só na execução).
+-- Reaplicando à mão, rode 170000 ANTES desta.
 CREATE OR REPLACE FUNCTION public.sdr_metrics(
   _org_id uuid,
   _from   timestamptz DEFAULT NULL,
@@ -161,8 +165,21 @@ BEGIN
         AND (_from IS NULL OR a.created_at >= _from)
         AND (_to   IS NULL OR a.created_at <  _to)),
 
+    -- Oportunidade = negócio que SAIU da etapa de entrada.
+    --
+    -- Todo contato passou a entrar no funil (20260826170000), então
+    -- `count(*) FROM deals` viraria contagem de cadastro: importar 500 pessoas
+    -- anunciaria 500 oportunidades geradas, sem ninguém ter avaliado nenhuma.
+    -- Estar no funil é o padrão; ter avançado é que é o feito.
+    --
+    -- A etapa de entrada é a de menor `order`, nunca o nome -- rótulo é
+    -- editável numa tela de configuração, e número de painel não pode depender
+    -- disso. Negócio sem etapa conta: foi criado à mão, fora do fluxo.
     (SELECT count(*)::int FROM public.deals d
       WHERE d.org_id = _org_id
+        AND (d.stage_id IS NULL
+             OR d.stage_id <> public.etapa_de_entrada(
+                  (SELECT s.pipeline_id FROM public.pipeline_stages s WHERE s.id = d.stage_id)))
         AND (_from IS NULL OR d.created_at >= _from)
         AND (_to   IS NULL OR d.created_at <  _to)),
 

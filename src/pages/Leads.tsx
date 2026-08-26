@@ -503,7 +503,7 @@ export default function Leads() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              O lead passa para <strong>Em negociação</strong> e um negócio é criado na primeira etapa do funil selecionado.
+              O lead passa para <strong>Em negociação</strong> e o negócio dele avança para a etapa seguinte à de entrada.
             </p>
           </div>
           <DialogFooter>

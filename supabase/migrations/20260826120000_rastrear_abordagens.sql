@@ -19,6 +19,10 @@
 
 -- CREATE OR REPLACE não troca o tipo de retorno de uma função. Com colunas
 -- novas no RETURNS TABLE, é DROP e recria.
+-- DEPENDÊNCIA: esta função usa public.etapa_de_entrada, criada em
+-- 20260826170000_contato_entra_no_funil.sql. Num banco novo a ordem por nome de
+-- arquivo resolve (o corpo plpgsql não é validado na criação, só na execução).
+-- Reaplicando à mão, rode 170000 ANTES desta.
 DROP FUNCTION IF EXISTS public.sdr_metric_leads(uuid, text, timestamptz, timestamptz, int);
 
 CREATE FUNCTION public.sdr_metric_leads(
@@ -235,6 +239,12 @@ BEGIN
     FROM public.deals d
     LEFT JOIN public.contacts c ON c.id = d.contact_id
     WHERE d.org_id = _org_id
+      -- Mesmo recorte de sdr_metrics: só negócio que saiu da etapa de entrada.
+      -- Divergir faria o card contar uma coisa e a lista mostrar outra, que é o
+      -- problema que este drill-down existe para resolver.
+      AND (d.stage_id IS NULL
+           OR d.stage_id <> public.etapa_de_entrada(
+                (SELECT s.pipeline_id FROM public.pipeline_stages s WHERE s.id = d.stage_id)))
       AND (_from IS NULL OR d.created_at >= _from)
       AND (_to   IS NULL OR d.created_at <  _to)
       AND (v_admin OR d.owner_id = auth.uid())
