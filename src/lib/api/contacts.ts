@@ -186,14 +186,29 @@ export const contactsApi = {
    * lifecycle_stage, não por status: 'status' é legado e faz papel duplo.
    */
   listLeads: async (orgId: string): Promise<Contact[]> => {
-    const { data, error } = await supabase
-      .from(TABLES.CONTACTS)
-      .select("*, companies:companies(name)")
-      .eq("org_id", orgId)
-      .in("lifecycle_stage", LEAD_STAGES)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data ?? [];
+    // Paginado em blocos porque o PostgREST corta em 1000 linhas EM SILÊNCIO.
+    //
+    // Sem isto o cabeçalho "N leads aguardando qualificação" mentiria a partir
+    // do lead 1001 -- diria exatamente 1000, para sempre, e os leads seguintes
+    // simplesmente não existiriam na tela. Antes da correção do ciclo de vida
+    // quase nada chegava aqui, então o teto nunca aparecia; agora toda pessoa
+    // nova entra na fila.
+    const CHUNK = 1000;
+    const all: Contact[] = [];
+    for (let page = 0; ; page++) {
+      const from = page * CHUNK;
+      const { data, error } = await supabase
+        .from(TABLES.CONTACTS)
+        .select("*, companies:companies(name)")
+        .eq("org_id", orgId)
+        .in("lifecycle_stage", LEAD_STAGES)
+        .order("created_at", { ascending: false })
+        .range(from, from + CHUNK - 1);
+      if (error) throw error;
+      all.push(...((data ?? []) as Contact[]));
+      if (!data || data.length < CHUNK) break;
+    }
+    return all;
   },
 
   /** Move o contato no ciclo de vida. O trigger no banco cuida da auditoria. */

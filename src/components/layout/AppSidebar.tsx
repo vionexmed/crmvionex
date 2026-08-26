@@ -17,6 +17,7 @@ import {
 import { AtRiskPanel } from "@/components/crm/AtRiskPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
+import { LEAD_STAGES } from "@/lib/contact-options";
 
 type NavItem = { title: string; url: string; icon: React.ElementType; adminOnly?: boolean };
 
@@ -98,7 +99,10 @@ export function AppSidebar() {
         .from("contacts")
         .select("id", { count: "exact", head: true })
         .eq("org_id", orgId)
-        .eq("status", "lead") as { count: number };
+        // Mesma fonte da página de Leads. Lia `status` (legado), que por
+        // coincidência mapeia para os mesmos contatos -- mas se LEAD_STAGES
+        // mudar, a coincidência acaba e o selo divergiria da tela em silêncio.
+        .in("lifecycle_stage", LEAD_STAGES) as { count: number };
       setLeadCount(count || 0);
     };
     fetchCount();
