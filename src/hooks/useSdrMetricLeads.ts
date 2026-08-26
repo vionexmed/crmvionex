@@ -39,6 +39,12 @@ export type LinhaDrilldown = {
   respondeu: boolean | null;
   /** Só oportunidades preenche. */
   valor: number | null;
+  /** Quem fez a abordagem. Só a métrica de abordagens preenche. */
+  autor: string | null;
+  /** atividade | e-mail | whatsapp. Só abordagens. */
+  canal: string | null;
+  /** O que foi enviado: assunto, título da atividade ou trecho da mensagem. */
+  conteudo: string | null;
 };
 
 export const sdrMetricLeadsKeys = {
@@ -115,8 +121,12 @@ export function resumoDrilldown(args: {
   const visivel = linhas.reduce((soma, l) => soma + (l.toques || 0), 0);
   const truncado = linhas.length >= limite;
 
+  // Abordagens passou a listar UM EVENTO por linha, sem agrupar e sem exigir
+  // contato vinculado — então a soma dos toques bate com o card por construção,
+  // e não há diferença a explicar. A linha do resto sobra só para truncamento,
+  // que o `truncado` abaixo já cobre.
+  //
   // Taxa de resposta é percentual: não há total contável para subtrair.
-  // O cabeçalho mostra "X de Y responderam" e isso já é a conta completa.
   if (metric === "taxaResposta" || total === null || truncado) {
     return { visivel, resto: 0, textoResto: null, truncado };
   }

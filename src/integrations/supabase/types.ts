@@ -2755,6 +2755,9 @@ export type Database = {
           _to?: string
         }
         Returns: {
+          autor: string | null
+          canal: string | null
+          conteudo: string | null
           detalhe: string | null
           id: string
           quando: string | null

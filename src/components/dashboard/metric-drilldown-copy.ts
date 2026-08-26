@@ -13,7 +13,14 @@ export const COMPLETO = 200;
 
 export const COPY: Record<MetricDrilldownKey, { titulo: string; vazio: string; nota?: string }> = {
   leadsRecebidos: { titulo: "Quem chegou", vazio: "Nenhum lead no período." },
-  abordagens: { titulo: "Quem foi abordado", vazio: "Nenhuma abordagem no período." },
+  abordagens: {
+    // Era "Quem foi abordado", e o título prometia o que a lista não entregava:
+    // o número conta EVENTOS, então listar pessoas fazia 4 abordagens caberem em
+    // 1 linha. Agora é uma abordagem por linha, com autor, canal e conteúdo.
+    titulo: "Abordagens realizadas",
+    vazio: "Nenhuma abordagem no período.",
+    nota: "mais recentes primeiro",
+  },
   taxaResposta: {
     titulo: "Abordados no período",
     vazio: "Ninguém foi abordado por WhatsApp no período.",

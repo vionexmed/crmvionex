@@ -24,6 +24,9 @@ function linha(toques: number, i = 0): LinhaDrilldown {
     toques,
     respondeu: null,
     valor: null,
+    autor: null,
+    canal: null,
+    conteudo: null,
   };
 }
 
@@ -136,5 +139,44 @@ describe("o painel lateral e a prévia contam a mesma história", () => {
     const painel = readFileSync("src/components/dashboard/MetricLeadsSheet.tsx", "utf8");
     expect(painel).toMatch(/total:\s*number\s*\|\s*null/);
     expect(readFileSync("src/pages/Dashboard.tsx", "utf8")).toMatch(/total=\{/);
+  });
+});
+
+describe("abordagens são rastreáveis", () => {
+  const SQL = "supabase/migrations/20260826120000_rastrear_abordagens.sql";
+  const sql = readFileSync(SQL, "utf8");
+
+  it("a função devolve autor, canal e conteúdo", () => {
+    for (const col of ["autor", "canal", "conteudo"]) {
+      expect(sql).toContain(col);
+    }
+  });
+
+  it("abordagens não agrupa por contato", () => {
+    // Agrupar fazia o card dizer 4 e a lista mostrar 1: os eventos sem
+    // contact_id entravam na contagem e não tinham nome para aparecer.
+    const ramo = sql.slice(sql.indexOf("ELSIF _metric = 'abordagens'"), sql.indexOf("ELSIF _metric = 'taxaResposta'"));
+    expect(ramo).not.toContain("GROUP BY");
+  });
+
+  it("abordagem sem contato vinculado aparece na lista", () => {
+    const ramo = sql.slice(sql.indexOf("ELSIF _metric = 'abordagens'"), sql.indexOf("ELSIF _metric = 'taxaResposta'"));
+    expect(ramo).toContain("Sem lead vinculado");
+    // LEFT JOIN, não JOIN: com JOIN o evento órfão sumiria de novo.
+    expect(ramo).toContain("LEFT JOIN public.contacts");
+  });
+
+  it("quem não é admin vê a própria ação, mesmo em lead de outro", () => {
+    // Sem a segunda metade da condição, a pessoa não veria a abordagem que ela
+    // mesma fez a um lead que não é dela.
+    const ramo = sql.slice(sql.indexOf("ELSIF _metric = 'abordagens'"), sql.indexOf("ELSIF _metric = 'taxaResposta'"));
+    expect(ramo).toContain("ev.user_id = auth.uid()");
+  });
+
+  it("a interface desenha o canal e o autor", () => {
+    const row = readFileSync("src/components/dashboard/LeadRow.tsx", "utf8");
+    expect(row).toContain("linha.canal");
+    expect(row).toContain("linha.autor");
+    expect(row).toContain("linha.conteudo");
   });
 });
