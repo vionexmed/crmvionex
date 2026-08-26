@@ -76,7 +76,7 @@ export function SalesReport({ deals, stages, members, companies, allDeals, perio
       let label: string;
       if (groupBy === "stage") {
         key = d.stage_id || "none";
-        label = stages.find((s) => s.id === d.stage_id)?.name || "Sem estágio";
+        label = stages.find((s) => s.id === d.stage_id)?.name || "Sem etapa";
       } else if (groupBy === "owner") {
         key = d.owner_id || "none";
         label = members.find((m) => m.id === d.owner_id)?.name || members.find((m) => m.id === d.owner_id)?.email || "Sem dono";
@@ -132,7 +132,7 @@ export function SalesReport({ deals, stages, members, companies, allDeals, perio
   const exportDealsCSV = () => {
     downloadCSV(deals.map((d) => ({
       Título: d.title, Valor: d.value, Status: d.status,
-      Estágio: stages.find((s) => s.id === d.stage_id)?.name || "",
+      Etapa: stages.find((s) => s.id === d.stage_id)?.name || "",
       Dono: members.find((m) => m.id === d.owner_id)?.name || "",
       Probabilidade: d.probability, "Data Fechamento": d.close_date,
       "Motivo Perda": d.loss_reason || "", Criado: d.created_at,
@@ -187,7 +187,7 @@ export function SalesReport({ deals, stages, members, companies, allDeals, perio
 
         {/* Funnel */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Pipeline por Estágio</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Negócios por etapa</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-1.5">
               {funnelData.map((s) => {
@@ -210,7 +210,7 @@ export function SalesReport({ deals, stages, members, companies, allDeals, perio
 
         {/* Conversion rates */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Taxa de Conversão por Estágio</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Taxa de conversão por etapa</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={stageConversion}>
@@ -226,7 +226,7 @@ export function SalesReport({ deals, stages, members, companies, allDeals, perio
 
         {/* Avg time per stage */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Tempo Médio por Estágio (dias)</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Tempo médio por etapa (dias)</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={avgTimePerStage} layout="vertical">
@@ -268,7 +268,7 @@ export function SalesReport({ deals, stages, members, companies, allDeals, perio
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
                 <SelectTrigger className="h-7 w-32 text-[10px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="stage">Por Estágio</SelectItem>
+                  <SelectItem value="stage">Por etapa</SelectItem>
                   <SelectItem value="owner">Por Dono</SelectItem>
                   <SelectItem value="company">Por Empresa</SelectItem>
                   <SelectItem value="month">Por Mês</SelectItem>

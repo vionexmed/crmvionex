@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const mainItems = [
   { title: "Home", url: "/", icon: LayoutDashboard },
   { title: "Contatos", url: "/contacts", icon: Users },
-  { title: "Funil de vendas", url: "/deals", icon: Handshake },
+  { title: "Negócios", url: "/deals", icon: Handshake },
   { title: "Tarefas", url: "/activities", icon: CheckSquare },
 ];
 

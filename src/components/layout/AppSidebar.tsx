@@ -28,7 +28,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { title: "Dashboard",  url: "/dashboard",  icon: LayoutDashboard },
       { title: "Contatos",   url: "/contacts",   icon: Users },
       { title: "Empresas",   url: "/companies",  icon: Building2 },
-      { title: "Funil de vendas", url: "/deals",      icon: Handshake },
+      { title: "Negócios",       url: "/deals",      icon: Handshake },
       { title: "Atividades", url: "/activities", icon: Activity },
       { title: "Tarefas",    url: "/tasks",      icon: CheckSquare },
     ],

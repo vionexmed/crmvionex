@@ -23,8 +23,8 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
   }, [orgId]);
 
   const plans = [
-    { name: "Free", price: "R$ 0", features: ["500 contatos", "2 pipelines", "1 usuário", "Relatórios básicos"], limit: { contacts: 500, users: 1 }, current: org?.plan === "free" || !org?.plan },
-    { name: "Pro", price: "R$ 149/mês", features: ["10.000 contatos", "Pipelines ilimitados", "10 usuários", "AI Copilot", "Automações", "API REST"], limit: { contacts: 10000, users: 10 }, current: org?.plan === "pro" },
+    { name: "Free", price: "R$ 0", features: ["500 contatos", "2 funis", "1 usuário", "Relatórios básicos"], limit: { contacts: 500, users: 1 }, current: org?.plan === "free" || !org?.plan },
+    { name: "Pro", price: "R$ 149/mês", features: ["10.000 contatos", "Funis ilimitados", "10 usuários", "AI Copilot", "Automações", "API REST"], limit: { contacts: 10000, users: 10 }, current: org?.plan === "pro" },
     { name: "Enterprise", price: "Sob consulta", features: ["Contatos ilimitados", "Usuários ilimitados", "SSO / SAML", "SLA dedicado", "White-label", "Suporte prioritário"], limit: { contacts: Infinity, users: Infinity }, current: org?.plan === "enterprise" },
   ];
 

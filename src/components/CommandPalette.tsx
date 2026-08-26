@@ -16,7 +16,7 @@ const pages = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Contatos", icon: Users, path: "/contacts" },
   { label: "Empresas", icon: Building2, path: "/companies" },
-  { label: "Funil de vendas", icon: Handshake, path: "/deals" },
+  { label: "Negócios", icon: Handshake, path: "/deals" },
   { label: "Atividades", icon: Activity, path: "/activities" },
   { label: "Atividades", icon: Activity, path: "/activities" },
   { label: "E-mail", icon: Inbox, path: "/inbox" },
@@ -104,7 +104,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         )}
 
         {deals.length > 0 && (
-          <CommandGroup heading="Funil de vendas">
+          <CommandGroup heading="Negócios">
             {deals.map((d) => (
               <CommandItem key={d.id} onSelect={() => handleSelect(`/deals/${d.id}`)} className="gap-2">
                 <Handshake className="h-4 w-4 text-muted-foreground" />

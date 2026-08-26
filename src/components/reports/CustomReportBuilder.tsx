@@ -29,7 +29,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
   const fieldOptions: Record<string, { key: string; label: string }[]> = {
     deals: [
       { key: "title", label: "Título" }, { key: "value", label: "Valor" }, { key: "status", label: "Status" },
-      { key: "stage", label: "Estágio" }, { key: "owner", label: "Dono" }, { key: "probability", label: "Prob %" },
+      { key: "stage", label: "Etapa" }, { key: "owner", label: "Dono" }, { key: "probability", label: "Prob %" },
       { key: "close_date", label: "Data Fechamento" }, { key: "loss_reason", label: "Motivo Perda" },
       { key: "created_at", label: "Criado em" },
     ],

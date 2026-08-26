@@ -113,7 +113,7 @@ export function DealsList({
               </TableHead>
               <TableHead><SortHeader label="Título" field="title" /></TableHead>
               <TableHead><SortHeader label="Valor" field="value" /></TableHead>
-              <TableHead className="hidden md:table-cell">Estágio</TableHead>
+              <TableHead className="hidden md:table-cell">Etapa</TableHead>
               <TableHead className="hidden lg:table-cell"><SortHeader label="Probabilidade" field="probability" /></TableHead>
               <TableHead className="hidden sm:table-cell"><SortHeader label="Fechamento" field="close_date" /></TableHead>
               <TableHead><SortHeader label="Status" field="status" /></TableHead>

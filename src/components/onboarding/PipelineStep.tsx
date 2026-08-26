@@ -23,7 +23,7 @@ const TEMPLATES = {
   custom: {
     icon: Pencil,
     label: "Personalizado",
-    desc: "Você define os stages",
+    desc: "Você define as etapas",
     stages: [] as string[],
   },
 };
@@ -132,7 +132,7 @@ export function PipelineStep({ orgId, setCanContinue, onNext, setStepData, stepD
       <div>
         <h3 className="text-xl font-bold">Como é o seu processo de vendas?</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {alreadyCreated ? "Pipeline configurado com sucesso." : "Escolha um modelo ou crie do zero. Você pode editar os stages a qualquer momento."}
+          {alreadyCreated ? "Funil configurado com sucesso." : "Escolha um modelo ou crie do zero. Você pode editar as etapas a qualquer momento."}
         </p>
       </div>
 
@@ -207,7 +207,7 @@ export function PipelineStep({ orgId, setCanContinue, onNext, setStepData, stepD
         }`}
       >
         {loading ? (
-          <><Loader2 className="h-4 w-4 animate-spin" /> Criando pipeline...</>
+          <><Loader2 className="h-4 w-4 animate-spin" /> Criando funil...</>
         ) : alreadyCreated ? (
           <><Check className="h-4 w-4" /> Salvo com sucesso</>
         ) : (

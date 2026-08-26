@@ -27,9 +27,9 @@ export function CompleteStep({ stepData, completedSteps, onComplete }: Onboardin
     },
     {
       key: "pipeline",
-      label: "Pipeline",
+      label: "Funil",
       value: stepData.pipelineName
-        ? `${stepData.pipelineName} — ${stepData.stageCount} stages`
+        ? `${stepData.pipelineName} — ${stepData.stageCount} etapas`
         : undefined,
       configured: completedSteps.has("pipeline") || !!stepData.pipelineName,
     },

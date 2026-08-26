@@ -262,7 +262,7 @@ export default function Leads() {
             <span>Nome</span>
             <span className="flex items-center gap-1"><Phone className="h-3 w-3" />Telefone</span>
             <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />Empresa</span>
-            <span className="flex items-center gap-1"><FileText className="h-3 w-3" />Estágio</span>
+            <span className="flex items-center gap-1"><FileText className="h-3 w-3" />Ciclo de vida</span>
             <span className="flex items-center gap-1"><UserCog className="h-3 w-3" />Responsável</span>
             <span className="flex items-center gap-1"><Globe className="h-3 w-3" />Origem</span>
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Recebido</span>
@@ -483,7 +483,7 @@ export default function Leads() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Adicionar ao pipeline
+                Adicionar ao funil
               </label>
               {pipelines.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
@@ -492,7 +492,7 @@ export default function Leads() {
               ) : (
                 <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o pipeline" />
+                    <SelectValue placeholder="Selecione o funil" />
                   </SelectTrigger>
                   <SelectContent>
                     {pipelines.map((p) => (
@@ -503,7 +503,7 @@ export default function Leads() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              O lead vira <strong>Prospect</strong> em Contatos e um negócio é criado no primeiro estágio do pipeline selecionado.
+              O lead passa para <strong>Em negociação</strong> e um negócio é criado na primeira etapa do funil selecionado.
             </p>
           </div>
           <DialogFooter>

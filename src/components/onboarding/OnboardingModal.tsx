@@ -20,7 +20,7 @@ import type { OnboardingStepProps } from "./types";
 const STEPS = [
   { key: "welcome", label: "Boas-vindas", required: true },
   { key: "company", label: "Empresa", required: true },
-  { key: "pipeline", label: "Pipeline", required: true },
+  { key: "pipeline", label: "Funil", required: true },
   { key: "ai", label: "AI Copilot", required: false },
   { key: "email", label: "Email", required: false },
   { key: "slack", label: "Slack", required: false },

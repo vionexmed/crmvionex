@@ -294,7 +294,7 @@ export function DashboardAIChat({ crmData }: DashboardAIChatProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Pergunte ao Carlos sobre seu pipeline, negócios, equipe..."
+              placeholder="Pergunte ao Carlos sobre seu funil, negócios, equipe..."
               className="min-h-[36px] max-h-[80px] resize-none text-xs"
               rows={1}
             />

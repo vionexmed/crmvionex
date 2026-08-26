@@ -17,7 +17,7 @@ const routeLabels: Record<string, string> = {
   "/leads": "Leads",
   "/contacts": "Contatos",
   "/companies": "Empresas",
-  "/deals": "Funil de vendas",
+  "/deals": "Negócios",
   "/activities": "Atividades",
   "/tasks": "Tarefas",
   "/conversations": "WhatsApp",
@@ -55,7 +55,7 @@ export function AppHeader({ onOpenSearch, actions }: AppHeaderProps) {
   const parts: { label: string; href?: string }[] = [{ label: "VIONEX", href: "/" }];
 
   if (location.pathname.startsWith("/deals/") && location.pathname !== "/deals") {
-    parts.push({ label: "Funil de vendas", href: "/deals" });
+    parts.push({ label: "Negócios", href: "/deals" });
     parts.push({ label: "Detalhe" });
   } else if (location.pathname.startsWith("/settings/")) {
     parts.push({ label: "Configurações", href: "/settings" });

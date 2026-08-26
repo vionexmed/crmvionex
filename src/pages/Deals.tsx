@@ -169,7 +169,7 @@ export default function Deals() {
     const currentStageIds = pipelineStages.map((s) => s.id);
     await savePipelineStages({ pipelineId: selectedPipeline, currentStageIds, editingStages });
     setPipelineDialogOpen(false);
-    toast({ title: "Pipeline atualizado!" });
+    toast({ title: "Funil atualizado!" });
   };
 
   // Apply client-side filters to all deals (Kanban/Forecast)
@@ -281,7 +281,7 @@ export default function Deals() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight">Funil de vendas</h1>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight">Negócios</h1>
           <div className="flex rounded-md border border-border bg-muted/50 p-0.5">
             {[
               { mode: "kanban" as const, icon: Kanban, label: "Kanban" },
@@ -320,7 +320,7 @@ export default function Deals() {
             </Select>
           )}
           {isAdmin && (
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={openPipelineEditor} aria-label="Personalizar pipeline">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={openPipelineEditor} aria-label="Personalizar funil">
               <Settings2 className="h-3.5 w-3.5" />
             </Button>
           )}
@@ -437,7 +437,7 @@ export default function Deals() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Estágio</Label>
+              <Label>Etapa</Label>
               <Select value={form.stage_id || ""} onValueChange={(v) => setForm({ ...form, stage_id: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -531,8 +531,8 @@ export default function Deals() {
       <Dialog open={pipelineDialogOpen} onOpenChange={setPipelineDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Personalizar Pipeline</DialogTitle>
-            <DialogDescription>Edite os estágios do seu pipeline de vendas</DialogDescription>
+            <DialogTitle>Personalizar funil</DialogTitle>
+            <DialogDescription>Edite as etapas do seu funil de vendas</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             {editingStages.map((stage, idx) => (
@@ -542,12 +542,12 @@ export default function Deals() {
                   value={stage.color}
                   onChange={(e) => setEditingStages(editingStages.map((s, i) => i === idx ? { ...s, color: e.target.value } : s))}
                   className="h-8 w-8 cursor-pointer rounded border-0 shrink-0"
-                  aria-label={`Cor do estágio ${idx + 1}`}
+                  aria-label={`Cor da etapa ${idx + 1}`}
                 />
                 <Input
                   value={stage.name}
                   onChange={(e) => setEditingStages(editingStages.map((s, i) => i === idx ? { ...s, name: e.target.value } : s))}
-                  placeholder={`Estágio ${idx + 1}`}
+                  placeholder={`Etapa ${idx + 1}`}
                   className="flex-1"
                 />
                 <div className="flex items-center gap-1 shrink-0">
@@ -569,7 +569,7 @@ export default function Deals() {
             ))}
             <Button variant="outline" size="sm"
               onClick={() => setEditingStages([...editingStages, { name: "", color: "#94a3b8", win_probability: 50, order: editingStages.length }])}>
-              <Plus className="mr-1 h-3.5 w-3.5" />Adicionar estágio
+              <Plus className="mr-1 h-3.5 w-3.5" />Adicionar etapa
             </Button>
           </div>
           <DialogFooter>

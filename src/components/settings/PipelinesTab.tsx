@@ -67,13 +67,13 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
     });
     setNewStageName("");
     fetchAll();
-    toast({ title: "Estágio adicionado" });
+    toast({ title: "Etapa adicionada" });
   };
 
   const deleteStage = async (id: string) => {
     await supabase.from("pipeline_stages").delete().eq("id", id);
     fetchAll();
-    toast({ title: "Estágio excluído" });
+    toast({ title: "Etapa excluída" });
   };
 
   const moveStage = async (stageId: string, direction: "up" | "down") => {
@@ -136,7 +136,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
       {selectedPipeline && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Estágios</CardTitle>
+            <CardTitle className="text-sm">Etapas</CardTitle>
             <CardDescription className="text-[10px]">Configure as etapas do funil selecionado. Arraste para reordenar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

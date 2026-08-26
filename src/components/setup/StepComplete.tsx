@@ -10,7 +10,7 @@ interface StepCompleteProps {
 
 const CHECKLIST = [
   { key: "organization", label: "Empresa configurada", settingsPath: "/settings" },
-  { key: "pipeline", label: "Pipeline criado", settingsPath: "/settings" },
+  { key: "pipeline", label: "Funil criado", settingsPath: "/settings" },
   { key: "ai", label: "AI Copilot — Claude ativo", settingsPath: "/settings" },
   { key: "resend", label: "Email de envio — Resend", settingsPath: "/settings/integrations" },
   { key: "google_gmail", label: "Gmail sincronizado", settingsPath: "/settings/integrations" },

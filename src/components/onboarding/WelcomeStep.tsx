@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { OnboardingStepProps } from "./types";
 
 const features = [
-  { icon: Zap, label: "Pipeline visual", desc: "Kanban arrastável" },
+  { icon: Zap, label: "Funil visual", desc: "Kanban arrastável" },
   { icon: Bot, label: "AI Copilot", desc: "Powered by Claude" },
   { icon: Link2, label: "Integrações", desc: "WhatsApp, email e mais" },
 ];

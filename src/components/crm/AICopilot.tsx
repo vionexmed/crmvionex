@@ -17,7 +17,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilot`;
 
 const SUGGESTIONS = [
   "Quais negócios estão em maior risco esta semana?",
-  "Resuma os negócios abertos no pipeline",
+  "Resuma os negócios abertos no funil",
   "Qual foi nossa taxa de conversão este mês?",
   "Rascunhe um email de follow-up profissional",
   "Quais próximos passos sugerir para os leads quentes?",
@@ -36,7 +36,7 @@ export function AICopilot() {
   const getContext = useCallback(() => {
     const path = location.pathname;
     if (path.startsWith("/deals/")) return `Usuário está na página de detalhe do negócio (ID: ${path.split("/")[2]})`;
-    if (path === "/deals") return "Usuário está na página de negócios/pipeline";
+    if (path === "/deals") return "Usuário está na página de Negócios (o funil de vendas)";
     if (path === "/contacts") return "Usuário está na página de contatos";
     if (path === "/companies") return "Usuário está na página de empresas";
     if (path === "/reports") return "Usuário está na página de relatórios";

@@ -168,7 +168,7 @@ fetch("${endpoint}", {
     { name: "company", type: "string", req: false, desc: "Nome da empresa (cria ou vincula automaticamente)" },
     { name: "source", type: "string", req: false, desc: "Origem do lead (ex: 'landing_page_hero')" },
     { name: "notes", type: "string", req: false, desc: "Notas ou mensagem do lead" },
-    { name: "pipeline_id", type: "uuid", req: false, desc: "ID do pipeline — cria um negócio automaticamente" },
+    { name: "pipeline_id", type: "uuid", req: false, desc: "ID do funil — cria um negócio automaticamente" },
     { name: "deal_name", type: "string", req: false, desc: "Título do negócio (padrão: 'Lead: Nome')" },
     { name: "deal_value", type: "number", req: false, desc: "Valor do negócio (padrão: 0)" },
     { name: "tags", type: "string[]", req: false, desc: "Tags para aplicar ao contato" },
@@ -324,7 +324,7 @@ fetch("${endpoint}", {
       {pipelines.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-[11px]">IDs dos Seus Pipelines</CardTitle>
+            <CardTitle className="text-[11px]">IDs dos seus funis</CardTitle>
             <CardDescription className="text-[10px]">Use estes IDs no campo pipeline_id</CardDescription>
           </CardHeader>
           <CardContent>
