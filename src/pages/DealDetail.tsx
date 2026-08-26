@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDeal, useUpdateDeal, useUpdateDealStatus, useUpdateDealStage } from "@/hooks/queries/useDeals";
 import { useDealActivities, useCreateActivity, activitiesKeys } from "@/hooks/queries/useActivities";
 import { usePipelineStages } from "@/hooks/queries/usePipelines";
+import { useMembers } from "@/hooks/queries/useMembers";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -48,9 +49,12 @@ export default function DealDetail() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const { data: deal, isLoading: dealLoading } = useDeal(id);
+  const { data: deal, isLoading: dealLoading, isError: dealError, refetch: refetchDeal } = useDeal(id);
   const { data: activities = [] } = useDealActivities(id);
   const { data: stages = [] } = usePipelineStages();
+  // O responsável vem daqui, não por embed: não existe FK deals->profiles.
+  // Mesmo join cliente-side de Deals.tsx. Ver o comentário em lib/api/deals.ts.
+  const { data: members = [] } = useMembers();
 
   const updateDeal = useUpdateDeal();
   const updateDealStatus = useUpdateDealStatus();
@@ -72,17 +76,47 @@ export default function DealDetail() {
   // Add activity
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, title: "", body: "" });
 
-  // Navigate away if deal not found (must be in useEffect, not during render)
+  // Só redireciona quando o negócio REALMENTE não existe.
+  //
+  // Antes a condição era `!dealLoading && !deal`, que junta duas coisas
+  // diferentes: negócio apagado e consulta que falhou. Com o embed impossível de
+  // owner, a consulta falhava sempre -- e o usuário era devolvido para a lista
+  // como se o clique não tivesse acontecido. Nunca aparecia um erro.
+  //
+  // `maybeSingle()` devolve null para inexistente e lança para falha, então
+  // `deal === null` com `!dealError` é a única leitura segura de "não existe".
   useEffect(() => {
-    if (!dealLoading && !deal) {
+    if (!dealLoading && !dealError && deal === null) {
       navigate("/deals");
     }
-  }, [deal, dealLoading, navigate]);
+  }, [deal, dealLoading, dealError, navigate]);
 
   if (dealLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Falha tem tela própria. Sem isto, qualquer erro futuro volta a se manifestar
+  // como "clico e não acontece nada", que é indepurável de fora.
+  if (dealError) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 py-16 text-center">
+        <XCircle className="mx-auto h-10 w-10 text-destructive" />
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold">Não foi possível carregar o negócio</h2>
+          <p className="text-sm text-muted-foreground">
+            A consulta ao banco falhou. O negócio não foi alterado.
+          </p>
+        </div>
+        <div className="flex justify-center gap-2">
+          <Button onClick={() => refetchDeal()}>Tentar novamente</Button>
+          <Button variant="outline" onClick={() => navigate("/deals")}>
+            Voltar para Negócios
+          </Button>
+        </div>
       </div>
     );
   }
@@ -97,8 +131,17 @@ export default function DealDetail() {
   const healthColor = daysSinceActivity <= 3 ? "bg-success" : daysSinceActivity <= 7 ? "bg-warning" : "bg-destructive";
   const healthLabel = daysSinceActivity <= 3 ? "Saudável" : daysSinceActivity <= 7 ? "Atenção" : "Inativo";
 
+  // Só as etapas DO FUNIL DESTE NEGÓCIO.
+  //
+  // `usePipelineStages()` devolve as etapas de todos os funis da organização, e
+  // `deals` não guarda pipeline_id -- o funil se descobre pela etapa atual. Com
+  // a lista completa, o Select abaixo oferecia etapas de OUTRO funil e mover o
+  // negócio para uma delas o reparentava em silêncio; e o índice da etapa atual
+  // era contado sobre a lista misturada, então a barra de progresso não media
+  // nada. Com um funil só configurado o bug é invisível, o que o torna pior.
   const currentStage = stages.find((s) => s.id === deal.stage_id);
-  const currentStageIndex = stages.findIndex((s) => s.id === deal.stage_id);
+  const pipelineStages = stages.filter((s) => s.pipeline_id === currentStage?.pipeline_id);
+  const currentStageIndex = pipelineStages.findIndex((s) => s.id === deal.stage_id);
 
   const saveTitle = () => {
     if (!titleDraft.trim()) return;
@@ -176,7 +219,8 @@ export default function DealDetail() {
 
   const contact = deal.contact ?? null;
   const company = deal.company ?? null;
-  const owner = deal.owner ?? null;
+  // Join cliente-side, porque o embed é impossível (ver lib/api/deals.ts).
+  const owner = members.find((m) => m.id === deal.owner_id) ?? null;
 
   return (
     <div className="space-y-6">
@@ -235,7 +279,7 @@ export default function DealDetail() {
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                {pipelineStages.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
 
@@ -267,9 +311,9 @@ export default function DealDetail() {
         )}
       </div>
 
-      {/* Pipeline progress bar */}
+      {/* Progresso no funil deste negócio */}
       <div className="flex gap-1">
-        {stages.map((s, i) => (
+        {pipelineStages.map((s, i) => (
           <div
             key={s.id}
             className={`h-2 flex-1 rounded-full transition-colors cursor-pointer ${
@@ -343,8 +387,8 @@ export default function DealDetail() {
           {/* BANT Qualification */}
           <DealQualification
             dealId={deal.id}
-            qualification={(deal as any).qualification}
-            qualificationScore={(deal as any).qualification_score || 0}
+            qualification={deal.qualification}
+            qualificationScore={deal.qualification_score || 0}
             onUpdate={() => qc.invalidateQueries({ queryKey: ["deals", "detail", deal.id] })}
           />
           {/* Contact */}

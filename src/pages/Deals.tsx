@@ -49,8 +49,8 @@ export default function Deals() {
   const [listPage, setListPage] = useState(0);
 
   // Supporting data
-  const { data: allStages = [] } = usePipelineStages();
-  const { data: pipelines = [] } = usePipelines();
+  const { data: allStages = [], isLoading: stagesLoading, isError: stagesError } = usePipelineStages();
+  const { data: pipelines = [], isLoading: pipelinesLoading, isError: pipelinesError } = usePipelines();
   // Lista leve, sem o teto de 1000 linhas do PostgREST (inclui leads)
   const { data: contacts = [] } = useContactsPicker();
   const { data: companies = [] } = useCompanies();
@@ -122,8 +122,25 @@ export default function Deals() {
     return () => { supabase.removeChannel(channel); };
   }, [orgId, qc]);
 
+  // useMemo porque este array é dependência do useEffect abaixo. Sem ele, um
+  // array novo a cada render fazia o efeito reavaliar em todo render.
+  const pipelineStages = useMemo(
+    () => allStages.filter((s) => s.pipeline_id === selectedPipeline),
+    [allStages, selectedPipeline],
+  );
+
+  // A tela distingue três situações que antes eram uma só.
+  //
+  // `selectedPipeline` nasce "" e só é preenchido por um useEffect depois de
+  // usePipelines resolver, então `pipelineStages` é [] no primeiro render --
+  // e o DealsKanban lê [] como "organização sem funil". Resultado: toda entrada
+  // em /deals piscava "Nenhum funil configurado", e se a consulta falhasse a
+  // mensagem ficava permanente, mandando o usuário configurar algo que já existe.
+  const funilCarregando = stagesLoading || pipelinesLoading;
+  const funilFalhou = stagesError || pipelinesError;
+  const semFunil = !funilCarregando && !funilFalhou && pipelines.length === 0;
+
   // Open "new deal" sheet from URL param
-  const pipelineStages = allStages.filter((s) => s.pipeline_id === selectedPipeline);
   const shouldOpenNew = searchParams.get("action") === "new";
   useEffect(() => {
     if (shouldOpenNew && pipelineStages.length > 0) {
@@ -311,7 +328,32 @@ export default function Deals() {
         <DealsFilters filters={filters} onFiltersChange={setFilters} members={members} />
       )}
 
-      {viewMode === "kanban" && (
+      {/* Carregando, falhou e "não existe" pedem respostas diferentes. */}
+      {viewMode === "kanban" && funilCarregando && (
+        <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-20">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      )}
+
+      {viewMode === "kanban" && funilFalhou && (
+        <div className="rounded-lg border border-dashed border-destructive/40 py-16 text-center">
+          <p className="font-medium">Não foi possível carregar o funil</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Seus negócios continuam salvos. Recarregue a página para tentar de novo.
+          </p>
+        </div>
+      )}
+
+      {viewMode === "kanban" && semFunil && (
+        <div className="rounded-lg border border-dashed border-border py-20 text-center">
+          <p className="text-muted-foreground">Nenhum funil configurado</p>
+          <p className="text-sm text-muted-foreground">
+            Vá em Configurações → Funis e etapas para criar
+          </p>
+        </div>
+      )}
+
+      {viewMode === "kanban" && !funilCarregando && !funilFalhou && !semFunil && (
         <DealsKanban
           deals={openDeals}
           wonDeals={wonDeals}

@@ -285,12 +285,16 @@ export function DealsKanban({
     }
   };
 
+  // Chegar aqui agora significa uma coisa só: o funil existe e está SEM ETAPAS.
+  // Os casos de "carregando", "falhou" e "nenhum funil na organização" são
+  // resolvidos em Deals.tsx, antes de montar este componente. Antes tudo isso
+  // caía nesta mensagem, que mandava configurar um funil já configurado.
   if (stages.length === 0) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-20">
         <div className="text-center">
-          <p className="text-muted-foreground">Nenhum funil configurado</p>
-          <p className="text-sm text-muted-foreground">Vá em Configurações → Funis e etapas para criar</p>
+          <p className="text-muted-foreground">Este funil não tem etapas</p>
+          <p className="text-sm text-muted-foreground">Vá em Configurações → Funis e etapas para adicionar</p>
         </div>
       </div>
     );

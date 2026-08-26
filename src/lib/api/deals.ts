@@ -106,17 +106,34 @@ export const dealsApi = {
     if (error) throw error;
   },
 
+  /**
+   * ATENÇÃO ao mexer no select: `owner` NÃO pode vir por embed.
+   *
+   * `deals.owner_id` referencia `auth.users(id)`, e não existe chave estrangeira
+   * de `deals` para `profiles`. O PostgREST não atravessa `auth.users` (schema
+   * não exposto), então `owner:profiles!deals_owner_id_fkey(*)` devolve PGRST200
+   * — e como a dica de constraint existe de verdade (só aponta para outro lugar),
+   * o erro não parece um erro de nome.
+   *
+   * Esse embed estava aqui e fazia a consulta falhar SEMPRE. Efeito na tela:
+   * clicar num negócio girava ~7s (3 tentativas com backoff) e devolvia o
+   * usuário para a lista, como se o clique não tivesse acontecido. O `list`
+   * abaixo já resolvia o dono no cliente; só o detalhe ficou para trás.
+   *
+   * O responsável é resolvido em DealDetail com useMembers(), o mesmo join
+   * cliente-side de Deals.tsx.
+   */
   getById: async (id: string): Promise<DealWithRelations> => {
     const { data, error } = await supabase
       .from(TABLES.DEALS)
       .select(
-        "*, contact:contacts!deals_contact_id_fkey(*), company:companies!deals_company_id_fkey(*), owner:profiles!deals_owner_id_fkey(*)"
+        "*, contact:contacts!deals_contact_id_fkey(*), company:companies!deals_company_id_fkey(*)"
       )
       .eq("id", id)
-      .maybeSingle(); // negócio inexistente → null (sem 3 retries de erro)
+      .maybeSingle(); // negócio inexistente → null, não erro
     if (error) throw error;
-    // O embed de owner/contact/company não é inferível pelo tipo gerado, então
-    // a forma do retorno não se sobrepõe o bastante para um cast direto.
+    // O embed de contact/company não é inferível pelo tipo gerado, então a forma
+    // do retorno não se sobrepõe o bastante para um cast direto.
     return data as unknown as DealWithRelations;
   },
 
