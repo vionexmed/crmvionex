@@ -180,3 +180,57 @@ describe("abordagens são rastreáveis", () => {
     expect(row).toContain("linha.conteudo");
   });
 });
+
+describe("abordagem REALIZADA, não apenas registrada", () => {
+  const CORRIGE = readFileSync("supabase/migrations/20260826140000_abordagem_realizada.sql", "utf8");
+  const LISTA = readFileSync("supabase/migrations/20260826120000_rastrear_abordagens.sql", "utf8");
+
+  it("o card só conta atividade concluída", () => {
+    // Sem isto, reunião agendada para semana que vem contava como abordagem
+    // feita hoje — e o card se chama "Abordagens realizadas".
+    expect(CORRIGE).toContain("a.completed_at IS NOT NULL");
+  });
+
+  it("conta pela data da conclusão, não da criação", () => {
+    // Por created_at, ligação criada em julho e feita em agosto apareceria no
+    // mês errado — e o número de um mês fechado mudaria depois de fechado.
+    expect(CORRIGE).toMatch(/_from IS NULL OR a\.completed_at >= _from/);
+    expect(CORRIGE).toMatch(/a\.completed_at::date/);
+  });
+
+  it("corrige o card E o gráfico na mesma migração", () => {
+    // Corrigir um só faria o gráfico contradizer o card logo acima dele.
+    expect(CORRIGE).toContain("public.sdr_metrics");
+    expect(CORRIGE).toContain("public.sdr_series");
+  });
+
+  it("a lista de eventos usa o mesmo critério", () => {
+    const ramo = LISTA.slice(
+      LISTA.indexOf("ELSIF _metric = 'abordagens'"),
+      LISTA.indexOf("ELSIF _metric = 'taxaResposta'"),
+    );
+    expect(ramo).toContain("a.completed_at IS NOT NULL");
+  });
+
+  it("e-mail e WhatsApp seguem por created_at", () => {
+    // Ali created_at É a data do envio. Aplicar completed_at nessas tabelas não
+    // faria sentido — elas não têm o conceito.
+    expect(CORRIGE).toMatch(/e\.created_at >= _from/);
+    expect(CORRIGE).not.toMatch(/e\.completed_at/);
+  });
+});
+
+describe("vínculo do e-mail acontece no envio", () => {
+  const ENVIO = readFileSync("supabase/functions/gmail-send/index.ts", "utf8");
+
+  it("tenta casar o destinatário com um contato existente", () => {
+    expect(ENVIO).toContain("contatoResolvido");
+    expect(ENVIO).toMatch(/\.ilike\("email"/);
+  });
+
+  it("nunca cria contato a partir do destinatário", () => {
+    // Criaria contato de endereço interno, de teste e de fornecedor.
+    const trecho = ENVIO.slice(ENVIO.indexOf("contatoResolvido"), ENVIO.indexOf("const toList"));
+    expect(trecho).not.toContain(".insert(");
+  });
+});

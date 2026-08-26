@@ -294,6 +294,35 @@ serve(async (req) => {
     const plainSig = cfg.signature || (fallbackSignatureHtml ? fallbackSignatureHtml.replace(/<[^>]+>/g, "") : "");
     const finalText = !html && text ? (plainSig ? `${text}\n\n${plainSig}` : text) : text;
 
+    // VÍNCULO AUTOMÁTICO no envio.
+    //
+    // O compositor só manda contact_id quando a pessoa abriu o e-mail de dentro
+    // de um contato. Quem clica "Novo e-mail" e digita o endereço à mão deixa a
+    // abordagem sem vínculo — ela conta na métrica e desaparece da ficha do
+    // lead, então o próximo a falar com aquela pessoa não vê que já houve
+    // contato.
+    //
+    // Vincular no ENVIO, e não ao abrir a tela: o que importa é a mensagem que
+    // saiu, não a intenção de escrever.
+    //
+    // Só CASA com contato existente, nunca cria: criar contato a partir do
+    // destinatário encheria a base de endereço interno, de teste e de
+    // fornecedor. Sem correspondência, segue sem vínculo — e a lista de
+    // abordagens mostra isso em vez de esconder.
+    let contatoResolvido: string | null = contact_id ?? null;
+    if (!contatoResolvido) {
+      const primeiro = (Array.isArray(to) ? to[0] : String(to).split(",")[0] || "").trim();
+      if (primeiro) {
+        const { data: achado } = await supabaseAdmin
+          .from("contacts")
+          .select("id")
+          .eq("org_id", org_id)
+          .ilike("email", primeiro)
+          .maybeSingle();
+        contatoResolvido = achado?.id ?? null;
+      }
+    }
+
     const toList = Array.isArray(to) ? to : String(to).split(",").map((s: string) => s.trim()).filter(Boolean);
     const ccList = cc ? (Array.isArray(cc) ? cc : String(cc).split(",").map((s: string) => s.trim()).filter(Boolean)) : [];
     const bccList = bcc ? (Array.isArray(bcc) ? bcc : String(bcc).split(",").map((s: string) => s.trim()).filter(Boolean)) : [];
@@ -303,7 +332,7 @@ serve(async (req) => {
       org_id,
       user_id: userId,
       connection_id: connection?.id ?? null,
-      contact_id: contact_id ?? null,
+      contact_id: contatoResolvido,
       deal_id: deal_id ?? null,
       direction: "outbound",
       subject,

@@ -94,16 +94,20 @@ BEGIN
     RETURN QUERY
     WITH evento AS (
       -- Atividade registrada por alguém do time.
+      -- Concluída, e pela data da conclusão — mesmo critério de sdr_metrics e
+      -- sdr_series. Se a lista contasse diferente do card, voltaríamos ao
+      -- problema que este drill-down existe para resolver.
       SELECT a.contact_id,
              a.user_id,
              'atividade'::text AS canal_ev,
-             a.created_at      AS quando_ev,
+             a.completed_at    AS quando_ev,
              coalesce(nullif(trim(a.title), ''), a.type::text) AS conteudo_ev
       FROM public.activities a
       WHERE a.org_id = _org_id
         AND a.type IN ('call', 'email', 'meeting')
-        AND (_from IS NULL OR a.created_at >= _from)
-        AND (_to   IS NULL OR a.created_at <  _to)
+        AND a.completed_at IS NOT NULL
+        AND (_from IS NULL OR a.completed_at >= _from)
+        AND (_to   IS NULL OR a.completed_at <  _to)
 
       UNION ALL
 
