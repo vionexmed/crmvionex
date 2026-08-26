@@ -6,6 +6,7 @@
  * exatamente a queixa que originou o drill-down.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   resumoDrilldown,
   type LinhaDrilldown,
@@ -117,5 +118,23 @@ describe("resumoDrilldown() — taxa de resposta é percentual", () => {
     });
     expect(r.resto).toBe(0);
     expect(r.textoResto).toBeNull();
+  });
+});
+
+describe("o painel lateral e a prévia contam a mesma história", () => {
+  it("o painel lateral usa resumoDrilldown", () => {
+    // Ele nasceu sem: eu separei o painel da prévia do hover e deixei a linha do
+    // resto atrás. O hover explicava a diferença, o painel mostrava a lista
+    // crua — e "4 abordagens" com uma linha só lê como número errado.
+    const painel = readFileSync("src/components/dashboard/MetricLeadsSheet.tsx", "utf8");
+    expect(painel).toContain("resumoDrilldown");
+    expect(painel).toContain("textoResto");
+  });
+
+  it("o painel recebe o total do card", () => {
+    // Sem o total não há com o que comparar a soma dos toques.
+    const painel = readFileSync("src/components/dashboard/MetricLeadsSheet.tsx", "utf8");
+    expect(painel).toMatch(/total:\s*number\s*\|\s*null/);
+    expect(readFileSync("src/pages/Dashboard.tsx", "utf8")).toMatch(/total=\{/);
   });
 });

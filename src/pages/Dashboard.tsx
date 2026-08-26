@@ -316,7 +316,12 @@ export default function Dashboard() {
 
           <SdrChartsPanel charts={charts} carregando={loadingCharts} isAdmin={isAdmin} />
 
-          <MetricLeadsSheet metric={painelDe} period={period} onClose={() => setPainelDe(null)} />
+          <MetricLeadsSheet
+            metric={painelDe}
+            period={period}
+            total={painelDe ? (metrics?.[painelDe]?.value ?? null) : null}
+            onClose={() => setPainelDe(null)}
+          />
         </TabsContent>
 
         {/* ── Consultar um número ── */}
