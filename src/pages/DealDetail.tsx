@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   ArrowLeft, Trophy, XCircle, Building2, User, Calendar, Percent,
-  Phone, Mail, FileText, CheckSquare, CalendarDays, Edit2, Check, X, Trash2, Loader2,
+  Edit2, Check, X, Trash2, Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -26,6 +26,9 @@ import {
 } from "@/hooks/queries/useDeals";
 import { dealsApi } from "@/lib/api/deals";
 import { mensagemErro } from "@/lib/erro-supabase";
+import {
+  ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU,
+} from "@/lib/atividade-tipos";
 import { useDealActivities, useCreateActivity, activitiesKeys } from "@/hooks/queries/useActivities";
 import { usePipelineStages } from "@/hooks/queries/usePipelines";
 import { useMembers } from "@/hooks/queries/useMembers";
@@ -41,12 +44,10 @@ function formatCurrency(value: number, currency: string = "BRL") {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
 }
 
-const activityIcons: Record<ActivityType, React.ComponentType<{ className?: string }>> = {
-  call: Phone, email: Mail, meeting: CalendarDays, note: FileText, task: CheckSquare,
-};
-const activityLabels: Record<ActivityType, string> = {
-  call: "Ligação", email: "Email", meeting: "Reunião", note: "Nota", task: "Tarefa",
-};
+// Ícones e rótulos vêm de lib/atividade-tipos.ts. Estavam declarados aqui e em
+// mais cinco arquivos, e as cópias já haviam divergido.
+const activityIcons = ATIVIDADE_ICONE;
+const activityLabels = ATIVIDADE_ROTULO;
 
 export default function DealDetail() {
   const { id } = useParams<{ id: string }>();
@@ -256,6 +257,20 @@ export default function DealDetail() {
         title: activityForm.title,
         body: activityForm.body,
         user_id: user?.id,
+        // Este formulário REGISTRA o que aconteceu -- não tem campo de prazo.
+        // Sem gravar a conclusão, três coisas quebravam ao mesmo tempo:
+        //
+        //   - "Abordagens realizadas" no painel exige completed_at, então a
+        //     ligação que alguém registrava aqui NÃO era contada;
+        //   - a tela de Atividades mostrava tudo como pendente para sempre,
+        //     porque o checkbox e o cálculo de atraso olham completed_at;
+        //   - o card do kanban não tinha como saber se algo de fato aconteceu.
+        //
+        // `task` fica de fora: tarefa é o que falta fazer, e marcá-la concluída
+        // ao criar apagaria a única coisa que ela informa.
+        completed_at: ATIVIDADE_JA_ACONTECEU.includes(activityForm.type)
+          ? new Date().toISOString()
+          : null,
       },
       {
         onSuccess: () => {

@@ -10,11 +10,14 @@ type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-/** Nota do negócio, no formato reduzido que a listagem embute. */
-export type NotaDoNegocio = {
+/** Atividade do negócio, no formato reduzido que a listagem embute. */
+export type AtividadeDoNegocio = {
   id: string;
+  type: Database["public"]["Enums"]["activity_type"];
   title: string | null;
   body: string | null;
+  due_date: string | null;
+  completed_at: string | null;
   created_at: string | null;
 };
 
@@ -22,8 +25,8 @@ export type DealWithRelations = Deal & {
   contact?: Contact | null;
   company?: Company | null;
   owner?: Profile | null;
-  /** Só na listagem: atividades do tipo 'note', para o card mostrar a última. */
-  notas?: NotaDoNegocio[] | null;
+  /** Só na listagem: para o card mostrar última interação e próxima ação. */
+  atividades?: AtividadeDoNegocio[] | null;
 };
 
 export interface DealListParams {
@@ -59,19 +62,29 @@ export const dealsApi = {
     let query = supabase
       .from(TABLES.DEALS)
       .select(
-        // As notas entram aqui para o card do kanban poder mostrar a última.
-        // Filtradas por tipo no `.eq` abaixo: sem isso viriam também ligações,
-        // reuniões e tarefas, e o payload cresceria sem ninguém usar.
+        // As atividades entram aqui para o card do kanban mostrar a última
+        // interação e a próxima ação.
+        //
+        // Havia um `.eq("notas.type","note")` filtrando só notas, e era erro meu:
+        // ligação, reunião e e-mail ficavam de fora, quando são justamente o que
+        // responde "o que aconteceu com esse cliente".
+        //
+        // SEM `.limit()`, e é escolha consciente. `referencedTable` existe em
+        // order/limit no supabase-js 2.99.1, mas não há um único uso no projeto e
+        // não há como testar isto contra o banco daqui -- e a falha seria
+        // silenciosa, porque useDeals não trata isError: o kanban apareceria
+        // vazio em vez de acusar. Com poucas atividades por negócio o payload é
+        // irrelevante; se a base crescer, o caminho é uma RPC devolvendo uma
+        // linha por negócio, no padrão de sdr_metrics.
         //
         // O nome da constraint é explícito de propósito -- `activities` tem FK
         // para contacts, companies e organizations além de deals, e nomear evita
         // depender da desambiguação automática do PostgREST. Há teste conferindo
         // cada nome contra os tipos gerados (src/test/api/embed-com-fk.test.ts).
-        "*, contact:contacts!deals_contact_id_fkey(*), company:companies!deals_company_id_fkey(*), notas:activities!activities_deal_id_fkey(id,title,body,created_at)",
+        "*, contact:contacts!deals_contact_id_fkey(*), company:companies!deals_company_id_fkey(*), atividades:activities!activities_deal_id_fkey(id,type,title,body,due_date,completed_at,created_at)",
         { count: "exact" }
       )
-      .eq("org_id", orgId)
-      .eq("notas.type", "note");
+      .eq("org_id", orgId);
 
     if (ownerId && ownerId !== "all") query = query.eq("owner_id", ownerId);
     if (stageIds?.length) query = query.in("stage_id", stageIds);

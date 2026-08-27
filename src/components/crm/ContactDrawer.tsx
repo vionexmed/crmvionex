@@ -15,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Edit2, X, Phone, Mail, FileText, CheckSquare, CalendarDays,
+  Edit2, X, Phone, Mail,
   Building2, Briefcase, Save, MapPin, Star, MessageCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,9 @@ import {
   AREAS_ATUACAO, PAISES, CADASTRO_FIELDS,
   LIFECYCLE_LABELS, type LifecycleStage,
 } from "@/lib/contact-options";
+import {
+  ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU,
+} from "@/lib/atividade-tipos";
 import type { Database } from "@/integrations/supabase/types";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -54,12 +57,9 @@ const LIFECYCLE_BADGE: Record<LifecycleStage, string> = {
   customer: "bg-success/10 text-success",
   disqualified: "bg-destructive/10 text-destructive",
 };
-const activityIcons: Record<ActivityType, React.ComponentType<{ className?: string }>> = {
-  call: Phone, email: Mail, meeting: CalendarDays, note: FileText, task: CheckSquare,
-};
-const activityLabels: Record<ActivityType, string> = {
-  call: "Ligação", email: "Email", meeting: "Reunião", note: "Nota", task: "Tarefa",
-};
+// Ícones e rótulos vêm de lib/atividade-tipos.ts, que é a fonte única.
+const activityIcons = ATIVIDADE_ICONE;
+const activityLabels = ATIVIDADE_ROTULO;
 
 function formatCurrency(value: number, currency: string = "BRL") {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
@@ -199,6 +199,13 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
     await supabase.from("activities").insert({
       org_id: orgId, contact_id: contact.id, type: activityForm.type,
       title: activityForm.title, body: activityForm.body, user_id: user?.id,
+      // Mesma correção de DealDetail.addActivity: este formulário registra o que
+      // aconteceu (não tem campo de prazo), e sem completed_at a ligação não era
+      // contada em "Abordagens realizadas" e ficava pendente para sempre na tela
+      // de Atividades. `task` fica de fora -- é o que falta fazer.
+      completed_at: ATIVIDADE_JA_ACONTECEU.includes(activityForm.type)
+        ? new Date().toISOString()
+        : null,
     });
     setActivityForm({ type: "note", title: "", body: "" });
     fetchRelated();

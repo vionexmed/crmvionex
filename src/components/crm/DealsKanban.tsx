@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { Plus, Trophy, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_COR, aconteceuEm } from "@/lib/atividade-tipos";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -55,23 +58,44 @@ function DealCard({
   const nomeContato = nome && nome !== deal.title ? nome : null;
   const probability = Number(deal.probability) || 0;
 
-  // A nota mais recente do negócio.
+  // Última interação e próxima ação, o modelo do Pipedrive.
   //
-  // Vem embutida na listagem (dealsApi.list embute activities do tipo 'note'),
-  // então mostrar aqui não custa consulta. A ordenação é no cliente porque o
-  // PostgREST não ordena recurso embutido de forma confiável -- e com poucas
-  // notas por negócio, ordenar um punhado de itens é mais barato que uma
-  // segunda ida ao banco.
-  const notas = deal.notas ?? [];
-  const ultimaNota = notas.length
-    ? [...notas].sort(
-        (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
-      )[0]
-    : null;
+  // As atividades vêm embutidas na listagem, então nada aqui custa consulta.
+  //
+  // O `.sort()` abaixo é seguro porque vem sempre depois de um `.filter()`, que
+  // já devolve array novo. Ordenar `deal.atividades` direto mutaria o cache do
+  // react-query, que trata o próprio estado como imutável -- e o efeito seria
+  // uma reordenação fantasma em outro render.
+  const atividades = deal.atividades ?? [];
+
+  // Só CONCLUÍDA é interação: atividade agendada não é algo que aconteceu.
+  // Mesmo critério de "Abordagens realizadas" no painel; divergir aqui faria as
+  // duas telas discordarem sobre o mesmo evento.
+  //
+  // Qualquer TIPO, incluindo nota -- e aqui os dois conceitos se separam de
+  // propósito. "Abordagem" no painel exige call/email/meeting, porque anotar algo
+  // não é falar com ninguém. "Interação" é a última coisa que aconteceu neste
+  // registro, e uma nota é. Por isso esta linha não se chama abordagem.
+  const ultimaInteracao = atividades
+    .filter((a) => a.completed_at)
+    .sort((a, b) => aconteceuEm(b) - aconteceuEm(a))[0] ?? null;
+
+  // Próxima ação: pendente COM prazo. Sem prazo não há o que cobrar, e a
+  // atividade viraria uma linha permanente sem informação de urgência.
+  const proximaAcao = atividades
+    .filter((a) => !a.completed_at && a.due_date)
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())[0] ?? null;
+
   // O corpo é o que a pessoa escreveu; o título costuma ser genérico ("Nota").
-  const textoNota = ultimaNota
-    ? (ultimaNota.body?.trim() || ultimaNota.title?.trim() || null)
-    : null;
+  const textoDe = (a: { body?: string | null; title?: string | null } | null) =>
+    a ? (a.body?.trim() || a.title?.trim() || null) : null;
+
+  // Comparação por DIA, não por instante: vencer hoje não está atrasado. Mesmo
+  // critério do chip de close_date.
+  const inicioDeHoje = new Date();
+  inicioDeHoje.setHours(0, 0, 0, 0);
+  const acaoAtrasada =
+    !!proximaAcao?.due_date && new Date(proximaAcao.due_date) < inicioDeHoje;
 
   // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
   // pode abrir painel. Mesmo padrão de ContactsKanbanByOwner.
@@ -132,24 +156,73 @@ function DealCard({
         </p>
       )}
 
-      {/* Última nota.
-          `line-clamp-2` em vez de truncate: nota de uma linha só raramente diz
-          algo -- cortar em 40 caracteres devolveria "Cliente pediu para retornar
-          na..." e a informação útil ficaria de fora. */}
-      {textoNota && (
+      {/* Última interação: o que aconteceu, e quando.
+          `line-clamp-2` em vez de truncate -- cortar em 40 caracteres devolveria
+          "Cliente pediu para retornar na..." e a informação útil ficaria fora. */}
+      {ultimaInteracao && (
         <div className="mb-2 flex items-start gap-1.5 rounded-md bg-muted/60 px-2 py-1.5">
-          <FileText className="mt-px h-3 w-3 shrink-0 text-muted-foreground" />
-          <p className="line-clamp-2 text-[11px] leading-tight text-muted-foreground">
-            {textoNota}
+          {(() => {
+            const Icone = ATIVIDADE_ICONE[ultimaInteracao.type];
+            return (
+              <Icone
+                className={`mt-px h-3 w-3 shrink-0 ${ATIVIDADE_COR[ultimaInteracao.type]}`}
+              />
+            );
+          })()}
+          <p className="line-clamp-2 flex-1 text-[11px] leading-tight text-muted-foreground">
+            {textoDe(ultimaInteracao) ?? ATIVIDADE_ROTULO[ultimaInteracao.type]}
           </p>
-          {notas.length > 1 && (
+          {ultimaInteracao.completed_at && (
             <span
-              title={`${notas.length} notas neste negócio`}
-              className="ml-auto shrink-0 text-[10px] font-medium text-muted-foreground"
+              title={new Date(ultimaInteracao.completed_at).toLocaleString("pt-BR")}
+              className="shrink-0 text-[10px] text-muted-foreground"
             >
-              +{notas.length - 1}
+              {formatDistanceToNow(new Date(ultimaInteracao.completed_at), {
+                locale: ptBR,
+                addSuffix: true,
+              })}
             </span>
           )}
+        </div>
+      )}
+
+      {/* Próxima ação: só quando existe. Negócio sem pendência não ganha linha,
+          então o card não fica com espaço reservado para nada. */}
+      {proximaAcao && (
+        <div
+          className={`mb-2 flex items-start gap-1.5 rounded-md px-2 py-1.5 ${
+            acaoAtrasada ? "bg-destructive/[0.07]" : "bg-muted/40"
+          }`}
+        >
+          {(() => {
+            const Icone = ATIVIDADE_ICONE[proximaAcao.type];
+            return (
+              <Icone
+                className={`mt-px h-3 w-3 shrink-0 ${
+                  acaoAtrasada ? "text-destructive" : "text-muted-foreground"
+                }`}
+              />
+            );
+          })()}
+          <p
+            className={`line-clamp-1 flex-1 text-[11px] leading-tight ${
+              acaoAtrasada ? "text-destructive" : "text-muted-foreground"
+            }`}
+          >
+            {textoDe(proximaAcao) ?? ATIVIDADE_ROTULO[proximaAcao.type]}
+          </p>
+          <span
+            className={`shrink-0 text-[10px] font-medium ${
+              acaoAtrasada ? "text-destructive" : "text-muted-foreground"
+            }`}
+          >
+            {acaoAtrasada
+              ? "atrasada"
+              : new Date(proximaAcao.due_date!).toLocaleDateString("pt-BR", {
+                  day: "numeric",
+                  month: "short",
+                })}
+          </span>
         </div>
       )}
 

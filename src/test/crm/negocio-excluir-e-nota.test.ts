@@ -82,37 +82,132 @@ describe("excluir negócio conta os vínculos antes", () => {
   });
 });
 
-describe("a nota aparece no card", () => {
-  it("a listagem embute as notas", () => {
-    expect(api).toContain("notas:activities!activities_deal_id_fkey");
+describe("a última interação aparece no card", () => {
+  it("a listagem embute as atividades", () => {
+    expect(api).toContain("atividades:activities!activities_deal_id_fkey");
   });
 
   /**
-   * Sem o filtro por tipo viriam ligações, reuniões e tarefas -- payload maior
-   * para dado que o card não usa.
+   * O filtro `.eq("notas.type","note")` saiu, e essa é a correção: ligação,
+   * reunião e e-mail ficavam de fora do card, quando são justamente o que
+   * responde "o que aconteceu com esse cliente".
    */
-  it("só notas, não toda atividade", () => {
-    expect(api).toMatch(/\.eq\("notas\.type", "note"\)/);
+  it("não filtra mais por tipo", () => {
+    expect(api).not.toMatch(/\.eq\("(notas|atividades)\.type"/);
   });
 
-  it("o card mostra a nota mais recente", () => {
-    expect(kanban).toContain("ultimaNota");
-    expect(kanban).toMatch(/new Date\(b\.created_at \?\? 0\)\.getTime\(\) - new Date\(a\.created_at \?\? 0\)\.getTime\(\)/);
+  it("traz os campos que as duas linhas precisam", () => {
+    for (const campo of ["type", "due_date", "completed_at"]) {
+      expect(api).toContain(campo);
+    }
   });
 
   /**
-   * `sort` muta o array. Sem a cópia, a ordem de `deal.notas` mudaria embaixo do
-   * react-query -- que trata o cache como imutável.
+   * O teste que mais importa. Sem `completed_at`, o card diria "ligação há 2
+   * dias" para uma ligação que ninguém fez -- e discordaria de "Abordagens
+   * realizadas" no painel sobre o mesmo evento.
    */
-  it("ordena numa cópia, não no array do cache", () => {
-    expect(kanban).toContain("[...notas].sort(");
+  it("só atividade concluída conta como interação", () => {
+    expect(kanban).toMatch(/filter\(\(a\) => a\.completed_at\)/);
   });
 
-  it("cai no título quando a nota não tem corpo", () => {
-    expect(kanban).toMatch(/ultimaNota\.body\?\.trim\(\) \|\| ultimaNota\.title\?\.trim\(\)/);
+  it("ordena pela hora em que aconteceu", () => {
+    expect(kanban).toContain("aconteceuEm(b) - aconteceuEm(a)");
   });
 
-  it("card sem nota não mostra a caixa vazia", () => {
-    expect(kanban).toContain("{textoNota && (");
+  /**
+   * `sort` muta. Aqui é seguro porque vem sempre depois de `filter`, que devolve
+   * array novo -- ordenar `deal.atividades` direto mutaria o cache do
+   * react-query.
+   */
+  it("nunca ordena o array do cache direto", () => {
+    expect(kanban).not.toMatch(/deal\.atividades\s*\.sort|atividades\.sort\(/);
+  });
+
+  it("cai no título quando a atividade não tem corpo", () => {
+    expect(kanban).toMatch(/a\.body\?\.trim\(\) \|\| a\.title\?\.trim\(\)/);
+  });
+
+  it("card sem atividade não mostra caixa vazia", () => {
+    expect(kanban).toContain("{ultimaInteracao && (");
+  });
+});
+
+describe("a próxima ação aparece quando existe", () => {
+  it("exige pendente E com prazo", () => {
+    // Sem prazo não há o que cobrar, e a linha viraria permanente sem informar
+    // urgência nenhuma.
+    expect(kanban).toMatch(/filter\(\(a\) => !a\.completed_at && a\.due_date\)/);
+  });
+
+  it("pega o prazo mais próximo", () => {
+    expect(kanban).toMatch(/new Date\(a\.due_date!\)\.getTime\(\) - new Date\(b\.due_date!\)\.getTime\(\)/);
+  });
+
+  /** Vencer hoje não está atrasado. Mesmo critério do chip de close_date. */
+  it("compara atraso por dia, não por instante", () => {
+    expect(kanban).toContain("inicioDeHoje.setHours(0, 0, 0, 0)");
+    expect(kanban).toMatch(/new Date\(proximaAcao\.due_date\) < inicioDeHoje/);
+  });
+
+  it("só aparece quando existe", () => {
+    expect(kanban).toContain("{proximaAcao && (");
+  });
+});
+
+describe("registrar atividade grava quando aconteceu", () => {
+  /**
+   * Era o defeito de baixo, e o mais sério: o formulário de registro não tem
+   * campo de prazo -- é um log do que aconteceu -- e não gravava completed_at.
+   * Resultado: a ligação registrada não contava em "Abordagens realizadas", e a
+   * tela de Atividades a mostrava pendente para sempre.
+   */
+  const telas = [
+    ["DealDetail", tela],
+    ["ContactDrawer", semComentarios(ler("src/components/crm/ContactDrawer.tsx"))],
+  ] as const;
+
+  it.each(telas)("%s grava completed_at", (_nome, src) => {
+    expect(src).toMatch(/completed_at: ATIVIDADE_JA_ACONTECEU\.includes\(activityForm\.type\)/);
+  });
+
+  it("tarefa fica pendente: é o que falta fazer", () => {
+    const tipos = ler("src/lib/atividade-tipos.ts");
+    expect(tipos).toMatch(/ATIVIDADE_JA_ACONTECEU[^=]*=\s*\["note", "call", "email", "meeting"\]/);
+    expect(tipos).not.toMatch(/ATIVIDADE_JA_ACONTECEU[^;]*"task"/);
+  });
+});
+
+describe("mexer em atividade atualiza o card", () => {
+  /**
+   * A listagem de negócios embute as atividades. Invalidando só ["activities"],
+   * criar uma nota não atualizava o card -- e a pessoa achava que o registro não
+   * tinha funcionado.
+   */
+  it("invalidar atividade invalida negócios também", () => {
+    const hook = semComentarios(ler("src/hooks/queries/useActivities.ts"));
+    expect(hook).toContain("invalidarAtividadeENegocios");
+    expect(hook).toMatch(/queryKey: \["deals"\]/);
+  });
+});
+
+describe("o mapa de tipos de atividade tem um dono só", () => {
+  /**
+   * Estava em seis cópias, com divergências reais: `meeting` usava CalendarDays
+   * em duas telas e Calendar em outras duas, e o rótulo era "Email" aqui e
+   * "E-mail" em dashboard/canais.ts.
+   */
+  const consumidores = [
+    "src/pages/DealDetail.tsx",
+    "src/components/crm/ContactDrawer.tsx",
+  ];
+
+  it.each(consumidores)("%s importa do módulo compartilhado", (arq) => {
+    expect(ler(arq)).toContain('from "@/lib/atividade-tipos"');
+  });
+
+  it.each(consumidores)("%s não declara o próprio mapa", (arq) => {
+    const src = semComentarios(ler(arq));
+    expect(src).not.toMatch(/call: Phone, email: Mail/);
   });
 });
