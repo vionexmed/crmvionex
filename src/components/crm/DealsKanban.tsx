@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, CalendarDays, Flag } from "lucide-react";
+import {
+  Plus, Trophy, XCircle, ChevronDown, ChevronRight, CalendarDays, Flag,
+  Circle, CircleDashed, CircleCheck, Phone, Mail, Clock, UserX,
+} from "lucide-react";
+import { LIFECYCLE_LABELS, LIFECYCLE_COLORS } from "@/lib/contact-options";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -43,11 +47,32 @@ function hexParaRgb(hex: string): [number, number, number] | null {
   ];
 }
 
-/** Tom de fundo da coluna: a cor da etapa quase dissolvida. */
-function tintaDaColuna(hex: string | null, alpha = 0.07): string | undefined {
+/**
+ * Canais da cor, para a variável que o CSS consome: "37 99 235".
+ *
+ * Devolvia um `rgba()` pronto, com o alfa cravado -- e aí o tema escuro ficava
+ * preso ao mesmo tom do claro, onde 10% da cor sobre navy desaparece. Passando
+ * só os canais, cada tema escolhe a própria intensidade em .vx-coluna-etapa.
+ */
+function canaisDaCor(hex: string | null): string | undefined {
   if (!hex) return undefined;
   const rgb = hexParaRgb(hex);
-  return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : undefined;
+  return rgb ? `${rgb[0]} ${rgb[1]} ${rgb[2]}` : undefined;
+}
+
+/**
+ * Ícone da pílula, pela probabilidade de ganho da etapa.
+ *
+ * É o gesto que fecha o visual do ClickUp -- lá cada status tem um ícone
+ * (relógio em andamento, check em concluído). Aqui ele sai de `win_probability`,
+ * que é campo real configurado no editor de funil, em vez de decoração: etapa de
+ * entrada tem círculo vazio, etapa avançada tem check.
+ */
+function iconeDaEtapa(probabilidade: number | null) {
+  const p = Number(probabilidade) || 0;
+  if (p >= 75) return CircleCheck;
+  if (p <= 25) return Circle;
+  return CircleDashed;
 }
 
 /**
@@ -104,14 +129,18 @@ function Chip({
  * O que o card MOSTRA, sem nada de arraste.
  *
  * Extraído porque o `DragOverlay` desenhava um card próprio, simplificado: você
- * pegava um card com empresa, probabilidade e responsável, e arrastava outro com
- * título e valor.
+ * pegava um card com empresa e responsável, e arrastava outro só com título e
+ * valor.
  *
- * O formato segue o do ClickUp: título com peso, uma linha de contexto, e os
- * metadados como pílulas contornadas na base -- avatar, prazo, valor,
- * probabilidade. Cada pílula aparece só quando tem conteúdo. Campo vazio
- * ocupando lugar fixo foi o que fez "R$ 0,00" virar o elemento mais destacado
- * do quadro em 25 cards seguidos.
+ * Formato do ClickUp -- título com peso, contexto, metadados como pílulas
+ * contornadas -- mas com o conteúdo que um CRM tem e um gerenciador de tarefas
+ * não: quem é a pessoa, como falar com ela, e em que ponto do ciclo de vida ela
+ * está.
+ *
+ * A primeira versão escondia toda pílula vazia. Ficou limpa e vazia: nesta base
+ * quase todo negócio está em R$ 0 sem prazo, então o card virava só um nome. O
+ * conteúdo que faltava não era o valor -- era o contato, que estava no banco e o
+ * card ignorava.
  */
 function DealCardVisual({
   deal,
@@ -123,27 +152,31 @@ function DealCardVisual({
   /** No clone, sombra mais forte e borda de acento. */
   arrastando?: boolean;
 }) {
-  const nomeContato = deal.contact
-    ? `${deal.contact.first_name} ${deal.contact.last_name || ""}`.trim()
+  const contato = deal.contact ?? null;
+  const nomeContato = contato
+    ? `${contato.first_name} ${contato.last_name || ""}`.trim()
     : null;
 
   // O gatilho que põe todo contato no funil nomeia o negócio como
-  // "Lead: <nome>". Resultado no card: o nome aparecia no título E na linha de
-  // baixo, duas linhas dizendo a mesma coisa.
+  // "Lead: <nome>". Sem isto o nome aparecia no título E na linha de baixo.
   //
   // Casamento EXATO, não por prefixo: um negócio renomeado à mão para
   // "Lead: fulano da empresa X" mantém o próprio título, porque ali o texto
   // carrega informação que o nome do contato não tem.
   const tituloEhRedundante = !!nomeContato && deal.title === `Lead: ${nomeContato}`;
   const titulo = tituloEhRedundante ? nomeContato : deal.title;
-  const empresa = deal.company?.name ?? null;
+
+  // Linha de contexto: empresa e especialidade. `contact.title` é a
+  // especialidade médica nesta base -- a mesma coluna que a tela de Contatos
+  // mostra como "Especialidade".
+  const contexto = [deal.company?.name, contato?.title].filter(Boolean).join(" · ");
   const mostrarPessoa = !tituloEhRedundante && !!nomeContato;
 
   const valor = Number(deal.value) || 0;
   const probability = Number(deal.probability) || 0;
 
-  // Prazo, com o mesmo tratamento do ClickUp: vermelho quando já passou.
-  // Comparação por dia, não por instante -- fechar hoje não está atrasado.
+  // Prazo com o tratamento do ClickUp: vermelho quando passou. Comparação por
+  // dia, não por instante -- fechar hoje não está atrasado.
   const prazo = deal.close_date ? new Date(`${deal.close_date}T12:00:00`) : null;
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -152,7 +185,13 @@ function DealCardVisual({
     ? prazo.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })
     : null;
 
-  const temMeta = !!deal.owner || !!prazoTexto || valor > 0 || probability > 0;
+  // Idade no funil. Toda linha tem created_at, então este é o único indicador
+  // sempre presente -- e num funil, tempo parado é o sinal que importa.
+  const dias = deal.created_at
+    ? Math.floor((hoje.getTime() - new Date(deal.created_at).getTime()) / 86_400_000)
+    : null;
+
+  const cicloContato = contato?.lifecycle_stage ?? null;
 
   return (
     <div
@@ -162,16 +201,14 @@ function DealCardVisual({
           : "border-border/70 shadow-[var(--shadow-xs)] group-hover:shadow-[var(--shadow-sm)]"
       }`}
     >
-      <p className="text-[14px] font-semibold leading-snug text-foreground">
-        {titulo}
-      </p>
+      <p className="text-[14px] font-semibold leading-snug text-foreground">{titulo}</p>
 
-      {(empresa || mostrarPessoa) && (
+      {(contexto || mostrarPessoa) && (
         <p className="mt-1 truncate text-[12px] leading-tight text-muted-foreground">
-          {empresa}
-          {empresa && mostrarPessoa && " · "}
+          {contexto}
+          {contexto && mostrarPessoa && " · "}
           {mostrarPessoa && (
-            onContactClick && deal.contact ? (
+            onContactClick && contato ? (
               <button
                 type="button"
                 // stopPropagation nos DOIS eventos: sem o pointerdown, o dnd-kit
@@ -179,7 +216,7 @@ function DealCardVisual({
                 // para o card e navega para o negócio junto com o painel.
                 onClick={(e) => {
                   e.stopPropagation();
-                  onContactClick(deal.contact!);
+                  onContactClick(contato);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="underline decoration-dotted underline-offset-2 hover:text-foreground"
@@ -193,40 +230,97 @@ function DealCardVisual({
         </p>
       )}
 
-      {temMeta && (
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {deal.owner && (
-            <Avatar className="h-[22px] w-[22px] ring-1 ring-border">
-              <AvatarImage src={deal.owner.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-[9px] font-bold text-primary">
-                {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
-              </AvatarFallback>
-            </Avatar>
+      {/* Como falar com a pessoa, sem abrir o negócio.
+          Telefone e e-mail estavam no banco e o card não mostrava nenhum dos
+          dois -- num kanban comercial, é a informação que faz alguém agir. */}
+      {(contato?.phone || contato?.email) && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          {contato.phone && (
+            <a
+              href={`tel:${contato.phone.replace(/[^\d+]/g, "")}`}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium leading-none text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+            >
+              <Phone className="h-3 w-3" />
+              {contato.phone}
+            </a>
           )}
-
-          {prazoTexto && (
-            <Chip tom={atrasado ? "alerta" : "neutro"}>
-              <CalendarDays className="h-3 w-3" />
-              {prazoTexto}
-            </Chip>
-          )}
-
-          {valor > 0 && (
-            <Chip>
-              <span className="num tabular-nums">
-                {formatCurrency(valor, deal.currency || "BRL")}
-              </span>
-            </Chip>
-          )}
-
-          {probability > 0 && (
-            <Chip tom={probability >= 70 ? "positivo" : probability >= 40 ? "atencao" : "neutro"}>
-              <Flag className="h-3 w-3" />
-              {probability}%
-            </Chip>
+          {contato.email && (
+            <a
+              href={`mailto:${contato.email}`}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              title={contato.email}
+              className="inline-flex min-w-0 items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium leading-none text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+            >
+              <Mail className="h-3 w-3 shrink-0" />
+              <span className="truncate">{contato.email}</span>
+            </a>
           )}
         </div>
       )}
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2.5">
+        {deal.owner ? (
+          <Avatar className="h-[22px] w-[22px] ring-1 ring-border" title={deal.owner.name ?? undefined}>
+            <AvatarImage src={deal.owner.avatar_url || ""} />
+            <AvatarFallback className="bg-primary/10 text-[9px] font-bold text-primary">
+              {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          // Negócio sem responsável não é detalhe: a RLS por dono esconde ele de
+          // todo vendedor, então ninguém vai trabalhá-lo.
+          <Chip tom="alerta">
+            <UserX className="h-3 w-3" />
+            Sem dono
+          </Chip>
+        )}
+
+        {cicloContato && (
+          <Chip>
+            <span
+              aria-hidden
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: LIFECYCLE_COLORS[cicloContato] }}
+            />
+            {LIFECYCLE_LABELS[cicloContato]}
+          </Chip>
+        )}
+
+        {prazoTexto && (
+          <Chip tom={atrasado ? "alerta" : "neutro"}>
+            <CalendarDays className="h-3 w-3" />
+            {prazoTexto}
+          </Chip>
+        )}
+
+        {valor > 0 && (
+          <Chip>
+            <span className="num tabular-nums">
+              {formatCurrency(valor, deal.currency || "BRL")}
+            </span>
+          </Chip>
+        )}
+
+        {probability > 0 && (
+          <Chip tom={probability >= 70 ? "positivo" : probability >= 40 ? "atencao" : "neutro"}>
+            <Flag className="h-3 w-3" />
+            {probability}%
+          </Chip>
+        )}
+
+        {dias !== null && dias > 0 && (
+          <span
+            title={`No funil há ${dias} ${dias === 1 ? "dia" : "dias"}`}
+            className="ml-auto inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground"
+          >
+            <Clock className="h-3 w-3" />
+            {dias}d
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -299,8 +393,9 @@ function StageColumn({
   const total = deals.reduce((s, d) => s + (Number(d.value) || 0), 0);
 
   const cor = stage.color;
-  const tinta = tintaDaColuna(cor);
+  const canais = canaisDaCor(cor);
   const corTexto = textoSobre(cor);
+  const IconeEtapa = iconeDaEtapa(stage.win_probability);
 
   return (
     // A cor da etapa banha a COLUNA num tom quase dissolvido, e os cards ficam
@@ -313,22 +408,23 @@ function StageColumn({
       ref={setNodeRef}
       role="list"
       aria-label={`Etapa ${stage.name}`}
-      className={`flex w-[288px] shrink-0 flex-col rounded-2xl transition-colors sm:w-[300px] ${
+      className={`vx-coluna-etapa flex w-[288px] shrink-0 flex-col rounded-2xl transition-shadow sm:w-[300px] ${
         isOver ? "ring-2 ring-primary/40" : ""
-      } ${tinta ? "" : "bg-primary/[0.05]"}`}
-      style={tinta ? { backgroundColor: tinta } : undefined}
+      } ${canais ? "" : "bg-primary/[0.06]"}`}
+      style={canais ? ({ "--etapa-rgb": canais } as React.CSSProperties) : undefined}
     >
-      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
+      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2.5">
         <div className="flex min-w-0 items-center gap-2">
           {/* A pílula é o gesto central do ClickUp: o nome da etapa DENTRO da
-              cor, em vez de a cor numa barra ao lado dele. */}
+              cor, com um ícone que diz em que ponto do funil ela está. */}
           <span
-            className={`truncate rounded-lg px-2.5 py-1 text-[12px] font-semibold leading-none ${
+            className={`inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold leading-none ${
               cor ? "" : "bg-primary text-primary-foreground"
             }`}
             style={cor ? { backgroundColor: cor, color: corTexto } : undefined}
           >
-            {stage.name}
+            <IconeEtapa className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{stage.name}</span>
           </span>
           {/* Contagem FORA da pílula, em texto simples -- também como no
               ClickUp. Dentro, competiria com o nome. */}
@@ -337,14 +433,25 @@ function StageColumn({
           </span>
         </div>
 
-        {total > 0 && (
-          <span className="num shrink-0 text-[11px] tabular-nums text-muted-foreground">
-            {formatCurrency(total)}
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {total > 0 && (
+            <span className="num text-[11px] tabular-nums text-muted-foreground">
+              {formatCurrency(total)}
+            </span>
+          )}
+          {/* Criar direto da etapa, sem rolar 25 cards até o botão do rodapé.
+              O do rodapé fica: é o alcançável depois de ler a coluna. */}
+          <button
+            onClick={() => onAddDeal(stage.id)}
+            aria-label={`Adicionar negócio em ${stage.name}`}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-2.5 pb-2.5 max-h-[calc(100vh-300px)]">
+      <div className="vx-coluna-lista flex flex-1 flex-col gap-2.5 overflow-y-auto px-2.5 pb-2.5 max-h-[calc(100vh-300px)]">
         {deals.map((deal) => (
           <DealCard
             key={deal.id}

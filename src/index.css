@@ -268,17 +268,31 @@
   }
 
   /* ── Deal Card (Kanban) ───────────────────────────────── */
-  /* .vx-deal-card foi removido.
+  /* .vx-deal-card foi removido: o card se descreve inteiro em DealCardVisual.
+ * Antes metade vinha daqui e metade de Tailwind no JSX, então mexer na aparência
+ * exigia editar dois arquivos e lembrar qual deles ganhava. */
+
+/* Coluna do kanban tingida com a cor da etapa.
  *
- * Era usado em exatamente um lugar (o card do kanban de negócios) e definia
- * metade do card em CSS enquanto a outra metade vinha de Tailwind no JSX --
- * então mexer na aparência do card exigia editar dois arquivos e lembrar qual
- * deles ganhava. O card agora se descreve inteiro em DealCardVisual, que o
- * quadro e o clone de arraste compartilham.
+ * Precisa morar no CSS, e não em style inline, por um motivo específico: o tom
+ * certo NÃO é o mesmo nos dois temas. Sobre a página quase branca, 10% da cor
+ * já delimita a coluna; sobre o navy do tema escuro, 10% desaparece.
  *
- * As sombras continuam vindo das variáveis --shadow-*, via
- * shadow-[var(--shadow-xs)]: elas têm valores próprios para o tema escuro, o que
- * as sombras padrão do Tailwind não têm. */
+ * Com o alfa cravado num rgba() inline não há como diferenciar -- foi o que fiz
+ * na primeira versão. Aqui o componente passa só os canais da cor
+ * (`--etapa-rgb: 37 99 235`) e cada tema escolhe a própria intensidade. */
+.vx-coluna-etapa {
+  background: rgb(var(--etapa-rgb) / 0.10);
+}
+.dark .vx-coluna-etapa {
+  background: rgb(var(--etapa-rgb) / 0.20);
+}
+
+/* Cabeçalho fica; só a lista rola. Sem isto, rolar uma coluna de 25 cards
+   esconde o nome da etapa e você perde a referência de onde está. */
+.vx-coluna-etapa > .vx-coluna-lista {
+  min-height: 0;
+}
 
   /* ── Input refinado ───────────────────────────────────── */
   input[type="text"], input[type="email"], input[type="number"], input[type="date"],

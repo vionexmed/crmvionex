@@ -174,11 +174,24 @@ describe("o clique no nome da pessoa não vaza para o card", () => {
    * tempo que a rota muda.
    */
   it("para a propagação nos dois eventos", () => {
-    const i = codigo.indexOf("onContactClick(deal.contact!)");
+    const i = codigo.indexOf("onContactClick(contato)");
     expect(i).toBeGreaterThan(-1);
     const volta = codigo.slice(Math.max(0, i - 400), i + 200);
     expect(volta).toContain("e.stopPropagation()");
     expect(volta).toContain("onPointerDown={(e) => e.stopPropagation()}");
+  });
+
+  /**
+   * Telefone e e-mail são <a> DENTRO de um card arrastável. Sem parar os dois
+   * eventos, tocar no telefone no celular arrasta o card em vez de discar -- e
+   * no desktop, clicar abre o negócio junto com o cliente de e-mail.
+   */
+  it.each(["tel:", "mailto:"])("o link %s não dispara o arraste", (esquema) => {
+    const i = codigo.indexOf(esquema);
+    expect(i).toBeGreaterThan(-1);
+    const bloco = codigo.slice(i, i + 500);
+    expect(bloco).toContain("onClick={(e) => e.stopPropagation()}");
+    expect(bloco).toContain("onPointerDown={(e) => e.stopPropagation()}");
   });
 });
 
@@ -192,10 +205,24 @@ describe("a cor da etapa continua vindo do banco", () => {
    * Nenhum dos dois pode sair de classe Tailwind: o compilador não gera classe
    * para valor que só existe em runtime.
    */
-  it("o tom da coluna e a pílula usam a cor por style inline", () => {
-    expect(codigo).toContain("tintaDaColuna(");
-    expect(codigo).toContain("backgroundColor: tinta");
+  it("a pílula usa a cor por style inline", () => {
     expect(codigo).toContain("backgroundColor: cor");
+  });
+
+  /**
+   * O tom da coluna passa pelo CSS, não por um rgba() inline, porque a
+   * intensidade certa NÃO é a mesma nos dois temas: 10% da cor delimita sobre a
+   * página quase branca e desaparece sobre o navy do tema escuro. Com o alfa
+   * cravado no valor inline não havia como diferenciar.
+   */
+  it("o tom da coluna é definido por tema, via variável CSS", () => {
+    expect(codigo).toContain("canaisDaCor(");
+    expect(codigo).toContain('"--etapa-rgb"');
+    expect(codigo).toContain("vx-coluna-etapa");
+
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/\.vx-coluna-etapa\s*\{[^}]*rgb\(var\(--etapa-rgb\)/);
+    expect(css).toMatch(/\.dark \.vx-coluna-etapa\s*\{[^}]*rgb\(var\(--etapa-rgb\)/);
   });
 
   /**
@@ -209,7 +236,7 @@ describe("a cor da etapa continua vindo do banco", () => {
 
   it("etapa sem cor cai no token, não numa cor fixa", () => {
     expect(codigo).toContain("bg-primary text-primary-foreground");
-    expect(codigo).toContain("bg-primary/[0.05]");
+    expect(codigo).toContain("bg-primary/[0.06]");
   });
 
   /**
