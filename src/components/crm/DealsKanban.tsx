@@ -1,11 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Plus, Trophy, XCircle, ChevronDown, ChevronRight, CalendarDays, Flag,
-  Circle, CircleDashed, CircleCheck, Phone, Mail, Clock, UserX,
-} from "lucide-react";
-import { LIFECYCLE_LABELS, LIFECYCLE_COLORS } from "@/lib/contact-options";
+import { Plus, Trophy, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -22,201 +17,82 @@ function formatCurrency(value: number, currency: string = "BRL") {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
 }
 
-/* ── Cor da etapa ────────────────────────────────────────── */
+/* ── Deal Card (Pipedrive-style) ─────────────────────────── */
 
-/**
- * A cor da etapa vem do banco como hex livre, escolhido pelo usuário em
- * Configurações. Duas coisas precisam dela em runtime, e nenhuma pode sair de
- * classe Tailwind (o compilador não gera classe para valor dinâmico):
- *
- *   - o fundo da coluna, num tom levíssimo
- *   - a pílula do cabeçalho, na cor cheia
- *
- * `null` é caso real (a coluna pode nunca ter sido colorida), e aí caímos no
- * token --primary, que respeita a cor de destaque escolhida pelo usuário.
- */
-function hexParaRgb(hex: string): [number, number, number] | null {
-  const limpo = hex.trim().replace(/^#/, "");
-  const completo =
-    limpo.length === 3 ? limpo.split("").map((c) => c + c).join("") : limpo;
-  if (!/^[0-9a-f]{6}$/i.test(completo)) return null;
-  return [
-    parseInt(completo.slice(0, 2), 16),
-    parseInt(completo.slice(2, 4), 16),
-    parseInt(completo.slice(4, 6), 16),
-  ];
-}
-
-/**
- * Canais da cor, para a variável que o CSS consome: "37 99 235".
- *
- * Devolvia um `rgba()` pronto, com o alfa cravado -- e aí o tema escuro ficava
- * preso ao mesmo tom do claro, onde 10% da cor sobre navy desaparece. Passando
- * só os canais, cada tema escolhe a própria intensidade em .vx-coluna-etapa.
- */
-function canaisDaCor(hex: string | null): string | undefined {
-  if (!hex) return undefined;
-  const rgb = hexParaRgb(hex);
-  return rgb ? `${rgb[0]} ${rgb[1]} ${rgb[2]}` : undefined;
-}
-
-/**
- * Ícone da pílula, pela probabilidade de ganho da etapa.
- *
- * É o gesto que fecha o visual do ClickUp -- lá cada status tem um ícone
- * (relógio em andamento, check em concluído). Aqui ele sai de `win_probability`,
- * que é campo real configurado no editor de funil, em vez de decoração: etapa de
- * entrada tem círculo vazio, etapa avançada tem check.
- */
-function iconeDaEtapa(probabilidade: number | null) {
-  const p = Number(probabilidade) || 0;
-  if (p >= 75) return CircleCheck;
-  if (p <= 25) return Circle;
-  return CircleDashed;
-}
-
-/**
- * Texto branco ou escuro sobre a pílula, conforme a luminância da cor.
- *
- * Não é refinamento: o usuário pode escolher amarelo ou verde-limão para uma
- * etapa, e branco sobre amarelo é ilegível. Fórmula de luminância relativa da
- * WCAG; o corte em 0.6 é empírico e cobre bem o meio da escala.
- */
-function textoSobre(hex: string | null): string | undefined {
-  if (!hex) return undefined;
-  const rgb = hexParaRgb(hex);
-  if (!rgb) return undefined;
-  const [r, g, b] = rgb.map((c) => {
-    const v = c / 255;
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  });
-  const luminancia = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminancia > 0.6 ? "hsl(213 41% 10%)" : "#ffffff";
-}
-
-/* ── Chip de metadado ────────────────────────────────────── */
-
-/**
- * Pílula contornada, no formato que o ClickUp usa para data, prioridade e campos
- * personalizados. Contorno em vez de preenchimento de propósito: cinco chips
- * preenchidos por card viram confete.
- */
-function Chip({
-  children,
-  tom = "neutro",
-}: {
-  children: React.ReactNode;
-  tom?: "neutro" | "alerta" | "positivo" | "atencao";
-}) {
-  const tons = {
-    neutro: "border-border text-muted-foreground",
-    alerta: "border-destructive/40 text-destructive",
-    positivo: "border-success/40 text-success",
-    atencao: "border-warning/40 text-warning",
-  } as const;
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md border bg-card px-1.5 py-0.5 text-[11px] font-medium leading-none ${tons[tom]}`}
-    >
-      {children}
-    </span>
-  );
-}
-
-/* ── Visual do card ──────────────────────────────────────── */
-
-/**
- * O que o card MOSTRA, sem nada de arraste.
- *
- * Extraído porque o `DragOverlay` desenhava um card próprio, simplificado: você
- * pegava um card com empresa e responsável, e arrastava outro só com título e
- * valor.
- *
- * Formato do ClickUp -- título com peso, contexto, metadados como pílulas
- * contornadas -- mas com o conteúdo que um CRM tem e um gerenciador de tarefas
- * não: quem é a pessoa, como falar com ela, e em que ponto do ciclo de vida ela
- * está.
- *
- * A primeira versão escondia toda pílula vazia. Ficou limpa e vazia: nesta base
- * quase todo negócio está em R$ 0 sem prazo, então o card virava só um nome. O
- * conteúdo que faltava não era o valor -- era o contato, que estava no banco e o
- * card ignorava.
- */
-function DealCardVisual({
+function DealCard({
   deal,
+  stageColor,
+  onClick,
   onContactClick,
-  arrastando,
 }: {
   deal: DealWithRelations;
+  stageColor?: string;
+  onClick: () => void;
+  /** Abre o painel da PESSOA, sem sair do quadro. */
   onContactClick?: (contact: Contact) => void;
-  /** No clone, sombra mais forte e borda de acento. */
-  arrastando?: boolean;
 }) {
-  const contato = deal.contact ?? null;
-  const nomeContato = contato
-    ? `${contato.first_name} ${contato.last_name || ""}`.trim()
+  // O clone visual do drag é o DragOverlay — o card original só fica translúcido
+  // (aplicar transform aqui fazia DOIS cards se moverem ao mesmo tempo)
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
+  const style = {
+    borderLeftColor: stageColor || "hsl(var(--primary))",
+    ...(isDragging ? { opacity: 0.4 } : {}),
+  };
+
+  // Empresa e pessoa deixaram de ser uma string só: o nome da pessoa agora é
+  // clicável e abre o painel dela. Antes o subtítulo inteiro era texto morto --
+  // o nome estava ali e não levava a nada.
+  const nomeContato = deal.contact
+    ? `${deal.contact.first_name} ${deal.contact.last_name || ""}`.trim()
     : null;
-
-  // O gatilho que põe todo contato no funil nomeia o negócio como
-  // "Lead: <nome>". Sem isto o nome aparecia no título E na linha de baixo.
-  //
-  // Casamento EXATO, não por prefixo: um negócio renomeado à mão para
-  // "Lead: fulano da empresa X" mantém o próprio título, porque ali o texto
-  // carrega informação que o nome do contato não tem.
-  const tituloEhRedundante = !!nomeContato && deal.title === `Lead: ${nomeContato}`;
-  const titulo = tituloEhRedundante ? nomeContato : deal.title;
-
-  // Linha de contexto: empresa e especialidade. `contact.title` é a
-  // especialidade médica nesta base -- a mesma coluna que a tela de Contatos
-  // mostra como "Especialidade".
-  const contexto = [deal.company?.name, contato?.title].filter(Boolean).join(" · ");
-  const mostrarPessoa = !tituloEhRedundante && !!nomeContato;
-
-  const valor = Number(deal.value) || 0;
   const probability = Number(deal.probability) || 0;
 
-  // Prazo com o tratamento do ClickUp: vermelho quando passou. Comparação por
-  // dia, não por instante -- fechar hoje não está atrasado.
-  const prazo = deal.close_date ? new Date(`${deal.close_date}T12:00:00`) : null;
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const atrasado = !!prazo && prazo < hoje && deal.status === "open";
-  const prazoTexto = prazo
-    ? prazo.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })
-    : null;
-
-  // Idade no funil. Toda linha tem created_at, então este é o único indicador
-  // sempre presente -- e num funil, tempo parado é o sinal que importa.
-  const dias = deal.created_at
-    ? Math.floor((hoje.getTime() - new Date(deal.created_at).getTime()) / 86_400_000)
-    : null;
-
-  const cicloContato = contato?.lifecycle_stage ?? null;
+  // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
+  // pode abrir painel. Mesmo padrão de ContactsKanbanByOwner.
+  const arrastou = useRef(false);
+  useEffect(() => {
+    if (isDragging) arrastou.current = true;
+  }, [isDragging]);
 
   return (
     <div
-      className={`rounded-xl border bg-card p-3.5 transition-shadow ${
-        arrastando
-          ? "border-primary shadow-lg"
-          : "border-border/70 shadow-[var(--shadow-xs)] group-hover:shadow-[var(--shadow-sm)]"
-      }`}
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="vx-deal-card"
+      onPointerDown={(e) => {
+        arrastou.current = false;
+        listeners?.onPointerDown?.(e);
+      }}
+      onClick={() => {
+        if (arrastou.current) {
+          arrastou.current = false;
+          return;
+        }
+        onClick();
+      }}
     >
-      <p className="text-[14px] font-semibold leading-snug text-foreground">{titulo}</p>
+      {/* Title */}
+      <p className="truncate text-[13px] font-semibold leading-snug text-foreground mb-0.5">
+        {deal.title}
+      </p>
 
-      {(contexto || mostrarPessoa) && (
-        <p className="mt-1 truncate text-[12px] leading-tight text-muted-foreground">
-          {contexto}
-          {contexto && mostrarPessoa && " · "}
-          {mostrarPessoa && (
-            onContactClick && contato ? (
+      {/* Empresa (texto) · Pessoa (clicável) */}
+      {(deal.company || nomeContato) && (
+        <p className="truncate text-[11px] text-muted-foreground leading-tight mb-2">
+          {deal.company?.name}
+          {deal.company && nomeContato && " · "}
+          {nomeContato && (
+            onContactClick && deal.contact ? (
               <button
                 type="button"
-                // stopPropagation nos DOIS eventos: sem o pointerdown, o dnd-kit
-                // captura o gesto e o clique nunca chega; sem o click, ele sobe
-                // para o card e navega para o negócio junto com o painel.
+                // stopPropagation senão o clique sobe para o card e navega para o
+                // negócio -- o painel abriria e a rota mudaria no mesmo clique.
                 onClick={(e) => {
                   e.stopPropagation();
-                  onContactClick(contato);
+                  if (arrastou.current) return;
+                  onContactClick(deal.contact!);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="underline decoration-dotted underline-offset-2 hover:text-foreground"
@@ -230,146 +106,29 @@ function DealCardVisual({
         </p>
       )}
 
-      {/* Como falar com a pessoa, sem abrir o negócio.
-          Telefone e e-mail estavam no banco e o card não mostrava nenhum dos
-          dois -- num kanban comercial, é a informação que faz alguém agir. */}
-      {(contato?.phone || contato?.email) && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {contato.phone && (
-            <a
-              href={`tel:${contato.phone.replace(/[^\d+]/g, "")}`}
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium leading-none text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-            >
-              <Phone className="h-3 w-3" />
-              {contato.phone}
-            </a>
+      {/* Bottom row */}
+      <div className="flex items-center justify-between gap-1">
+        <span className="num text-[12px] font-bold text-foreground tabular-nums">
+          {formatCurrency(Number(deal.value) || 0, deal.currency || "BRL")}
+        </span>
+
+        <div className="flex items-center gap-1.5">
+          {probability > 0 && (
+            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none
+              ${probability >= 70 ? "bg-success/12 text-success" : probability >= 40 ? "bg-warning/12 text-warning" : "bg-muted text-muted-foreground"}`}>
+              {probability}%
+            </span>
           )}
-          {contato.email && (
-            <a
-              href={`mailto:${contato.email}`}
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              title={contato.email}
-              className="inline-flex min-w-0 items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium leading-none text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-            >
-              <Mail className="h-3 w-3 shrink-0" />
-              <span className="truncate">{contato.email}</span>
-            </a>
+          {deal.owner && (
+            <Avatar className="h-5 w-5 ring-1 ring-border">
+              <AvatarImage src={deal.owner.avatar_url || ""} />
+              <AvatarFallback className="bg-primary/10 text-primary text-[8px] font-bold">
+                {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
           )}
         </div>
-      )}
-
-      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2.5">
-        {deal.owner ? (
-          <Avatar className="h-[22px] w-[22px] ring-1 ring-border" title={deal.owner.name ?? undefined}>
-            <AvatarImage src={deal.owner.avatar_url || ""} />
-            <AvatarFallback className="bg-primary/10 text-[9px] font-bold text-primary">
-              {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
-        ) : (
-          // Negócio sem responsável não é detalhe: a RLS por dono esconde ele de
-          // todo vendedor, então ninguém vai trabalhá-lo.
-          <Chip tom="alerta">
-            <UserX className="h-3 w-3" />
-            Sem dono
-          </Chip>
-        )}
-
-        {cicloContato && (
-          <Chip>
-            <span
-              aria-hidden
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: LIFECYCLE_COLORS[cicloContato] }}
-            />
-            {LIFECYCLE_LABELS[cicloContato]}
-          </Chip>
-        )}
-
-        {prazoTexto && (
-          <Chip tom={atrasado ? "alerta" : "neutro"}>
-            <CalendarDays className="h-3 w-3" />
-            {prazoTexto}
-          </Chip>
-        )}
-
-        {valor > 0 && (
-          <Chip>
-            <span className="num tabular-nums">
-              {formatCurrency(valor, deal.currency || "BRL")}
-            </span>
-          </Chip>
-        )}
-
-        {probability > 0 && (
-          <Chip tom={probability >= 70 ? "positivo" : probability >= 40 ? "atencao" : "neutro"}>
-            <Flag className="h-3 w-3" />
-            {probability}%
-          </Chip>
-        )}
-
-        {dias !== null && dias > 0 && (
-          <span
-            title={`No funil há ${dias} ${dias === 1 ? "dia" : "dias"}`}
-            className="ml-auto inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground"
-          >
-            <Clock className="h-3 w-3" />
-            {dias}d
-          </span>
-        )}
       </div>
-    </div>
-  );
-}
-
-/* ── Card arrastável ─────────────────────────────────────── */
-
-function DealCard({
-  deal,
-  onClick,
-  onContactClick,
-}: {
-  deal: DealWithRelations;
-  onClick: () => void;
-  /** Abre o painel da PESSOA, sem sair do quadro. */
-  onContactClick?: (contact: Contact) => void;
-}) {
-  // O clone visual do drag é o DragOverlay — o card original só fica translúcido.
-  // Aplicar transform aqui fazia DOIS cards se moverem ao mesmo tempo.
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
-
-  // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
-  // pode abrir o negócio. Mesmo padrão de ContactsKanbanByOwner.
-  const arrastou = useRef(false);
-  useEffect(() => {
-    if (isDragging) arrastou.current = true;
-  }, [isDragging]);
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      // Depois dos spreads de propósito: {...listeners} já traz um onPointerDown,
-      // e este o substitui e o rechama à mão. Inverter a ordem desarma a guarda.
-      onPointerDown={(e) => {
-        arrastou.current = false;
-        listeners?.onPointerDown?.(e);
-      }}
-      onClick={() => {
-        if (arrastou.current) {
-          arrastou.current = false;
-          return;
-        }
-        onClick();
-      }}
-      style={isDragging ? { opacity: 0.4 } : undefined}
-      className="group cursor-pointer rounded-lg active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-    >
-      <DealCardVisual deal={deal} onContactClick={onContactClick} />
     </div>
   );
 }
@@ -392,91 +151,50 @@ function StageColumn({
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const total = deals.reduce((s, d) => s + (Number(d.value) || 0), 0);
 
-  const cor = stage.color;
-  const canais = canaisDaCor(cor);
-  const corTexto = textoSobre(cor);
-  const IconeEtapa = iconeDaEtapa(stage.win_probability);
-
   return (
-    // A cor da etapa banha a COLUNA num tom quase dissolvido, e os cards ficam
-    // brancos por cima. É o que dá o ar de aplicativo moderno sem virar confete:
-    // antes eram cinco barras chapadas de 4px disputando atenção com o conteúdo.
-    //
-    // Sem borda: o próprio tom já delimita. Borda somada a fundo tingido é o
-    // dobro de delimitação para o mesmo trabalho.
     <div
       ref={setNodeRef}
-      role="list"
-      aria-label={`Etapa ${stage.name}`}
-      className={`vx-coluna-etapa flex w-[288px] shrink-0 flex-col rounded-2xl transition-shadow sm:w-[300px] ${
-        isOver ? "ring-2 ring-primary/40" : ""
-      } ${canais ? "" : "bg-primary/[0.06]"}`}
-      style={canais ? ({ "--etapa-rgb": canais } as React.CSSProperties) : undefined}
+      className={`flex w-[220px] sm:w-[240px] shrink-0 flex-col transition-colors ${
+        isOver ? "bg-primary/5" : ""
+      }`}
     >
-      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2.5">
-        <div className="flex min-w-0 items-center gap-2">
-          {/* A pílula é o gesto central do ClickUp: o nome da etapa DENTRO da
-              cor, com um ícone que diz em que ponto do funil ela está. */}
-          <span
-            className={`inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold leading-none ${
-              cor ? "" : "bg-primary text-primary-foreground"
-            }`}
-            style={cor ? { backgroundColor: cor, color: corTexto } : undefined}
-          >
-            <IconeEtapa className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{stage.name}</span>
+      {/* Header — Pipedrive style */}
+      <div className="mb-1 px-1">
+        <h3 className="text-[13px] font-bold text-foreground leading-tight">{stage.name}</h3>
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] text-muted-foreground font-medium">
+            {formatCurrency(total)}
           </span>
-          {/* Contagem FORA da pílula, em texto simples -- também como no
-              ClickUp. Dentro, competiria com o nome. */}
-          <span className="shrink-0 text-[12px] font-medium text-muted-foreground">
-            {deals.length}
+          <span className="text-[11px] text-muted-foreground">
+            · {deals.length} {deals.length === 1 ? "negócio" : "negócios"}
           </span>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          {total > 0 && (
-            <span className="num text-[11px] tabular-nums text-muted-foreground">
-              {formatCurrency(total)}
-            </span>
-          )}
-          {/* Criar direto da etapa, sem rolar 25 cards até o botão do rodapé.
-              O do rodapé fica: é o alcançável depois de ler a coluna. */}
-          <button
-            onClick={() => onAddDeal(stage.id)}
-            aria-label={`Adicionar negócio em ${stage.name}`}
-            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
         </div>
       </div>
 
-      <div className="vx-coluna-lista flex flex-1 flex-col gap-2.5 overflow-y-auto px-2.5 pb-2.5 max-h-[calc(100vh-300px)]">
+      {/* Color bar */}
+      <div
+        className="h-1 w-full rounded-full mb-2"
+        style={{ backgroundColor: stage.color || "hsl(var(--primary))" }}
+      />
+
+      {/* Cards */}
+      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[calc(100vh-240px)] pr-0.5">
         {deals.map((deal) => (
           <DealCard
             key={deal.id}
             deal={deal}
+            stageColor={stage.color || undefined}
             onClick={() => onDealClick(deal)}
             onContactClick={onContactClick}
           />
         ))}
 
-        {/* Coluna vazia dizia apenas "+ Adicionar", e um quadro com quatro
-            colunas assim não explica que dá para arrastar para dentro delas. */}
-        {deals.length === 0 && (
-          <p className="py-10 text-center text-xs text-muted-foreground">
-            Arraste negócios para cá
-          </p>
-        )}
-
-        {/* Sem contorno tracejado: sobre fundo tingido ele virava uma terceira
-            moldura na mesma área. Texto e ícone bastam. */}
+        {/* Add button at bottom */}
         <button
           onClick={() => onAddDeal(stage.id)}
-          aria-label={`Adicionar negócio em ${stage.name}`}
-          className="flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground"
+          className="flex items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
         >
-          <Plus className="h-3.5 w-3.5" /> Adicionar
+          <Plus className="h-3 w-3" /> Adicionar
         </button>
       </div>
     </div>
@@ -559,28 +277,15 @@ function WonLostDropZone({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
-  // Continuam MONTADAS sempre, mesmo fora do arraste: desmontar e recriar no
-  // dragStart arriscaria o dnd-kit não medir o droppable a tempo. O que muda é
-  // o peso -- discretas em repouso, evidentes quando são alvo.
-  //
-  // Sem `scale-105` no estado ativo. `scale` é `transform`, e um transform perto
-  // do DragOverlay é exatamente o que faz o clone fugir do cursor neste projeto
-  // (ver o comentário longo em index.css sobre .vx-page). A ênfase vem de cor e
-  // borda, que não criam bloco de contenção.
   return (
     <div
       ref={setNodeRef}
-      aria-label={`Soltar para marcar como ${label}`}
-      className={`flex w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border transition-colors ${
-        isOver
-          ? "border-primary bg-primary/10"
-          : "border-dashed border-border/60 bg-transparent"
+      className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all ${
+        isOver ? "border-primary bg-primary/10 scale-105" : "border-border bg-muted/10"
       }`}
     >
-      <Icon className={`h-4 w-4 ${isOver ? color : "text-muted-foreground/50"}`} />
-      <span className={`text-[10px] font-medium ${isOver ? color : "text-muted-foreground/60"}`}>
-        {label}
-      </span>
+      <Icon className={`h-5 w-5 ${color}`} />
+      <span className={`mt-1 text-[10px] font-medium ${color}`}>{label}</span>
     </div>
   );
 }
@@ -659,7 +364,7 @@ export function DealsKanban({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-3 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {stages.map((stage) => (
             <StageColumn
               key={stage.id}
@@ -676,28 +381,18 @@ export function DealsKanban({
           <WonLostDropZone id="lost-drop" label="Perdido" icon={XCircle} color="text-destructive" />
         </div>
 
-        {/* O overlay vai para o BODY, por portal.
-            Não é preciosismo: `.vx-page` no <main> anima `transform`, e um
-            ancestral com transform vira bloco de contenção para position:fixed
-            -- o clone passa a se posicionar em relação ao <main> e "foge do
-            cursor" pela largura da sidebar. Já aconteceu aqui, e custou três
-            correções erradas antes de a causa aparecer. Até agora o kanban
-            dependia só do fill-mode:backwards do .vx-page, proteção indireta que
-            qualquer wrapper novo com transform anula. O kanban de contatos já usa
-            portal; este ficou para trás.
-
-            E o clone usa o MESMO componente do card do quadro: antes era um card
-            simplificado à parte, então você pegava um card e arrastava outro. */}
-        {createPortal(
-          <DragOverlay>
-            {activeDeal && (
-              <div className="w-[288px] sm:w-[300px] cursor-grabbing">
-                <DealCardVisual deal={activeDeal} arrastando />
+        <DragOverlay>
+          {activeDeal && (
+            <div className="w-[220px] opacity-90">
+              <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
+                <p className="text-[13px] font-medium">{activeDeal.title}</p>
+                <p className="text-xs font-semibold text-foreground mt-0.5">
+                  {formatCurrency(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
+                </p>
               </div>
-            )}
-          </DragOverlay>,
-          document.body,
-        )}
+            </div>
+          )}
+        </DragOverlay>
       </DndContext>
 
       {/* Collapsible won/lost sections below kanban */}
