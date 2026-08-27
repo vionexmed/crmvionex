@@ -116,10 +116,14 @@ export function useDeleteDeal() {
   const qc = useQueryClient();
   const { orgId } = useOrg();
   return useMutation({
-    mutationFn: (id: string) => dealsApi.delete(id),
-    onSuccess: (_data, id) => {
+    mutationFn: ({ id, comVinculos }: { id: string; comVinculos?: boolean }) =>
+      dealsApi.delete(id, comVinculos),
+    onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: dealsKeys.all(orgId ?? "") });
       qc.removeQueries({ queryKey: dealsKeys.detail(id) });
+      // A exclusão em cascata apaga atividades: sem invalidar, a tela de
+      // Atividades continuaria listando registro de negócio que não existe mais.
+      qc.invalidateQueries({ queryKey: ["activities"] });
     },
   });
 }

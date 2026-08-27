@@ -18,10 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import {
   ArrowLeft, Trophy, XCircle, Building2, User, Calendar, Percent,
-  Phone, Mail, FileText, CheckSquare, CalendarDays, Edit2, Check, X,
+  Phone, Mail, FileText, CheckSquare, CalendarDays, Edit2, Check, X, Trash2, Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useDeal, useUpdateDeal, useUpdateDealStatus, useUpdateDealStage, dealsKeys } from "@/hooks/queries/useDeals";
+import {
+  useDeal, useUpdateDeal, useUpdateDealStatus, useUpdateDealStage, useDeleteDeal, dealsKeys,
+} from "@/hooks/queries/useDeals";
+import { dealsApi } from "@/lib/api/deals";
+import { mensagemErro } from "@/lib/erro-supabase";
 import { useDealActivities, useCreateActivity, activitiesKeys } from "@/hooks/queries/useActivities";
 import { usePipelineStages } from "@/hooks/queries/usePipelines";
 import { useMembers } from "@/hooks/queries/useMembers";
@@ -76,6 +80,45 @@ export default function DealDetail() {
   const [lossModalOpen, setLossModalOpen] = useState(false);
   const [lossReason, setLossReason] = useState("");
   const [lossNote, setLossNote] = useState("");
+
+  /**
+   * Exclusão em duas etapas.
+   *
+   * `activities.deal_id` não tem ON DELETE, então o banco recusa apagar um
+   * negócio com histórico. Contar antes deixa a tela dizer o que vai embora, em
+   * vez de o Postgres recusar com "violates foreign key constraint" -- que era o
+   * que aparecia como "[object Object]" antes de existir mensagemErro.
+   */
+  const [exclusao, setExclusao] = useState<{ atividades: number } | null>(null);
+  const { mutateAsync: excluirNegocio, isPending: excluindo } = useDeleteDeal();
+
+  const pedirExclusao = async () => {
+    if (!id) return;
+    try {
+      const vinculos = await dealsApi.contarVinculos(id);
+      // Confirmação só quando há o que perder. Perguntar para operação sem
+      // consequência treina as pessoas a clicar sem ler.
+      if (vinculos.atividades === 0) {
+        await executarExclusao(false);
+        return;
+      }
+      setExclusao(vinculos);
+    } catch (e: unknown) {
+      toast({ title: "Erro ao verificar vínculos", description: mensagemErro(e), variant: "destructive" });
+    }
+  };
+
+  const executarExclusao = async (comVinculos: boolean) => {
+    if (!id) return;
+    try {
+      await excluirNegocio({ id, comVinculos });
+      setExclusao(null);
+      toast({ title: "Negócio excluído" });
+      navigate("/deals");
+    } catch (e: unknown) {
+      toast({ title: "Erro ao excluir negócio", description: mensagemErro(e), variant: "destructive" });
+    }
+  };
 
   // Painel da pessoa. O contato já vem no embed do negócio.
   const [contatoNoPainel, setContatoNoPainel] = useState<ContactRow | null>(null);
@@ -306,16 +349,30 @@ export default function DealDetail() {
         </div>
 
         {/* Quick actions */}
-        {deal.status === "open" && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={markAsWon} className="text-success border-success/30 hover:bg-success/10">
-              <Trophy className="mr-2 h-4 w-4" />Ganho
-            </Button>
-            <Button variant="outline" onClick={() => setLossModalOpen(true)} className="text-destructive border-destructive/30 hover:bg-destructive/10">
-              <XCircle className="mr-2 h-4 w-4" />Perdido
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          {deal.status === "open" && (
+            <>
+              <Button variant="outline" onClick={markAsWon} className="text-success border-success/30 hover:bg-success/10">
+                <Trophy className="mr-2 h-4 w-4" />Ganho
+              </Button>
+              <Button variant="outline" onClick={() => setLossModalOpen(true)} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                <XCircle className="mr-2 h-4 w-4" />Perdido
+              </Button>
+            </>
+          )}
+          {/* Excluir existe para negócio fechado também: é justamente o
+              duplicado ou o de teste que se quer tirar do caminho. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={pedirExclusao}
+            aria-label="Excluir negócio"
+            title="Excluir negócio"
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Progresso no funil deste negócio */}
@@ -545,6 +602,42 @@ export default function DealDetail() {
         companies={companies}
         members={members}
       />
+
+      {/* Confirmação nomeando o que será apagado.
+          Sem transação no PostgREST: as atividades vão antes do negócio, e se o
+          último passo falhar sobra um negócio sem histórico. Por isso a contagem
+          aparece aqui, e não um "tem certeza?" genérico. */}
+      <Dialog open={!!exclusao} onOpenChange={(o) => !o && setExclusao(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir este negócio?</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Isto vai apagar também{" "}
+                  <strong>
+                    {exclusao?.atividades} atividade
+                    {exclusao?.atividades !== 1 ? "s" : ""}
+                  </strong>{" "}
+                  — ligações, reuniões e notas registradas neste negócio.
+                </p>
+                <p className="text-muted-foreground">
+                  O contato continua no CRM, e e-mails e mensagens de WhatsApp são
+                  preservados — apenas deixam de estar vinculados. Nada disso pode ser
+                  desfeito.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExclusao(null)}>Cancelar</Button>
+            <Button variant="destructive" disabled={excluindo} onClick={() => executarExclusao(true)}>
+              {excluindo && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Excluir tudo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

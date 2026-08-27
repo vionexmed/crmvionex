@@ -262,7 +262,11 @@ serve(async (req) => {
       const { data: deal, error: dealError } = await sb
         .from("deals")
         .update({
-          title: deal_name || `Lead: ${fullName}`,
+          // Sem prefixo "Lead:": a etapa do funil já diz em que ponto a
+          // pessoa está, e o prefixo vazava para assunto de e-mail, exportação
+          // e busca. Convenção centralizada em titulo_de_negocio() no banco;
+          // aqui ela é replicada porque a função monta o payload do update.
+          title: deal_name || fullName,
           value: deal_value ?? 0,
           stage_id: firstStage.id,
           company_id: companyId,

@@ -21,17 +21,43 @@ import { join } from "node:path";
 
 const API_DIR = "src/lib/api";
 
-/** Relacionamentos que o PostgREST conhece, extraídos dos tipos gerados. */
-function relacionamentosConhecidos(): Map<string, string> {
+/**
+ * Relacionamentos que o PostgREST conhece, extraídos dos tipos gerados.
+ *
+ * Guarda as DUAS pontas de cada chave: quem a declara e para onde ela aponta.
+ *
+ * A primeira versão guardava só o destino, e isso a fazia entender embed em uma
+ * direção só. Ela reprovou o primeiro embed reverso legítimo do projeto:
+ *
+ *   deals  →  contact:contacts!deals_contact_id_fkey(*)
+ *     a chave é DE deals PARA contacts -- destino = tabela embutida
+ *
+ *   deals  →  notas:activities!activities_deal_id_fkey(...)
+ *     a chave é DE activities PARA deals -- destino = tabela PAI
+ *
+ * Nos dois casos o embed é válido; o que muda é qual ponta da chave corresponde
+ * à tabela embutida. Sem as duas pontas, o teste ou recusa embed correto ou
+ * aceita chave inventada.
+ */
+type Ponta = { declaradaEm: string; aponta: string };
+
+function relacionamentosConhecidos(): Map<string, Ponta> {
   const tipos = readFileSync("src/integrations/supabase/types.ts", "utf8");
-  const mapa = new Map<string, string>();
-  // Os blocos vêm no formato:
-  //   foreignKeyName: "deals_contact_id_fkey"
-  //   ...
-  //   referencedRelation: "contacts"
-  const re =
-    /foreignKeyName:\s*"([^"]+)"[\s\S]{0,200}?referencedRelation:\s*"([^"]+)"/g;
-  for (const m of tipos.matchAll(re)) mapa.set(m[1], m[2]);
+  const mapa = new Map<string, Ponta>();
+
+  // Cada tabela abre com `      <nome>: {` e lista as chaves dela em
+  // `Relationships`. Percorrer nessa ordem dá o dono de cada chave.
+  const tabelas = [...tipos.matchAll(/^ {6}(\w+): \{$/gm)];
+  for (let i = 0; i < tabelas.length; i++) {
+    const nome = tabelas[i][1];
+    const inicio = tabelas[i].index!;
+    const fim = i + 1 < tabelas.length ? tabelas[i + 1].index! : tipos.length;
+    const bloco = tipos.slice(inicio, fim);
+    const re = /foreignKeyName:\s*"([^"]+)"[\s\S]{0,200}?referencedRelation:\s*"([^"]+)"/g;
+    for (const m of bloco.matchAll(re)) {
+      mapa.set(m[1], { declaradaEm: nome, aponta: m[2] });
+    }
+  }
   return mapa;
 }
 
@@ -68,15 +94,19 @@ describe("embed do PostgREST aponta para FK que existe", () => {
   it.each(arquivos)("%s", (arquivo) => {
     const embeds = embedsDoArquivo(readFileSync(join(API_DIR, arquivo), "utf8"));
     for (const { apelido, tabela, constraint } of embeds) {
-      const alvo = conhecidos.get(constraint);
+      const ponta = conhecidos.get(constraint);
       expect(
-        alvo,
+        ponta,
         `${arquivo}: o embed "${apelido}:${tabela}!${constraint}" usa uma constraint que o PostgREST não conhece. Resolva o dado no cliente.`,
       ).toBeDefined();
+
+      // Uma das duas pontas da chave tem de ser a tabela embutida: destino no
+      // embed direto (deals -> contacts), origem no reverso (deals -> activities).
+      const liga = ponta!.aponta === tabela || ponta!.declaradaEm === tabela;
       expect(
-        alvo,
-        `${arquivo}: "${constraint}" aponta para "${alvo}", não para "${tabela}". O embed vai falhar com PGRST200 em toda chamada.`,
-      ).toBe(tabela);
+        liga,
+        `${arquivo}: "${constraint}" liga "${ponta!.declaradaEm}" a "${ponta!.aponta}", e nenhuma das duas é "${tabela}". O embed vai falhar com PGRST200 em toda chamada.`,
+      ).toBe(true);
     }
   });
 });

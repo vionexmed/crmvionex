@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trophy, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -42,10 +42,36 @@ function DealCard({
   // Empresa e pessoa deixaram de ser uma string só: o nome da pessoa agora é
   // clicável e abre o painel dela. Antes o subtítulo inteiro era texto morto --
   // o nome estava ali e não levava a nada.
-  const nomeContato = deal.contact
+  const nome = deal.contact
     ? `${deal.contact.first_name} ${deal.contact.last_name || ""}`.trim()
     : null;
+
+  // O nome sai do subtítulo quando o título JÁ É ele.
+  //
+  // Os negócios criados pelo gatilho de entrada se chamam pelo nome da pessoa
+  // (antes era "Lead: <nome>", prefixo removido em 20260827120000). Sem esta
+  // linha, o card mostra o mesmo nome duas vezes seguidas -- o prefixo estava
+  // mascarando a repetição, não evitando.
+  const nomeContato = nome && nome !== deal.title ? nome : null;
   const probability = Number(deal.probability) || 0;
+
+  // A nota mais recente do negócio.
+  //
+  // Vem embutida na listagem (dealsApi.list embute activities do tipo 'note'),
+  // então mostrar aqui não custa consulta. A ordenação é no cliente porque o
+  // PostgREST não ordena recurso embutido de forma confiável -- e com poucas
+  // notas por negócio, ordenar um punhado de itens é mais barato que uma
+  // segunda ida ao banco.
+  const notas = deal.notas ?? [];
+  const ultimaNota = notas.length
+    ? [...notas].sort(
+        (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+      )[0]
+    : null;
+  // O corpo é o que a pessoa escreveu; o título costuma ser genérico ("Nota").
+  const textoNota = ultimaNota
+    ? (ultimaNota.body?.trim() || ultimaNota.title?.trim() || null)
+    : null;
 
   // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
   // pode abrir painel. Mesmo padrão de ContactsKanbanByOwner.
@@ -104,6 +130,27 @@ function DealCard({
             )
           )}
         </p>
+      )}
+
+      {/* Última nota.
+          `line-clamp-2` em vez de truncate: nota de uma linha só raramente diz
+          algo -- cortar em 40 caracteres devolveria "Cliente pediu para retornar
+          na..." e a informação útil ficaria de fora. */}
+      {textoNota && (
+        <div className="mb-2 flex items-start gap-1.5 rounded-md bg-muted/60 px-2 py-1.5">
+          <FileText className="mt-px h-3 w-3 shrink-0 text-muted-foreground" />
+          <p className="line-clamp-2 text-[11px] leading-tight text-muted-foreground">
+            {textoNota}
+          </p>
+          {notas.length > 1 && (
+            <span
+              title={`${notas.length} notas neste negócio`}
+              className="ml-auto shrink-0 text-[10px] font-medium text-muted-foreground"
+            >
+              +{notas.length - 1}
+            </span>
+          )}
+        </div>
       )}
 
       {/* Bottom row */}

@@ -10,10 +10,20 @@ type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
+/** Nota do negócio, no formato reduzido que a listagem embute. */
+export type NotaDoNegocio = {
+  id: string;
+  title: string | null;
+  body: string | null;
+  created_at: string | null;
+};
+
 export type DealWithRelations = Deal & {
   contact?: Contact | null;
   company?: Company | null;
   owner?: Profile | null;
+  /** Só na listagem: atividades do tipo 'note', para o card mostrar a última. */
+  notas?: NotaDoNegocio[] | null;
 };
 
 export interface DealListParams {
@@ -49,10 +59,19 @@ export const dealsApi = {
     let query = supabase
       .from(TABLES.DEALS)
       .select(
-        "*, contact:contacts!deals_contact_id_fkey(*), company:companies!deals_company_id_fkey(*)",
+        // As notas entram aqui para o card do kanban poder mostrar a última.
+        // Filtradas por tipo no `.eq` abaixo: sem isso viriam também ligações,
+        // reuniões e tarefas, e o payload cresceria sem ninguém usar.
+        //
+        // O nome da constraint é explícito de propósito -- `activities` tem FK
+        // para contacts, companies e organizations além de deals, e nomear evita
+        // depender da desambiguação automática do PostgREST. Há teste conferindo
+        // cada nome contra os tipos gerados (src/test/api/embed-com-fk.test.ts).
+        "*, contact:contacts!deals_contact_id_fkey(*), company:companies!deals_company_id_fkey(*), notas:activities!activities_deal_id_fkey(id,title,body,created_at)",
         { count: "exact" }
       )
-      .eq("org_id", orgId);
+      .eq("org_id", orgId)
+      .eq("notas.type", "note");
 
     if (ownerId && ownerId !== "all") query = query.eq("owner_id", ownerId);
     if (stageIds?.length) query = query.in("stage_id", stageIds);
@@ -137,7 +156,40 @@ export const dealsApi = {
     return data as unknown as DealWithRelations;
   },
 
-  delete: async (id: string): Promise<void> => {
+  /**
+   * O que impede a exclusão deste negócio.
+   *
+   * `activities.deal_id` foi criado sem cláusula ON DELETE, então vale NO ACTION
+   * e o Postgres recusa apagar o negócio. Já `emails.deal_id` e
+   * `whatsapp_messages.deal_id` são ON DELETE SET NULL -- as mensagens
+   * sobrevivem sem vínculo, e por isso não travam nada.
+   *
+   * Mesmo padrão da exclusão de contato: contar antes para a tela dizer o que
+   * vai acontecer, em vez de deixar o banco recusar com "violates foreign key
+   * constraint".
+   */
+  contarVinculos: async (id: string): Promise<{ atividades: number }> => {
+    const { count, error } = await supabase
+      .from("activities")
+      .select("id", { count: "exact", head: true })
+      .eq("deal_id", id);
+    if (error) throw error;
+    return { atividades: count ?? 0 };
+  },
+
+  /**
+   * Exclui o negócio e, quando `comVinculos`, as atividades dele.
+   *
+   * Sem transação: o PostgREST não expõe uma. As atividades vão primeiro, senão
+   * o Postgres recusa. Se o passo do negócio falhar depois, sobra um negócio sem
+   * histórico -- é o motivo de a tela pedir confirmação nomeando o que será
+   * apagado.
+   */
+  delete: async (id: string, comVinculos = false): Promise<void> => {
+    if (comVinculos) {
+      const { error: eAct } = await supabase.from("activities").delete().eq("deal_id", id);
+      if (eAct) throw eAct;
+    }
     const { error } = await supabase.from(TABLES.DEALS).delete().eq("id", id);
     if (error) throw error;
   },
