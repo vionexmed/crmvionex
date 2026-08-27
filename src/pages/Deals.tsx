@@ -22,11 +22,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Trash2, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Handshake, Kanban, List, TrendingUp, Plus, Filter, Settings2, Trash2, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { DealsKanban } from "@/components/crm/DealsKanban";
 import { ContactDrawer } from "@/components/crm/ContactDrawer";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { DealsList } from "@/components/crm/DealsList";
 import { DealsForecast } from "@/components/crm/DealsForecast";
 import { DealsFilters, type DealFilters } from "@/components/crm/DealsFilters";
@@ -276,59 +277,99 @@ export default function Deals() {
   const wonDeals  = filteredAllDeals.filter((d) => d.status === "won");
   const lostDeals = filteredAllDeals.filter((d) => d.status === "lost");
   const totalCount = viewMode === "list" ? listDealsResult.count : filteredAllDeals.length;
+  // Soma dos negócios abertos. O cabeçalho dizia só a contagem, e num funil o
+  // número que importa vem acompanhado de quanto ele vale.
+  const valorEmAberto = openDeals.reduce((acc, d) => acc + (Number(d.value) || 0), 0);
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight">Negócios</h1>
-          <div className="flex rounded-md border border-border bg-muted/50 p-0.5">
-            {[
-              { mode: "kanban" as const, icon: Kanban, label: "Kanban" },
-              { mode: "list" as const, icon: List, label: "Lista" },
-              { mode: "forecast" as const, icon: TrendingUp, label: "Previsão" },
-            ].map(({ mode, icon: Icon, label }) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                aria-label={`Visualização ${label}`}
-                className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-                  viewMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" /><span className="hidden sm:inline">{label}</span>
-              </button>
-            ))}
-          </div>
-          <Button onClick={() => openNew()} size="sm" className="gap-1">
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Negócio</span>
-          </Button>
-        </div>
+      {/* PageHeader em vez de um <h1> solto: Dashboard, Contatos e Empresas já o
+          usam, e esta tela era a única com cabeçalho improvisado. Os controles
+          continuam todos aqui, só reorganizados -- visão, criar, funil,
+          personalizar e filtro. */}
+      <PageHeader
+        icon={Handshake}
+        kicker="Comercial"
+        title="Negócios"
+        description={`${totalCount} ${totalCount === 1 ? "negócio" : "negócios"} em aberto${
+          valorEmAberto > 0
+            ? ` · ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(valorEmAberto)}`
+            : ""
+        }`}
+        meta={
+          viewMode === "list" && listFetching ? (
+            <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> atualizando…
+            </p>
+          ) : undefined
+        }
+        actions={
+          <>
+            <div className="flex rounded-md border border-border bg-muted/50 p-0.5">
+              {[
+                { mode: "kanban" as const, icon: Kanban, label: "Kanban" },
+                { mode: "list" as const, icon: List, label: "Lista" },
+                { mode: "forecast" as const, icon: TrendingUp, label: "Previsão" },
+              ].map(({ mode, icon: Icon, label }) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  aria-label={`Visualização ${label}`}
+                  className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+                    viewMode === mode
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {totalCount} {totalCount === 1 ? "negócio" : "negócios"}
-            {viewMode === "list" && listFetching && <Loader2 className="inline ml-1.5 h-3 w-3 animate-spin" />}
-          </span>
-          {pipelines.length > 0 && (
-            <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
-              <SelectTrigger className="h-8 w-40 text-xs border-border"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {pipelines.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          )}
-          {isAdmin && (
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={openPipelineEditor} aria-label="Personalizar funil">
-              <Settings2 className="h-3.5 w-3.5" />
+            {pipelines.length > 0 && (
+              <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
+                <SelectTrigger className="h-8 w-36 border-border text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pipelines.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={() => setShowFilters(!showFilters)}
+              aria-label="Alternar filtros"
+            >
+              <Filter className="mr-1 h-3 w-3" />
+              <span className="hidden sm:inline">Filtro</span>
             </Button>
-          )}
-          <Button variant="outline" size="sm" className="h-8" onClick={() => setShowFilters(!showFilters)} aria-label="Alternar filtros">
-            <Filter className="mr-1 h-3 w-3" /><span className="hidden sm:inline">Filtro</span>
-          </Button>
-        </div>
-      </div>
+
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={openPipelineEditor}
+                aria-label="Personalizar funil"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+
+            <Button onClick={() => openNew()} size="sm" className="h-8 gap-1">
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Negócio</span>
+            </Button>
+          </>
+        }
+      />
 
       {showFilters && (
         <DealsFilters filters={filters} onFiltersChange={setFilters} members={members} />

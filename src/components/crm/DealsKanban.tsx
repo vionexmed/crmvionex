@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Trophy, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import {
@@ -17,81 +18,79 @@ function formatCurrency(value: number, currency: string = "BRL") {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
 }
 
-/* ── Deal Card (Pipedrive-style) ─────────────────────────── */
+/* ── Visual do card ──────────────────────────────────────── */
 
-function DealCard({
+/**
+ * O que o card MOSTRA, sem nada de arraste.
+ *
+ * Extraído porque o `DragOverlay` desenhava um card próprio, simplificado: você
+ * pegava um card com empresa, probabilidade e responsável, e arrastava outro com
+ * título e valor. Ele até tinha `w-[220px]` fixo, dessincronizado de
+ * `sm:w-[240px]` desde que a coluna ganhou o breakpoint. Um componente só
+ * elimina a categoria de divergência.
+ *
+ * `ContactsKanbanByOwner` já fazia isso (ContactCardVisual); os dois kanbans
+ * tinham divergido sem motivo.
+ */
+function DealCardVisual({
   deal,
   stageColor,
-  onClick,
   onContactClick,
+  arrastando,
 }: {
   deal: DealWithRelations;
   stageColor?: string;
-  onClick: () => void;
-  /** Abre o painel da PESSOA, sem sair do quadro. */
   onContactClick?: (contact: Contact) => void;
+  /** No clone, sombra mais forte e borda de acento. */
+  arrastando?: boolean;
 }) {
-  // O clone visual do drag é o DragOverlay — o card original só fica translúcido
-  // (aplicar transform aqui fazia DOIS cards se moverem ao mesmo tempo)
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
-  const style = {
-    borderLeftColor: stageColor || "hsl(var(--primary))",
-    ...(isDragging ? { opacity: 0.4 } : {}),
-  };
-
-  // Empresa e pessoa deixaram de ser uma string só: o nome da pessoa agora é
-  // clicável e abre o painel dela. Antes o subtítulo inteiro era texto morto --
-  // o nome estava ali e não levava a nada.
   const nomeContato = deal.contact
     ? `${deal.contact.first_name} ${deal.contact.last_name || ""}`.trim()
     : null;
-  const probability = Number(deal.probability) || 0;
 
-  // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
-  // pode abrir painel. Mesmo padrão de ContactsKanbanByOwner.
-  const arrastou = useRef(false);
-  useEffect(() => {
-    if (isDragging) arrastou.current = true;
-  }, [isDragging]);
+  // O gatilho que põe todo contato no funil nomeia o negócio como
+  // "Lead: <nome>". Resultado no card: o nome aparecia no título E no subtítulo,
+  // duas linhas dizendo a mesma coisa em 25 cards seguidos.
+  //
+  // Casamento EXATO, não por prefixo: um negócio renomeado à mão para
+  // "Lead: fulano da empresa X" continua mostrando o próprio título, porque ali
+  // o texto carrega informação que o nome do contato não tem.
+  const tituloEhRedundante = !!nomeContato && deal.title === `Lead: ${nomeContato}`;
+
+  const titulo = tituloEhRedundante ? nomeContato : deal.title;
+  const subtitulo = deal.company?.name ?? null;
+  // Quando o título já É o nome da pessoa, o subtítulo fica só com a empresa.
+  const mostrarPessoa = !tituloEhRedundante && !!nomeContato;
+
+  const valor = Number(deal.value) || 0;
+  const probability = Number(deal.probability) || 0;
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="vx-deal-card"
-      onPointerDown={(e) => {
-        arrastou.current = false;
-        listeners?.onPointerDown?.(e);
-      }}
-      onClick={() => {
-        if (arrastou.current) {
-          arrastou.current = false;
-          return;
-        }
-        onClick();
-      }}
+      className={`rounded-lg border bg-card p-3 transition-shadow ${
+        arrastando
+          ? "border-primary shadow-lg"
+          : "border-border shadow-[var(--shadow-xs)] group-hover:shadow-[var(--shadow-sm)]"
+      }`}
+      style={{ borderLeftWidth: 3, borderLeftColor: stageColor || "hsl(var(--primary))" }}
     >
-      {/* Title */}
-      <p className="truncate text-[13px] font-semibold leading-snug text-foreground mb-0.5">
-        {deal.title}
+      <p className="truncate text-[13px] font-semibold leading-snug text-foreground">
+        {titulo}
       </p>
 
-      {/* Empresa (texto) · Pessoa (clicável) */}
-      {(deal.company || nomeContato) && (
-        <p className="truncate text-[11px] text-muted-foreground leading-tight mb-2">
-          {deal.company?.name}
-          {deal.company && nomeContato && " · "}
-          {nomeContato && (
+      {(subtitulo || mostrarPessoa) && (
+        <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">
+          {subtitulo}
+          {subtitulo && mostrarPessoa && " · "}
+          {mostrarPessoa && (
             onContactClick && deal.contact ? (
               <button
                 type="button"
-                // stopPropagation senão o clique sobe para o card e navega para o
-                // negócio -- o painel abriria e a rota mudaria no mesmo clique.
+                // stopPropagation nos DOIS eventos: sem o pointerdown, o dnd-kit
+                // captura o gesto e o clique nunca chega; sem o click, ele sobe
+                // para o card e navega para o negócio junto com o painel.
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (arrastou.current) return;
                   onContactClick(deal.contact!);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
@@ -106,29 +105,93 @@ function DealCard({
         </p>
       )}
 
-      {/* Bottom row */}
-      <div className="flex items-center justify-between gap-1">
-        <span className="num text-[12px] font-bold text-foreground tabular-nums">
-          {formatCurrency(Number(deal.value) || 0, deal.currency || "BRL")}
+      <div className="mt-2 flex items-center justify-between gap-1 border-t border-border/60 pt-2">
+        {/* Valor zero perde o peso, não o lugar.
+            Em negrito e monoespaçado, "R$ 0,00" repetido 25 vezes era o elemento
+            de maior destaque visual do quadro e o de menor informação. */}
+        <span
+          className={`num text-[12px] tabular-nums ${
+            valor > 0 ? "font-semibold text-foreground" : "font-normal text-muted-foreground"
+          }`}
+        >
+          {formatCurrency(valor, deal.currency || "BRL")}
         </span>
 
         <div className="flex items-center gap-1.5">
           {probability > 0 && (
-            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none
-              ${probability >= 70 ? "bg-success/12 text-success" : probability >= 40 ? "bg-warning/12 text-warning" : "bg-muted text-muted-foreground"}`}>
+            <span
+              className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none ${
+                probability >= 70
+                  ? "bg-success/12 text-success"
+                  : probability >= 40
+                    ? "bg-warning/12 text-warning"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
               {probability}%
             </span>
           )}
           {deal.owner && (
             <Avatar className="h-5 w-5 ring-1 ring-border">
               <AvatarImage src={deal.owner.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-primary text-[8px] font-bold">
+              <AvatarFallback className="bg-primary/10 text-[8px] font-bold text-primary">
                 {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Card arrastável ─────────────────────────────────────── */
+
+function DealCard({
+  deal,
+  stageColor,
+  onClick,
+  onContactClick,
+}: {
+  deal: DealWithRelations;
+  stageColor?: string;
+  onClick: () => void;
+  /** Abre o painel da PESSOA, sem sair do quadro. */
+  onContactClick?: (contact: Contact) => void;
+}) {
+  // O clone visual do drag é o DragOverlay — o card original só fica translúcido.
+  // Aplicar transform aqui fazia DOIS cards se moverem ao mesmo tempo.
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
+
+  // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
+  // pode abrir o negócio. Mesmo padrão de ContactsKanbanByOwner.
+  const arrastou = useRef(false);
+  useEffect(() => {
+    if (isDragging) arrastou.current = true;
+  }, [isDragging]);
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      // Depois dos spreads de propósito: {...listeners} já traz um onPointerDown,
+      // e este o substitui e o rechama à mão. Inverter a ordem desarma a guarda.
+      onPointerDown={(e) => {
+        arrastou.current = false;
+        listeners?.onPointerDown?.(e);
+      }}
+      onClick={() => {
+        if (arrastou.current) {
+          arrastou.current = false;
+          return;
+        }
+        onClick();
+      }}
+      style={isDragging ? { opacity: 0.4 } : undefined}
+      className="group cursor-pointer rounded-lg active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+    >
+      <DealCardVisual deal={deal} stageColor={stageColor} onContactClick={onContactClick} />
     </div>
   );
 }
@@ -152,33 +215,46 @@ function StageColumn({
   const total = deals.reduce((s, d) => s + (Number(d.value) || 0), 0);
 
   return (
+    // `bg-card/50` e não `bg-muted`: --background e --muted têm o MESMO valor
+    // (220 14% 97%), então o truque clássico de coluna cinza sobre página branca
+    // é literalmente invisível no tema claro. Branco a 50% sobre a página fica
+    // um degrau mais claro que ela e um abaixo do card -- e no escuro o card já
+    // é mais claro que o fundo, então a mesma regra vale nos dois temas.
     <div
       ref={setNodeRef}
-      className={`flex w-[220px] sm:w-[240px] shrink-0 flex-col transition-colors ${
-        isOver ? "bg-primary/5" : ""
+      role="list"
+      aria-label={`Etapa ${stage.name}`}
+      className={`flex w-[264px] sm:w-[280px] shrink-0 flex-col rounded-xl border transition-colors ${
+        isOver ? "border-primary/30 bg-primary/5" : "border-border bg-card/50"
       }`}
     >
-      {/* Header — Pipedrive style */}
-      <div className="mb-1 px-1">
-        <h3 className="text-[13px] font-bold text-foreground leading-tight">{stage.name}</h3>
-        <div className="flex items-center gap-1">
-          <span className="text-[11px] text-muted-foreground font-medium">
-            {formatCurrency(total)}
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            · {deals.length} {deals.length === 1 ? "negócio" : "negócios"}
-          </span>
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          {/* A cor da etapa em 6px.
+              Era uma barra de largura total com 4px de altura, e cinco delas em
+              azul/roxo/laranja/vermelho/verde competiam com o conteúdo. Como
+              ponto, a cor identifica sem disputar atenção. */}
+          <span
+            aria-hidden
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: stage.color || "hsl(var(--primary))" }}
+          />
+          <h3 className="truncate text-[13px] font-semibold leading-tight text-foreground">
+            {stage.name}
+          </h3>
         </div>
+        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          {deals.length}
+        </span>
       </div>
 
-      {/* Color bar */}
-      <div
-        className="h-1 w-full rounded-full mb-2"
-        style={{ backgroundColor: stage.color || "hsl(var(--primary))" }}
-      />
+      <div className="border-b border-border/60 px-3 py-1.5">
+        <span className="num text-[11px] tabular-nums text-muted-foreground">
+          {formatCurrency(total)}
+        </span>
+      </div>
 
-      {/* Cards */}
-      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[calc(100vh-240px)] pr-0.5">
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto max-h-[calc(100vh-300px)] p-2">
         {deals.map((deal) => (
           <DealCard
             key={deal.id}
@@ -189,10 +265,18 @@ function StageColumn({
           />
         ))}
 
-        {/* Add button at bottom */}
+        {/* Coluna vazia dizia apenas "+ Adicionar", e um quadro com quatro
+            colunas assim não explica que dá para arrastar para dentro delas. */}
+        {deals.length === 0 && (
+          <p className="py-8 text-center text-xs text-muted-foreground">
+            Arraste negócios para cá
+          </p>
+        )}
+
         <button
           onClick={() => onAddDeal(stage.id)}
-          className="flex items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+          aria-label={`Adicionar negócio em ${stage.name}`}
+          className="flex items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
         >
           <Plus className="h-3 w-3" /> Adicionar
         </button>
@@ -277,15 +361,28 @@ function WonLostDropZone({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
+  // Continuam MONTADAS sempre, mesmo fora do arraste: desmontar e recriar no
+  // dragStart arriscaria o dnd-kit não medir o droppable a tempo. O que muda é
+  // o peso -- discretas em repouso, evidentes quando são alvo.
+  //
+  // Sem `scale-105` no estado ativo. `scale` é `transform`, e um transform perto
+  // do DragOverlay é exatamente o que faz o clone fugir do cursor neste projeto
+  // (ver o comentário longo em index.css sobre .vx-page). A ênfase vem de cor e
+  // borda, que não criam bloco de contenção.
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all ${
-        isOver ? "border-primary bg-primary/10 scale-105" : "border-border bg-muted/10"
+      aria-label={`Soltar para marcar como ${label}`}
+      className={`flex w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border transition-colors ${
+        isOver
+          ? "border-primary bg-primary/10"
+          : "border-dashed border-border/60 bg-transparent"
       }`}
     >
-      <Icon className={`h-5 w-5 ${color}`} />
-      <span className={`mt-1 text-[10px] font-medium ${color}`}>{label}</span>
+      <Icon className={`h-4 w-4 ${isOver ? color : "text-muted-foreground/50"}`} />
+      <span className={`text-[10px] font-medium ${isOver ? color : "text-muted-foreground/60"}`}>
+        {label}
+      </span>
     </div>
   );
 }
@@ -381,18 +478,34 @@ export function DealsKanban({
           <WonLostDropZone id="lost-drop" label="Perdido" icon={XCircle} color="text-destructive" />
         </div>
 
-        <DragOverlay>
-          {activeDeal && (
-            <div className="w-[220px] opacity-90">
-              <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
-                <p className="text-[13px] font-medium">{activeDeal.title}</p>
-                <p className="text-xs font-semibold text-foreground mt-0.5">
-                  {formatCurrency(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
-                </p>
+        {/* O overlay vai para o BODY, por portal.
+            Não é preciosismo: `.vx-page` no <main> anima `transform`, e um
+            ancestral com transform vira bloco de contenção para position:fixed
+            -- o clone passa a se posicionar em relação ao <main> e "foge do
+            cursor" pela largura da sidebar. Já aconteceu aqui, e custou três
+            correções erradas antes de a causa aparecer. Até agora o kanban
+            dependia só do fill-mode:backwards do .vx-page, proteção indireta que
+            qualquer wrapper novo com transform anula. O kanban de contatos já usa
+            portal; este ficou para trás.
+
+            E o clone usa o MESMO componente do card do quadro: antes era um card
+            simplificado à parte, então você pegava um card e arrastava outro. */}
+        {createPortal(
+          <DragOverlay>
+            {activeDeal && (
+              <div className="w-[264px] sm:w-[280px] cursor-grabbing">
+                <DealCardVisual
+                  deal={activeDeal}
+                  stageColor={
+                    stages.find((s) => s.id === activeDeal.stage_id)?.color || undefined
+                  }
+                  arrastando
+                />
               </div>
-            </div>
-          )}
-        </DragOverlay>
+            )}
+          </DragOverlay>,
+          document.body,
+        )}
       </DndContext>
 
       {/* Collapsible won/lost sections below kanban */}

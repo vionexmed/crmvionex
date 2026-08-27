@@ -268,21 +268,17 @@
   }
 
   /* ── Deal Card (Kanban) ───────────────────────────────── */
-  .vx-deal-card {
-    border-radius: calc(var(--radius) - 1px);
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-left-width: 3px;
-    padding: 10px;
-    cursor: pointer;
-    transition: box-shadow 0.15s ease, transform 0.1s ease;
-    box-shadow: var(--shadow-xs);
-  }
-  .vx-deal-card:hover {
-    box-shadow: var(--shadow-sm);
-    transform: translateY(-1px);
-  }
-  .vx-deal-card:active { transform: translateY(0); }
+  /* .vx-deal-card foi removido.
+ *
+ * Era usado em exatamente um lugar (o card do kanban de negócios) e definia
+ * metade do card em CSS enquanto a outra metade vinha de Tailwind no JSX --
+ * então mexer na aparência do card exigia editar dois arquivos e lembrar qual
+ * deles ganhava. O card agora se descreve inteiro em DealCardVisual, que o
+ * quadro e o clone de arraste compartilham.
+ *
+ * As sombras continuam vindo das variáveis --shadow-*, via
+ * shadow-[var(--shadow-xs)]: elas têm valores próprios para o tema escuro, o que
+ * as sombras padrão do Tailwind não têm. */
 
   /* ── Input refinado ───────────────────────────────────── */
   input[type="text"], input[type="email"], input[type="number"], input[type="date"],
