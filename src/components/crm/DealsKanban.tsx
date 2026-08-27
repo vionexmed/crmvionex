@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trophy, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, CalendarDays, Flag } from "lucide-react";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -18,6 +18,86 @@ function formatCurrency(value: number, currency: string = "BRL") {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
 }
 
+/* ── Cor da etapa ────────────────────────────────────────── */
+
+/**
+ * A cor da etapa vem do banco como hex livre, escolhido pelo usuário em
+ * Configurações. Duas coisas precisam dela em runtime, e nenhuma pode sair de
+ * classe Tailwind (o compilador não gera classe para valor dinâmico):
+ *
+ *   - o fundo da coluna, num tom levíssimo
+ *   - a pílula do cabeçalho, na cor cheia
+ *
+ * `null` é caso real (a coluna pode nunca ter sido colorida), e aí caímos no
+ * token --primary, que respeita a cor de destaque escolhida pelo usuário.
+ */
+function hexParaRgb(hex: string): [number, number, number] | null {
+  const limpo = hex.trim().replace(/^#/, "");
+  const completo =
+    limpo.length === 3 ? limpo.split("").map((c) => c + c).join("") : limpo;
+  if (!/^[0-9a-f]{6}$/i.test(completo)) return null;
+  return [
+    parseInt(completo.slice(0, 2), 16),
+    parseInt(completo.slice(2, 4), 16),
+    parseInt(completo.slice(4, 6), 16),
+  ];
+}
+
+/** Tom de fundo da coluna: a cor da etapa quase dissolvida. */
+function tintaDaColuna(hex: string | null, alpha = 0.07): string | undefined {
+  if (!hex) return undefined;
+  const rgb = hexParaRgb(hex);
+  return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : undefined;
+}
+
+/**
+ * Texto branco ou escuro sobre a pílula, conforme a luminância da cor.
+ *
+ * Não é refinamento: o usuário pode escolher amarelo ou verde-limão para uma
+ * etapa, e branco sobre amarelo é ilegível. Fórmula de luminância relativa da
+ * WCAG; o corte em 0.6 é empírico e cobre bem o meio da escala.
+ */
+function textoSobre(hex: string | null): string | undefined {
+  if (!hex) return undefined;
+  const rgb = hexParaRgb(hex);
+  if (!rgb) return undefined;
+  const [r, g, b] = rgb.map((c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  const luminancia = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminancia > 0.6 ? "hsl(213 41% 10%)" : "#ffffff";
+}
+
+/* ── Chip de metadado ────────────────────────────────────── */
+
+/**
+ * Pílula contornada, no formato que o ClickUp usa para data, prioridade e campos
+ * personalizados. Contorno em vez de preenchimento de propósito: cinco chips
+ * preenchidos por card viram confete.
+ */
+function Chip({
+  children,
+  tom = "neutro",
+}: {
+  children: React.ReactNode;
+  tom?: "neutro" | "alerta" | "positivo" | "atencao";
+}) {
+  const tons = {
+    neutro: "border-border text-muted-foreground",
+    alerta: "border-destructive/40 text-destructive",
+    positivo: "border-success/40 text-success",
+    atencao: "border-warning/40 text-warning",
+  } as const;
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-md border bg-card px-1.5 py-0.5 text-[11px] font-medium leading-none ${tons[tom]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 /* ── Visual do card ──────────────────────────────────────── */
 
 /**
@@ -25,21 +105,20 @@ function formatCurrency(value: number, currency: string = "BRL") {
  *
  * Extraído porque o `DragOverlay` desenhava um card próprio, simplificado: você
  * pegava um card com empresa, probabilidade e responsável, e arrastava outro com
- * título e valor. Ele até tinha `w-[220px]` fixo, dessincronizado de
- * `sm:w-[240px]` desde que a coluna ganhou o breakpoint. Um componente só
- * elimina a categoria de divergência.
+ * título e valor.
  *
- * `ContactsKanbanByOwner` já fazia isso (ContactCardVisual); os dois kanbans
- * tinham divergido sem motivo.
+ * O formato segue o do ClickUp: título com peso, uma linha de contexto, e os
+ * metadados como pílulas contornadas na base -- avatar, prazo, valor,
+ * probabilidade. Cada pílula aparece só quando tem conteúdo. Campo vazio
+ * ocupando lugar fixo foi o que fez "R$ 0,00" virar o elemento mais destacado
+ * do quadro em 25 cards seguidos.
  */
 function DealCardVisual({
   deal,
-  stageColor,
   onContactClick,
   arrastando,
 }: {
   deal: DealWithRelations;
-  stageColor?: string;
   onContactClick?: (contact: Contact) => void;
   /** No clone, sombra mais forte e borda de acento. */
   arrastando?: boolean;
@@ -49,39 +128,48 @@ function DealCardVisual({
     : null;
 
   // O gatilho que põe todo contato no funil nomeia o negócio como
-  // "Lead: <nome>". Resultado no card: o nome aparecia no título E no subtítulo,
-  // duas linhas dizendo a mesma coisa em 25 cards seguidos.
+  // "Lead: <nome>". Resultado no card: o nome aparecia no título E na linha de
+  // baixo, duas linhas dizendo a mesma coisa.
   //
   // Casamento EXATO, não por prefixo: um negócio renomeado à mão para
-  // "Lead: fulano da empresa X" continua mostrando o próprio título, porque ali
-  // o texto carrega informação que o nome do contato não tem.
+  // "Lead: fulano da empresa X" mantém o próprio título, porque ali o texto
+  // carrega informação que o nome do contato não tem.
   const tituloEhRedundante = !!nomeContato && deal.title === `Lead: ${nomeContato}`;
-
   const titulo = tituloEhRedundante ? nomeContato : deal.title;
-  const subtitulo = deal.company?.name ?? null;
-  // Quando o título já É o nome da pessoa, o subtítulo fica só com a empresa.
+  const empresa = deal.company?.name ?? null;
   const mostrarPessoa = !tituloEhRedundante && !!nomeContato;
 
   const valor = Number(deal.value) || 0;
   const probability = Number(deal.probability) || 0;
 
+  // Prazo, com o mesmo tratamento do ClickUp: vermelho quando já passou.
+  // Comparação por dia, não por instante -- fechar hoje não está atrasado.
+  const prazo = deal.close_date ? new Date(`${deal.close_date}T12:00:00`) : null;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const atrasado = !!prazo && prazo < hoje && deal.status === "open";
+  const prazoTexto = prazo
+    ? prazo.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })
+    : null;
+
+  const temMeta = !!deal.owner || !!prazoTexto || valor > 0 || probability > 0;
+
   return (
     <div
-      className={`rounded-lg border bg-card p-3 transition-shadow ${
+      className={`rounded-xl border bg-card p-3.5 transition-shadow ${
         arrastando
           ? "border-primary shadow-lg"
-          : "border-border shadow-[var(--shadow-xs)] group-hover:shadow-[var(--shadow-sm)]"
+          : "border-border/70 shadow-[var(--shadow-xs)] group-hover:shadow-[var(--shadow-sm)]"
       }`}
-      style={{ borderLeftWidth: 3, borderLeftColor: stageColor || "hsl(var(--primary))" }}
     >
-      <p className="truncate text-[13px] font-semibold leading-snug text-foreground">
+      <p className="text-[14px] font-semibold leading-snug text-foreground">
         {titulo}
       </p>
 
-      {(subtitulo || mostrarPessoa) && (
-        <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">
-          {subtitulo}
-          {subtitulo && mostrarPessoa && " · "}
+      {(empresa || mostrarPessoa) && (
+        <p className="mt-1 truncate text-[12px] leading-tight text-muted-foreground">
+          {empresa}
+          {empresa && mostrarPessoa && " · "}
           {mostrarPessoa && (
             onContactClick && deal.contact ? (
               <button
@@ -105,42 +193,40 @@ function DealCardVisual({
         </p>
       )}
 
-      <div className="mt-2 flex items-center justify-between gap-1 border-t border-border/60 pt-2">
-        {/* Valor zero perde o peso, não o lugar.
-            Em negrito e monoespaçado, "R$ 0,00" repetido 25 vezes era o elemento
-            de maior destaque visual do quadro e o de menor informação. */}
-        <span
-          className={`num text-[12px] tabular-nums ${
-            valor > 0 ? "font-semibold text-foreground" : "font-normal text-muted-foreground"
-          }`}
-        >
-          {formatCurrency(valor, deal.currency || "BRL")}
-        </span>
-
-        <div className="flex items-center gap-1.5">
-          {probability > 0 && (
-            <span
-              className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none ${
-                probability >= 70
-                  ? "bg-success/12 text-success"
-                  : probability >= 40
-                    ? "bg-warning/12 text-warning"
-                    : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {probability}%
-            </span>
-          )}
+      {temMeta && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           {deal.owner && (
-            <Avatar className="h-5 w-5 ring-1 ring-border">
+            <Avatar className="h-[22px] w-[22px] ring-1 ring-border">
               <AvatarImage src={deal.owner.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-[8px] font-bold text-primary">
+              <AvatarFallback className="bg-primary/10 text-[9px] font-bold text-primary">
                 {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>
           )}
+
+          {prazoTexto && (
+            <Chip tom={atrasado ? "alerta" : "neutro"}>
+              <CalendarDays className="h-3 w-3" />
+              {prazoTexto}
+            </Chip>
+          )}
+
+          {valor > 0 && (
+            <Chip>
+              <span className="num tabular-nums">
+                {formatCurrency(valor, deal.currency || "BRL")}
+              </span>
+            </Chip>
+          )}
+
+          {probability > 0 && (
+            <Chip tom={probability >= 70 ? "positivo" : probability >= 40 ? "atencao" : "neutro"}>
+              <Flag className="h-3 w-3" />
+              {probability}%
+            </Chip>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -149,12 +235,10 @@ function DealCardVisual({
 
 function DealCard({
   deal,
-  stageColor,
   onClick,
   onContactClick,
 }: {
   deal: DealWithRelations;
-  stageColor?: string;
   onClick: () => void;
   /** Abre o painel da PESSOA, sem sair do quadro. */
   onContactClick?: (contact: Contact) => void;
@@ -191,7 +275,7 @@ function DealCard({
       style={isDragging ? { opacity: 0.4 } : undefined}
       className="group cursor-pointer rounded-lg active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
     >
-      <DealCardVisual deal={deal} stageColor={stageColor} onContactClick={onContactClick} />
+      <DealCardVisual deal={deal} onContactClick={onContactClick} />
     </div>
   );
 }
@@ -214,52 +298,57 @@ function StageColumn({
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const total = deals.reduce((s, d) => s + (Number(d.value) || 0), 0);
 
+  const cor = stage.color;
+  const tinta = tintaDaColuna(cor);
+  const corTexto = textoSobre(cor);
+
   return (
-    // `bg-card/50` e não `bg-muted`: --background e --muted têm o MESMO valor
-    // (220 14% 97%), então o truque clássico de coluna cinza sobre página branca
-    // é literalmente invisível no tema claro. Branco a 50% sobre a página fica
-    // um degrau mais claro que ela e um abaixo do card -- e no escuro o card já
-    // é mais claro que o fundo, então a mesma regra vale nos dois temas.
+    // A cor da etapa banha a COLUNA num tom quase dissolvido, e os cards ficam
+    // brancos por cima. É o que dá o ar de aplicativo moderno sem virar confete:
+    // antes eram cinco barras chapadas de 4px disputando atenção com o conteúdo.
+    //
+    // Sem borda: o próprio tom já delimita. Borda somada a fundo tingido é o
+    // dobro de delimitação para o mesmo trabalho.
     <div
       ref={setNodeRef}
       role="list"
       aria-label={`Etapa ${stage.name}`}
-      className={`flex w-[264px] sm:w-[280px] shrink-0 flex-col rounded-xl border transition-colors ${
-        isOver ? "border-primary/30 bg-primary/5" : "border-border bg-card/50"
-      }`}
+      className={`flex w-[288px] shrink-0 flex-col rounded-2xl transition-colors sm:w-[300px] ${
+        isOver ? "ring-2 ring-primary/40" : ""
+      } ${tinta ? "" : "bg-primary/[0.05]"}`}
+      style={tinta ? { backgroundColor: tinta } : undefined}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
         <div className="flex min-w-0 items-center gap-2">
-          {/* A cor da etapa em 6px.
-              Era uma barra de largura total com 4px de altura, e cinco delas em
-              azul/roxo/laranja/vermelho/verde competiam com o conteúdo. Como
-              ponto, a cor identifica sem disputar atenção. */}
+          {/* A pílula é o gesto central do ClickUp: o nome da etapa DENTRO da
+              cor, em vez de a cor numa barra ao lado dele. */}
           <span
-            aria-hidden
-            className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ backgroundColor: stage.color || "hsl(var(--primary))" }}
-          />
-          <h3 className="truncate text-[13px] font-semibold leading-tight text-foreground">
+            className={`truncate rounded-lg px-2.5 py-1 text-[12px] font-semibold leading-none ${
+              cor ? "" : "bg-primary text-primary-foreground"
+            }`}
+            style={cor ? { backgroundColor: cor, color: corTexto } : undefined}
+          >
             {stage.name}
-          </h3>
+          </span>
+          {/* Contagem FORA da pílula, em texto simples -- também como no
+              ClickUp. Dentro, competiria com o nome. */}
+          <span className="shrink-0 text-[12px] font-medium text-muted-foreground">
+            {deals.length}
+          </span>
         </div>
-        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {deals.length}
-        </span>
+
+        {total > 0 && (
+          <span className="num shrink-0 text-[11px] tabular-nums text-muted-foreground">
+            {formatCurrency(total)}
+          </span>
+        )}
       </div>
 
-      <div className="border-b border-border/60 px-3 py-1.5">
-        <span className="num text-[11px] tabular-nums text-muted-foreground">
-          {formatCurrency(total)}
-        </span>
-      </div>
-
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto max-h-[calc(100vh-300px)] p-2">
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-2.5 pb-2.5 max-h-[calc(100vh-300px)]">
         {deals.map((deal) => (
           <DealCard
             key={deal.id}
             deal={deal}
-            stageColor={stage.color || undefined}
             onClick={() => onDealClick(deal)}
             onContactClick={onContactClick}
           />
@@ -268,17 +357,19 @@ function StageColumn({
         {/* Coluna vazia dizia apenas "+ Adicionar", e um quadro com quatro
             colunas assim não explica que dá para arrastar para dentro delas. */}
         {deals.length === 0 && (
-          <p className="py-8 text-center text-xs text-muted-foreground">
+          <p className="py-10 text-center text-xs text-muted-foreground">
             Arraste negócios para cá
           </p>
         )}
 
+        {/* Sem contorno tracejado: sobre fundo tingido ele virava uma terceira
+            moldura na mesma área. Texto e ícone bastam. */}
         <button
           onClick={() => onAddDeal(stage.id)}
           aria-label={`Adicionar negócio em ${stage.name}`}
-          className="flex items-center justify-center gap-1 rounded-md border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+          className="flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground"
         >
-          <Plus className="h-3 w-3" /> Adicionar
+          <Plus className="h-3.5 w-3.5" /> Adicionar
         </button>
       </div>
     </div>
@@ -373,7 +464,7 @@ function WonLostDropZone({
     <div
       ref={setNodeRef}
       aria-label={`Soltar para marcar como ${label}`}
-      className={`flex w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border transition-colors ${
+      className={`flex w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border transition-colors ${
         isOver
           ? "border-primary bg-primary/10"
           : "border-dashed border-border/60 bg-transparent"
@@ -461,7 +552,7 @@ export function DealsKanban({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-3 overflow-x-auto pb-4">
           {stages.map((stage) => (
             <StageColumn
               key={stage.id}
@@ -493,14 +584,8 @@ export function DealsKanban({
         {createPortal(
           <DragOverlay>
             {activeDeal && (
-              <div className="w-[264px] sm:w-[280px] cursor-grabbing">
-                <DealCardVisual
-                  deal={activeDeal}
-                  stageColor={
-                    stages.find((s) => s.id === activeDeal.stage_id)?.color || undefined
-                  }
-                  arrastando
-                />
+              <div className="w-[288px] sm:w-[300px] cursor-grabbing">
+                <DealCardVisual deal={activeDeal} arrastando />
               </div>
             )}
           </DragOverlay>,

@@ -159,9 +159,11 @@ describe("quadro e clone mostram o mesmo card", () => {
 
   it("a largura do clone acompanha a da coluna", () => {
     // Os dois valores têm de casar, senão o clone tem tamanho diferente do card.
-    expect(codigo).toContain("w-[264px] sm:w-[280px]");
-    const ocorrencias = codigo.match(/w-\[264px\] sm:w-\[280px\]/g) ?? [];
-    expect(ocorrencias.length).toBeGreaterThanOrEqual(2);
+    // Já esteve dessincronizado: o overlay tinha w-[220px] fixo enquanto a
+    // coluna já ia a sm:w-[240px].
+    // Cada largura tem de aparecer duas vezes: uma na coluna, uma no clone.
+    expect((codigo.match(/w-\[288px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((codigo.match(/w-\[300px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -181,23 +183,51 @@ describe("o clique no nome da pessoa não vaza para o card", () => {
 });
 
 describe("a cor da etapa continua vindo do banco", () => {
-  it("o card usa stage.color na borda", () => {
-    expect(codigo).toContain("borderLeftColor: stageColor");
+  it("a coluna consome stage.color", () => {
+    expect(codigo).toContain("const cor = stage.color");
   });
 
-  it("o cabeçalho da coluna usa stage.color", () => {
-    expect(codigo).toContain("backgroundColor: stage.color");
+  /**
+   * A cor banha a coluna num tom dissolvido e preenche a pílula do cabeçalho.
+   * Nenhum dos dois pode sair de classe Tailwind: o compilador não gera classe
+   * para valor que só existe em runtime.
+   */
+  it("o tom da coluna e a pílula usam a cor por style inline", () => {
+    expect(codigo).toContain("tintaDaColuna(");
+    expect(codigo).toContain("backgroundColor: tinta");
+    expect(codigo).toContain("backgroundColor: cor");
+  });
+
+  /**
+   * O usuário escolhe a cor da etapa livremente. Branco sobre amarelo é
+   * ilegível, então o texto da pílula é decidido pela luminância da cor.
+   */
+  it("o texto da pílula respeita a luminância da cor escolhida", () => {
+    expect(codigo).toContain("textoSobre(");
+    expect(codigo).toMatch(/0\.2126 \* r \+ 0\.7152 \* g \+ 0\.0722 \* b/);
+  });
+
+  it("etapa sem cor cai no token, não numa cor fixa", () => {
+    expect(codigo).toContain("bg-primary text-primary-foreground");
+    expect(codigo).toContain("bg-primary/[0.05]");
   });
 
   /**
    * A cor de destaque é trocável em tempo de execução (ThemeContext sobrescreve
-   * --primary). Teal fixo quebraria a escolha do usuário, e os hex --vx-* não
-   * têm valores para o tema escuro.
+   * --primary), e os hex --vx-* do projeto não têm valores para o tema escuro:
+   * usá-los aqui quebraria o modo escuro em silêncio.
+   *
+   * As duas únicas cores literais permitidas são o par de contraste do texto da
+   * pílula, que existe justamente porque a cor de fundo é imprevisível.
    */
-  it("o fallback é o token, não um teal fixo", () => {
-    expect(codigo).toContain('"hsl(var(--primary))"');
-    expect(codigo).not.toMatch(/#00[0-9a-f]{4}/i);
+  it("não usa os hex --vx-, que não têm versão escura", () => {
     expect(codigo).not.toContain("var(--vx-");
+  });
+
+  it("as únicas cores literais são o par de contraste do texto", () => {
+    const literais = codigo.match(/#[0-9a-f]{3,8}\b/gi) ?? [];
+    expect(literais).toEqual(["#ffffff"]);
+    expect(codigo).toContain("hsl(213 41% 10%)");
   });
 });
 
