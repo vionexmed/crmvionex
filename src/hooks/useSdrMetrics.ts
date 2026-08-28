@@ -103,7 +103,18 @@ export type MetricKey =
 
 export type MetricValue = { value: number | null; previous: number | null };
 
-export type SdrMetrics = { metrics: Record<MetricKey, MetricValue> };
+export type SdrMetrics = {
+  metrics: Record<MetricKey, MetricValue>;
+  /**
+   * Contatos DISTINTOS abordados nos três canais, no período.
+   *
+   * Fica fora de `metrics` de propósito: não é um tile próprio, é o segundo
+   * número do card de abordagens. Virar MetricKey exigiria rótulo, ícone,
+   * comparação com período anterior e lugar na grade -- tudo para um número que
+   * só existe ao lado de outro.
+   */
+  pessoasAbordadas: number | null;
+};
 
 /** Métricas sem nenhuma fonte de dado no banco hoje. Sempre null. */
 const SEM_FONTE: MetricKey[] = [
@@ -121,6 +132,8 @@ const SEM_COMPARACAO: MetricKey[] = ["aguardandoHumano"];
 type SdrMetricsRow = {
   leads_recebidos: number;
   abordagens: number;
+  /** Contatos DISTINTOS abordados nos três canais. Ver o card de abordagens. */
+  pessoas_abordadas: number;
   taxa_entrega: number | null;
   taxa_resposta: number | null;
   conversas_iniciadas: number;
@@ -190,7 +203,7 @@ export function useSdrMetrics(period: SdrPeriod) {
 
       for (const key of SEM_FONTE) metrics[key] = { value: null, previous: null };
 
-      return { metrics };
+      return { metrics, pessoasAbordadas: atual?.pessoas_abordadas ?? null };
     },
   });
 }

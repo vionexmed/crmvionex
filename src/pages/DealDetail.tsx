@@ -253,6 +253,13 @@ export default function DealDetail() {
       {
         org_id: orgId,
         deal_id: deal.id,
+        // O contato TAMBÉM, e é a correção do "Sem lead vinculado" no painel.
+        //
+        // Só `deal_id` era gravado, então o drill-down -- que junta por
+        // `contact_id` -- não achava a pessoa e rotulava toda linha como sem
+        // lead. O negócio já sabe de quem é; deixar o campo vazio era jogar fora
+        // informação que estava na mão.
+        contact_id: deal.contact_id,
         type: activityForm.type,
         title: activityForm.title,
         body: activityForm.body,

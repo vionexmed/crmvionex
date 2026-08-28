@@ -44,13 +44,24 @@ export const ATIVIDADE_ROTULO: Record<ActivityType, string> = {
   task: "Tarefa",
 };
 
-/** Cor do ícone. Só Activities.tsx tinha isto; agora todos podem usar. */
+/**
+ * Cor do ícone, em token semântico.
+ *
+ * Eu escrevi este mapa com paleta fixa do Tailwind (`text-emerald-600`,
+ * `text-blue-600`, `text-amber-600`, `text-violet-600`) -- justamente no módulo
+ * criado para acabar com divergência. Cor fixa não tem variante escura: no tema
+ * escuro elas ficam com contraste errado, e nenhuma reage à cor de destaque que o
+ * usuário escolhe em Configurações.
+ *
+ * A distinção fina entre os cinco tipos é do ÍCONE, não da cor -- por isso não
+ * inventei token novo só para diferenciar nota de tarefa.
+ */
 export const ATIVIDADE_COR: Record<ActivityType, string> = {
-  call: "text-emerald-600",
-  email: "text-blue-600",
-  meeting: "text-amber-600",
+  call: "text-success",
+  email: "text-primary",
+  meeting: "text-warning",
   note: "text-muted-foreground",
-  task: "text-violet-600",
+  task: "text-foreground",
 };
 
 /**

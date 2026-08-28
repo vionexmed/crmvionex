@@ -196,9 +196,23 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies, members }
 
   const addActivity = async () => {
     if (!orgId || !contact || !activityForm.title) return;
+    // O negócio ABERTO da pessoa, quando há um só.
+    //
+    // Gravava apenas `contact_id`, então a atividade não aparecia no card do
+    // kanban -- que junta por `deal_id`. Era o espelho do defeito de DealDetail,
+    // que gravava só `deal_id` e sumia do painel.
+    //
+    // Só vincula quando não há ambiguidade: com dois negócios abertos, escolher
+    // um seria adivinhar, e adivinhar errado é pior que deixar sem vínculo. O
+    // gatilho de entrada garante um negócio por contato, então o caso comum é
+    // exatamente um.
+    const abertos = deals.filter((d) => d.status === "open");
+    const negocioUnico = abertos.length === 1 ? abertos[0].id : null;
+
     await supabase.from("activities").insert({
       org_id: orgId, contact_id: contact.id, type: activityForm.type,
       title: activityForm.title, body: activityForm.body, user_id: user?.id,
+      deal_id: negocioUnico,
       // Mesma correção de DealDetail.addActivity: este formulário registra o que
       // aconteceu (não tem campo de prazo), e sem completed_at a ligação não era
       // contada em "Abordagens realizadas" e ficava pendente para sempre na tela

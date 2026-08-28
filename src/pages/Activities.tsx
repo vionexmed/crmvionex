@@ -36,6 +36,7 @@ import { useAllContacts } from "@/hooks/queries/useContacts";
 import { useCompanies } from "@/hooks/queries/useCompanies";
 import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
+import { ATIVIDADE_JA_ACONTECEU } from "@/lib/atividade-tipos";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -688,6 +689,22 @@ function ActivityCreateEditModal({ open, onOpenChange, activity, contacts, compa
       user_id: assignee !== "none" ? assignee : user?.id,
     };
 
+    // Sem prazo = registro do que aconteceu. Com prazo = agendamento.
+    //
+    // `ContactDrawer` e `DealDetail` marcam conclusão sempre, porque os
+    // formulários deles NÃO têm campo de prazo -- são só registro. Aqui existe
+    // prazo, então a ausência dele é o sinal, e a regra fica mais precisa em vez
+    // de mais frouxa.
+    //
+    // Sem isto, a mesma ligação caía em dias diferentes conforme por onde fosse
+    // registrada: aqui ficava pendente para sempre e nunca contava em
+    // "Abordagens realizadas"; nas outras duas telas contava na hora.
+    //
+    // Só na CRIAÇÃO. Editar uma atividade não pode marcá-la concluída em
+    // silêncio -- a conclusão é do checkbox, e é decisão de quem clica.
+    const criandoRegistro =
+      !isEdit && !dueDate && ATIVIDADE_JA_ACONTECEU.includes(type);
+
     if (isEdit) {
       updateActivity.mutate(
         { id: activity!.id, activity: payload },
@@ -700,13 +717,19 @@ function ActivityCreateEditModal({ open, onOpenChange, activity, contacts, compa
         }
       );
     } else {
-      createActivity.mutate(payload, {
-        onSuccess: () => {
-          onOpenChange(false);
-          toast({ title: "Atividade criada" });
+      createActivity.mutate(
+        criandoRegistro
+          ? { ...payload, completed_at: new Date().toISOString() }
+          : payload,
+        {
+          onSuccess: () => {
+            onOpenChange(false);
+            toast({ title: "Atividade criada" });
+          },
+          onError: (err: Error) =>
+            toast({ title: "Erro", description: err.message, variant: "destructive" }),
         },
-        onError: (err: Error) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
-      });
+      );
     }
   };
 

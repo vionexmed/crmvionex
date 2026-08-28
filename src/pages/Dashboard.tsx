@@ -94,7 +94,7 @@ const GROUPS: Group[] = [
     tiles: [
       {
         key: "abordagens", label: "Abordagens realizadas", icon: Send, accent: "primary", href: "/activities", drilldown: "abordagens",
-        hint: "Toda tentativa de contato no período: ligação, reunião e e-mail registrados como atividade, mais e-mails e mensagens de WhatsApp enviados. Inclui automático e manual — hoje é tudo manual.",
+        hint: "Abordagens que de fato aconteceram: atividade concluída (pela data da conclusão), e-mail que saiu, e mensagem de WhatsApp aceita pela Meta. Agendada e não feita não conta, e tentativa que falhou também não.",
       },
       {
         key: "taxaEntrega", label: "Taxa de entrega", icon: CheckCheck, accent: "success", format: "percent",
@@ -116,11 +116,11 @@ const GROUPS: Group[] = [
     tiles: [
       {
         key: "reunioes", label: "Reuniões geradas", icon: CalendarCheck, accent: "primary", href: "/activities",
-        hint: "Atividades do tipo reunião criadas no período. Depende de alguém registrar: nada cria reunião automaticamente e não há integração de agenda.",
+        hint: "Reuniões concluídas no período, pela data da conclusão. Depende de alguém registrar: nada cria reunião automaticamente e não há integração de agenda.",
       },
       {
         key: "oportunidades", label: "Oportunidades geradas", icon: Briefcase, accent: "primary", href: "/deals", drilldown: "oportunidades",
-        hint: "Negócios criados no período, por data de criação.",
+        hint: "Negócios que SAÍRAM da etapa de entrada. Como todo contato passa a entrar no funil automaticamente, estar nele é o padrão — o feito é ter avançado. Estar no funil não conta como oportunidade.",
       },
       {
         key: "vendasSdr", label: "Vendas originadas pelo SDR", icon: Trophy, accent: "success", href: "/deals",
@@ -177,6 +177,7 @@ export default function Dashboard() {
   const { data, isFetching, isLoading, dataUpdatedAt, error } = useSdrMetrics(period);
   const { data: charts, isLoading: loadingCharts } = useSdrCharts(period);
   const metrics = data?.metrics;
+  const pessoasAbordadas = data?.pessoasAbordadas ?? null;
 
   const lastRefresh = useMemo(
     () => (dataUpdatedAt ? new Date(dataUpdatedAt) : null),
@@ -293,6 +294,13 @@ export default function Dashboard() {
                   accent={tile.accent}
                   href={tile.href}
                   hint={tile.hint}
+                  // Toques E pessoas no mesmo card. Só em abordagens: é a única
+                  // métrica onde a diferença entre evento e gente confunde.
+                  secundario={
+                    tile.key === "abordagens"
+                      ? { valor: pessoasAbordadas, rotulo: "pessoas" }
+                      : undefined
+                  }
                   trend={trendDe(tile.key)}
                   onCardClick={tile.drilldown ? () => setPainelDe(tile.drilldown!) : undefined}
                   drilldown={

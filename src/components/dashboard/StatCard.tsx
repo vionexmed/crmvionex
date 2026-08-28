@@ -40,6 +40,16 @@ export interface StatCardProps {
   href?: string;
   /** Explicação/ressalva mostrada no ícone de informação. */
   hint?: string;
+  /**
+   * Segundo número, na mesma linha do principal.
+   *
+   * Existe porque "Abordagens realizadas" conta EVENTOS -- 1 ligação + 1 e-mail
+   * para a mesma pessoa dão 2 -- e lido sozinho parece contagem de gente. Os dois
+   * números medem coisas diferentes e úteis: toques dizem quanto o time produziu,
+   * pessoas dizem quantas portas foram batidas. Mostrar só um obriga a escolher
+   * qual pergunta o painel responde.
+   */
+  secundario?: { valor: number | null; rotulo: string };
   /** Métrica sem fonte de dado no banco — mostra selo e apaga o tile. */
   noSource?: boolean;
   /** Métrica de fila (valor "agora"), sem comparação com período anterior. */
@@ -128,6 +138,7 @@ export function StatCard({
   accent = "primary",
   href,
   hint,
+  secundario,
   noSource = false,
   noComparison = false,
   trend,
@@ -201,6 +212,18 @@ export function StatCard({
               {value === null ? "—" : formatValue(value, format)}
             </span>
           );
+
+          if (secundario && secundario.valor !== null && value !== null) {
+            const comSecundario = (
+              <span className="flex items-baseline gap-1.5">
+                {valor}
+                <span className="text-[12px] font-medium text-muted-foreground">
+                  · {formatValue(secundario.valor, "number")} {secundario.rotulo}
+                </span>
+              </span>
+            );
+            return drilldown && !noSource ? drilldown(comSecundario) : comSecundario;
+          }
           // Sem fonte de dado não há linha para revelar — o "—" não é clicável.
           return drilldown && !noSource && value !== null ? drilldown(valor) : valor;
         })()}
