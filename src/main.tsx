@@ -13,13 +13,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
-// Apply saved theme
-const savedTheme = localStorage.getItem("fc-theme") || "light";
-if (savedTheme === "system") {
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  document.documentElement.classList.add(prefersDark ? "dark" : "light");
-} else {
-  document.documentElement.classList.add(savedTheme);
-}
+// O tema já foi aplicado pelo script inline no <head> do index.html -- ele roda
+// antes do primeiro paint, que é a única forma de não piscar. Aqui era tarde
+// demais, e ainda por cima este bloco ADICIONAVA a classe sem remover a que já
+// estava no HTML: com tema claro o documento ficava "dark light" ao mesmo tempo.
 
 createRoot(document.getElementById("root")!).render(<App />);

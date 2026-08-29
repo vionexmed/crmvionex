@@ -106,6 +106,40 @@
     --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.30), 0 2px 4px rgba(0, 0, 0, 0.18);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.20);
+
+    /* Os tokens --vx-* no tema escuro.
+     *
+     * Eles não tinham variante aqui, e o efeito era grande: a página de
+     * Marketing os consome 115 vezes e é a ÚNICA que os usa, então ela ignorava
+     * o tema escuro por inteiro. --vx-navy é #0A1E3D, quase preto: título
+     * invisível sobre fundo escuro.
+     *
+     * Duas regras nas conversões abaixo. Cor de TEXTO clareia, para manter
+     * contraste sobre fundo escuro. Cor de FUNDO (-bg) escurece muito e vira um
+     * tom saturado do próprio matiz, em vez do pastel claro -- pastel sobre
+     * escuro fica com aparência de erro de renderização.
+     *
+     * Corrigir aqui conserta as 115 chamadas sem tocar em nenhuma delas. */
+    --vx-navy: #E8EDF5;
+    --vx-teal: #22C3D6;
+    --vx-teal-light: #4DD5E6;
+    --vx-teal-bg: #0C2E33;
+    --vx-teal-border: #1B4A52;
+    --vx-grafite: #C9CED6;
+    --vx-text-2: #A8B2C1;
+    --vx-text-3: #7C8697;
+    --vx-green: #34D399;
+    --vx-green-bg: #0C2B20;
+    --vx-red: #F87171;
+    --vx-red-bg: #331414;
+    --vx-amber: #FBBF24;
+    --vx-amber-bg: #332512;
+    --vx-purple: #A78BFA;
+    --vx-purple-bg: #241A3D;
+    --vx-meta: #5B9CF8;
+    --vx-meta-bg: #14203A;
+    --vx-google: #F87171;
+    --vx-google-bg: #331414;
   }
 }
 
@@ -120,12 +154,20 @@
     -moz-osx-font-smoothing: grayscale;
     font-size: 13px;
   }
+  /* Título usa o token de texto, não uma cor própria.
+   *
+   * Era `hsl(217 72% 14%)` cravado, com uma regra `.dark` para compensar. Duas
+   * consequências: o título ignorava --foreground (então mudar o token não
+   * mudava o título), e quem escrevesse um <h1> dentro de superfície de outra
+   * cor tinha de sobrescrever à mão.
+   *
+   * O par claro/escuro já existe em --foreground -- a regra .dark deixou de ser
+   * necessária. */
   h1, h2, h3, h4 {
     font-family: 'Poppins', sans-serif;
     letter-spacing: -0.02em;
-    color: hsl(217 72% 14%);
+    color: hsl(var(--foreground));
   }
-  .dark h1, .dark h2, .dark h3, .dark h4 { color: hsl(0 0% 96%); }
 
   .font-mono, .tabular-nums { font-variant-numeric: tabular-nums; }
   .num {
@@ -152,16 +194,38 @@
 @layer components {
 
   /* ── Botão Primário com Gradiente ─────────────────────── */
+  /* Botão primário, derivado da cor de destaque escolhida.
+   *
+   * O teal estava cravado em cinco valores (dois gradientes e três sombras),
+   * então trocar a cor em Configurações mudava tudo MENOS o botão mais
+   * importante da tela. `color-mix` deriva as pontas do gradiente do próprio
+   * --primary, e a sombra usa o token com alfa -- assim a escolha do usuário
+   * chega até aqui. */
   .vx-btn-primary {
-    background: linear-gradient(135deg, hsl(187 100% 24%) 0%, hsl(187 97% 36%) 100%);
-    box-shadow: 0 1px 3px rgba(0, 123, 138, 0.30), inset 0 1px 0 rgba(255,255,255,0.10);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, hsl(var(--primary)) 88%, #000) 0%,
+      color-mix(in srgb, hsl(var(--primary)) 82%, #fff) 100%
+    );
+    box-shadow:
+      0 1px 3px hsl(var(--primary) / 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10);
     transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.1s ease;
   }
   .vx-btn-primary:hover {
-    background: linear-gradient(135deg, hsl(187 100% 20%) 0%, hsl(187 97% 30%) 100%);
-    box-shadow: 0 3px 10px rgba(0, 123, 138, 0.40), inset 0 1px 0 rgba(255,255,255,0.08);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, hsl(var(--primary)) 74%, #000) 0%,
+      color-mix(in srgb, hsl(var(--primary)) 92%, #000) 100%
+    );
+    box-shadow:
+      0 3px 10px hsl(var(--primary) / 0.40),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
-  .vx-btn-primary:active { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,123,138,0.25); }
+  .vx-btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 4px hsl(var(--primary) / 0.25);
+  }
 
   /* ── Cards com Sombra e Hover ─────────────────────────── */
   .vx-card {

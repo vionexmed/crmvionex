@@ -12,6 +12,11 @@ export function AppearanceTab() {
   ];
 
   const accents = [
+    // Teal primeiro, e é correção: a cor OFICIAL da marca e o padrão do
+    // ThemeContext estava ausente desta lista. Quem trocasse para outra cor não
+    // tinha como voltar pela interface -- só limpando o armazenamento do
+    // navegador.
+    { value: "teal", label: "Teal", color: "hsl(187, 100%, 27%)" },
     { value: "blue", label: "Azul", color: "hsl(221, 83%, 53%)" },
     { value: "violet", label: "Violeta", color: "hsl(262, 83%, 58%)" },
     { value: "emerald", label: "Esmeralda", color: "hsl(160, 84%, 39%)" },

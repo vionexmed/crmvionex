@@ -58,7 +58,6 @@ export default defineConfig(({ mode }) => {
         "lucide-react",
         "date-fns",
         "date-fns/locale",
-        "sonner",
         "cmdk",
         "react-markdown",
         "canvas-confetti",
@@ -68,8 +67,6 @@ export default defineConfig(({ mode }) => {
         "clsx",
         "tailwind-merge",
         "@dnd-kit/core",
-        "@dnd-kit/sortable",
-        "@dnd-kit/utilities",
         // Radix: cada primitivo é um pacote, e cada um descoberto tarde
         // dispara uma re-otimização.
         "@radix-ui/react-avatar", "@radix-ui/react-checkbox", "@radix-ui/react-dialog",

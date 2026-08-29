@@ -1,11 +1,39 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VIONEX — CRM B2B Inteligente</title>
     <meta name="description" content="VIONEX é um CRM B2B completo para gerenciar contatos, empresas, negócios e atividades de vendas.">
     <link rel="icon" type="image/png" href="/favicon.png">
+
+    <!--
+      Tema aplicado ANTES do primeiro paint.
+
+      O <html> vinha com class="dark" cravada e o main.tsx apenas ADICIONAVA a
+      classe salva, sem remover -- então com tema claro o documento ficava com
+      "dark" e "light" ao mesmo tempo, e a página renderizava escura até o React
+      montar e o ThemeContext limpar as duas.
+
+      Este script roda de forma síncrona no <head>, antes de qualquer pixel, e é
+      a única forma de não piscar. Fica inline de propósito: um arquivo externo
+      já chegaria tarde demais.
+    -->
+    <script>
+      (function () {
+        try {
+          var salvo = localStorage.getItem("fc-theme") || "light";
+          var escuro =
+            salvo === "dark" ||
+            (salvo === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.add(escuro ? "dark" : "light");
+        } catch (e) {
+          // Navegador com armazenamento bloqueado: cai no claro, que é o padrão.
+          document.documentElement.classList.add("light");
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
