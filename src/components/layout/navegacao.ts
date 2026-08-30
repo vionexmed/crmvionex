@@ -1,7 +1,7 @@
 import {
-  Activity, AlertTriangle, BarChart3, Building2, CheckSquare, FileText, Handshake,
-  Inbox, LayoutDashboard, Mail, Megaphone, MessageSquare, Plug, Settings, Shield,
-  Target, TrendingUp, UserPlus, Users, Zap,
+  Activity, AlertTriangle, BarChart3, Building2, FileText, Handshake,
+  Inbox, LayoutDashboard, Mail, MessageSquare, Plug, Settings, Shield,
+  Target, TrendingUp, UserPlus, Users, UsersRound, Zap,
 } from "lucide-react";
 
 /**
@@ -29,33 +29,30 @@ export type GrupoNav = { label: string; items: ItemNav[] };
 
 export const NAV_GRUPOS: GrupoNav[] = [
   {
-    // Antes chamava "Principal", igual ao grupo de baixo -- dois blocos
-    // seguidos com o mesmo título. Estes dois são fila de trabalho: o que
-    // precisa de alguém agora, com contagem.
-    label: "Atenção",
+    // O que se faz. Painel para ver, Leads para atender, Atividades para
+    // registrar -- os três destinos de quem abre o CRM para trabalhar.
+    label: "Trabalho",
     items: [
+      { title: "Painel", url: "/dashboard", icon: LayoutDashboard, noCelular: true },
       { title: "Leads", url: "/leads", icon: UserPlus },
+      { title: "Atividades", url: "/activities", icon: Activity, noCelular: true },
     ],
   },
   {
-    label: "Principal",
+    // O que se guarda. Antes chamava "Principal", que não descrevia nada -- e
+    // convivia com um grupo "Atenção" de um item só.
+    label: "Registros",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, noCelular: true },
       { title: "Contatos", url: "/contacts", icon: Users, noCelular: true },
       { title: "Empresas", url: "/companies", icon: Building2 },
       { title: "Negócios", url: "/deals", icon: Handshake, noCelular: true },
-      { title: "Atividades", url: "/activities", icon: Activity, noCelular: true },
-      // Tarefas é o filtro `tipo=task` de Atividades, não uma tela própria.
-      // Eram duas telas fazendo a MESMA consulta, e os filtros de data de
-      // Atividades já eram superconjunto dos de Tarefas.
-      { title: "Tarefas", url: "/activities?tipo=task", icon: CheckSquare },
     ],
   },
   {
     label: "Atendimento",
     items: [
-      // Os dois CANAIS de atendimento, em paralelo: WhatsApp e e-mail.
-      // Cada pessoa vê só a própria caixa — a RLS impede ver a do colega.
+      // Os dois CANAIS, em paralelo. Cada pessoa vê só a própria caixa — a RLS
+      // impede ver a do colega.
       { title: "WhatsApp", url: "/conversations", icon: MessageSquare },
       { title: "E-mail", url: "/inbox", icon: Inbox },
       { title: "Templates", url: "/email-templates", icon: FileText, adminOnly: true },
@@ -63,33 +60,35 @@ export const NAV_GRUPOS: GrupoNav[] = [
     ],
   },
   {
-    label: "Marketing",
+    // Era "Analytics", e continha Automações e Lead Scoring -- que não são
+    // analytics. "Análise" descreve o que os quatro têm em comum: olhar para
+    // trás, ou fazer o sistema agir sozinho a partir do que se viu.
+    label: "Análise",
     items: [
-      { title: "Visão Geral", url: "/marketing/visao-geral", icon: Megaphone, adminOnly: true },
-    ],
-  },
-  {
-    label: "Analytics",
-    items: [
+      { title: "Relatórios", url: "/reports", icon: BarChart3 },
       { title: "Metas", url: "/sales-goals", icon: Target },
       { title: "Lead Scoring", url: "/lead-scoring", icon: TrendingUp, adminOnly: true },
-      { title: "Relatórios", url: "/reports", icon: BarChart3 },
       { title: "Automações", url: "/automations", icon: Zap, adminOnly: true },
     ],
   },
-  {
-    label: "Admin",
-    items: [
-      // Todo mundo vê quem é da equipe; só admin consegue alterar.
-      { title: "Equipe", url: "/team", icon: Users },
-      // Abas de empresa só aparecem para admin dentro da própria página.
-      { title: "Configurações", url: "/settings", icon: Settings },
-      // Conectar a conta é configuração pessoal, não operação de atendimento.
-      { title: "Conectar e-mail", url: "/settings/email", icon: Mail },
-      { title: "Integrações", url: "/settings/integrations", icon: Plug, adminOnly: true },
-      { title: "Segurança", url: "/settings/security", icon: Shield, adminOnly: true },
-    ],
-  },
+];
+
+/**
+ * Configuração, no menu da conta em vez de na navegação.
+ *
+ * Eram cinco itens ocupando um sexto do menu lateral -- e configuração não é
+ * destino de trabalho: ninguém abre o CRM para ir em Segurança. Linear e Attio
+ * fazem assim, e o rodapé da lateral já tinha o avatar e o nome da pessoa.
+ *
+ * Não some nada: as cinco continuam sendo páginas inteiras, com as mesmas
+ * rotas. Muda de onde se chega nelas.
+ */
+export const MENU_DA_CONTA: ItemNav[] = [
+  { title: "Equipe", url: "/team", icon: UsersRound },
+  { title: "Configurações", url: "/settings", icon: Settings },
+  { title: "Conectar e-mail", url: "/settings/email", icon: Mail },
+  { title: "Integrações", url: "/settings/integrations", icon: Plug, adminOnly: true },
+  { title: "Segurança", url: "/settings/security", icon: Shield, adminOnly: true },
 ];
 
 /** Ícone do painel de risco, que é botão e não rota — por isso fica fora. */
@@ -105,7 +104,13 @@ export const ABAS_CELULAR: ItemNav[] = NAV_GRUPOS.flatMap((g) => g.items).filter
  * que é o que faltava para os 13 sumirem.
  */
 export function gruposDoMenuMais(isAdmin: boolean): GrupoNav[] {
-  return NAV_GRUPOS
+  return [
+    ...NAV_GRUPOS,
+    // No celular não existe rodapé de lateral -- o menu da conta vive lá. Sem
+    // esta linha, as cinco telas de configuração ficariam inalcançáveis no
+    // celular, que é exatamente o defeito que este arquivo existe para impedir.
+    { label: "Conta", items: MENU_DA_CONTA },
+  ]
     .map((g) => ({
       ...g,
       items: g.items.filter((i) => !i.noCelular && (isAdmin || !i.adminOnly)),

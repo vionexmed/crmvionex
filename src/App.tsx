@@ -203,6 +203,11 @@ const App = () => (
                   <Route path="/email-sequences" element={<SuspenseRoute><EmailSequences /></SuspenseRoute>} />
                   <Route path="/lead-scoring" element={<SuspenseRoute><LeadScoring /></SuspenseRoute>} />
                   <Route path="/automations" element={<SuspenseRoute><Automations /></SuspenseRoute>} />
+                  {/* Marketing continua ACESSÍVEL, só saiu da navegação: seis
+                      cartões dela não têm fonte de dado e o painel do Google
+                      está zerado no código. Uma tela que mostra zeros sem
+                      explicar por quê ensina a desconfiar dos números do
+                      resto. Volta ao menu quando as integrações existirem. */}
                   <Route path="/marketing" element={<SuspenseRoute><Marketing /></SuspenseRoute>}>
                     <Route path="visao-geral" element={<SuspenseRoute><MarketingOverview /></SuspenseRoute>} />
                   </Route>

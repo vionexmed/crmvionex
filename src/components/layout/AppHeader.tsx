@@ -4,6 +4,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NotificationBell } from "@/components/crm/NotificationBell";
 import { AIInsightsPanel } from "@/components/crm/AIInsightsPanel";
 import { Button } from "@/components/ui/button";
+import { NAV_GRUPOS, MENU_DA_CONTA } from "@/components/layout/navegacao";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -11,30 +12,24 @@ import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-const routeLabels: Record<string, string> = {
-  "/": "Dashboard",
-  "/dashboard": "Dashboard",
-  "/leads": "Leads",
-  "/contacts": "Contatos",
-  "/companies": "Empresas",
-  "/deals": "Negócios",
-  "/activities": "Atividades",
-  "/tasks": "Tarefas",
-  "/conversations": "WhatsApp",
-  "/inbox": "E-mail",
-  "/settings/email": "Conectar e-mail",
-  "/email-templates": "Templates de Email",
-  "/email-sequences": "Sequências de Email",
-  "/lead-scoring": "Lead Scoring",
-  "/reports": "Relatórios",
-  "/automations": "Automações",
-  "/sales-goals": "Metas de Vendas",
-  "/team": "Equipe",
-  "/settings": "Configurações",
-  "/settings/integrations": "Integrações",
-  "/settings/security": "Segurança",
-  "/marketing/visao-geral": "Marketing",
-};
+/**
+ * O rótulo de cada rota, derivado da navegação.
+ *
+ * Havia um `ROTULO_DA_ROTA` escrito à mão aqui -- uma TERCEIRA lista de destinos,
+ * depois da lateral e da barra do celular. E já tinha divergido: continha
+ * `/tasks`, que virou redirecionamento, e "Templates de Email" e "Sequências de
+ * Email", renomeados para "de e-mail" há dois commits.
+ *
+ * É a mesma divergência que existia entre lateral e celular, e que `NAV_GRUPOS`
+ * resolveu. O cabeçalho estava de fora.
+ */
+const ROTULO_DA_ROTA: Record<string, string> = Object.fromEntries(
+  [...NAV_GRUPOS.flatMap((g) => g.items), ...MENU_DA_CONTA].map((i) => [
+    // A query string não faz parte do caminho.
+    i.url.split("?")[0],
+    i.title,
+  ]),
+);
 
 interface AppHeaderProps {
   onOpenSearch: () => void;
@@ -52,16 +47,18 @@ export function AppHeader({ onOpenSearch, actions }: AppHeaderProps) {
     { label: "Nova Atividade", icon: ClipboardList, path: "/activities?action=new" },
   ];
 
-  const parts: { label: string; href?: string }[] = [{ label: "VIONEX", href: "/" }];
+    // `/` é o LOGIN. O primeiro elo do caminho mandava quem já estava autenticado
+  // para a tela de entrada -- o mesmo defeito que NotFound e Setup tinham.
+  const parts: { label: string; href?: string }[] = [{ label: "VIONEX", href: "/dashboard" }];
 
   if (location.pathname.startsWith("/deals/") && location.pathname !== "/deals") {
     parts.push({ label: "Negócios", href: "/deals" });
     parts.push({ label: "Detalhe" });
   } else if (location.pathname.startsWith("/settings/")) {
     parts.push({ label: "Configurações", href: "/settings" });
-    parts.push({ label: routeLabels[location.pathname] || "Página" });
+    parts.push({ label: ROTULO_DA_ROTA[location.pathname] || "Página" });
   } else {
-    const label = routeLabels[location.pathname] || "Página";
+    const label = ROTULO_DA_ROTA[location.pathname] || "Página";
     parts.push({ label });
   }
 

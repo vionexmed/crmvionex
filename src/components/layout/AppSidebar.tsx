@@ -13,12 +13,19 @@ import { AtRiskPanel } from "@/components/crm/AtRiskPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { LEAD_STAGES } from "@/lib/contact-options";
-import { NAV_GRUPOS, ICONE_RISCO } from "./navegacao";
+import { NAV_GRUPOS, ICONE_RISCO, MENU_DA_CONTA } from "./navegacao";
+import { MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const navigate = useNavigate();
   const { profile, signOut, isAdmin } = useAuth();
   const { orgId } = useOrg();
 
@@ -166,13 +173,33 @@ export function AppSidebar() {
                     {profile?.email}
                   </span>
                 </div>
-                <button
-                  onClick={signOut}
-                  className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
-                  aria-label="Sair"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                </button>
+                {/* O menu da conta. Antes aqui só havia o botão de sair, e as
+                    cinco telas de configuração ocupavam um sexto do menu
+                    lateral -- sendo que ninguém abre o CRM para ir em
+                    Segurança. */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      aria-label="Conta e configurações"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" side="top" className="w-52">
+                    {MENU_DA_CONTA.filter((i) => isAdmin || !i.adminOnly).map((item) => (
+                      <DropdownMenuItem key={item.url} onClick={() => navigate(item.url)} className="gap-2">
+                        <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {item.title}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut} className="gap-2 text-destructive focus:text-destructive">
+                      <LogOut className="h-4 w-4 shrink-0" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>

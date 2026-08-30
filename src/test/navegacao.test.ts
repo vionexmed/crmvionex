@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { NAV_GRUPOS, ABAS_CELULAR, gruposDoMenuMais } from "@/components/layout/navegacao";
+import { NAV_GRUPOS, ABAS_CELULAR, MENU_DA_CONTA, gruposDoMenuMais } from "@/components/layout/navegacao";
 
 const APP = readFileSync("src/App.tsx", "utf8");
 
@@ -59,7 +59,11 @@ describe("o celular alcança tudo o que a lateral alcança", () => {
    * uma com a outra, e a diferença cresceu até 13.
    */
   it.each([true, false])("admin=%s: nenhum destino fica de fora", (isAdmin) => {
-    const naLateral = NAV_GRUPOS.flatMap((g) =>
+    // `MENU_DA_CONTA` conta como "alcançável no computador": vive no rodapé da
+    // lateral. No celular não há rodapé, então ele precisa aparecer no menu
+    // "Mais" -- e sem incluí-lo aqui, as cinco telas de configuração sumiriam
+    // do celular sem nada acusar.
+    const naLateral = [...NAV_GRUPOS, { label: "Conta", items: MENU_DA_CONTA }].flatMap((g) =>
       g.items.filter((i) => isAdmin || !i.adminOnly).map((i) => i.url),
     );
     const noCelular = new Set([
@@ -142,5 +146,102 @@ describe("as rotas que mandam para a raiz querem mesmo o login", () => {
     expect(modal).toMatch(/get\("configurar"\) === "1"/);
     // Sem o `&& !pedido`, quem já concluiu o onboarding não conseguiria reabrir.
     expect(modal).toMatch(/onboarding_completed && !pedido/);
+  });
+});
+
+describe("configuração sai da navegação sem sumir", () => {
+  /**
+   * Eram cinco itens ocupando um sexto do menu lateral — e configuração não é
+   * destino de trabalho: ninguém abre o CRM para ir em Segurança. Foram para o
+   * menu da conta, no rodapé da lateral, que é onde Linear e Attio as põem.
+   *
+   * O plano previa fundi-las em abas de Configurações. **Não procede**:
+   * Integrações tem seis abas próprias e Segurança duas — fundir faria uma tela
+   * de quinze abas, que é pior que o problema. Verifiquei antes de mexer, e é a
+   * quarta vez que uma dessas "X é aba de Y" não se sustenta.
+   */
+  it("as cinco continuam sendo rotas de verdade", () => {
+    for (const item of MENU_DA_CONTA) {
+      const caminho = item.url.split("?")[0];
+      const existe = ROTAS.has(caminho) || ROTAS.has(caminho.split("/").pop()!);
+      expect(existe, `${item.url} não está no roteador`).toBe(true);
+    }
+  });
+
+  it("o rodapé da lateral as monta", () => {
+    const src = readFileSync("src/components/layout/AppSidebar.tsx", "utf8");
+    expect(src).toContain("MENU_DA_CONTA");
+    expect(src).toContain("DropdownMenu");
+  });
+
+  it("não estão duplicadas na navegação principal", () => {
+    const naNav = new Set(NAV_GRUPOS.flatMap((g) => g.items.map((i) => i.url)));
+    for (const item of MENU_DA_CONTA) {
+      expect(naNav.has(item.url), `${item.title} em dois lugares`).toBe(false);
+    }
+  });
+});
+
+describe("Marketing sai do menu mas continua acessível", () => {
+  /**
+   * Seis cartões dela não têm fonte de dado (`PendingDataCard`) e o painel do
+   * Google tem `Investido: 0, Conversões: 0` cravados no código. Uma tela que
+   * mostra zeros sem explicar por quê ensina a desconfiar dos números do resto
+   * do sistema.
+   */
+  it("não está na navegação", () => {
+    const destinos = [
+      ...NAV_GRUPOS.flatMap((g) => g.items.map((i) => i.url)),
+      ...MENU_DA_CONTA.map((i) => i.url),
+    ];
+    expect(destinos.filter((u) => u.includes("marketing"))).toEqual([]);
+  });
+
+  it("a rota continua existindo", () => {
+    // Sair do menu não é apagar: o trabalho feito para o Meta funciona.
+    expect(APP).toContain('path="/marketing"');
+  });
+});
+
+describe("a estrutura de grupos", () => {
+  /**
+   * Eram SEIS grupos, e dois deles com um item só — "Atenção" com Leads e
+   * "Marketing" com uma página. Um grupo de um item é um cabeçalho gastando
+   * uma linha para não agrupar nada.
+   *
+   * E "Analytics" continha Automações e Lead Scoring, que não são analytics.
+   */
+  it("quatro grupos, nenhum com menos de dois itens", () => {
+    expect(NAV_GRUPOS).toHaveLength(4);
+    for (const g of NAV_GRUPOS) {
+      expect(g.items.length, `grupo "${g.label}" com ${g.items.length} item`).toBeGreaterThan(1);
+    }
+  });
+
+  it("os nomes dizem o que o grupo tem", () => {
+    expect(NAV_GRUPOS.map((g) => g.label)).toEqual([
+      "Trabalho", "Registros", "Atendimento", "Análise",
+    ]);
+  });
+});
+
+describe("o cabeçalho não mantém lista própria", () => {
+  const HEADER = readFileSync("src/components/layout/AppHeader.tsx", "utf8");
+
+  /**
+   * Havia um `routeLabels` escrito à mão — uma TERCEIRA lista de destinos,
+   * depois da lateral e da barra do celular. E já tinha divergido: continha
+   * `/tasks`, que virou redirecionamento, e "Templates de Email", renomeado
+   * dois commits antes.
+   */
+  it("deriva de NAV_GRUPOS", () => {
+    expect(HEADER).toContain("NAV_GRUPOS");
+    expect(HEADER).not.toMatch(/const routeLabels/);
+  });
+
+  /** `/` é o Login — o mesmo defeito que NotFound e Setup tinham. */
+  it("o primeiro elo do caminho não leva ao login", () => {
+    expect(HEADER).not.toMatch(/label: "VIONEX", href: "\/"/);
+    expect(HEADER).toMatch(/label: "VIONEX", href: "\/dashboard"/);
   });
 });
