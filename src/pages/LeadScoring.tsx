@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LeadScoreBadge } from "@/components/crm/DealQualification";
+import { indexarPorId } from "@/lib/utils";
 
 type Contact = {
   id: string; first_name: string; last_name: string | null; email: string | null;
@@ -79,6 +80,9 @@ export default function LeadScoring() {
 
   const [tab, setTab] = useState<Tab>("scoring");
   const [contacts, setContacts] = useState<Contact[]>([]);
+  // Histórico × contatos: os dois crescem. O histórico é a tabela que mais
+  // cresce aqui -- uma linha por evento de pontuação, por contato.
+  const porContato = useMemo(() => indexarPorId(contacts), [contacts]);
   const [rules, setRules] = useState<ScoringRule[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [history, setHistory] = useState<ScoreHistory[]>([]);
@@ -540,7 +544,7 @@ export default function LeadScoring() {
               </TableHeader>
               <TableBody>
                 {filteredHistory.map((h) => {
-                  const c = contacts.find((c) => c.id === h.contact_id);
+                  const c = h.contact_id ? porContato.get(h.contact_id) : undefined;
                   const isPositive = h.points > 0;
                   return (
                     <TableRow key={h.id}>

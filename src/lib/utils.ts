@@ -18,3 +18,30 @@ export function initials(name?: string | null): string {
   if (termos.length === 1) return termos[0].charAt(0).toUpperCase();
   return (termos[0].charAt(0) + termos[termos.length - 1].charAt(0)).toUpperCase();
 }
+
+/**
+ * Indexa uma lista por id, para consulta em tempo constante.
+ *
+ * O projeto tinha 22 lugares com `.find()` DENTRO de `.map()` -- para cada
+ * negócio, varrer a lista de etapas; para cada contato, varrer a de empresas.
+ * Isso é O(n×m), e roda a cada render, não só quando os dados mudam.
+ *
+ * Onde os dois lados crescem -- contatos × empresas, inscrições × contatos,
+ * histórico × contatos -- é O(n²) de verdade: mil contatos e mil empresas dão um
+ * milhão de comparações por render.
+ *
+ * Sempre dentro de `useMemo`: construir o índice a cada render trocaria uma
+ * varredura por outra.
+ */
+export function indexarPorId<T extends { id: string }>(itens: readonly T[] | null | undefined): Map<string, T> {
+  const indice = new Map<string, T>();
+  for (const item of itens ?? []) indice.set(item.id, item);
+  return indice;
+}
+
+/** Como `indexarPorId`, mas para chave que não se chama `id`. */
+export function indexarPor<T, K>(itens: readonly T[] | null | undefined, chave: (item: T) => K): Map<K, T> {
+  const indice = new Map<K, T>();
+  for (const item of itens ?? []) indice.set(chave(item), item);
+  return indice;
+}

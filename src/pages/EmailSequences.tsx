@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ import {
   Plus, Trash2, MoreHorizontal, Users, Play, Pause, Mail, Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { indexarPorId } from "@/lib/utils";
 
 type Sequence = {
   id: string; org_id: string; name: string; description: string | null;
@@ -56,6 +57,9 @@ export default function EmailSequences() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  // Inscrições × contatos: os dois crescem, então o `.find()` por linha era
+  // O(n²) a cada render da lista de inscritos.
+  const porContato = useMemo(() => indexarPorId(contacts), [contacts]);
   const [selectedSeq, setSelectedSeq] = useState<Sequence | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [enrollOpen, setEnrollOpen] = useState(false);
@@ -272,7 +276,7 @@ export default function EmailSequences() {
               <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Contatos Inscritos</p>
               <div className="space-y-1">
                 {seqEnrollments(selectedSeq.id).map((en) => {
-                  const contact = contacts.find((c) => c.id === en.contact_id);
+                  const contact = en.contact_id ? porContato.get(en.contact_id) : undefined;
                   return (
                     <div key={en.id} className="flex items-center justify-between rounded-md border border-border px-3 py-2">
                       <div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,6 +10,7 @@ import {
   useDraggable, useDroppable,
 } from "@dnd-kit/core";
 import type { Database } from "@/integrations/supabase/types";
+import { indexarPorId } from "@/lib/utils";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -130,12 +131,15 @@ function ContactCard({
 function OwnerColumn({
   owner,
   contacts,
-  companies,
+  porEmpresa,
   onContactClick,
 }: {
   owner: { id: string; name: string; avatar_url?: string | null } | null;
   contacts: Contact[];
-  companies: Company[];
+  // Índice, não lista. Cada coluna varria `companies` inteira para CADA
+  // contato: com mil contatos e mil empresas são um milhão de comparações por
+  // render, e um render acontece a cada arrastar de card.
+  porEmpresa: Map<string, Company>;
   onContactClick: (c: Contact) => void;
 }) {
   const columnId = owner?.id || "unassigned";
@@ -178,7 +182,7 @@ function OwnerColumn({
           <ContactCard
             key={contact.id}
             contact={contact}
-            company={companies.find((c) => c.id === contact.company_id)}
+            company={contact.company_id ? porEmpresa.get(contact.company_id) : undefined}
             onClick={() => onContactClick(contact)}
           />
         ))}
@@ -208,6 +212,10 @@ export function ContactsKanbanByOwner({
   onOwnerChange,
 }: ContactsKanbanByOwnerProps) {
   const [activeContact, setActiveContact] = useState<Contact | null>(null);
+
+  // Construído uma vez por mudança de `companies`, não por coluna e não por
+  // render -- construir dentro do render trocaria uma varredura por outra.
+  const porEmpresa = useMemo(() => indexarPorId(companies), [companies]);
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
@@ -255,7 +263,7 @@ export function ContactsKanbanByOwner({
         <OwnerColumn
           owner={null}
           contacts={unassignedContacts}
-          companies={companies}
+          porEmpresa={porEmpresa}
           onContactClick={onContactClick}
         />
 
@@ -265,7 +273,7 @@ export function ContactsKanbanByOwner({
             key={member.id}
             owner={{ id: member.id, name: member.name || member.email || "?", avatar_url: member.avatar_url }}
             contacts={contacts.filter((c) => c.owner_id === member.id)}
-            companies={companies}
+            porEmpresa={porEmpresa}
             onContactClick={onContactClick}
           />
         ))}
@@ -290,7 +298,7 @@ export function ContactsKanbanByOwner({
           {activeContact && (
             <ContactCardVisual
               contact={activeContact}
-              company={companies.find((c) => c.id === activeContact.company_id)}
+              company={activeContact.company_id ? porEmpresa.get(activeContact.company_id) : undefined}
               arrastando
             />
           )}

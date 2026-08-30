@@ -128,7 +128,10 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
           {bucket.deals.length > 0 && (
             <CardContent>
               <div className="space-y-1">
-                {bucket.deals.sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0)).map((deal) => {
+                {/* Cópia antes de ordenar: `.sort()` é in place, e `bucket.deals`
+                    vem de um useMemo -- ordenar aqui muta o resultado
+                    memoizado durante o render. */}
+                {[...bucket.deals].sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0)).map((deal) => {
                   const prob = Number(deal.probability) || 0;
                   const stageName = stages.find((s) => s.id === deal.stage_id)?.name || "—";
                   const scenario = prob >= 80 ? "Pessimista" : prob >= 50 ? "Realista" : prob >= 30 ? "Otimista" : "Fora";

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback} from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +28,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Copy, ChevronDown, ChevronUp,
   Workflow, History, LayoutTemplate, Settings2, X,
 } from "lucide-react";
+import { indexarPorId } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────
 type TriggerType =
@@ -186,6 +187,9 @@ export default function Automations() {
 
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [logs, setLogs] = useState<AutomationLog[]>([]);
+  // O registro de execução cresce sem parar -- uma linha por disparo. Varrer a
+  // lista de automações para CADA linha era O(n×m) a cada render da tabela.
+  const porAutomacao = useMemo(() => indexarPorId(automations), [automations]);
   const [tab, setTab] = useState<"list" | "templates" | "history">("list");
 
   // Builder state
@@ -656,7 +660,7 @@ export default function Automations() {
             </TableHeader>
             <TableBody>
               {logs.map((log) => {
-                const auto = automations.find((a) => a.id === log.automation_id);
+                const auto = log.automation_id ? porAutomacao.get(log.automation_id) : undefined;
                 return (
                   <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedLog(log); setLogDetailOpen(true); }}>
                     <TableCell className="text-xs text-muted-foreground">

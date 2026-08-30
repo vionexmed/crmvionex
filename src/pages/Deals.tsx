@@ -33,6 +33,7 @@ import { DealsFilters, type DealFilters } from "@/components/crm/DealsFilters";
 import type { Database } from "@/integrations/supabase/types";
 import type { EditingStage } from "@/lib/api/pipelines";
 import { mensagemErro } from "@/lib/erro-supabase";
+import { indexarPorId } from "@/lib/utils";
 export type { DealWithRelations } from "@/lib/api/deals";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
@@ -75,14 +76,20 @@ export default function Deals() {
   const { mutateAsync: batchUpdate } = useBatchUpdateDeals();
   const { mutateAsync: savePipelineStages, isPending: savingPipeline } = useSavePipelineStages();
 
-  // Enrich deals with owner profile (client-side join)
+  // Junção do dono, feita no cliente porque `deals.owner_id` aponta para
+  // `auth.users` e não para `profiles` -- sem FK entre as duas, o PostgREST não
+  // consegue embutir o perfil.
+  //
+  // Índice em vez de `.find()` por negócio: varria a lista de membros inteira
+  // para cada negócio, duas vezes (lista e kanban).
+  const porDono = useMemo(() => indexarPorId(members), [members]);
   const allDeals = useMemo(
-    () => allDealsResult.data.map((d) => ({ ...d, owner: members.find((m) => m.id === d.owner_id) ?? null })),
-    [allDealsResult.data, members]
+    () => allDealsResult.data.map((d) => ({ ...d, owner: (d.owner_id && porDono.get(d.owner_id)) ?? null })),
+    [allDealsResult.data, porDono]
   );
   const listDeals = useMemo(
-    () => listDealsResult.data.map((d) => ({ ...d, owner: members.find((m) => m.id === d.owner_id) ?? null })),
-    [listDealsResult.data, members]
+    () => listDealsResult.data.map((d) => ({ ...d, owner: (d.owner_id && porDono.get(d.owner_id)) ?? null })),
+    [listDealsResult.data, porDono]
   );
   // Painel da pessoa. O contato vem do embed do próprio negócio, então abrir o
   // painel não custa consulta nenhuma.
@@ -157,7 +164,11 @@ export default function Deals() {
   }, [shouldOpenNew, pipelineStages]);
 
   const openPipelineEditor = () => {
-    const current = pipelineStages
+    // Cópia antes de ordenar: `.sort()` é IN PLACE, e `pipelineStages` é o
+    // resultado de um useMemo -- é o mesmo array que alimenta as colunas do
+    // kanban. Ordenar aqui reordenava a memoização por efeito colateral, de
+    // dentro de um manipulador de clique.
+    const current = [...pipelineStages]
       .sort((a, b) => a.order - b.order)
       .map((s) => ({ id: s.id, name: s.name, color: s.color || "#94a3b8", win_probability: Number(s.win_probability) || 0, order: s.order }));
     setEditingStages(current.length > 0 ? current : [{ name: "", color: "#94a3b8", win_probability: 50, order: 0 }]);
