@@ -139,7 +139,8 @@ export default function Companies() {
   };
   const toggleOne = (id: string) => {
     const next = new Set(selectedCompanies);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelectedCompanies(next);
   };
 

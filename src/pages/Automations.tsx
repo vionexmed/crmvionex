@@ -289,7 +289,7 @@ export default function Automations() {
     toast({ title: "Automação duplicada" });
   };
 
-  const useTemplate = (tmpl: typeof TEMPLATES[0]) => {
+  const aplicarTemplate = (tmpl: typeof TEMPLATES[0]) => {
     setEditId(null);
     setFormName(tmpl.name);
     setFormDesc(tmpl.description);
@@ -624,7 +624,7 @@ export default function Automations() {
       {tab === "templates" && (
         <div className="grid gap-3 sm:grid-cols-2">
           {TEMPLATES.map((tmpl, i) => (
-            <Card key={i} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => useTemplate(tmpl)}>
+            <Card key={i} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => aplicarTemplate(tmpl)}>
               <CardContent>
                 <div className="flex items-start gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-lg">

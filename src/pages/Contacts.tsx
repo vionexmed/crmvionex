@@ -244,7 +244,8 @@ export default function Contacts() {
   };
   const toggleOne = (id: string) => {
     const next = new Set(selectedContacts);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelectedContacts(next);
   };
 

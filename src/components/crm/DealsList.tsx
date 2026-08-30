@@ -55,7 +55,8 @@ export function DealsList({
   };
   const toggleOne = (id: string) => {
     const next = new Set(selectedDeals);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     onSelectionChange(next);
   };
 

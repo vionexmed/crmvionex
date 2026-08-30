@@ -9,7 +9,7 @@
  *   Lead Scoring       BOM ✗   escapa aspas ✗
  *   Importar/Exportar  BOM ✗   escapa aspas ✓
  *
- * **O BOM não é detalhe.** Sem os três bytes `﻿` no começo, o Excel abre o
+ * **O BOM não é detalhe.** Sem os três bytes de marca de ordem no começo, o Excel abre o
  * arquivo em Windows-1252 e todo acento vira lixo: "João" vira "JoÃ£o",
  * "Negócios" vira "NegÃ³cios". Num CRM em português, isso torna metade das
  * exportações inutilizável — e a pessoa culpa o dado, não o arquivo.
@@ -66,9 +66,14 @@ export function baixarCSV(conteudo: string, nomeDoArquivo: string): void {
 }
 
 function baixar(conteudo: string, nomeDoArquivo: string): void {
-  // O `﻿` é o BOM. Sem ele o Excel assume Windows-1252 e todo acento vira
-  // lixo. Três bytes que decidem se o arquivo serve ou não.
-  const blob = new Blob(["﻿" + conteudo], { type: "text/csv;charset=utf-8;" });
+  // `\uFEFF` é a marca de ordem de bytes (BOM). Sem ela o Excel assume
+  // Windows-1252 e todo acento vira lixo -- três bytes que decidem se o arquivo
+  // serve ou não.
+  //
+  // Escrita por ESCAPE, não literal: o caractere cru é invisível no editor, e
+  // um caractere invisível que ninguém vê é um caractere que alguém apaga sem
+  // querer. O lint pega, e é por isso que a regra existe.
+  const blob = new Blob(["\uFEFF" + conteudo], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

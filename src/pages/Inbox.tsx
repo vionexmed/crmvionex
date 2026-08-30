@@ -405,7 +405,8 @@ export default function Inbox() {
                       checked={selectedIds.has(email.id)}
                       onCheckedChange={(v) => {
                         const next = new Set(selectedIds);
-                        v ? next.add(email.id) : next.delete(email.id);
+                        if (v) next.add(email.id);
+                        else next.delete(email.id);
                         setSelectedIds(next);
                       }}
                       onClick={(e) => e.stopPropagation()}
