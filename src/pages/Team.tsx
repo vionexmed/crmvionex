@@ -463,7 +463,7 @@ export default function Team() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="vx-table">
                 <Table>
                   <TableHeader>
                     <TableRow>

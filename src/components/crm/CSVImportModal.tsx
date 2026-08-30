@@ -271,7 +271,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
 
         {step === "preview" && (
           <div className="space-y-4">
-            <div className="rounded-md border border-border max-h-60 overflow-auto">
+            <div className="vx-table max-h-60">
               <Table>
                 <TableHeader>
                   <TableRow>

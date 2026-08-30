@@ -398,7 +398,7 @@ export default function Activities() {
 
       {/* Table view */}
       {viewMode === "list" && (
-        <div className="rounded-md border border-border overflow-hidden">
+        <div className="vx-table">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">

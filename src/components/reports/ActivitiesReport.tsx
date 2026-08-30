@@ -110,7 +110,7 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-hidden">
+          <div className="vx-table">
             <Table>
               <TableHeader>
                 <TableRow>

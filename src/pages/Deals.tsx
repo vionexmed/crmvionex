@@ -36,7 +36,7 @@ import { mensagemErro } from "@/lib/erro-supabase";
 import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
-import { LinhaDeEtapa } from "@/components/crm/LinhaDeEtapa";
+import { LinhaDeEtapa, COR_PADRAO_DE_ETAPA } from "@/components/crm/LinhaDeEtapa";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 export type { DealWithRelations } from "@/lib/api/deals";
 
@@ -174,8 +174,8 @@ export default function Deals() {
     // dentro de um manipulador de clique.
     const current = [...pipelineStages]
       .sort((a, b) => a.order - b.order)
-      .map((s) => ({ id: s.id, name: s.name, color: s.color || "#94a3b8", win_probability: Number(s.win_probability) || 0, order: s.order }));
-    setEditingStages(current.length > 0 ? current : [{ name: "", color: "#94a3b8", win_probability: 50, order: 0 }]);
+      .map((s) => ({ id: s.id, name: s.name, color: s.color || COR_PADRAO_DE_ETAPA, win_probability: Number(s.win_probability) || 0, order: s.order }));
+    setEditingStages(current.length > 0 ? current : [{ name: "", color: COR_PADRAO_DE_ETAPA, win_probability: 50, order: 0 }]);
     setPipelineDialogOpen(true);
   };
 
@@ -578,7 +578,7 @@ export default function Deals() {
               />
             ))}
             <Button variant="outline" size="sm"
-              onClick={() => setEditingStages([...editingStages, { name: "", color: "#94a3b8", win_probability: 50, order: editingStages.length }])}>
+              onClick={() => setEditingStages([...editingStages, { name: "", color: COR_PADRAO_DE_ETAPA, win_probability: 50, order: editingStages.length }])}>
               <Plus className="mr-1 h-3.5 w-3.5" />Adicionar etapa
             </Button>
           </div>

@@ -324,64 +324,66 @@ export default function SalesGoals() {
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Tipo</TableHead>
-                  <TableHead className="text-xs">Atribuição</TableHead>
-                  <TableHead className="text-xs text-right">Meta</TableHead>
-                  <TableHead className="text-xs text-right">Atual</TableHead>
-                  <TableHead className="text-xs w-[140px]">Progresso</TableHead>
-                  <TableHead className="text-xs w-[80px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {goals.map((g) => {
-                  const info = goalTypeInfo(g.goal_type);
-                  const Icon = info.icon;
-                  const p = pct(Number(g.current_value), Number(g.target_value));
-                  return (
-                    <TableRow key={g.id}>
-                      <TableCell className="text-xs">
-                        <div className="flex items-center gap-2">
-                          <Icon className={`h-3.5 w-3.5 ${info.color}`} />
-                          {info.label}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="text-label">
-                          {getAssignLabel(g)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-right font-medium">
-                        {formatValue(g.goal_type, Number(g.target_value))}
-                      </TableCell>
-                      <TableCell className="text-xs text-right">
-                        {formatValue(g.goal_type, Number(g.current_value))}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={p} className="h-1.5 flex-1" />
-                          <span className={`text-label font-medium ${p >= 100 ? "text-emerald-500" : ""}`}>
-                            {p}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <button onClick={() => openEdit(g)} className="p-1 text-muted-foreground hover:text-foreground">
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button onClick={() => deleteGoal(g.id)} className="p-1 text-muted-foreground hover:text-destructive">
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="vx-table">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Tipo</TableHead>
+                    <TableHead className="text-xs">Atribuição</TableHead>
+                    <TableHead className="text-xs text-right">Meta</TableHead>
+                    <TableHead className="text-xs text-right">Atual</TableHead>
+                    <TableHead className="text-xs w-[140px]">Progresso</TableHead>
+                    <TableHead className="text-xs w-[80px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {goals.map((g) => {
+                    const info = goalTypeInfo(g.goal_type);
+                    const Icon = info.icon;
+                    const p = pct(Number(g.current_value), Number(g.target_value));
+                    return (
+                      <TableRow key={g.id}>
+                        <TableCell className="text-xs">
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-3.5 w-3.5 ${info.color}`} />
+                            {info.label}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant="outline" className="text-label">
+                            {getAssignLabel(g)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-right font-medium">
+                          {formatValue(g.goal_type, Number(g.target_value))}
+                        </TableCell>
+                        <TableCell className="text-xs text-right">
+                          {formatValue(g.goal_type, Number(g.current_value))}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={p} className="h-1.5 flex-1" />
+                            <span className={`text-label font-medium ${p >= 100 ? "text-emerald-500" : ""}`}>
+                              {p}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <button onClick={() => openEdit(g)} className="p-1 text-muted-foreground hover:text-foreground">
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                            <button onClick={() => deleteGoal(g.id)} className="p-1 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

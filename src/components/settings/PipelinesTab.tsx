@@ -10,7 +10,7 @@ import {
 import { Plus, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
-import { LinhaDeEtapa } from "@/components/crm/LinhaDeEtapa";
+import { LinhaDeEtapa, COR_PADRAO_DE_ETAPA } from "@/components/crm/LinhaDeEtapa";
 
 type PipelineStage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
@@ -172,7 +172,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
                   etapa={{
                     id: s.id,
                     name: rascunho[s.id]?.name ?? s.name,
-                    color: rascunho[s.id]?.color ?? s.color ?? "#94a3b8",
+                    color: rascunho[s.id]?.color ?? s.color ?? COR_PADRAO_DE_ETAPA,
                     win_probability: rascunho[s.id]?.win_probability ?? (Number(s.win_probability) || 0),
                   }}
                   indice={i}

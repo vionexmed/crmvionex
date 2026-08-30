@@ -18,6 +18,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Handshake, LayoutList } from "lucide-react";
 import { formatarData, formatarMoeda } from "@/lib/formato";
+import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -221,9 +222,7 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
                         <p className="text-sm font-medium">{d.title}</p>
                         <div className="flex items-center gap-2 mt-1">
                           {stage && <Badge variant="secondary" className="text-label">{stage.name}</Badge>}
-                          <Badge variant="secondary" className={`text-label ${d.status === "won" ? "bg-success/10 text-success" : d.status === "lost" ? "bg-destructive/10 text-destructive" : ""}`}>
-                            {d.status === "open" ? "Aberto" : d.status === "won" ? "Ganho" : "Perdido"}
-                          </Badge>
+                          <SeloDeNegocio status={d.status} />
                         </div>
                       </div>
                       <span className="text-sm font-bold text-primary">{formatarMoeda(Number(d.value) || 0, d.currency || "BRL")}</span>

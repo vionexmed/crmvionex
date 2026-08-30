@@ -105,7 +105,7 @@ function AuditLogTab({ orgId }: { orgId: string | null }) {
         </Button>
       </div>
 
-      <div className="rounded-md border border-border overflow-x-auto">
+      <div className="vx-table">
         <Table>
           <TableHeader>
             <TableRow>

@@ -66,9 +66,9 @@ export default function MarketingOverview() {
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-meta" style={{ color: "var(--vx-text-3)" }}>
             <span>Vionex</span>
-            <span style={{ color: "#CDD1D8" }}>›</span>
+            <span className="text-border">›</span>
             <span>Marketing</span>
-            <span style={{ color: "#CDD1D8" }}>›</span>
+            <span className="text-border">›</span>
             <span style={{ color: "var(--vx-navy)", fontWeight: 500 }}>{cfg.breadcrumb}</span>
           </div>
           <h1 className="vx-titulo-tela" style={{ color: "var(--vx-navy)" }}>

@@ -98,26 +98,28 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
           <CardTitle>Histórico de Faturas</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-label">Data</TableHead>
-                <TableHead className="text-label">Plano</TableHead>
-                <TableHead className="text-label">Valor</TableHead>
-                <TableHead className="text-label">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map((inv, i) => (
-                <TableRow key={i}>
-                  <TableCell className="text-xs">{inv.date}</TableCell>
-                  <TableCell className="text-xs">{inv.plan}</TableCell>
-                  <TableCell className="text-xs">{inv.amount}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-micro text-success">{inv.status}</Badge></TableCell>
+          <div className="vx-table">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-label">Data</TableHead>
+                  <TableHead className="text-label">Plano</TableHead>
+                  <TableHead className="text-label">Valor</TableHead>
+                  <TableHead className="text-label">Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-xs">{inv.date}</TableCell>
+                    <TableCell className="text-xs">{inv.plan}</TableCell>
+                    <TableCell className="text-xs">{inv.amount}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-micro text-success">{inv.status}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

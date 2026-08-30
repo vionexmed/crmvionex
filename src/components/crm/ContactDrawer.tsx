@@ -32,6 +32,7 @@ import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Activity, Handshake, LayoutList, StickyNote } from "lucide-react";
 import { formatarData, formatarDataCurta, formatarDataHoraCurta, formatarMoeda } from "@/lib/formato";
+import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -524,9 +525,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                               {stage.name}
                             </Badge>
                           )}
-                          <Badge variant="secondary" className={`text-label ${d.status === "won" ? "bg-success/10 text-success" : d.status === "lost" ? "bg-destructive/10 text-destructive" : ""}`}>
-                            {d.status === "open" ? "Aberto" : d.status === "won" ? "Ganho" : "Perdido"}
-                          </Badge>
+                          <SeloDeNegocio status={d.status} />
                         </div>
                       </div>
                       <span className="text-sm font-bold text-primary">

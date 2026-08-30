@@ -120,49 +120,51 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
           )}
 
           {keys.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-label">Nome</TableHead>
-                  <TableHead className="text-label">Prefixo</TableHead>
-                  <TableHead className="text-label">Status</TableHead>
-                  <TableHead className="text-label">Requests</TableHead>
-                  <TableHead className="text-label">Criada</TableHead>
-                  <TableHead className="text-label" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {keys.map((k) => (
-                  <TableRow key={k.id}>
-                    <TableCell className="text-xs">{k.name}</TableCell>
-                    <TableCell className="text-xs font-mono">{k.key_prefix}...</TableCell>
-                    <TableCell>
-                      <Badge variant={k.is_active ? "default" : "destructive"} className="text-micro">
-                        {k.is_active ? "Ativa" : "Revogada"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{k.request_count}</TableCell>
-                    <TableCell className="text-xs">{k.created_at ? formatarData(k.created_at) : "—"}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {k.is_active ? (
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Revogar" onClick={() => revokeKey(k.id)}>
-                            <EyeOff className="h-3 w-3" />
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-emerald-600" title="Reativar" onClick={() => reactivateKey(k.id)}>
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Excluir" onClick={() => deleteKey(k.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="vx-table">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-label">Nome</TableHead>
+                    <TableHead className="text-label">Prefixo</TableHead>
+                    <TableHead className="text-label">Status</TableHead>
+                    <TableHead className="text-label">Requests</TableHead>
+                    <TableHead className="text-label">Criada</TableHead>
+                    <TableHead className="text-label" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {keys.map((k) => (
+                    <TableRow key={k.id}>
+                      <TableCell className="text-xs">{k.name}</TableCell>
+                      <TableCell className="text-xs font-mono">{k.key_prefix}...</TableCell>
+                      <TableCell>
+                        <Badge variant={k.is_active ? "default" : "destructive"} className="text-micro">
+                          {k.is_active ? "Ativa" : "Revogada"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{k.request_count}</TableCell>
+                      <TableCell className="text-xs">{k.created_at ? formatarData(k.created_at) : "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {k.is_active ? (
+                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Revogar" onClick={() => revokeKey(k.id)}>
+                              <EyeOff className="h-3 w-3" />
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-emerald-600" title="Reativar" onClick={() => reactivateKey(k.id)}>
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Excluir" onClick={() => deleteKey(k.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

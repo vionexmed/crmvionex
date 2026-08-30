@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { GitBranch, Plus, Trash2, Loader2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { SetupStepProps } from "@/pages/Setup";
+import { COR_PADRAO_DE_ETAPA } from "@/components/crm/LinhaDeEtapa";
 
 const DEFAULT_STAGES = [
   { name: "Prospecção", color: "#6366f1", probability: 10 },
@@ -33,7 +34,7 @@ export function StepPipeline({ orgId, onComplete, setStepData }: SetupStepProps)
   }, [orgId]);
 
   const addStage = () => {
-    setStages([...stages, { name: "", color: "#94a3b8", probability: 50 }]);
+    setStages([...stages, { name: "", color: COR_PADRAO_DE_ETAPA, probability: 50 }]);
   };
   const removeStage = (idx: number) => {
     setStages(stages.filter((_, i) => i !== idx));

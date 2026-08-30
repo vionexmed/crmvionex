@@ -1,0 +1,133 @@
+/**
+ * O CSS: moldura de tabela, cores e classes mortas.
+ *
+ * O projeto tinha `.vx-table` pronto no CSS e **3 de 18 tabelas** o usavam. As
+ * outras 15 montavam a moldura à mão, em CINCO formatos:
+ *
+ *     rounded-md border overflow-hidden
+ *     rounded-md border border-border
+ *     rounded-md border border-border overflow-x-auto
+ *     rounded-md border overflow-auto max-h-[500px]
+ *     (nenhum — quatro tabelas sem moldura)
+ *
+ * Parte da causa era o próprio `.vx-table`: a borda vinha de
+ * `.vx-table > div`, então quem aplicasse a classe sem um `<div>` como filho
+ * direto ficava sem borda nenhuma e não entendia por quê.
+ */
+import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+
+const CSS = readFileSync("src/index.css", "utf8");
+/** Sem comentários: o comentário que EXPLICA por que `.vx-table > div` saiu
+ *  contém o seletor, e reprovaria a regra que ele documenta. */
+const CSS_LIMPO = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
+const TSX = (function varrer(dir: string, saida: string[] = []): string[] {
+  for (const nome of readdirSync(dir)) {
+    const caminho = join(dir, nome);
+    if (statSync(caminho).isDirectory()) varrer(caminho, saida);
+    else if (nome.endsWith(".tsx")) saida.push(caminho);
+  }
+  return saida;
+})("src");
+
+describe("toda tabela usa a mesma moldura", () => {
+  it("nenhuma monta a borda à mão", () => {
+    const infratores = TSX.filter((f) => {
+      const src = readFileSync(f, "utf8");
+      return src.includes("<Table>") && !src.includes("vx-table");
+    });
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+
+  /**
+   * A moldura tem de estar na PRÓPRIA classe. Enquanto dependia de
+   * `.vx-table > div`, aplicar a classe numa tabela sem essa estrutura não
+   * fazia nada -- e o silêncio é o que fez quinze telas desistirem dela.
+   */
+  it("a borda não depende da estrutura dos filhos", () => {
+    expect(CSS_LIMPO).not.toContain(".vx-table > div {");
+    const i = CSS.indexOf("\n  .vx-table {");
+    expect(i, "regra .vx-table não encontrada").toBeGreaterThan(-1);
+    expect(CSS.slice(i, CSS.indexOf("}", i))).toContain("border:");
+  });
+});
+
+describe("a cor de destaque continua trocável", () => {
+  /**
+   * `ThemeContext` sobrescreve `--primary`, `--ring` e `--sidebar-primary` em
+   * tempo de execução. Cor cravada em hex ignora a escolha do usuário -- e a
+   * navegação ativa fazia exatamente isso, com `rgba(0, 164, 181, 0.14)`, o
+   * teal. Escolher roxo deixava o item ativo teal, sem explicação.
+   */
+  it("a navegação ativa deriva do token, não do teal", () => {
+    const i = CSS.indexOf(".vx-nav-active {");
+    const bloco = CSS.slice(i, CSS.indexOf("}", i));
+    expect(bloco).not.toMatch(/rgba?\(/);
+    expect(bloco).toContain("--sidebar-primary");
+  });
+
+  /**
+   * `rgba(255,255,255,0.06)` assume barra lateral escura. No tema claro o
+   * realce simplesmente não aparecia.
+   */
+  it("o realce da navegação não assume fundo escuro", () => {
+    const i = CSS.indexOf(".vx-nav-item:hover");
+    expect(CSS.slice(i, CSS.indexOf("}", i))).not.toContain("255,255,255");
+  });
+
+  /**
+   * A regra é sobre COR, não sobre `rgba`.
+   *
+   * Cinza e branco com alfa ficam: sombra, brilho interno e trilha de rolagem
+   * são neutros, não mudam quando o usuário troca o tema, e derivá-los de um
+   * token não os tornaria mais corretos.
+   *
+   * O que não pode é cor CROMÁTICA cravada -- foi assim que o teal parou em
+   * quatro lugares (item ativo, hover e as três regras da barra de rolagem) e
+   * sobreviveu à troca de cor de destaque.
+   */
+  it("nenhuma cor cromática cravada em rgb", () => {
+    const cromaticas = CSS_LIMPO.split("\n").filter((l) => {
+      const m = l.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!m) return false;
+      const [r, g, b] = m.slice(1).map(Number);
+      // Neutro é R≈G≈B. Uma diferença grande entre os canais é matiz.
+      return Math.max(r, g, b) - Math.min(r, g, b) > 30;
+    });
+    expect(cromaticas, cromaticas.join("\n")).toEqual([]);
+  });
+});
+
+describe("a cor padrão de etapa vem de um lugar só", () => {
+  /**
+   * Não é cor de TEMA -- é valor de DADO, que vai para `pipeline_stages.color`
+   * e o usuário troca no seletor. Por isso continua um hex. O que faltava era
+   * estar em um lugar: estava cravada em quatro.
+   */
+  it("só a fonte declara o hex", () => {
+    const infratores = TSX.filter(
+      (f) => !f.endsWith("LinhaDeEtapa.tsx") && readFileSync(f, "utf8").includes('"#94a3b8"'),
+    );
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+});
+
+describe("nenhuma classe .vx-* morta", () => {
+  it("toda classe declarada é usada", () => {
+    const declaradas = [...CSS.matchAll(/^\s*\.(vx-[a-z0-9-]+)\s*\{/gm)].map((m) => m[1]);
+    const fonte = TSX.map((f) => readFileSync(f, "utf8")).join("\n") + CSS;
+    const mortas = [...new Set(declaradas)].filter((c) => {
+      // Conta só usos FORA da própria declaração.
+      const ocorrencias = fonte.split(c).length - 1;
+      const emCss = CSS.split(c).length - 1;
+      return ocorrencias <= emCss;
+    });
+    expect(mortas, `classes sem uso: ${mortas.join(", ")}`).toEqual([]);
+  });
+
+  it("as chaves do arquivo estão balanceadas", () => {
+    // Uma remoção mal feita deixou um `}` órfão e derrubou o build inteiro.
+    expect(CSS.split("{").length).toBe(CSS.split("}").length);
+  });
+});

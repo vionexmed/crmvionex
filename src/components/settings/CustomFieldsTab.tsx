@@ -92,34 +92,36 @@ export function CustomFieldsTab({ orgId }: { orgId: string | null }) {
           {entityFields.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-6">Nenhum campo customizado para esta entidade</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-label">Campo</TableHead>
-                  <TableHead className="text-label">Chave</TableHead>
-                  <TableHead className="text-label">Tipo</TableHead>
-                  <TableHead className="text-label">Obrigatório</TableHead>
-                  <TableHead className="text-label">Tabela</TableHead>
-                  <TableHead className="text-label">Card</TableHead>
-                  <TableHead className="text-label" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entityFields.map((f: any) => (
-                  <TableRow key={f.id}>
-                    <TableCell className="text-xs font-medium">{f.field_label}</TableCell>
-                    <TableCell className="text-label font-mono text-muted-foreground">{f.field_key}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-micro">{fieldTypes[f.field_type] || f.field_type}</Badge></TableCell>
-                    <TableCell>{f.is_required ? "✓" : "—"}</TableCell>
-                    <TableCell>{f.show_in_table ? "✓" : "—"}</TableCell>
-                    <TableCell>{f.show_in_card ? "✓" : "—"}</TableCell>
-                    <TableCell>
-                      <button onClick={() => deleteField(f.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
-                    </TableCell>
+            <div className="vx-table">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-label">Campo</TableHead>
+                    <TableHead className="text-label">Chave</TableHead>
+                    <TableHead className="text-label">Tipo</TableHead>
+                    <TableHead className="text-label">Obrigatório</TableHead>
+                    <TableHead className="text-label">Tabela</TableHead>
+                    <TableHead className="text-label">Card</TableHead>
+                    <TableHead className="text-label" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {entityFields.map((f: any) => (
+                    <TableRow key={f.id}>
+                      <TableCell className="text-xs font-medium">{f.field_label}</TableCell>
+                      <TableCell className="text-label font-mono text-muted-foreground">{f.field_key}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-micro">{fieldTypes[f.field_type] || f.field_type}</Badge></TableCell>
+                      <TableCell>{f.is_required ? "✓" : "—"}</TableCell>
+                      <TableCell>{f.show_in_table ? "✓" : "—"}</TableCell>
+                      <TableCell>{f.show_in_card ? "✓" : "—"}</TableCell>
+                      <TableCell>
+                        <button onClick={() => deleteField(f.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

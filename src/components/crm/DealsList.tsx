@@ -10,18 +10,12 @@ import type { DealWithRelations } from "@/lib/api/deals";
 import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { formatarData, formatarMoeda } from "@/lib/formato";
+import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
 
 type SortKey = "title" | "value" | "close_date" | "probability" | "status" | "created_at";
-
-const statusLabels = { open: "Aberto", won: "Ganho", lost: "Perdido" };
-const statusColors = {
-  open: "bg-primary/10 text-primary",
-  won: "bg-success/10 text-success",
-  lost: "bg-destructive/10 text-destructive",
-};
 
 interface DealsListProps {
   deals: DealWithRelations[];
@@ -89,7 +83,7 @@ export function DealsList({
         </div>
       )}
 
-      <div className="rounded-md border border-border overflow-x-auto">
+      <div className="vx-table">
         <Table>
           <TableHeader>
             <TableRow>
@@ -141,9 +135,11 @@ export function DealsList({
                     ) : "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className={statusColors[deal.status || "open"]}>
-                      {statusLabels[deal.status || "open"]}
-                    </Badge>
+                    {/* Esta lista pintava "Aberto" de teal; as outras três
+                        telas deixavam neutro. Aberto é o estado PADRÃO --
+                        destacá-lo compete com "Ganho" e "Perdido", que são os
+                        que merecem cor. */}
+                    <SeloDeNegocio status={deal.status} />
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     {deal.owner ? (

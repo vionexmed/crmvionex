@@ -650,7 +650,7 @@ export default function Automations() {
 
       {/* HISTORY TAB */}
       {tab === "history" && (
-        <div className="rounded-md border border-border">
+        <div className="vx-table">
           <Table>
             <TableHeader>
               <TableRow>

@@ -188,7 +188,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
       {/* Results table */}
       <Card>
         <CardContent className="p-0">
-          <div className="rounded-md border overflow-auto max-h-[500px]">
+          <div className="vx-table max-h-[500px]">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +36,7 @@ import { ContactDrawer } from "@/components/crm/ContactDrawer";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
 import { formatarData, formatarDataHoraCurta, formatarMoeda } from "@/lib/formato";
+import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
 
 type ActivityType = Database["public"]["Enums"]["activity_type"];
 type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];
@@ -361,9 +361,7 @@ export default function DealDetail() {
 
             {/* Status badge */}
             {deal.status !== "open" && (
-              <Badge variant="secondary" className={deal.status === "won" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}>
-                {deal.status === "won" ? "Ganho" : "Perdido"}
-              </Badge>
+              <SeloDeNegocio status={deal.status} />
             )}
           </div>
         </div>

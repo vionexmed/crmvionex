@@ -278,7 +278,7 @@ fetch("${endpoint}", {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="vx-table">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -19,6 +19,16 @@ import { cn } from "@/lib/utils";
  * grava a cada clique precisa.
  */
 
+/**
+ * Cor de uma etapa recém-criada, antes de alguém escolher.
+ *
+ * Estava cravada em quatro lugares -- o editor de Negócios (duas vezes), o de
+ * Configurações e o passo do wizard. Não é cor de TEMA: é um valor de DADO, que
+ * vai para `pipeline_stages.color` e o usuário troca no seletor. Por isso é um
+ * hex e não um token; o que faltava era estar em um lugar só.
+ */
+export const COR_PADRAO_DE_ETAPA = "#94a3b8";
+
 export type EtapaEditavel = {
   id?: string;
   name: string;
