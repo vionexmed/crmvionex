@@ -81,7 +81,7 @@ export function TrackingTab({ orgId }: { orgId: string | null }) {
             </pre>
             <Button
               variant="outline" size="sm"
-              className="absolute top-2 right-2 h-7 text-micro"
+              className="absolute top-2 right-2 h-8 text-micro"
               onClick={copySnippet}
             >
               {copied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}

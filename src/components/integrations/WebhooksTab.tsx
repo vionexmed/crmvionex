@@ -79,7 +79,7 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
               <CardTitle>Webhooks de Saída</CardTitle>
               <CardDescription>Envie notificações para URLs externas quando eventos ocorrerem</CardDescription>
             </div>
-            <Button size="sm" className="h-7 text-label" onClick={() => setShowCreate(true)}>
+            <Button size="sm" className="h-8 text-label" onClick={() => setShowCreate(true)}>
               <Plus className="mr-1 h-3 w-3" />Novo Webhook
             </Button>
           </div>
@@ -107,7 +107,7 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
                   </div>
                   <div className="flex items-center gap-1">
                     <Switch checked={wh.is_active} onCheckedChange={(v) => toggleWebhook(wh.id, v)} />
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWebhook(wh.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteWebhook(wh.id)}>
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>

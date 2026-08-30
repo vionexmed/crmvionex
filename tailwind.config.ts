@@ -33,13 +33,31 @@ export default {
        * herda a do contexto, e é daí que vem a sensação de texto "apertado" em
        * umas telas e "solto" em outras usando o mesmo tamanho.
        */
+      /**
+       * TRÊS degraus abaixo do corpo, não seis.
+       *
+       * Havia 9 / 10 / 11 / 12 / 13 / 14px em uso simultâneo -- seis tamanhos
+       * num intervalo de cinco pixels. Isso não forma hierarquia: a diferença
+       * entre 10 e 11px não é perceptível como "um é mais importante", só como
+       * "algo está desalinhado". E o piso de 9px é menor que o mínimo legível
+       * confortável.
+       *
+       *   label   11px   rótulo, meta, selo, contagem
+       *   xs      12px   corpo secundário  (510 usos, o mais praticado)
+       *   sm      14px   corpo             (260 usos)
+       *
+       * `micro`, `meta` e `corpo` continuam existindo como APELIDO dos três
+       * acima, porque são 199 chamadas espalhadas -- reescrevê-las de uma vez
+       * misturaria a mudança de escala com a de código. O teste proíbe uso
+       * NOVO deles.
+       */
       fontSize: {
-        micro: ["0.5625rem", { lineHeight: "0.75rem" }],  //  9px / 12
-        label: ["0.625rem", { lineHeight: "0.875rem" }],  // 10px / 14
-        meta: ["0.6875rem", { lineHeight: "0.9375rem" }], // 11px / 15
-        // 13px é a base do `body`, e sete lugares a repetiam como valor
-        // arbitrário. Nomeada, ela pode mudar em um lugar só.
-        corpo: ["0.8125rem", { lineHeight: "1.125rem" }],  // 13px / 18
+        label: ["0.6875rem", { lineHeight: "1rem" }],     // 11px / 16
+        xs: ["0.75rem", { lineHeight: "1.125rem" }],      // 12px / 18 — era 12/16
+        // Apelidos, em vias de sair:
+        micro: ["0.6875rem", { lineHeight: "1rem" }],     // = label
+        meta: ["0.6875rem", { lineHeight: "1rem" }],      // = label
+        corpo: ["0.875rem", { lineHeight: "1.25rem" }],   // = sm
       },
       fontFamily: {
         sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],

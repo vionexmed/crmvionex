@@ -160,12 +160,12 @@ export function WhatsAppOfficialCard() {
                 {config.display_phone_number && (
                   <span className="text-meta text-muted-foreground">{config.display_phone_number}</span>
                 )}
-                <Button variant="outline" size="sm" className="ml-auto h-7 text-label" onClick={openDialog}>
+                <Button variant="outline" size="sm" className="ml-auto h-8 text-label" onClick={openDialog}>
                   Configurar
                 </Button>
               </>
             ) : (
-              <Button size="sm" className="h-7 text-label" onClick={openDialog}>
+              <Button size="sm" className="h-8 text-label" onClick={openDialog}>
                 <Plus className="mr-1 h-3 w-3" />Conectar
               </Button>
             )}

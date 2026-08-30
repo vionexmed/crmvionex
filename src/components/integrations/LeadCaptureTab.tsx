@@ -40,7 +40,7 @@ function CodeBlock({
       </pre>
       <Button
         variant="outline" size="sm"
-        className="absolute top-2 right-2 h-7 text-micro"
+        className="absolute top-2 right-2 h-8 text-micro"
         onClick={() => onCopy(code, id)}
       >
         {copiado ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}

@@ -338,7 +338,7 @@ export default function Automations() {
       <div className="space-y-2">
         <div className="space-y-1">
           <Label className="text-xs">Stage de destino (ID ou nome)</Label>
-          <Input className="h-7 text-xs" value={cfg.to_stage || ""} onChange={(e) => upd("to_stage", e.target.value)} placeholder="Ex: Proposta" />
+          <Input className="h-8 text-xs" value={cfg.to_stage || ""} onChange={(e) => upd("to_stage", e.target.value)} placeholder="Ex: Proposta" />
         </div>
       </div>
     );
@@ -346,12 +346,12 @@ export default function Automations() {
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <Label className="text-xs">Threshold</Label>
-          <Input type="number" className="h-7 text-xs" value={cfg.threshold || ""} onChange={(e) => upd("threshold", Number(e.target.value))} />
+          <Input type="number" className="h-8 text-xs" value={cfg.threshold || ""} onChange={(e) => upd("threshold", Number(e.target.value))} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Direção</Label>
           <Select value={cfg.direction || "above"} onValueChange={(v) => upd("direction", v)}>
-            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="above">Acima de</SelectItem>
               <SelectItem value="below">Abaixo de</SelectItem>
@@ -364,7 +364,7 @@ export default function Automations() {
       <div className="space-y-1">
         <Label className="text-xs">Tipo de atividade</Label>
         <Select value={cfg.activity_type || ""} onValueChange={(v) => upd("activity_type", v)}>
-          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Qualquer" /></SelectTrigger>
+          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Qualquer" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="call">Ligação</SelectItem>
             <SelectItem value="email">Email</SelectItem>
@@ -379,11 +379,11 @@ export default function Automations() {
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <Label className="text-xs">Campo</Label>
-          <Input className="h-7 text-xs" value={cfg.field || ""} onChange={(e) => upd("field", e.target.value)} placeholder="deal.value" />
+          <Input className="h-8 text-xs" value={cfg.field || ""} onChange={(e) => upd("field", e.target.value)} placeholder="deal.value" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Valor</Label>
-          <Input className="h-7 text-xs" value={cfg.value || ""} onChange={(e) => upd("value", e.target.value)} placeholder="> 50000" />
+          <Input className="h-8 text-xs" value={cfg.value || ""} onChange={(e) => upd("value", e.target.value)} placeholder="> 50000" />
         </div>
       </div>
     );
@@ -392,7 +392,7 @@ export default function Automations() {
         <div className="space-y-1">
           <Label className="text-xs">Entidade</Label>
           <Select value={cfg.entity || "deal"} onValueChange={(v) => upd("entity", v)}>
-            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="deal">Negócio</SelectItem>
               <SelectItem value="contact">Contato</SelectItem>
@@ -401,14 +401,14 @@ export default function Automations() {
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Dias inativos</Label>
-          <Input type="number" className="h-7 text-xs" value={cfg.days_inactive || ""} onChange={(e) => upd("days_inactive", Number(e.target.value))} />
+          <Input type="number" className="h-8 text-xs" value={cfg.days_inactive || ""} onChange={(e) => upd("days_inactive", Number(e.target.value))} />
         </div>
       </div>
     );
     if (t === "webhook.received") return (
       <div className="space-y-1">
         <Label className="text-xs">Secret (validação)</Label>
-        <Input className="h-7 text-xs" value={cfg.secret || ""} onChange={(e) => upd("secret", e.target.value)} placeholder="hmac-secret" />
+        <Input className="h-8 text-xs" value={cfg.secret || ""} onChange={(e) => upd("secret", e.target.value)} placeholder="hmac-secret" />
       </div>
     );
     return null;
@@ -422,11 +422,11 @@ export default function Automations() {
     switch (action.type) {
       case "create_task": return (
         <div className="space-y-2">
-          <Input className="h-7 text-xs" placeholder="Título da tarefa" value={cfg.title || ""} onChange={(e) => upd("title", e.target.value)} />
+          <Input className="h-8 text-xs" placeholder="Título da tarefa" value={cfg.title || ""} onChange={(e) => upd("title", e.target.value)} />
           <div className="grid grid-cols-2 gap-2">
-            <Input type="number" className="h-7 text-xs" placeholder="Prazo (dias)" value={cfg.due_days ?? ""} onChange={(e) => upd("due_days", Number(e.target.value))} />
+            <Input type="number" className="h-8 text-xs" placeholder="Prazo (dias)" value={cfg.due_days ?? ""} onChange={(e) => upd("due_days", Number(e.target.value))} />
             <Select value={cfg.priority || "medium"} onValueChange={(v) => upd("priority", v)}>
-              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="urgent">🔴 Urgente</SelectItem>
                 <SelectItem value="high">🟠 Alta</SelectItem>
@@ -438,40 +438,40 @@ export default function Automations() {
         </div>
       );
       case "send_email_template": return (
-        <Input className="h-7 text-xs" placeholder="ID do template" value={cfg.template_id || ""} onChange={(e) => upd("template_id", e.target.value)} />
+        <Input className="h-8 text-xs" placeholder="ID do template" value={cfg.template_id || ""} onChange={(e) => upd("template_id", e.target.value)} />
       );
       case "assign_owner": return (
         <div className="space-y-2">
           <Select value={cfg.strategy || "specific"} onValueChange={(v) => upd("strategy", v)}>
-            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="specific">Específico</SelectItem>
               <SelectItem value="round_robin">Round-robin</SelectItem>
             </SelectContent>
           </Select>
           {cfg.strategy === "specific" && (
-            <Input className="h-7 text-xs" placeholder="ID do usuário" value={cfg.user_id || ""} onChange={(e) => upd("user_id", e.target.value)} />
+            <Input className="h-8 text-xs" placeholder="ID do usuário" value={cfg.user_id || ""} onChange={(e) => upd("user_id", e.target.value)} />
           )}
         </div>
       );
       case "move_deal_stage": return (
-        <Input className="h-7 text-xs" placeholder="Stage de destino" value={cfg.to_stage || ""} onChange={(e) => upd("to_stage", e.target.value)} />
+        <Input className="h-8 text-xs" placeholder="Stage de destino" value={cfg.to_stage || ""} onChange={(e) => upd("to_stage", e.target.value)} />
       );
       case "add_tag": case "remove_tag": return (
-        <Input className="h-7 text-xs" placeholder="Nome da tag" value={cfg.tag_name || ""} onChange={(e) => upd("tag_name", e.target.value)} />
+        <Input className="h-8 text-xs" placeholder="Nome da tag" value={cfg.tag_name || ""} onChange={(e) => upd("tag_name", e.target.value)} />
       );
       case "create_note": return (
         <Textarea className="text-xs min-h-[60px]" placeholder="Conteúdo da nota" value={cfg.body || ""} onChange={(e) => upd("body", e.target.value)} />
       );
       case "notify_user": return (
-        <Input className="h-7 text-xs" placeholder="Mensagem de notificação" value={cfg.message || ""} onChange={(e) => upd("message", e.target.value)} />
+        <Input className="h-8 text-xs" placeholder="Mensagem de notificação" value={cfg.message || ""} onChange={(e) => upd("message", e.target.value)} />
       );
       case "call_webhook": return (
         <div className="space-y-2">
-          <Input className="h-7 text-xs" placeholder="URL do webhook" value={cfg.url || ""} onChange={(e) => upd("url", e.target.value)} />
+          <Input className="h-8 text-xs" placeholder="URL do webhook" value={cfg.url || ""} onChange={(e) => upd("url", e.target.value)} />
           <div className="grid grid-cols-2 gap-2">
             <Select value={cfg.method || "POST"} onValueChange={(v) => upd("method", v)}>
-              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="POST">POST</SelectItem>
                 <SelectItem value="PUT">PUT</SelectItem>
@@ -483,7 +483,7 @@ export default function Automations() {
       );
       case "wait": return (
         <div className="flex items-center gap-2">
-          <Input type="number" className="h-7 text-xs w-20" value={cfg.days || ""} onChange={(e) => upd("days", Number(e.target.value))} />
+          <Input type="number" className="h-8 text-xs w-20" value={cfg.days || ""} onChange={(e) => upd("days", Number(e.target.value))} />
           <span className="text-xs text-muted-foreground">dias</span>
         </div>
       );
@@ -491,9 +491,9 @@ export default function Automations() {
         <div className="space-y-2">
           <Textarea className="text-xs min-h-[60px]" placeholder="Mensagem do WhatsApp (use {{nome}}, {{empresa}} para variáveis)" value={cfg.message || ""} onChange={(e) => upd("message", e.target.value)} />
           <div className="grid grid-cols-2 gap-2">
-            <Input className="h-7 text-xs" placeholder="Número (ex: +5511999998888)" value={cfg.phone_override || ""} onChange={(e) => upd("phone_override", e.target.value)} />
+            <Input className="h-8 text-xs" placeholder="Número (ex: +5511999998888)" value={cfg.phone_override || ""} onChange={(e) => upd("phone_override", e.target.value)} />
             <Select value={cfg.phone_source || "contact"} onValueChange={(v) => upd("phone_source", v)}>
-              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="contact">Telefone do contato</SelectItem>
                 <SelectItem value="custom">Número personalizado</SelectItem>

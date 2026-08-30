@@ -211,10 +211,10 @@ export function RiskRulesManager({ open, onOpenChange }: RiskRulesManagerProps) 
                         </Badge>
                       </div>
                       <div className="flex gap-1 mt-2">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEdit(rule)}>
+                        <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => openEdit(rule)}>
                           <Pencil className="mr-1 h-3 w-3" />Editar
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => deleteRule(rule.id)}>
+                        <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive hover:text-destructive" onClick={() => deleteRule(rule.id)}>
                           <Trash2 className="mr-1 h-3 w-3" />Excluir
                         </Button>
                       </div>

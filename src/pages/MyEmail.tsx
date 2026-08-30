@@ -282,7 +282,7 @@ export default function MyEmail() {
                     </p>
                   </div>
                 </div>
-                <Button size="sm" className="h-7 text-meta" onClick={conectar} disabled={conectando}>
+                <Button size="sm" className="h-8 text-meta" onClick={conectar} disabled={conectando}>
                   {conectando
                     ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                     : <Plug className="mr-1.5 h-3 w-3" />}

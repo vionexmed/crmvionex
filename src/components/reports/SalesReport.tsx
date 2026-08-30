@@ -258,7 +258,7 @@ export function SalesReport({ deals, stages, members, companies }: {
             <CardTitle>Negócios Agrupados</CardTitle>
             <div className="flex gap-2">
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
-                <SelectTrigger className="h-7 w-32 text-label"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-32 text-label"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="stage">Por etapa</SelectItem>
                   <SelectItem value="owner">Por Dono</SelectItem>
@@ -266,7 +266,7 @@ export function SalesReport({ deals, stages, members, companies }: {
                   <SelectItem value="month">Por Mês</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" className="h-7 text-label" onClick={exportDealsCSV}>
+              <Button variant="outline" size="sm" className="h-8 text-label" onClick={exportDealsCSV}>
                 <Download className="h-3 w-3 mr-1" />CSV
               </Button>
             </div>

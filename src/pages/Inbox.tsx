@@ -763,11 +763,11 @@ function EmailAttachments({
                 </div>
                 <div className="flex gap-1">
                   {(isImg || isPdf) && (
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handlePreview(att)} disabled={isLoading} title="Visualizar">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handlePreview(att)} disabled={isLoading} title="Visualizar">
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDownload(att)} disabled={isLoading} title="Baixar">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownload(att)} disabled={isLoading} title="Baixar">
                     {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                   </Button>
                 </div>

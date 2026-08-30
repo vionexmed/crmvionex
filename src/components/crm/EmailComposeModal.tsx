@@ -326,7 +326,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             {/* Templates */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-label">
+                <Button variant="outline" size="sm" className="h-8 text-label">
                   <FileText className="mr-1 h-3 w-3" />Templates
                 </Button>
               </PopoverTrigger>
@@ -353,7 +353,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             {/* Variables */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-label">
+                <Button variant="outline" size="sm" className="h-8 text-label">
                   <Variable className="mr-1 h-3 w-3" />Variáveis
                 </Button>
               </PopoverTrigger>
@@ -377,7 +377,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             <Button
               variant={showAiPanel ? "default" : "outline"}
               size="sm"
-              className="h-7 text-label ml-auto"
+              className="h-8 text-label ml-auto"
               onClick={() => setShowAiPanel(!showAiPanel)}
             >
               <Sparkles className="mr-1 h-3 w-3" />Gerar com IA

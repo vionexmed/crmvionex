@@ -181,14 +181,14 @@ export function MinhaAssinatura({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-label"
+            className="h-8 text-label"
             onClick={() => setDados({})}
             disabled={salvando || carregando || !temAssinatura(dados)}
           >
             <Eraser className="mr-1 h-3 w-3" />
             Limpar
           </Button>
-          <Button size="sm" className="h-7 text-label" onClick={salvar} disabled={salvando || carregando}>
+          <Button size="sm" className="h-8 text-label" onClick={salvar} disabled={salvando || carregando}>
             {salvando ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
             Salvar assinatura
           </Button>

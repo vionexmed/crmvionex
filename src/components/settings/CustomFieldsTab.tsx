@@ -74,7 +74,7 @@ export function CustomFieldsTab({ orgId }: { orgId: string | null }) {
               <CardTitle>Campos Customizados</CardTitle>
               <CardDescription>Adicione campos extras para suas entidades</CardDescription>
             </div>
-            <Button size="sm" className="h-7 text-label" onClick={() => setShowCreate(true)}>
+            <Button size="sm" className="h-8 text-label" onClick={() => setShowCreate(true)}>
               <Plus className="mr-1 h-3 w-3" />Novo Campo
             </Button>
           </div>

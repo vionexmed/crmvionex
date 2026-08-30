@@ -87,7 +87,7 @@ export function LogoUploadField({
           size="sm"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="h-7 text-xs"
+          className="h-8 text-xs"
         >
           {uploading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Enviando...</> : <><Upload className="mr-1 h-3 w-3" />{value ? "Trocar" : `Enviar ${rotulo}`}</>}
         </Button>

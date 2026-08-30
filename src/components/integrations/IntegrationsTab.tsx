@@ -476,7 +476,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 dois campos, e eles vão para uma edge function. */}
             {!formAberto ? (
               <div className="flex justify-end">
-                <Button variant="outline" size="sm" className="h-7 text-label"
+                <Button variant="outline" size="sm" className="h-8 text-label"
                   onClick={() => { setFormAberto(true); setFormId(""); setFormSecret(""); }}>
                   {hasGmailCredentials ? "Trocar credencial" : "Cadastrar credencial"}
                 </Button>
@@ -518,11 +518,11 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 )}
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" className="h-7 text-label"
+                  <Button variant="ghost" size="sm" className="h-8 text-label"
                     onClick={() => setFormAberto(false)} disabled={salvandoCred}>
                     Cancelar
                   </Button>
-                  <Button size="sm" className="h-7 text-label"
+                  <Button size="sm" className="h-8 text-label"
                     onClick={salvarCredencialGoogle}
                     disabled={salvandoCred || !formId.trim() || !formSecret.trim()}>
                     {salvandoCred && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
@@ -561,13 +561,13 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                         {cfg.is_active ? "Conectado" : "Inativo"}
                       </Badge>
                       {intg.provider === "meta" && cfg.is_active && (
-                        <Button variant="outline" size="sm" className="h-7 text-label"
+                        <Button variant="outline" size="sm" className="h-8 text-label"
                           disabled={metaConnecting}
                           onClick={handleMetaConnect}>
                           {metaConnecting ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Sincronizando...</> : <><RefreshCw className="mr-1 h-3 w-3" />Sincronizar</>}
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" className="ml-auto h-7 text-label"
+                      <Button variant="outline" size="sm" className="ml-auto h-8 text-label"
                         onClick={() => {
                           setEditProvider(intg.provider);
                           setEditConfig(cfg.config || {});
@@ -576,7 +576,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                       </Button>
                     </>
                   ) : (
-                    <Button size="sm" className="h-7 text-label"
+                    <Button size="sm" className="h-8 text-label"
                       disabled={intg.connectLoading}
                       onClick={() => {
                         if (intg.connectAction) return intg.connectAction();

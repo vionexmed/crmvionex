@@ -356,7 +356,7 @@ export function AtRiskPanel({ open, onOpenChange }: AtRiskPanelProps) {
                 <AlertTriangle className="h-5 w-5 text-warning" />
                 Em Risco
               </SheetTitle>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setRulesOpen(true)}>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setRulesOpen(true)}>
                 <Settings2 className="mr-1 h-3.5 w-3.5" />Regras
               </Button>
             </div>

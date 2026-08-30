@@ -374,7 +374,7 @@ export default function Team() {
                         </div>
                       </div>
                       {isAdmin && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => cancelInvite(inv.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => cancelInvite(inv.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       )}
@@ -424,7 +424,7 @@ export default function Team() {
                     )}
                     {isOwner && m.id !== user?.id ? (
                       <Select value={m.role || "member"} onValueChange={(v) => changeRole(m.id, v)}>
-                        <SelectTrigger className={`h-7 text-meta w-36 gap-1 ${roleColor(m.role || "member")}`}>
+                        <SelectTrigger className={`h-8 text-meta w-36 gap-1 ${roleColor(m.role || "member")}`}>
                           {roleIcon(m.role || "member")}
                           <SelectValue />
                         </SelectTrigger>
@@ -441,7 +441,7 @@ export default function Team() {
                       </Badge>
                     )}
                     {isOwner && m.id !== user?.id && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setRemovendo(m); setHerdeiro(""); }}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => { setRemovendo(m); setHerdeiro(""); }}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -545,7 +545,7 @@ export default function Team() {
                       {team.name}
                     </CardTitle>
                     {isAdmin && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteTeam(team.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteTeam(team.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}

@@ -138,7 +138,7 @@ export function DealQualification({ dealId, qualification, onUpdate }: Props) {
                 </div>
                 {editing && (
                   <Input
-                    className="mt-1.5 h-7 text-label"
+                    className="mt-1.5 h-8 text-label"
                     placeholder="Notas..."
                     value={(bant[notesKey] as string) || ""}
                     onChange={(e) => setBant({ ...bant, [notesKey]: e.target.value })}

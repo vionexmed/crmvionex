@@ -78,7 +78,7 @@ export function AIInsightsPanel() {
                 <p className="text-micro text-muted-foreground">Análise automática do seu CRM</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={fetchInsights} disabled={loading}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchInsights} disabled={loading}>
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>

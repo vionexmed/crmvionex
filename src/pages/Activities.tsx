@@ -366,11 +366,11 @@ export default function Activities() {
               placeholder="Buscar..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-7 h-7 w-44 text-xs"
+              className="pl-7 h-8 w-44 text-xs"
             />
           </div>
           <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-            <SelectTrigger className="h-7 w-36 text-xs">
+            <SelectTrigger className="h-8 w-36 text-xs">
               <SelectValue placeholder="Responsável" />
             </SelectTrigger>
             <SelectContent>

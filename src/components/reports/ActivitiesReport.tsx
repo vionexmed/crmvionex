@@ -108,7 +108,7 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Comparativo por Vendedor</CardTitle>
-            <Button variant="outline" size="sm" className="h-7 text-label" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="h-8 text-label" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
           </div>
         </CardHeader>
         <CardContent>

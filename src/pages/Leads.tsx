@@ -341,7 +341,7 @@ export default function Leads() {
                   value={(lead as Lead).owner_id ?? "none"}
                   onValueChange={(v) => assignOwner({ id: lead.id, ownerId: v === "none" ? null : v })}
                 >
-                  <SelectTrigger className="h-7 text-meta" aria-label={`Responsável por ${fullName(lead as Lead)}`}>
+                  <SelectTrigger className="h-8 text-meta" aria-label={`Responsável por ${fullName(lead as Lead)}`}>
                     <SelectValue placeholder="Sem responsável" />
                   </SelectTrigger>
                   <SelectContent>
@@ -361,15 +361,15 @@ export default function Leads() {
                 {formatDistanceToNow(new Date(lead.created_at), { locale: ptBR, addSuffix: true })}
               </span>
               <div className="flex items-center gap-1.5">
-                <Button size="icon" variant="outline" className="h-7 w-7" title="Ver detalhes" onClick={() => setViewing(lead as Lead)}>
+                <Button size="icon" variant="outline" className="h-8 w-8" title="Ver detalhes" onClick={() => setViewing(lead as Lead)}>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="default" className="h-7 text-meta px-2.5" onClick={() => openQualify(lead as Lead)}>
+                <Button size="sm" variant="default" className="h-8 text-meta px-2.5" onClick={() => openQualify(lead as Lead)}>
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                   Qualificar
                 </Button>
                 {isAdmin && (
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => deleteLead(lead.id)}>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => deleteLead(lead.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
