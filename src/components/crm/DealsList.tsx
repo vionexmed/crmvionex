@@ -11,6 +11,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { formatarData, formatarMoeda } from "@/lib/formato";
 import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
+import { BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
@@ -68,8 +69,12 @@ export function DealsList({
   return (
     <div className="space-y-3">
       {selectedDeals.size > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2">
-          <span className="text-sm font-medium">{selectedDeals.size} selecionados</span>
+        <BarraDeSelecao
+          quantidade={selectedDeals.size}
+          substantivo="negócio"
+          substantivoPlural="negócios"
+          onLimpar={() => onSelectionChange(new Set())}
+        >
           <Button size="sm" variant="outline" onClick={() => onBatchAction("won")}>
             <Trophy className="mr-1 h-3.5 w-3.5 text-success" />Ganhos
           </Button>
@@ -81,7 +86,7 @@ export function DealsList({
               <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir
             </Button>
           )}
-        </div>
+        </BarraDeSelecao>
       )}
 
       <div className="vx-table">

@@ -396,7 +396,7 @@ export default function Inbox() {
                     key={email.id}
                     onClick={() => { setSelectedEmail(email); markRead(email.id); setReplyMode(null); }}
                     className={cn(
-                      "group flex items-start gap-2 px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent/40 hover:shadow-sm",
+                      "group flex items-start gap-2 px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent/40 hover:border-primary/40",
                       isOpen && "bg-accent/60",
                       !email.is_read && !isOpen && "bg-primary/[0.04]"
                     )}

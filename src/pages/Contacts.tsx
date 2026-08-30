@@ -58,6 +58,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
+import { BarraDeFiltros, BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type SortKey = "name" | "email" | "status" | "created_at" | "title";
@@ -384,7 +385,7 @@ export default function Contacts() {
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-3">
+        <BarraDeFiltros>
           <div className="space-y-1">
             <Label className="text-xs">Ciclo de vida</Label>
             {/* Os seis estágios, na ordem do avanço. O seletor antigo era por
@@ -449,12 +450,16 @@ export default function Contacts() {
               <X className="mr-1 h-3 w-3" />Limpar
             </Button>
           )}
-        </div>
+        </BarraDeFiltros>
       )}
 
       {selectedContacts.size > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2">
-          <span className="text-sm font-medium">{selectedContacts.size} selecionados</span>
+        <BarraDeSelecao
+          quantidade={selectedContacts.size}
+          substantivo="contato"
+          substantivoPlural="contatos"
+          onLimpar={() => setSelectedContacts(new Set())}
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="outline">Mudar Status</Button>
@@ -479,7 +484,7 @@ export default function Contacts() {
               <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir
             </Button>
           )}
-        </div>
+        </BarraDeSelecao>
       )}
 
       {viewMode === "table" && (
@@ -590,7 +595,7 @@ export default function Contacts() {
       {viewMode === "cards" && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {contacts.map((c) => (
-            <Card key={c.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrawerContact(c)}>
+            <Card key={c.id} className="cursor-pointer transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setDrawerContact(c)}>
               <CardContent className="space-y-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">

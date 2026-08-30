@@ -48,7 +48,7 @@ function ContactCardVisual({
       className={
         arrastando
           ? "cursor-grabbing border-primary bg-card shadow-lg"
-          : "border-border bg-card transition-all hover:shadow-md"
+          : "border-border bg-card transition-all hover:border-primary/40"
       }
     >
       <CardContent className="p-3">

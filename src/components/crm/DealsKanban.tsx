@@ -408,7 +408,7 @@ function CollapsibleStatusColumn({
           {deals.map((deal) => (
             <div
               key={deal.id}
-              className="cursor-pointer rounded-md border border-border bg-card p-2 hover:shadow-sm transition-shadow"
+              className="cursor-pointer rounded-md border border-border bg-card p-2 transition-colors hover:border-primary/40"
               onClick={() => onDealClick(deal)}
             >
               <p className="truncate text-corpo font-medium">{deal.title}</p>

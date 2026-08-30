@@ -32,6 +32,7 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { mensagemErro } from "@/lib/erro-supabase";
+import { BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 import {
   CADASTRO_FIELDS, LIFECYCLE_LABELS, LIFECYCLE_COLORS, type LifecycleStage,
 } from "@/lib/contact-options";
@@ -264,8 +265,12 @@ export default function Leads() {
 
       {/* Barra de ações em lote */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2">
-          <span className="text-sm font-medium">{selected.size} selecionado(s)</span>
+        <BarraDeSelecao
+          quantidade={selected.size}
+          substantivo="lead"
+          substantivoPlural="leads"
+          onLimpar={() => setSelected(new Set())}
+        >
           <Button size="sm" className="h-8" onClick={() => batchUpdate("aprovar")}>
             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />Aprovar
           </Button>
@@ -275,7 +280,7 @@ export default function Leads() {
           <Button size="sm" variant="ghost" className="h-8 ml-auto" onClick={() => setSelected(new Set())}>
             Limpar seleção
           </Button>
-        </div>
+        </BarraDeSelecao>
       )}
 
       {loading ? (

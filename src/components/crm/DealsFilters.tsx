@@ -6,6 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { BarraDeFiltros } from "@/components/layout/BarraDeAcoes";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -27,7 +28,7 @@ export function DealsFilters({ filters, onFiltersChange, members }: DealsFilters
   const hasFilters = Object.values(filters).some((v) => v !== undefined && v !== "");
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-3">
+    <BarraDeFiltros>
       <div className="space-y-1">
         <Label className="text-xs">Responsável</Label>
         <Select
@@ -96,6 +97,6 @@ export function DealsFilters({ filters, onFiltersChange, members }: DealsFilters
           <X className="mr-1 h-3 w-3" />Limpar
         </Button>
       )}
-    </div>
+    </BarraDeFiltros>
   );
 }

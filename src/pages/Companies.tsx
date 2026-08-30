@@ -34,6 +34,7 @@ import { formatarData, formatarMoedaInteira } from "@/lib/formato";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
+import { BarraDeFiltros, BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 
@@ -206,7 +207,7 @@ export default function Companies() {
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-3">
+        <BarraDeFiltros>
           <div className="space-y-1">
             <Label className="text-xs">Indústria</Label>
             <Select value={filters.industry || "all"} onValueChange={(v) => setFilters({ ...filters, industry: v === "all" ? undefined : v })}>
@@ -246,16 +247,20 @@ export default function Companies() {
               <X className="mr-1 h-3 w-3" />Limpar
             </Button>
           )}
-        </div>
+        </BarraDeFiltros>
       )}
 
       {selectedCompanies.size > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2">
-          <span className="text-sm font-medium">{selectedCompanies.size} selecionadas</span>
+        <BarraDeSelecao
+          quantidade={selectedCompanies.size}
+          substantivo="empresa"
+          substantivoPlural="empresas"
+          onLimpar={() => setSelectedCompanies(new Set())}
+        >
           <Button size="sm" variant="destructive" onClick={batchDelete}>
             <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir
           </Button>
-        </div>
+        </BarraDeSelecao>
       )}
 
       {carregando && <LoadingState linhas={8} />}
@@ -344,7 +349,7 @@ export default function Companies() {
       {!carregando && !falhou && filtered.length > 0 && viewMode === "cards" && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {paginated.map((c) => (
-            <Card key={c.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrawerCompany(c)}>
+            <Card key={c.id} className="cursor-pointer transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setDrawerCompany(c)}>
               <CardContent className="space-y-2">
                 <div className="flex items-center gap-3">
                   {c.domain ? (
