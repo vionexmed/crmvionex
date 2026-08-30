@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// o módulo sob teste lê `localStorage` na importação
 /**
  * A conta entre o número do card e a lista que o explica.
  *

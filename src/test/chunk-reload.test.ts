@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// lê `window.location` e o registro do service worker
 /**
  * Trava contra um bug que chegou à produção.
  *

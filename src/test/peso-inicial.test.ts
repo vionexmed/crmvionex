@@ -133,3 +133,41 @@ describe("as fontes pedem só os pesos usados", () => {
     expect(HTML).toMatch(/JetBrains\+Mono:wght@400;500(&|")/);
   });
 });
+
+describe("a suíte não monta DOM onde não precisa", () => {
+  const CONFIG = readFileSync("vitest.config.ts", "utf8");
+
+  /**
+   * `environment: "jsdom"` global custava um DOM inteiro por ARQUIVO. Dos 30
+   * arquivos de teste, 4 tocam em DOM; os outros 26 leem código-fonte ou
+   * exercitam função pura.
+   *
+   * Medido: tempo de `environment` de 6,47s para 0,88s, relógio de parede de
+   * 1,68s para 0,94s.
+   */
+  it("o padrão é node", () => {
+    expect(CONFIG).toMatch(/environment: "node"/);
+  });
+
+  /**
+   * Quem precisa declara no topo do próprio arquivo. É local e visível, ao
+   * contrário de uma lista de globs no config que ninguém lembra de atualizar.
+   */
+  it.each([
+    "src/test/chunk-reload.test.ts",
+    "src/test/hooks/queries/useContacts.test.tsx",
+    "src/test/hooks/useDebounce.test.ts",
+    "src/test/dashboard/metric-drilldown.test.ts",
+  ])("%s pede jsdom no próprio arquivo", (arquivo) => {
+    expect(readFileSync(arquivo, "utf8")).toMatch(/^\/\/ @vitest-environment jsdom/);
+  });
+
+  /**
+   * O setup roda para TODOS os arquivos, inclusive os que rodam em `node` e não
+   * têm `window` -- sem a guarda, `defineProperty` lançaria antes do primeiro
+   * teste do arquivo.
+   */
+  it("o setup não assume window", () => {
+    expect(readFileSync("src/test/setup.ts", "utf8")).toContain('typeof window !== "undefined"');
+  });
+});

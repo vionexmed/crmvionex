@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// renderiza hook com @testing-library/react
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
