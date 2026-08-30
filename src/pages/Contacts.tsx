@@ -57,6 +57,7 @@ import {
 import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
+import { exportarCSV } from "@/lib/csv";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type SortKey = "name" | "email" | "status" | "created_at" | "title";
@@ -305,11 +306,6 @@ export default function Contacts() {
   };
 
   // Escapa célula CSV: aspas duplicadas + prefixo contra injeção de fórmula (Excel)
-  const csvCell = (v: unknown) => {
-    let s = String(v ?? "");
-    if (/^[=+\-@]/.test(s)) s = `'${s}`;
-    return `"${s.replace(/"/g, '""')}"`;
-  };
 
   const [exporting, setExporting] = useState(false);
   const exportCSV = async () => {
@@ -327,13 +323,7 @@ export default function Contacts() {
           Telefone: cleanPhone(c.phone), Cargo: c.title || "", Empresa: comp?.name || "", "Ciclo de vida": LIFECYCLE_LABELS[c.lifecycle_stage ?? "lead"],
         };
       });
-      const headers = Object.keys(rows[0] || { Nome: "" });
-      const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => csvCell((r as Record<string, unknown>)[h])).join(","))].join("\n");
-      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = "contatos.csv"; a.click();
-      URL.revokeObjectURL(url);
+      exportarCSV(rows, "contatos");
       toast({ title: `${rows.length} contatos exportados` });
     } catch (e: unknown) {
       toast({ title: "Erro ao exportar", description: mensagemErro(e), variant: "destructive" });

@@ -158,6 +158,7 @@ describe("a suíte não monta DOM onde não precisa", () => {
     "src/test/hooks/queries/useContacts.test.tsx",
     "src/test/hooks/useDebounce.test.ts",
     "src/test/dashboard/metric-drilldown.test.ts",
+    "src/test/lib/csv.test.ts",
   ])("%s pede jsdom no próprio arquivo", (arquivo) => {
     expect(readFileSync(arquivo, "utf8")).toMatch(/^\/\/ @vitest-environment jsdom/);
   });

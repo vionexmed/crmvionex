@@ -1,4 +1,5 @@
 import { formatarMoedaInteira } from "@/lib/formato";
+import { exportarCSV } from "@/lib/csv";
 // ── Types ─────────────────────────────────────
 export type Stage = { id: string; name: string; order: number; color: string | null; win_probability: number | null; pipeline_id: string };
 export type Deal = {
@@ -74,15 +75,11 @@ export function inPeriod(dateStr: string | null, range: { start: Date | null; en
   return true;
 }
 
-export function downloadCSV(rows: Record<string, any>[], filename: string) {
-  if (rows.length === 0) return;
-  const headers = Object.keys(rows[0]);
-  const csv = [
-    headers.join(","),
-    ...rows.map((r) => headers.map((h) => `"${String(r[h] ?? "").replace(/"/g, '""')}"`).join(","))
-  ].join("\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url; a.download = `${filename}.csv`; a.click();
-  URL.revokeObjectURL(url);
+/**
+ * Mantido como `downloadCSV` porque cinco componentes de relatório importam
+ * este nome. A implementação virou `lib/csv`, que é a mesma que Contatos,
+ * Empresas e Lead Scoring usam agora.
+ */
+export function downloadCSV(rows: Record<string, unknown>[], filename: string) {
+  exportarCSV(rows, filename);
 }

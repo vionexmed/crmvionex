@@ -32,6 +32,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { TrendingUp as IconeDaPagina } from "lucide-react";
 import { formatarDataHoraCurta } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
+import { exportarCSV } from "@/lib/csv";
 
 type Contact = {
   id: string; first_name: string; last_name: string | null; email: string | null;
@@ -303,15 +304,17 @@ export default function LeadScoring() {
   };
 
   const exportSegmentCSV = (seg: Segment) => {
-    const rows = getSegmentContacts(seg);
-    const csv = ["Nome,Email,Ciclo de vida,Score",
-      ...rows.map((c) => `"${c.first_name} ${c.last_name || ""}","${c.email || ""}","${LIFECYCLE_LABELS[(c.lifecycle_stage || "lead") as LifecycleStage]}",${c.lead_score || 0}`)
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `segmento-${seg.name}.csv`; a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: "CSV exportado" });
+    // A linha era montada como string, sem escapar nada: um contato chamado
+    // `Ana "Aninha" Prado` quebrava a estrutura do arquivo. E sem BOM o Excel
+    // abria os acentos como lixo.
+    const rows = getSegmentContacts(seg).map((c) => ({
+      Nome: `${c.first_name} ${c.last_name || ""}`.trim(),
+      Email: c.email || "",
+      "Ciclo de vida": LIFECYCLE_LABELS[(c.lifecycle_stage || "lead") as LifecycleStage],
+      Score: c.lead_score || 0,
+    }));
+    exportarCSV(rows, `segmento-${seg.name}`);
+    toast({ title: `${rows.length} contatos exportados` });
   };
 
   const filteredContacts = useMemo(() => {

@@ -33,6 +33,7 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/layout/Estado
 import { formatarData, formatarMoedaInteira } from "@/lib/formato";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
+import { exportarCSV } from "@/lib/csv";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 
@@ -154,13 +155,11 @@ export default function Companies() {
       Nome: c.name, Domínio: c.domain || "", Indústria: c.industry || "",
       Tamanho: c.size || "", Receita: c.revenue || "", Website: c.website || "",
     }));
-    const headers = Object.keys(rows[0] || {});
-    const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => `"${(r as any)[h] || ""}"`).join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "empresas.csv"; a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: "CSV exportado" });
+    // Escrevia sem BOM e sem escapar aspas: o Excel abria com acento quebrado
+    // ("Indústria" virava "IndÃºstria"), e uma empresa chamada
+    // `Silva "Móveis" Ltda` deslocava todas as colunas da linha.
+    exportarCSV(rows, "empresas");
+    toast({ title: `${rows.length} empresas exportadas` });
   };
 
 

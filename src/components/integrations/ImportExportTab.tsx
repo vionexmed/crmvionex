@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportarCSV } from "@/lib/csv";
 
 export function ImportExportTab({ orgId }: { orgId: string | null }) {
   const { toast } = useToast();
@@ -17,24 +18,12 @@ export function ImportExportTab({ orgId }: { orgId: string | null }) {
       if (error) throw error;
       if (!data || data.length === 0) { toast({ title: "Sem dados para exportar" }); return; }
 
-      const headers = Object.keys(data[0]);
-      const csv = [
-        headers.join(","),
-        ...data.map((row: any) => headers.map((h) => {
-          const val = row[h];
-          if (val === null || val === undefined) return "";
-          const str = typeof val === "object" ? JSON.stringify(val) : String(val);
-          return str.includes(",") || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
-        }).join(",")),
-      ].join("\n");
-
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${entity}_export_${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Escrevia sem BOM: o Excel abria "São Paulo" como "SÃ£o Paulo". Aqui as
+      // colunas vêm do banco e não são conhecidas de antemão, então
+      // `exportarCSV` deriva os cabeçalhos da primeira linha, que é o mesmo que
+      // este bloco fazia.
+      const hoje = new Date().toISOString().slice(0, 10);
+      exportarCSV(data as unknown as Record<string, unknown>[], `${entity}_export_${hoje}`);
       toast({ title: `${data.length} registros exportados` });
     } catch (e: any) {
       toast({ title: "Erro na exportação", description: e.message, variant: "destructive" });
