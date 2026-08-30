@@ -97,7 +97,7 @@ const GROUPS: Group[] = [
     tiles: [
       {
         key: "abordagens", label: "Abordagens realizadas", icon: Send, accent: "primary", href: "/activities", drilldown: "abordagens",
-        hint: "Abordagens que de fato aconteceram: atividade concluída (pela data da conclusão), e-mail que saiu, e mensagem de WhatsApp aceita pela Meta. Agendada e não feita não conta, e tentativa que falhou também não.",
+        hint: "Tentativas de contato que de fato saíram: ligação e e-mail registrados como concluídos, e-mail enviado pelo CRM, e WhatsApp aceito pela Meta. REUNIÃO NÃO ENTRA — ela é o resultado de abordar, não a abordagem, e tem card próprio. Agendada e não feita não conta, e tentativa que falhou também não.",
       },
       {
         key: "taxaEntrega", label: "Taxa de entrega", icon: CheckCheck, accent: "success", format: "percent",

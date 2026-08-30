@@ -187,3 +187,68 @@ describe("os textos de ajuda descrevem o que a SQL faz", () => {
     expect(painel.slice(i, i + 400)).toContain("concluídas");
   });
 });
+
+/**
+ * Reunião não é abordagem.
+ *
+ * `abordagens` contava `type IN ('call', 'email', 'meeting')`. Duas
+ * consequências, e a segunda é a que importa:
+ *
+ * 1. O MESMO evento inflava dois cartões — uma reunião realizada aparecia em
+ *    "Abordagens realizadas" e em "Reuniões geradas".
+ *
+ * 2. Reunião é RESULTADO, não tentativa. Ninguém aborda alguém realizando uma
+ *    reunião: aborda ligando ou escrevendo, e a reunião é o que se ganha com
+ *    isso. Contá-la como abordagem mistura esforço com retorno, e o card deixa
+ *    de responder "quantas portas eu bati".
+ */
+describe("reunião saiu de abordagens", () => {
+  const SQL = readFileSync(
+    "supabase/migrations/20260830150000_reuniao_nao_e_abordagem.sql",
+    "utf8",
+  );
+  const semComentarios = SQL.replace(/^--.*$/gm, "");
+
+  it("nenhuma função conta meeting como abordagem", () => {
+    expect(semComentarios).not.toContain("'call', 'email', 'meeting'");
+    expect(semComentarios).toContain("'call', 'email'");
+  });
+
+  /**
+   * Card, gráfico e lista contam a mesma coisa em funções SEPARADAS. Mudar uma
+   * só faz o painel se contradizer: clicar no número abriria uma lista com
+   * outro total. Está no CLAUDE.md.
+   */
+  it("as quatro funções mudam juntas", () => {
+    for (const fn of ["sdr_metrics", "sdr_by_owner", "sdr_series", "sdr_metric_leads"]) {
+      expect(SQL, `${fn} não foi recriada`).toContain(`FUNCTION public.${fn}`);
+    }
+  });
+
+  /**
+   * `CREATE OR REPLACE` não troca o TIPO DE RETORNO -- e é por isso que
+   * `sdr_metrics` precisou de DROP quando ganhou uma coluna. Aqui só muda o
+   * filtro, então serve, e preserva as concessões que um DROP levaria junto.
+   */
+  it("usa CREATE OR REPLACE, sem DROP", () => {
+    expect(SQL).not.toMatch(/^DROP FUNCTION/m);
+    expect((SQL.match(/^CREATE OR REPLACE FUNCTION/gm) ?? [])).toHaveLength(4);
+  });
+
+  /**
+   * Lá a pergunta é outra -- "houve contato com esta pessoa?" -- e uma reunião
+   * realizada responde que sim. Mudar junto tiraria do funil quem foi
+   * contatado só por reunião.
+   */
+  it("o gatilho de lead contatado NÃO muda", () => {
+    // Sem comentário: o cabeçalho da migração EXPLICA por que o gatilho fica de
+    // fora, e nomeia o gatilho ao fazê-lo. Sexta vez nesta base.
+    expect(semComentarios).not.toContain("promover_lead_para_contatado");
+  });
+
+  it("o texto do card diz que reunião não entra", () => {
+    const painelSrc = readFileSync("src/pages/Dashboard.tsx", "utf8");
+    const i = painelSrc.indexOf('key: "abordagens"');
+    expect(painelSrc.slice(i, i + 500)).toMatch(/REUNIÃO NÃO ENTRA/);
+  });
+});
