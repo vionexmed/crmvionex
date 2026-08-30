@@ -358,7 +358,7 @@ export default function Companies() {
         </div>
       )}
 
-      <CompanyDrawer company={drawerCompany} onClose={() => setDrawerCompany(null)} onUpdate={invalidate} members={members} />
+      <CompanyDrawer company={drawerCompany} onClose={() => setDrawerCompany(null)} onUpdate={invalidate} />
       <CompanyCreateModal open={createOpen} onOpenChange={setCreateOpen} onCreated={invalidate} />
       <CSVImportModal open={csvOpen} onOpenChange={setCsvOpen} onImported={invalidate} entityType="companies" />
     </div>

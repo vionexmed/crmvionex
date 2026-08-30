@@ -26,9 +26,10 @@ const bantCriteria = [
 
 function calcQualScore(data: BANTData): number {
   let score = 0;
-  let total = 0;
+  // `total` era acumulado aqui e nunca lido -- os quatro critérios BANT valem
+  // 25 cada, então o total é sempre 100 e a variável só existia para parecer
+  // uma média. O lint só acusou depois que a regra foi ligada.
   bantCriteria.forEach(({ key }) => {
-    total += 25;
     if (data[key] === true) score += 25;
     else if (data[key] === null) score += 0;
   });
@@ -52,11 +53,10 @@ function getProgressColor(score: number) {
 interface Props {
   dealId: string;
   qualification: any;
-  qualificationScore: number;
   onUpdate: () => void;
 }
 
-export function DealQualification({ dealId, qualification, qualificationScore, onUpdate }: Props) {
+export function DealQualification({ dealId, qualification, onUpdate }: Props) {
   const { toast } = useToast();
   const [bant, setBant] = useState<BANTData>({
     budget: null, authority: null, need: null, timeline: null,

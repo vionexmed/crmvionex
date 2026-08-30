@@ -36,7 +36,18 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!--
+      Só os pesos que o código realmente usa.
+      
+      Eram 12 pedidos e 8 usados. Fora: Nunito 300 (zero font-light no projeto),
+      Poppins 400 e 500 (os 12 usos de font-heading resolvem em 600 ou 700, e
+      h1-h4 herdam bold do navegador) e JetBrains 600 (nenhum font-mono em
+      semibold). Quatro arquivos woff2 a menos por visita fria.
+      
+      Importa mais do que o tamanho: este <link> é BLOQUEANTE de renderização,
+      então cada peso a menos é uma requisição a menos no caminho crítico.
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Poppins:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     
     <meta property="og:type" content="website" />

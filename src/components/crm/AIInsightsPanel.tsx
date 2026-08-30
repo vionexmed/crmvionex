@@ -103,7 +103,7 @@ export function AIInsightsPanel() {
               </div>
             )}
 
-            {visibleInsights.map((insight, idx) => {
+            {visibleInsights.map((insight) => {
               const originalIdx = insights.indexOf(insight);
               const config = typeConfig[insight.type] || typeConfig.info;
               const Icon = config.icon;

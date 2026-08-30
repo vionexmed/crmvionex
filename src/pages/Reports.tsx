@@ -138,7 +138,7 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="sales">
-          <SalesReport deals={filteredDeals} stages={stages} members={members} companies={companies} allDeals={deals} periodRange={periodRange} />
+          <SalesReport deals={filteredDeals} stages={stages} members={members} companies={companies} />
         </TabsContent>
 
         <TabsContent value="activities">
@@ -146,7 +146,7 @@ export default function Reports() {
         </TabsContent>
 
         <TabsContent value="forecast">
-          <ForecastReport deals={deals} stages={stages} members={members} ownerFilter={ownerFilter} pipelineFilter={pipelineFilter} />
+          <ForecastReport deals={deals} stages={stages} ownerFilter={ownerFilter} pipelineFilter={pipelineFilter} />
         </TabsContent>
 
         <TabsContent value="contacts">
@@ -154,7 +154,7 @@ export default function Reports() {
         </TabsContent>
 
         <TabsContent value="custom">
-          <CustomReportBuilder deals={deals} contacts={contacts} activities={activities} stages={stages} members={members} companies={companies} orgId={orgId} />
+          <CustomReportBuilder deals={deals} contacts={contacts} activities={activities} stages={stages} members={members} orgId={orgId} />
         </TabsContent>
       </Tabs>
     </div>

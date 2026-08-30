@@ -22,9 +22,8 @@ import {
   downloadCSV,
 } from "@/components/reports/types";
 
-export function SalesReport({ deals, stages, members, companies, allDeals, periodRange }: {
-  deals: Deal[]; stages: Stage[]; members: Profile[]; companies: Company[]; allDeals: Deal[];
-  periodRange: { start: Date | null; end: Date | null };
+export function SalesReport({ deals, stages, members, companies }: {
+  deals: Deal[]; stages: Stage[]; members: Profile[]; companies: Company[];
 }) {
   const [groupBy, setGroupBy] = useState<"stage" | "owner" | "company" | "month">("stage");
   const { toast } = useToast();

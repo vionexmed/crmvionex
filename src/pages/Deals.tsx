@@ -594,7 +594,6 @@ export default function Deals() {
           qc.invalidateQueries({ queryKey: ["deals"] });
         }}
         companies={companies}
-        members={members}
       />
     </div>
   );

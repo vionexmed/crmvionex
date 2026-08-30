@@ -45,7 +45,7 @@ export default function Integrations() {
           <TrackingTab orgId={orgId} />
         </TabsContent>
         <TabsContent value="import-export" className="mt-4">
-          <ImportExportTab orgId={orgId} userId={user?.id} />
+          <ImportExportTab orgId={orgId} />
         </TabsContent>
       </Tabs>
     </div>

@@ -14,12 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
 import {
-  Deal, Contact, ActivityRow, Stage, Profile, Company,
+  Deal, Contact, ActivityRow, Stage, Profile,
   fmt, downloadCSV,
 } from "@/components/reports/types";
 
-export function CustomReportBuilder({ deals, contacts, activities, stages, members, companies, orgId }: {
-  deals: Deal[]; contacts: Contact[]; activities: ActivityRow[]; stages: Stage[]; members: Profile[]; companies: Company[]; orgId: string;
+export function CustomReportBuilder({ deals, contacts, activities, stages, members, orgId }: {
+  deals: Deal[]; contacts: Contact[]; activities: ActivityRow[]; stages: Stage[]; members: Profile[]; orgId: string;
 }) {
   const { toast } = useToast();
   const [entity, setEntity] = useState<"deals" | "contacts" | "activities">("deals");

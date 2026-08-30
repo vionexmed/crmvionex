@@ -11,7 +11,7 @@ import type { SetupStepProps } from "@/pages/Setup";
 
 type TestStatus = "idle" | "loading" | "success" | "domain_error" | "key_error";
 
-export function StepResend({ orgId, userId, userEmail, onComplete, setStepData }: SetupStepProps) {
+export function StepResend({ orgId, userId: _userId, userEmail, onComplete, setStepData }: SetupStepProps) {
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState("");
   const [fromEmail, setFromEmail] = useState("");

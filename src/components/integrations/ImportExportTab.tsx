@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export function ImportExportTab({ orgId, userId }: { orgId: string | null; userId?: string }) {
+export function ImportExportTab({ orgId }: { orgId: string | null }) {
   const { toast } = useToast();
   const [exporting, setExporting] = useState<string | null>(null);
 

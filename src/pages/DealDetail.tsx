@@ -474,7 +474,6 @@ export default function DealDetail() {
           <DealQualification
             dealId={deal.id}
             qualification={deal.qualification}
-            qualificationScore={deal.qualification_score || 0}
             onUpdate={() => qc.invalidateQueries({ queryKey: ["deals", "detail", deal.id] })}
           />
           {/* Contact */}
@@ -622,7 +621,6 @@ export default function DealDetail() {
           qc.invalidateQueries({ queryKey: dealsKeys.detail(id ?? "") });
         }}
         companies={companies}
-        members={members}
       />
 
       {/* Confirmação nomeando o que será apagado.

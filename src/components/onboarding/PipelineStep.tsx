@@ -33,7 +33,7 @@ const PROBS = [10, 25, 40, 55, 70, 80, 90, 95];
 
 type TemplateKey = keyof typeof TEMPLATES;
 
-export function PipelineStep({ orgId, setCanContinue, onNext, setStepData, stepData }: OnboardingStepProps) {
+export function PipelineStep({ orgId, setCanContinue, onNext: _onNext, setStepData, stepData }: OnboardingStepProps) {
   const { toast } = useToast();
   const [selected, setSelected] = useState<TemplateKey>("b2b");
   const [customStages, setCustomStages] = useState<string[]>([]);

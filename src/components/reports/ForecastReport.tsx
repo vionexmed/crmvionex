@@ -10,12 +10,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import {
-  Deal, Stage, Profile,
+  Deal, Stage,
   fmt, tooltipStyle,
 } from "@/components/reports/types";
 
-export function ForecastReport({ deals, stages, members, ownerFilter, pipelineFilter }: {
-  deals: Deal[]; stages: Stage[]; members: Profile[]; ownerFilter: string; pipelineFilter: string;
+export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
+  deals: Deal[]; stages: Stage[]; ownerFilter: string; pipelineFilter: string;
 }) {
   const { toast } = useToast();
 

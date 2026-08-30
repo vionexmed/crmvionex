@@ -12,12 +12,19 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement;
 };
 
-const actionTypes = {
-  ADD_TOAST: "ADD_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
-} as const;
+/**
+ * Só existe como TIPO -- nenhum código lê o objeto em tempo de execução.
+ *
+ * Era um `const` com `as const`, e o `typeof` abaixo aproveitava. Isso deixava
+ * um objeto de quatro strings no pacote sem que ninguém o usasse. Como tipo,
+ * some no build e o resto do arquivo não muda.
+ */
+type actionTypes = {
+  ADD_TOAST: "ADD_TOAST";
+  UPDATE_TOAST: "UPDATE_TOAST";
+  DISMISS_TOAST: "DISMISS_TOAST";
+  REMOVE_TOAST: "REMOVE_TOAST";
+};
 
 let count = 0;
 
@@ -26,7 +33,7 @@ function genId() {
   return count.toString();
 }
 
-type ActionType = typeof actionTypes;
+type ActionType = actionTypes;
 
 type Action =
   | {

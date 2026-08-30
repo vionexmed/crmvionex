@@ -19,7 +19,6 @@ import type { Database } from "@/integrations/supabase/types";
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
 function formatCurrency(value: number, currency: string = "BRL") {
@@ -30,10 +29,9 @@ interface CompanyDrawerProps {
   company: Company | null;
   onClose: () => void;
   onUpdate: () => void;
-  members: Profile[];
 }
 
-export function CompanyDrawer({ company, onClose, onUpdate, members }: CompanyDrawerProps) {
+export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps) {
   const { toast } = useToast();
   const { industries } = useIndustries();
 

@@ -6,7 +6,7 @@ import { Brain, Check, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { SetupStepProps } from "@/pages/Setup";
 
-export function StepAI({ orgId, onComplete, setStepData }: SetupStepProps) {
+export function StepAI({ orgId: _orgId, onComplete, setStepData }: SetupStepProps) {
   const { toast } = useToast();
   const [testing, setTesting] = useState(false);
   const [tested, setTested] = useState(false);

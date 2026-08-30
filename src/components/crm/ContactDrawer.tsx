@@ -31,7 +31,6 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -70,10 +69,9 @@ interface ContactDrawerProps {
   onClose: () => void;
   onUpdate: () => void;
   companies: Company[];
-  members: Profile[];
 }
 
-export function ContactDrawer({ contact, onClose, onUpdate, companies, members }: ContactDrawerProps) {
+export function ContactDrawer({ contact, onClose, onUpdate, companies }: ContactDrawerProps) {
   const { orgId } = useOrg();
   const { user } = useAuth();
   const { toast } = useToast();

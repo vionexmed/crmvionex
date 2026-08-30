@@ -665,8 +665,8 @@ export default function Contacts() {
       {viewMode === "owner" && isAdmin && (
         <ContactsKanbanByOwner
           contacts={allContactsForKanban}
-          members={members}
           companies={companies}
+          members={members}
           onContactClick={(c) => setDrawerContact(c)}
           onOwnerChange={handleOwnerChange}
         />
@@ -739,7 +739,6 @@ export default function Contacts() {
         onClose={() => setDrawerContact(null)}
         onUpdate={invalidate}
         companies={companies}
-        members={members}
       />
 
       <ContactCreateModal
