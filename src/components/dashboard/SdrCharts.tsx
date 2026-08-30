@@ -74,8 +74,13 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
     <Card className="border-0 shadow-sm">
       <CardHeader>
         <CardTitle>Funil de conversão</CardTitle>
+        {/* "no período" é a parte que faltava. O funil é de COORTE: conta os
+            contatos que ENTRARAM na janela, e mostra até onde eles tinham
+            chegado no fim dela -- não onde estão hoje. Sem isso, quem lê
+            supõe uma foto do momento. */}
         <CardDescription>
-          Quantos chegaram a cada etapa, e a perda entre elas
+          Dos contatos que entraram no período, até onde chegaram — e a perda
+          entre as etapas
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-2">
