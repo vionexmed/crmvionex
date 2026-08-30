@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent} from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,8 @@ import {
 } from "@/lib/atividade-tipos";
 import type { Database } from "@/integrations/supabase/types";
 import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
+import { PageTabs } from "@/components/layout/PageTabs";
+import { Activity, Handshake, LayoutList, StickyNote } from "lucide-react";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -260,12 +262,14 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
         </div>
 
         <Tabs defaultValue="overview" className="p-4">
-          <TabsList className="w-full">
-            <TabsTrigger value="overview" className="flex-1">Visão Geral</TabsTrigger>
-            <TabsTrigger value="activities" className="flex-1">Atividades</TabsTrigger>
-            <TabsTrigger value="deals" className="flex-1">Negócios</TabsTrigger>
-            <TabsTrigger value="notes" className="flex-1">Notas</TabsTrigger>
-          </TabsList>
+          <PageTabs
+            abas={[
+              { valor: "overview", rotulo: "Visão geral", icone: LayoutList, rotuloCurto: "Visão" },
+              { valor: "activities", rotulo: "Atividades", icone: Activity, rotuloCurto: "Ativ." },
+              { valor: "deals", rotulo: "Negócios", icone: Handshake },
+              { valor: "notes", rotulo: "Notas", icone: StickyNote },
+            ]}
+          />
 
           {/* Overview */}
           <TabsContent value="overview" className="mt-4 space-y-4">

@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { BarChart3 as BarChart3Icon } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageTabs } from "@/components/layout/PageTabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -165,13 +166,17 @@ export default function Reports() {
         />
       ) : (
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="sales" className="text-xs gap-1"><BarChart3 className="h-3.5 w-3.5" />Vendas</TabsTrigger>
-          <TabsTrigger value="activities" className="text-xs gap-1"><Activity className="h-3.5 w-3.5" />Atividades</TabsTrigger>
-          <TabsTrigger value="forecast" className="text-xs gap-1"><TrendingUp className="h-3.5 w-3.5" />Forecast</TabsTrigger>
-          <TabsTrigger value="contacts" className="text-xs gap-1"><Users className="h-3.5 w-3.5" />Contatos</TabsTrigger>
-          <TabsTrigger value="custom" className="text-xs gap-1"><FileText className="h-3.5 w-3.5" />Custom</TabsTrigger>
-        </TabsList>
+        <PageTabs
+          abas={[
+            { valor: "sales", rotulo: "Vendas", icone: BarChart3 },
+            { valor: "activities", rotulo: "Atividades", icone: Activity },
+            // "Forecast" e "Custom" eram as duas únicas palavras em inglês numa
+            // barra de abas em português.
+            { valor: "forecast", rotulo: "Previsão", icone: TrendingUp },
+            { valor: "contacts", rotulo: "Contatos", icone: Users },
+            { valor: "custom", rotulo: "Personalizado", icone: FileText, rotuloCurto: "Person." },
+          ]}
+        />
 
         <TabsContent value="sales">
           <SalesReport deals={filteredDeals} stages={stages} members={members} companies={companies} />

@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Mail, Lock, User } from "lucide-react";
 import vionexLogo from "@/assets/vionex-logo-sidebar.png";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { PageTabs } from "@/components/layout/PageTabs";
+import { LogIn, UserPlus, Wand2 } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -107,11 +109,15 @@ export default function Login() {
         <Card className="border-border">
           <Tabs defaultValue="login">
             <CardHeader className="pb-4">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-                <TabsTrigger value="magic">Magic Link</TabsTrigger>
-              </TabsList>
+              <PageTabs
+                abas={[
+                  { valor: "login", rotulo: "Entrar", icone: LogIn },
+                  { valor: "signup", rotulo: "Cadastrar", icone: UserPlus },
+                  // "Magic Link" era a única expressão em inglês da tela de
+                  // entrada -- a primeira coisa que alguém vê no produto.
+                  { valor: "magic", rotulo: "Link por e-mail", icone: Wand2, rotuloCurto: "Link" },
+                ]}
+              />
             </CardHeader>
 
             <CardContent>

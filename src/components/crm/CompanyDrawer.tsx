@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIndustries } from "@/hooks/useIndustries";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,8 @@ import {
 import { Edit2, X, Save, Building2, Globe, Users, DollarSign} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { PageTabs } from "@/components/layout/PageTabs";
+import { Handshake, LayoutList } from "lucide-react";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -115,11 +117,13 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
         </div>
 
         <Tabs defaultValue="overview" className="p-4">
-          <TabsList className="w-full">
-            <TabsTrigger value="overview" className="flex-1">Visão Geral</TabsTrigger>
-            <TabsTrigger value="contacts" className="flex-1">Contatos</TabsTrigger>
-            <TabsTrigger value="deals" className="flex-1">Negócios</TabsTrigger>
-          </TabsList>
+          <PageTabs
+            abas={[
+              { valor: "overview", rotulo: "Visão geral", icone: LayoutList, rotuloCurto: "Visão" },
+              { valor: "contacts", rotulo: "Contatos", icone: Users },
+              { valor: "deals", rotulo: "Negócios", icone: Handshake },
+            ]}
+          />
 
           <TabsContent value="overview" className="mt-4 space-y-4">
             {editing ? (

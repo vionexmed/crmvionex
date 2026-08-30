@@ -28,7 +28,7 @@ import { StatCard, type StatAccent, type StatFormat } from "@/components/dashboa
 import { DashboardAIChat } from "@/components/crm/DashboardAIChat";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,7 @@ import { MetricLeadsSheet } from "@/components/dashboard/MetricLeadsSheet";
 // peso a postergar, então carregar sob demanda só adicionava uma espera — os
 // gráficos entram na mesma pintura dos números.
 import SdrChartsPanel from "@/components/dashboard/SdrChartsPanel";
+import { PageTabs } from "@/components/layout/PageTabs";
 
 type TileConfig = {
   key: MetricKey;
@@ -264,17 +265,13 @@ export default function Dashboard() {
           empilhado na mesma rolagem — e as 4 métricas de destaque ainda
           apareciam DUAS vezes, na faixa de cima e de novo nos grupos. */}
       <Tabs defaultValue="visao">
-        <TabsList>
-          <TabsTrigger value="visao" className="gap-1.5 text-xs">
-            <LineChart className="h-3.5 w-3.5" />Visão geral
-          </TabsTrigger>
-          <TabsTrigger value="indicadores" className="gap-1.5 text-xs">
-            <ListFilter className="h-3.5 w-3.5" />Indicadores
-          </TabsTrigger>
-          <TabsTrigger value="assistente" className="gap-1.5 text-xs">
-            <Bot className="h-3.5 w-3.5" />Assistente
-          </TabsTrigger>
-        </TabsList>
+        <PageTabs
+          abas={[
+            { valor: "visao", rotulo: "Visão geral", icone: LineChart, rotuloCurto: "Visão" },
+            { valor: "indicadores", rotulo: "Indicadores", icone: ListFilter },
+            { valor: "assistente", rotulo: "Assistente", icone: Bot },
+          ]}
+        />
 
         {/* ── Ver o movimento ── */}
         <TabsContent value="visao" className="mt-4 space-y-4">

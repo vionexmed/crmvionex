@@ -10,7 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Shield, RefreshCw } from "lucide-react";
 import SessionsPanel from "@/components/settings/SessionsPanel";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageTabs } from "@/components/layout/PageTabs";
+import { MonitorSmartphone, ScrollText } from "lucide-react";
 
 export default function SecuritySettings() {
   const { orgId } = useOrg();
@@ -22,10 +24,13 @@ export default function SecuritySettings() {
         <p className="text-sm text-muted-foreground">Audit log, sessões e configurações de segurança</p>
       </div>
       <Tabs defaultValue="audit">
-        <TabsList>
-          <TabsTrigger value="audit">Audit Log</TabsTrigger>
-          <TabsTrigger value="sessions">Sessões</TabsTrigger>
-        </TabsList>
+        <PageTabs
+          abas={[
+            // "Audit Log" era a última expressão em inglês desta tela.
+            { valor: "audit", rotulo: "Registro de auditoria", icone: ScrollText, rotuloCurto: "Auditoria" },
+            { valor: "sessions", rotulo: "Sessões", icone: MonitorSmartphone },
+          ]}
+        />
         <TabsContent value="audit" className="mt-4"><AuditLogTab orgId={orgId} /></TabsContent>
         <TabsContent value="sessions" className="mt-4"><SessionsTab /></TabsContent>
       </Tabs>

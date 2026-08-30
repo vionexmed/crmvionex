@@ -11,7 +11,7 @@
  */
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrg } from "@/hooks/useOrg";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Mail } from "lucide-react";
 import { GeneralTab } from "@/components/settings/GeneralTab";
 import { PipelinesTab } from "@/components/settings/PipelinesTab";
@@ -20,6 +20,8 @@ import { EmailSignatureTab } from "@/components/settings/EmailSignatureTab";
 import { NotificationsTab } from "@/components/settings/NotificationsTab";
 import { AppearanceTab } from "@/components/settings/AppearanceTab";
 import { BillingTab } from "@/components/settings/BillingTab";
+import { PageTabs } from "@/components/layout/PageTabs";
+import { Bell, CreditCard, FormInput, GitBranch, Palette, SlidersHorizontal } from "lucide-react";
 
 export default function Settings() {
   const { user, profile, isAdmin } = useAuth();
@@ -37,19 +39,24 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue={isAdmin ? "general" : "notifications"}>
-        <TabsList className="flex-wrap h-auto gap-1">
-          {isAdmin && (
-            <>
-              <TabsTrigger value="general">Geral</TabsTrigger>
-              <TabsTrigger value="pipelines">Funis e etapas</TabsTrigger>
-              <TabsTrigger value="custom-fields">Campos</TabsTrigger>
-              <TabsTrigger value="email-signature"><Mail className="h-3 w-3 mr-1" />Assinatura</TabsTrigger>
-            </>
-          )}
-          <TabsTrigger value="notifications">Notificações</TabsTrigger>
-          <TabsTrigger value="appearance">Aparência</TabsTrigger>
-          {isAdmin && <TabsTrigger value="billing">Plano</TabsTrigger>}
-        </TabsList>
+        {/* Abas condicionais: quem não é admin vê três. Como o número de
+            colunas é CONTADO do array, a barra se divide certo nos dois casos
+            -- com `grid-cols-N` escrito à mão, um dos dois ficaria errado. */}
+        <PageTabs
+          abas={[
+            ...(isAdmin
+              ? [
+                  { valor: "general", rotulo: "Geral", icone: SlidersHorizontal },
+                  { valor: "pipelines", rotulo: "Funis e etapas", icone: GitBranch, rotuloCurto: "Funis" },
+                  { valor: "custom-fields", rotulo: "Campos", icone: FormInput },
+                  { valor: "email-signature", rotulo: "Assinatura", icone: Mail },
+                ]
+              : []),
+            { valor: "notifications", rotulo: "Notificações", icone: Bell, rotuloCurto: "Notif." },
+            { valor: "appearance", rotulo: "Aparência", icone: Palette },
+            ...(isAdmin ? [{ valor: "billing", rotulo: "Plano", icone: CreditCard }] : []),
+          ]}
+        />
 
         {isAdmin && (
           <>

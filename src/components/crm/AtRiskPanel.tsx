@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import { AlertTriangle, Clock, TrendingDown, Settings2, User, Briefcase, Activity } from "lucide-react";
 import { RiskRulesManager, type RiskRule } from "./RiskRulesManager";
 import type { Database } from "@/integrations/supabase/types";
+import { PageTabs } from "@/components/layout/PageTabs";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
@@ -381,14 +382,13 @@ export function AtRiskPanel({ open, onOpenChange }: AtRiskPanelProps) {
           </SheetHeader>
 
           <Tabs defaultValue="deals" className="flex-1 flex flex-col">
-            <TabsList className="mx-3 mt-2">
-              <TabsTrigger value="deals" className="text-xs">
-                <Briefcase className="mr-1 h-3 w-3" />Negócios ({dealItems.length})
-              </TabsTrigger>
-              <TabsTrigger value="contacts" className="text-xs">
-                <User className="mr-1 h-3 w-3" />Contatos ({contactItems.length})
-              </TabsTrigger>
-            </TabsList>
+            <PageTabs
+              className="mx-3 mt-2 w-auto"
+              abas={[
+                { valor: "deals", rotulo: `Negócios (${dealItems.length})`, icone: Briefcase },
+                { valor: "contacts", rotulo: `Contatos (${contactItems.length})`, icone: User },
+              ]}
+            />
 
             <TabsContent value="deals" className="flex-1 mt-0">
               <ScrollArea className="h-[calc(100vh-320px)]">

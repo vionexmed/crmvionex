@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -25,6 +25,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { mensagemErro } from "@/lib/erro-supabase";
+import { PageTabs } from "@/components/layout/PageTabs";
+import { KeyRound, UserRound, UsersRound } from "lucide-react";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -302,11 +304,13 @@ export default function Team() {
       </div>
 
       <Tabs defaultValue="members">
-        <TabsList>
-          <TabsTrigger value="members">Membros</TabsTrigger>
-          <TabsTrigger value="permissions">Permissões</TabsTrigger>
-          <TabsTrigger value="teams">Equipes</TabsTrigger>
-        </TabsList>
+        <PageTabs
+          abas={[
+            { valor: "members", rotulo: "Membros", icone: UserRound },
+            { valor: "permissions", rotulo: "Permissões", icone: KeyRound, rotuloCurto: "Permis." },
+            { valor: "teams", rotulo: "Equipes", icone: UsersRound },
+          ]}
+        />
 
         {/* ── Members Tab ── */}
         <TabsContent value="members" className="mt-4 space-y-4">
