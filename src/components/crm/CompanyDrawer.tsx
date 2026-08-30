@@ -101,15 +101,15 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="rounded-lg border border-border p-2.5 text-center">
               <p className="text-lg font-bold">{totalDeals}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Negócios</p>
+              <p className="text-label text-muted-foreground uppercase">Negócios</p>
             </div>
             <div className="rounded-lg border border-border p-2.5 text-center">
               <p className="text-lg font-bold text-primary">{formatarMoeda(totalValue)}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Valor Total</p>
+              <p className="text-label text-muted-foreground uppercase">Valor Total</p>
             </div>
             <div className="rounded-lg border border-border p-2.5 text-center">
               <p className="text-lg font-bold text-success">{formatarMoeda(wonValue)}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Ganhos</p>
+              <p className="text-label text-muted-foreground uppercase">Ganhos</p>
             </div>
           </div>
         </div>
@@ -220,8 +220,8 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
                       <div>
                         <p className="text-sm font-medium">{d.title}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          {stage && <Badge variant="secondary" className="text-[10px]">{stage.name}</Badge>}
-                          <Badge variant="secondary" className={`text-[10px] ${d.status === "won" ? "bg-success/10 text-success" : d.status === "lost" ? "bg-destructive/10 text-destructive" : ""}`}>
+                          {stage && <Badge variant="secondary" className="text-label">{stage.name}</Badge>}
+                          <Badge variant="secondary" className={`text-label ${d.status === "won" ? "bg-success/10 text-success" : d.status === "lost" ? "bg-destructive/10 text-destructive" : ""}`}>
                             {d.status === "open" ? "Aberto" : d.status === "won" ? "Ganho" : "Perdido"}
                           </Badge>
                         </div>

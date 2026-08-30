@@ -93,9 +93,9 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
   return (
     <div className="space-y-4 mt-4">
       <div className="grid gap-3 grid-cols-3">
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{contacts.length}</p><p className="text-[9px] text-muted-foreground uppercase">Total Contatos</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-success">{totalCustomers}</p><p className="text-[9px] text-muted-foreground uppercase">Clientes</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{conversionRate}%</p><p className="text-[9px] text-muted-foreground uppercase">Lead → Cliente</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{contacts.length}</p><p className="text-micro text-muted-foreground uppercase">Total Contatos</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-success">{totalCustomers}</p><p className="text-micro text-muted-foreground uppercase">Clientes</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{conversionRate}%</p><p className="text-micro text-muted-foreground uppercase">Lead → Cliente</p></CardContent></Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -103,7 +103,7 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm">Crescimento Mensal</CardTitle>
-              <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
+              <Button variant="outline" size="sm" className="h-7 text-label" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
             </div>
           </CardHeader>
           <CardContent>

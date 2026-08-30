@@ -55,9 +55,9 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
   return (
     <div className="space-y-4 mt-4">
       <div className="grid gap-3 grid-cols-3">
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{activities.length}</p><p className="text-[9px] text-muted-foreground uppercase">Total Atividades</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-success">{completed}</p><p className="text-[9px] text-muted-foreground uppercase">Concluídas</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{completionRate}%</p><p className="text-[9px] text-muted-foreground uppercase">Taxa Conclusão</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{activities.length}</p><p className="text-micro text-muted-foreground uppercase">Total Atividades</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-success">{completed}</p><p className="text-micro text-muted-foreground uppercase">Concluídas</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{completionRate}%</p><p className="text-micro text-muted-foreground uppercase">Taxa Conclusão</p></CardContent></Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -106,7 +106,7 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm">Comparativo por Vendedor</CardTitle>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="h-7 text-label" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -114,13 +114,13 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px]">Vendedor</TableHead>
-                  <TableHead className="text-[10px] text-center">Ligações</TableHead>
-                  <TableHead className="text-[10px] text-center">Emails</TableHead>
-                  <TableHead className="text-[10px] text-center">Reuniões</TableHead>
-                  <TableHead className="text-[10px] text-center">Notas</TableHead>
-                  <TableHead className="text-[10px] text-center">Tarefas</TableHead>
-                  <TableHead className="text-[10px] text-center">Total</TableHead>
+                  <TableHead className="text-label">Vendedor</TableHead>
+                  <TableHead className="text-label text-center">Ligações</TableHead>
+                  <TableHead className="text-label text-center">Emails</TableHead>
+                  <TableHead className="text-label text-center">Reuniões</TableHead>
+                  <TableHead className="text-label text-center">Notas</TableHead>
+                  <TableHead className="text-label text-center">Tarefas</TableHead>
+                  <TableHead className="text-label text-center">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -371,7 +371,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
               </div>
               <div>
                 <CardTitle className="text-sm">Google — credenciais OAuth</CardTitle>
-                <CardDescription className="text-[10px]">
+                <CardDescription className="text-label">
                   Configuradas uma vez pela empresa. Cada pessoa conecta o próprio Gmail depois.
                 </CardDescription>
               </div>
@@ -386,7 +386,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                     <p className="text-xs font-medium text-success">
                       Credenciais configuradas — a equipe já pode conectar as contas
                     </p>
-                    <p className="mt-0.5 text-[10px] text-success/80">
+                    <p className="mt-0.5 text-label text-success/80">
                       {servidor?.origem === "crm"
                         ? "Origem: cadastrada aqui no CRM, guardada fora do alcance do navegador."
                         : servidor?.origem === "legado"
@@ -399,7 +399,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                     lida pelo navegador do admin. A migração 20260824130000 tirou
                     as chaves de lá, mas alguém pode reintroduzir por SQL. */}
                 {servidor?.origem === "legado" && (
-                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-label leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
                     <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>
                       Esta credencial está numa <strong>tabela que o navegador lê</strong>, herança da
@@ -421,13 +421,13 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             )}
 
             <div className="rounded-md border border-border bg-muted/30 p-3">
-              <p className="text-[11px] font-medium">Onde cada pessoa conecta a conta dela</p>
-              <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">
+              <p className="text-meta font-medium">Onde cada pessoa conecta a conta dela</p>
+              <p className="mt-0.5 text-label leading-relaxed text-muted-foreground">
                 Em <strong>Configurações → Conectar e-mail</strong>. A caixa de cada um é privada:
                 ninguém vê o e-mail do outro, nem você.
               </p>
               {emailConnections.length > 0 && (
-                <p className="mt-1.5 text-[10px] tabular-nums text-muted-foreground">
+                <p className="mt-1.5 text-label tabular-nums text-muted-foreground">
                   {emailConnections.length}{" "}
                   {emailConnections.length === 1 ? "conta conectada" : "contas conectadas"} na equipe
                 </p>
@@ -441,15 +441,15 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 quebrado. */}
             {isAdmin && emailConnections.length > 0 && (
               <div className="rounded-md border border-border">
-                <p className="border-b border-border px-3 py-2 text-[11px] font-medium">
+                <p className="border-b border-border px-3 py-2 text-meta font-medium">
                   Contas conectadas
                 </p>
                 <div className="divide-y divide-border">
                   {emailConnections.map((c) => (
                     <div key={c.id} className="flex items-center gap-2 px-3 py-2">
-                      <span className="min-w-0 flex-1 truncate text-[11px]">{c.email_address}</span>
+                      <span className="min-w-0 flex-1 truncate text-meta">{c.email_address}</span>
                       {c.invalid_since ? (
-                        <Badge variant="destructive" className="shrink-0 text-[9px]">
+                        <Badge variant="destructive" className="shrink-0 text-micro">
                           {c.invalid_reason === "credenciais_trocadas"
                             ? "reconectar: credencial trocada"
                             : c.invalid_reason === "token_revogado"
@@ -457,7 +457,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                               : "reconectar"}
                         </Badge>
                       ) : (
-                        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                        <span className="shrink-0 text-label tabular-nums text-muted-foreground">
                           {c.connected_at
                             ? formatarData(c.connected_at)
                             : "—"}
@@ -476,7 +476,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 dois campos, e eles vão para uma edge function. */}
             {!formAberto ? (
               <div className="flex justify-end">
-                <Button variant="outline" size="sm" className="h-7 text-[10px]"
+                <Button variant="outline" size="sm" className="h-7 text-label"
                   onClick={() => { setFormAberto(true); setFormId(""); setFormSecret(""); }}>
                   {hasGmailCredentials ? "Trocar credencial" : "Cadastrar credencial"}
                 </Button>
@@ -484,19 +484,19 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             ) : (
               <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium" htmlFor="g-cid">Client ID</label>
+                  <label className="text-label font-medium" htmlFor="g-cid">Client ID</label>
                   <Input id="g-cid" autoComplete="off" className="h-8 font-mono text-xs"
                     placeholder="000000000000-xxxx.apps.googleusercontent.com"
                     value={formId} onChange={(e) => setFormId(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-medium" htmlFor="g-csec">Client Secret</label>
+                  <label className="text-label font-medium" htmlFor="g-csec">Client Secret</label>
                   <Input id="g-csec" type="password" autoComplete="off" className="h-8 font-mono text-xs"
                     placeholder="GOCSPX-..."
                     value={formSecret} onChange={(e) => setFormSecret(e.target.value)} />
                 </div>
 
-                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                <p className="text-label leading-relaxed text-muted-foreground">
                   Guardado em um compartimento que o navegador não lê — nem admin consegue
                   recuperar depois. Por isso os campos vêm vazios em vez de fingir
                   pré-preenchimento. Validamos com o Google antes de salvar.
@@ -506,7 +506,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                     todo token já emitido, porque o Google exige que a renovação use
                     as mesmas credenciais da emissão. */}
                 {hasGmailCredentials && emailConnections.length > 0 && (
-                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-label leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
                     <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
                     <span>
                       {emailConnections.length === 1
@@ -518,11 +518,11 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 )}
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" className="h-7 text-[10px]"
+                  <Button variant="ghost" size="sm" className="h-7 text-label"
                     onClick={() => setFormAberto(false)} disabled={salvandoCred}>
                     Cancelar
                   </Button>
-                  <Button size="sm" className="h-7 text-[10px]"
+                  <Button size="sm" className="h-7 text-label"
                     onClick={salvarCredencialGoogle}
                     disabled={salvandoCred || !formId.trim() || !formSecret.trim()}>
                     {salvandoCred && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
@@ -547,7 +547,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                     </div>
                     <div>
                       <CardTitle className="text-sm">{intg.name}</CardTitle>
-                      <CardDescription className="text-[10px]">{intg.description}</CardDescription>
+                      <CardDescription className="text-label">{intg.description}</CardDescription>
                     </div>
                   </div>
                   {cfg && <Switch checked={cfg.is_active} onCheckedChange={(v) => toggleActive(cfg.id, v)} />}
@@ -557,17 +557,17 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 <div className="flex items-center gap-2 flex-wrap">
                   {cfg ? (
                     <>
-                      <Badge variant={cfg.is_active ? "default" : "secondary"} className="text-[9px]">
+                      <Badge variant={cfg.is_active ? "default" : "secondary"} className="text-micro">
                         {cfg.is_active ? "Conectado" : "Inativo"}
                       </Badge>
                       {intg.provider === "meta" && cfg.is_active && (
-                        <Button variant="outline" size="sm" className="h-7 text-[10px]"
+                        <Button variant="outline" size="sm" className="h-7 text-label"
                           disabled={metaConnecting}
                           onClick={handleMetaConnect}>
                           {metaConnecting ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Sincronizando...</> : <><RefreshCw className="mr-1 h-3 w-3" />Sincronizar</>}
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" className="ml-auto h-7 text-[10px]"
+                      <Button variant="outline" size="sm" className="ml-auto h-7 text-label"
                         onClick={() => {
                           setEditProvider(intg.provider);
                           setEditConfig(cfg.config || {});
@@ -576,7 +576,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                       </Button>
                     </>
                   ) : (
-                    <Button size="sm" className="h-7 text-[10px]"
+                    <Button size="sm" className="h-7 text-label"
                       disabled={intg.connectLoading}
                       onClick={() => {
                         if (intg.connectAction) return intg.connectAction();
@@ -603,7 +603,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           </DialogHeader>
           <div className="space-y-3">
             {editProvider === "meta" && (
-              <div className="rounded-md border border-[#1877F2]/30 bg-[#EEF4FF] p-3 text-[11px] text-[#1877F2]">
+              <div className="rounded-md border border-[#1877F2]/30 bg-[#EEF4FF] p-3 text-meta text-[#1877F2]">
                 Preencha só a seção que você usa — <strong>Meta Ads</strong> para campanhas, <strong>WhatsApp</strong> para mensagens, ou ambas.
                 O token é gerado no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="underline font-medium">Meta Graph API Explorer</a>.
               </div>
@@ -612,7 +612,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
               if (field.type === "section") {
                 return (
                   <div key={field.key} className="pt-2 mt-2 border-t border-border">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{field.label}</p>
+                    <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">{field.label}</p>
                   </div>
                 );
               }
@@ -661,7 +661,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                   />
                 )}
                 {(field as any).helpUrl && (
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-label text-muted-foreground">
                     {(field as any).helpText}{" "}
                     <a href={(field as any).helpUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
                       {(field as any).helpLabel}
@@ -729,7 +729,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
 
             <div className="rounded-lg border border-border bg-muted/50 p-3">
               <p className="text-xs text-muted-foreground">
-                <strong>Permissões necessárias:</strong> <code className="text-[10px] bg-muted px-1 rounded">chat:write</code> <code className="text-[10px] bg-muted px-1 rounded">channels:read</code> <code className="text-[10px] bg-muted px-1 rounded">channels:history</code>
+                <strong>Permissões necessárias:</strong> <code className="text-label bg-muted px-1 rounded">chat:write</code> <code className="text-label bg-muted px-1 rounded">channels:read</code> <code className="text-label bg-muted px-1 rounded">channels:history</code>
               </p>
             </div>
           </div>

@@ -234,7 +234,7 @@ export function CompanyCreateModal({ open, onOpenChange, onCreated }: CompanyCre
                               {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
                             </div>
                             {c.company_id && (
-                              <Badge variant="outline" className="text-[10px] shrink-0">já vinculado</Badge>
+                              <Badge variant="outline" className="text-label shrink-0">já vinculado</Badge>
                             )}
                           </button>
                         );

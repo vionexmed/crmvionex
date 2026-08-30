@@ -175,7 +175,7 @@ function SessionsTab() {
               que é verdade, com o que falta declarado como falta. */}
           <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
             <p className="text-xs font-medium">Ainda não ativado</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-meta leading-relaxed text-muted-foreground">
               Exigir 8 caracteres e recusar senha vazada são opções do painel do
               Supabase, em Authentication → Policies. Enquanto não forem ligadas,
               não estão valendo.

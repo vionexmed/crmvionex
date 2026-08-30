@@ -87,7 +87,7 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-sm">API Keys</CardTitle>
-              <CardDescription className="text-[10px]">
+              <CardDescription className="text-label">
                 Gere chaves para acessar a API REST do CRM. Rate limit: 1000 req/hora.
               </CardDescription>
             </div>
@@ -104,15 +104,15 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
 
           {generatedKey && showKey && (
             <div className="rounded-md border border-warning/30 bg-warning/5 p-3 space-y-2">
-              <p className="text-[10px] font-medium text-warning">⚠️ Copie esta chave agora — ela não será exibida novamente</p>
+              <p className="text-label font-medium text-warning">⚠️ Copie esta chave agora — ela não será exibida novamente</p>
               <div className="flex gap-2">
-                <Input value={generatedKey} readOnly className="h-8 text-[10px] font-mono" />
+                <Input value={generatedKey} readOnly className="h-8 text-label font-mono" />
                 <Button variant="outline" size="sm" className="h-8"
                   onClick={() => { navigator.clipboard.writeText(generatedKey); toast({ title: "Copiado!" }); }}>
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
-              <Button variant="ghost" size="sm" className="h-6 text-[9px]"
+              <Button variant="ghost" size="sm" className="h-6 text-micro"
                 onClick={() => { setShowKey(false); setGeneratedKey(null); }}>
                 Esconder
               </Button>
@@ -123,12 +123,12 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px]">Nome</TableHead>
-                  <TableHead className="text-[10px]">Prefixo</TableHead>
-                  <TableHead className="text-[10px]">Status</TableHead>
-                  <TableHead className="text-[10px]">Requests</TableHead>
-                  <TableHead className="text-[10px]">Criada</TableHead>
-                  <TableHead className="text-[10px]" />
+                  <TableHead className="text-label">Nome</TableHead>
+                  <TableHead className="text-label">Prefixo</TableHead>
+                  <TableHead className="text-label">Status</TableHead>
+                  <TableHead className="text-label">Requests</TableHead>
+                  <TableHead className="text-label">Criada</TableHead>
+                  <TableHead className="text-label" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -137,7 +137,7 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
                     <TableCell className="text-xs">{k.name}</TableCell>
                     <TableCell className="text-xs font-mono">{k.key_prefix}...</TableCell>
                     <TableCell>
-                      <Badge variant={k.is_active ? "default" : "destructive"} className="text-[8px]">
+                      <Badge variant={k.is_active ? "default" : "destructive"} className="text-micro">
                         {k.is_active ? "Ativa" : "Revogada"}
                       </Badge>
                     </TableCell>
@@ -171,14 +171,14 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Documentação da API</CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Endpoints REST disponíveis: contacts, companies, deals, activities
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-muted p-4 space-y-3">
-            <p className="text-[10px] font-medium">Base URL</p>
-            <code className="text-[10px] font-mono bg-background px-2 py-1 rounded">
+            <p className="text-label font-medium">Base URL</p>
+            <code className="text-label font-mono bg-background px-2 py-1 rounded">
               {import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-api
             </code>
 
@@ -187,15 +187,15 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
                 "GET /companies", "POST /companies", "GET /deals", "POST /deals",
                 "GET /activities", "POST /activities"].map((endpoint) => (
                 <div key={endpoint} className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[8px] w-12 justify-center">
+                  <Badge variant="outline" className="text-micro w-12 justify-center">
                     {endpoint.split(" ")[0]}
                   </Badge>
-                  <code className="text-[9px] font-mono text-muted-foreground">{endpoint.split(" ")[1]}</code>
+                  <code className="text-micro font-mono text-muted-foreground">{endpoint.split(" ")[1]}</code>
                 </div>
               ))}
             </div>
 
-            <p className="text-[9px] text-muted-foreground mt-2">
+            <p className="text-micro text-muted-foreground mt-2">
               Headers: <code className="bg-background px-1 rounded">Authorization: Bearer fc_xxx</code>
             </p>
           </div>

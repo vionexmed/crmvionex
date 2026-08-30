@@ -87,7 +87,7 @@ export function EmailSignatureTab({ orgId }: { orgId: string | null }) {
               pessoal → empresa → legado, então quem montou a própria assinatura
               em Meu e-mail nunca vê esta. Um admin configurava isto e não
               entendia por que os próprios e-mails saíam diferentes. */}
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Vale para quem ainda não montou a própria em <strong>Meu e-mail</strong>.
             A assinatura pessoal, quando existe, tem preferência sobre esta.
           </CardDescription>
@@ -142,7 +142,7 @@ export function EmailSignatureTab({ orgId }: { orgId: string | null }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Pré-visualização</CardTitle>
-          <CardDescription className="text-[10px]">Como sua assinatura aparecerá nos e-mails</CardDescription>
+          <CardDescription className="text-label">Como sua assinatura aparecerá nos e-mails</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border border-border bg-background p-4">

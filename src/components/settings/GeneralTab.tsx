@@ -91,7 +91,7 @@ export function GeneralTab({ orgId, userId, profile }: { orgId: string | null; u
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Perfil Pessoal</CardTitle>
-          <CardDescription className="text-[10px]">Suas informações pessoais</CardDescription>
+          <CardDescription className="text-label">Suas informações pessoais</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -117,7 +117,7 @@ export function GeneralTab({ orgId, userId, profile }: { orgId: string | null; u
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Organização</CardTitle>
-          <CardDescription className="text-[10px]">Configurações gerais da organização</CardDescription>
+          <CardDescription className="text-label">Configurações gerais da organização</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -154,7 +154,7 @@ export function GeneralTab({ orgId, userId, profile }: { orgId: string | null; u
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Indústrias</CardTitle>
-          <CardDescription className="text-[10px]">Personalize as opções de indústria disponíveis ao cadastrar empresas</CardDescription>
+          <CardDescription className="text-label">Personalize as opções de indústria disponíveis ao cadastrar empresas</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
@@ -169,7 +169,7 @@ export function GeneralTab({ orgId, userId, profile }: { orgId: string | null; u
           </div>
           <div className="flex flex-wrap gap-1.5">
             {industries.map((ind) => (
-              <Badge key={ind} variant="secondary" className="text-[10px] gap-1">
+              <Badge key={ind} variant="secondary" className="text-label gap-1">
                 {ind}
                 <button onClick={() => removeIndustry(ind)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
               </Badge>

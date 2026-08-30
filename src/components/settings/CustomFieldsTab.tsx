@@ -72,9 +72,9 @@ export function CustomFieldsTab({ orgId }: { orgId: string | null }) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-sm">Campos Customizados</CardTitle>
-              <CardDescription className="text-[10px]">Adicione campos extras para suas entidades</CardDescription>
+              <CardDescription className="text-label">Adicione campos extras para suas entidades</CardDescription>
             </div>
-            <Button size="sm" className="h-7 text-[10px]" onClick={() => setShowCreate(true)}>
+            <Button size="sm" className="h-7 text-label" onClick={() => setShowCreate(true)}>
               <Plus className="mr-1 h-3 w-3" />Novo Campo
             </Button>
           </div>
@@ -95,21 +95,21 @@ export function CustomFieldsTab({ orgId }: { orgId: string | null }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px]">Campo</TableHead>
-                  <TableHead className="text-[10px]">Chave</TableHead>
-                  <TableHead className="text-[10px]">Tipo</TableHead>
-                  <TableHead className="text-[10px]">Obrigatório</TableHead>
-                  <TableHead className="text-[10px]">Tabela</TableHead>
-                  <TableHead className="text-[10px]">Card</TableHead>
-                  <TableHead className="text-[10px]" />
+                  <TableHead className="text-label">Campo</TableHead>
+                  <TableHead className="text-label">Chave</TableHead>
+                  <TableHead className="text-label">Tipo</TableHead>
+                  <TableHead className="text-label">Obrigatório</TableHead>
+                  <TableHead className="text-label">Tabela</TableHead>
+                  <TableHead className="text-label">Card</TableHead>
+                  <TableHead className="text-label" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {entityFields.map((f: any) => (
                   <TableRow key={f.id}>
                     <TableCell className="text-xs font-medium">{f.field_label}</TableCell>
-                    <TableCell className="text-[10px] font-mono text-muted-foreground">{f.field_key}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-[8px]">{fieldTypes[f.field_type] || f.field_type}</Badge></TableCell>
+                    <TableCell className="text-label font-mono text-muted-foreground">{f.field_key}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-micro">{fieldTypes[f.field_type] || f.field_type}</Badge></TableCell>
                     <TableCell>{f.is_required ? "✓" : "—"}</TableCell>
                     <TableCell>{f.show_in_table ? "✓" : "—"}</TableCell>
                     <TableCell>{f.show_in_card ? "✓" : "—"}</TableCell>

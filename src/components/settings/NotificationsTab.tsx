@@ -75,7 +75,7 @@ export function NotificationsTab({ orgId, userId }: { orgId: string | null; user
       <Card>
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-1.5"><Bell className="h-4 w-4" />Notificações In-App</CardTitle>
-          <CardDescription className="text-[10px]">Quais eventos geram notificação no CRM</CardDescription>
+          <CardDescription className="text-label">Quais eventos geram notificação no CRM</CardDescription>
         </CardHeader>
         <CardContent className="divide-y divide-border">
           <Toggle label="Negócio ganho" checked={prefs.notify_deal_won} onChange={(v) => setPrefs({ ...prefs, notify_deal_won: v })} />
@@ -89,7 +89,7 @@ export function NotificationsTab({ orgId, userId }: { orgId: string | null; user
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Notificações por Email</CardTitle>
-          <CardDescription className="text-[10px]">Quais emails você deseja receber</CardDescription>
+          <CardDescription className="text-label">Quais emails você deseja receber</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="divide-y divide-border">

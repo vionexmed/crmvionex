@@ -564,34 +564,34 @@ export default function Automations() {
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-sm truncate">{auto.name}</p>
                           {auto.is_active ? (
-                            <Badge className="text-[8px] bg-success/10 text-success border-success/30">Ativa</Badge>
+                            <Badge className="text-micro bg-success/10 text-success border-success/30">Ativa</Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-[8px]">Rascunho</Badge>
+                            <Badge variant="secondary" className="text-micro">Rascunho</Badge>
                           )}
                         </div>
                         {auto.description && <p className="text-xs text-muted-foreground mt-0.5 truncate">{auto.description}</p>}
 
                         {/* Flow summary */}
                         <div className="flex flex-wrap items-center gap-1 mt-2">
-                          <Badge variant="outline" className="text-[9px] gap-0.5">
+                          <Badge variant="outline" className="text-micro gap-0.5">
                             <span>{triggerInfo.icon}</span> {triggerInfo.label}
                           </Badge>
                           {auto.conditions.length > 0 && (
                             <>
                               <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                              <Badge variant="outline" className="text-[9px]">{auto.conditions.length} condição(ões)</Badge>
+                              <Badge variant="outline" className="text-micro">{auto.conditions.length} condição(ões)</Badge>
                             </>
                           )}
                           <ArrowRight className="h-3 w-3 text-muted-foreground" />
                           {auto.actions.map((a, i) => (
-                            <Badge key={i} variant="outline" className="text-[9px] gap-0.5">
+                            <Badge key={i} variant="outline" className="text-micro gap-0.5">
                               <span>{ACTION_LABELS[a.type]?.icon}</span> {ACTION_LABELS[a.type]?.label}
                             </Badge>
                           ))}
                         </div>
 
                         {/* Stats */}
-                        <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-3 mt-2 text-label text-muted-foreground">
                           <span className="flex items-center gap-0.5"><Play className="h-2.5 w-2.5" /> {auto.run_count}x executada</span>
                           {auto.error_count > 0 && <span className="flex items-center gap-0.5 text-destructive"><AlertTriangle className="h-2.5 w-2.5" /> {auto.error_count} erros</span>}
                           {auto.last_run_at && <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> {formatarDataHoraCurta(auto.last_run_at)}</span>}
@@ -634,10 +634,10 @@ export default function Automations() {
                     <p className="text-sm font-medium">{tmpl.name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{tmpl.description}</p>
                     <div className="flex flex-wrap items-center gap-1 mt-2">
-                      <Badge variant="outline" className="text-[9px]">{TRIGGER_LABELS[tmpl.trigger.type]?.label}</Badge>
+                      <Badge variant="outline" className="text-micro">{TRIGGER_LABELS[tmpl.trigger.type]?.label}</Badge>
                       <ArrowRight className="h-3 w-3 text-muted-foreground" />
                       {tmpl.actions.map((a, j) => (
-                        <Badge key={j} variant="outline" className="text-[9px]">{ACTION_LABELS[a.type]?.label}</Badge>
+                        <Badge key={j} variant="outline" className="text-micro">{ACTION_LABELS[a.type]?.label}</Badge>
                       ))}
                     </div>
                   </div>
@@ -672,9 +672,9 @@ export default function Automations() {
                     <TableCell className="text-sm font-medium">{auto?.name || "—"}</TableCell>
                     <TableCell>
                       {log.status === "success" ? (
-                        <Badge className="text-[9px] bg-success/10 text-success border-success/30"><CheckCircle2 className="mr-0.5 h-2.5 w-2.5" />Sucesso</Badge>
+                        <Badge className="text-micro bg-success/10 text-success border-success/30"><CheckCircle2 className="mr-0.5 h-2.5 w-2.5" />Sucesso</Badge>
                       ) : (
-                        <Badge variant="destructive" className="text-[9px]"><XCircle className="mr-0.5 h-2.5 w-2.5" />Erro</Badge>
+                        <Badge variant="destructive" className="text-micro"><XCircle className="mr-0.5 h-2.5 w-2.5" />Erro</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-center text-xs text-muted-foreground">{log.duration_ms ? `${log.duration_ms}ms` : "—"}</TableCell>
@@ -715,7 +715,7 @@ export default function Automations() {
               {/* ── TRIGGER ── */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-[10px] font-bold">1</div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-label font-bold">1</div>
                   <Label className="text-xs font-semibold uppercase tracking-wider">Trigger</Label>
                 </div>
                 <Card className="border-primary/20">
@@ -737,10 +737,10 @@ export default function Automations() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-warning text-warning-foreground text-[10px] font-bold">2</div>
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-warning text-warning-foreground text-label font-bold">2</div>
                     <Label className="text-xs font-semibold uppercase tracking-wider">Condições (opcional)</Label>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={addCondition}>
+                  <Button variant="ghost" size="sm" className="h-6 text-label" onClick={addCondition}>
                     <Plus className="mr-1 h-3 w-3" />Condição
                   </Button>
                 </div>
@@ -750,21 +750,21 @@ export default function Automations() {
                       <div className="flex items-center gap-2">
                         {i > 0 && (
                           <Select value={cond.logic || "AND"} onValueChange={(v) => updateCondition(i, { logic: v as "AND" | "OR" })}>
-                            <SelectTrigger className="h-6 w-16 text-[9px]"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-6 w-16 text-micro"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="AND">E</SelectItem>
                               <SelectItem value="OR">OU</SelectItem>
                             </SelectContent>
                           </Select>
                         )}
-                        <Input className="h-6 text-[10px] flex-1" placeholder="Campo (ex: deal.value)" value={cond.field} onChange={(e) => updateCondition(i, { field: e.target.value })} />
+                        <Input className="h-6 text-label flex-1" placeholder="Campo (ex: deal.value)" value={cond.field} onChange={(e) => updateCondition(i, { field: e.target.value })} />
                         <Select value={cond.operator} onValueChange={(v) => updateCondition(i, { operator: v })}>
-                          <SelectTrigger className="h-6 w-28 text-[9px]"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-6 w-28 text-micro"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {CONDITION_OPERATORS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                        <Input className="h-6 text-[10px] w-24" placeholder="Valor" value={cond.value} onChange={(e) => updateCondition(i, { value: e.target.value })} />
+                        <Input className="h-6 text-label w-24" placeholder="Valor" value={cond.value} onChange={(e) => updateCondition(i, { value: e.target.value })} />
                         <button onClick={() => removeCondition(i)} className="p-0.5 rounded hover:bg-accent text-muted-foreground"><X className="h-3 w-3" /></button>
                       </div>
                     </CardContent>
@@ -776,12 +776,12 @@ export default function Automations() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-success text-success-foreground text-[10px] font-bold">3</div>
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-success text-success-foreground text-label font-bold">3</div>
                     <Label className="text-xs font-semibold uppercase tracking-wider">Ações</Label>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px]"><Plus className="mr-1 h-3 w-3" />Ação</Button>
+                      <Button variant="ghost" size="sm" className="h-6 text-label"><Plus className="mr-1 h-3 w-3" />Ação</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="max-h-64 overflow-auto">
                       {Object.entries(ACTION_LABELS).map(([k, v]) => (
@@ -801,7 +801,7 @@ export default function Automations() {
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs">{info.icon}</span>
-                            <span className="text-[10px] font-semibold">{info.label}</span>
+                            <span className="text-label font-semibold">{info.label}</span>
                           </div>
                           <div className="flex items-center gap-0.5">
                             <button onClick={() => moveAction(i, "up")} disabled={i === 0} className="p-0.5 rounded hover:bg-accent text-muted-foreground disabled:opacity-30"><ChevronUp className="h-3 w-3" /></button>
@@ -846,28 +846,28 @@ export default function Automations() {
               <div className="flex items-center gap-2">
                 <Label className="text-xs">Status:</Label>
                 {selectedLog.status === "success" ? (
-                  <Badge className="text-[9px] bg-success/10 text-success border-success/30">Sucesso</Badge>
+                  <Badge className="text-micro bg-success/10 text-success border-success/30">Sucesso</Badge>
                 ) : (
-                  <Badge variant="destructive" className="text-[9px]">Erro</Badge>
+                  <Badge variant="destructive" className="text-micro">Erro</Badge>
                 )}
                 {selectedLog.duration_ms && <span className="text-xs text-muted-foreground">{selectedLog.duration_ms}ms</span>}
               </div>
               {selectedLog.error_message && (
                 <div className="space-y-1">
                   <Label className="text-xs text-destructive">Erro:</Label>
-                  <pre className="text-[10px] bg-destructive/5 p-2 rounded-md border border-destructive/20 whitespace-pre-wrap">{selectedLog.error_message}</pre>
+                  <pre className="text-label bg-destructive/5 p-2 rounded-md border border-destructive/20 whitespace-pre-wrap">{selectedLog.error_message}</pre>
                 </div>
               )}
               {selectedLog.trigger_payload && (
                 <div className="space-y-1">
                   <Label className="text-xs">Payload do Trigger:</Label>
-                  <pre className="text-[10px] bg-muted p-2 rounded-md overflow-auto max-h-32 whitespace-pre-wrap">{JSON.stringify(selectedLog.trigger_payload, null, 2)}</pre>
+                  <pre className="text-label bg-muted p-2 rounded-md overflow-auto max-h-32 whitespace-pre-wrap">{JSON.stringify(selectedLog.trigger_payload, null, 2)}</pre>
                 </div>
               )}
               {selectedLog.actions_result && (
                 <div className="space-y-1">
                   <Label className="text-xs">Resultado das Ações:</Label>
-                  <pre className="text-[10px] bg-muted p-2 rounded-md overflow-auto max-h-32 whitespace-pre-wrap">{JSON.stringify(selectedLog.actions_result, null, 2)}</pre>
+                  <pre className="text-label bg-muted p-2 rounded-md overflow-auto max-h-32 whitespace-pre-wrap">{JSON.stringify(selectedLog.actions_result, null, 2)}</pre>
                 </div>
               )}
             </div>

@@ -295,7 +295,7 @@ export default function SalesGoals() {
                   <div className="text-xs text-muted-foreground mb-2">de {formatValue(s.value, s.totalTarget)}</div>
                   <Progress value={p} className="h-1.5" />
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-muted-foreground">{p}% atingido</span>
+                    <span className="text-label text-muted-foreground">{p}% atingido</span>
                     {p >= 100 && <Trophy className="h-3 w-3 text-amber-500" />}
                   </div>
                 </CardContent>
@@ -349,7 +349,7 @@ export default function SalesGoals() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-label">
                           {getAssignLabel(g)}
                         </Badge>
                       </TableCell>
@@ -362,7 +362,7 @@ export default function SalesGoals() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Progress value={p} className="h-1.5 flex-1" />
-                          <span className={`text-[10px] font-medium ${p >= 100 ? "text-emerald-500" : ""}`}>
+                          <span className={`text-label font-medium ${p >= 100 ? "text-emerald-500" : ""}`}>
                             {p}%
                           </span>
                         </div>

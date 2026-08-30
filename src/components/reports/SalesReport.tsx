@@ -157,8 +157,8 @@ export function SalesReport({ deals, stages, members, companies }: {
               </div>
               <div>
                 <p className="text-lg font-bold">{k.value}</p>
-                <p className="text-[9px] text-muted-foreground uppercase">{k.label}</p>
-                {k.sub && <p className="text-[9px] text-muted-foreground">{k.sub}</p>}
+                <p className="text-micro text-muted-foreground uppercase">{k.label}</p>
+                {k.sub && <p className="text-micro text-muted-foreground">{k.sub}</p>}
               </div>
             </CardContent>
           </Card>
@@ -194,8 +194,8 @@ export function SalesReport({ deals, stages, members, companies }: {
                 return (
                   <div key={s.name}>
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[10px] font-medium">{s.name}</span>
-                      <span className="text-[10px] text-muted-foreground">{s.count} · {fmt(s.value)}</span>
+                      <span className="text-label font-medium">{s.name}</span>
+                      <span className="text-label text-muted-foreground">{s.count} · {fmt(s.value)}</span>
                     </div>
                     <div className="h-4 rounded bg-muted overflow-hidden">
                       <div className="h-full rounded" style={{ width: `${Math.max((s.value / max) * 100, 2)}%`, backgroundColor: s.color }} />
@@ -265,7 +265,7 @@ export function SalesReport({ deals, stages, members, companies }: {
             <CardTitle className="text-sm">Negócios Agrupados</CardTitle>
             <div className="flex gap-2">
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
-                <SelectTrigger className="h-7 w-32 text-[10px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 w-32 text-label"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="stage">Por etapa</SelectItem>
                   <SelectItem value="owner">Por Dono</SelectItem>
@@ -273,7 +273,7 @@ export function SalesReport({ deals, stages, members, companies }: {
                   <SelectItem value="month">Por Mês</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={exportDealsCSV}>
+              <Button variant="outline" size="sm" className="h-7 text-label" onClick={exportDealsCSV}>
                 <Download className="h-3 w-3 mr-1" />CSV
               </Button>
             </div>
@@ -284,12 +284,12 @@ export function SalesReport({ deals, stages, members, companies }: {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px]">Grupo</TableHead>
-                  <TableHead className="text-[10px] text-center">Total</TableHead>
-                  <TableHead className="text-[10px] text-center">Ganhos</TableHead>
-                  <TableHead className="text-[10px] text-center">Perdidos</TableHead>
-                  <TableHead className="text-[10px] text-center">Win Rate</TableHead>
-                  <TableHead className="text-[10px] text-right">Valor Ganho</TableHead>
+                  <TableHead className="text-label">Grupo</TableHead>
+                  <TableHead className="text-label text-center">Total</TableHead>
+                  <TableHead className="text-label text-center">Ganhos</TableHead>
+                  <TableHead className="text-label text-center">Perdidos</TableHead>
+                  <TableHead className="text-label text-center">Win Rate</TableHead>
+                  <TableHead className="text-label text-right">Valor Ganho</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -300,7 +300,7 @@ export function SalesReport({ deals, stages, members, companies }: {
                     <TableCell className="text-xs text-center text-success">{g.won}</TableCell>
                     <TableCell className="text-xs text-center text-destructive">{g.lost}</TableCell>
                     <TableCell className="text-xs text-center">
-                      <Badge variant={pct(g.won, g.won + g.lost) >= 50 ? "default" : "secondary"} className="text-[9px]">
+                      <Badge variant={pct(g.won, g.won + g.lost) >= 50 ? "default" : "secondary"} className="text-micro">
                         {pct(g.won, g.won + g.lost)}%
                       </Badge>
                     </TableCell>
@@ -322,12 +322,12 @@ export function SalesReport({ deals, stages, members, companies }: {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-[10px]">Vendedor</TableHead>
-                    <TableHead className="text-[10px] text-center">Total</TableHead>
-                    <TableHead className="text-[10px] text-center">Ganhos</TableHead>
-                    <TableHead className="text-[10px] text-center">Perdidos</TableHead>
-                    <TableHead className="text-[10px] text-center">Win Rate</TableHead>
-                    <TableHead className="text-[10px] text-right">Receita</TableHead>
+                    <TableHead className="text-label">Vendedor</TableHead>
+                    <TableHead className="text-label text-center">Total</TableHead>
+                    <TableHead className="text-label text-center">Ganhos</TableHead>
+                    <TableHead className="text-label text-center">Perdidos</TableHead>
+                    <TableHead className="text-label text-center">Win Rate</TableHead>
+                    <TableHead className="text-label text-right">Receita</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -338,7 +338,7 @@ export function SalesReport({ deals, stages, members, companies }: {
                       <TableCell className="text-xs text-center text-success">{o.won}</TableCell>
                       <TableCell className="text-xs text-center text-destructive">{o.lost}</TableCell>
                       <TableCell className="text-xs text-center">
-                        <Badge variant={o.winRate >= 50 ? "default" : "secondary"} className="text-[9px]">{o.winRate}%</Badge>
+                        <Badge variant={o.winRate >= 50 ? "default" : "secondary"} className="text-micro">{o.winRate}%</Badge>
                       </TableCell>
                       <TableCell className="text-xs text-right font-medium">{fmt(o.value)}</TableCell>
                     </TableRow>

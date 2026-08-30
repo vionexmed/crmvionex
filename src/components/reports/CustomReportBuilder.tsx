@@ -132,7 +132,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
     <div className="space-y-4 mt-4">
       <div className="flex flex-wrap gap-3 items-end">
         <div>
-          <Label className="text-[10px]">Entidade</Label>
+          <Label className="text-label">Entidade</Label>
           <Select value={entity} onValueChange={(v) => setEntity(v as any)}>
             <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -144,13 +144,13 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
         </div>
 
         <div>
-          <Label className="text-[10px]">Campos</Label>
+          <Label className="text-label">Campos</Label>
           <div className="flex flex-wrap gap-1 mt-1">
             {fieldOptions[entity].map((f) => (
               <Badge
                 key={f.key}
                 variant={selectedFields.includes(f.key) ? "default" : "outline"}
-                className="cursor-pointer text-[9px]"
+                className="cursor-pointer text-micro"
                 onClick={() => toggleField(f.key)}
               >
                 {f.label}
@@ -176,9 +176,9 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
       {/* Saved reports */}
       {savedReports.length > 0 && (
         <div className="flex gap-1 flex-wrap">
-          <span className="text-[10px] text-muted-foreground mr-1">Salvos:</span>
+          <span className="text-label text-muted-foreground mr-1">Salvos:</span>
           {savedReports.map((r) => (
-            <Badge key={r.id} variant="secondary" className="cursor-pointer text-[9px]" onClick={() => loadReport(r)}>
+            <Badge key={r.id} variant="secondary" className="cursor-pointer text-micro" onClick={() => loadReport(r)}>
               {r.name}
             </Badge>
           ))}
@@ -193,7 +193,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
               <TableHeader>
                 <TableRow>
                   {selectedFields.map((f) => (
-                    <TableHead key={f} className="text-[10px] whitespace-nowrap">
+                    <TableHead key={f} className="text-label whitespace-nowrap">
                       {fieldOptions[entity].find((fo) => fo.key === f)?.label || f}
                     </TableHead>
                   ))}
@@ -211,7 +211,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
             </Table>
           </div>
           {tableData.length > 100 && (
-            <p className="text-[10px] text-muted-foreground text-center py-2">Mostrando 100 de {tableData.length} registros. Exporte CSV para ver todos.</p>
+            <p className="text-label text-muted-foreground text-center py-2">Mostrando 100 de {tableData.length} registros. Exporte CSV para ver todos.</p>
           )}
         </CardContent>
       </Card>

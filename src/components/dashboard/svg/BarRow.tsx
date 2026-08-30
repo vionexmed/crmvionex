@@ -16,8 +16,8 @@ export function BarRow({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <span className="truncate text-[11px] font-medium">{rotulo}</span>
-        <span className="flex shrink-0 items-baseline gap-2.5 text-[10px] tabular-nums text-muted-foreground">
+        <span className="truncate text-meta font-medium">{rotulo}</span>
+        <span className="flex shrink-0 items-baseline gap-2.5 text-label tabular-nums text-muted-foreground">
           {valores.map((v) => (
             <span key={v.nome} className="flex items-center gap-1" title={v.nome}>
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: v.cor }} />

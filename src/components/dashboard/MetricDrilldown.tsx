@@ -126,8 +126,8 @@ export function MetricDrilldown({
           sintético do React sobe pela árvore de componentes do mesmo jeito. */}
       <HoverCardContent className="p-0" onClick={(e) => e.stopPropagation()}>
         <div className="border-b px-3 py-2">
-          <p className="text-[11px] font-semibold text-foreground">{COPY[metric].titulo}</p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-meta font-semibold text-foreground">{COPY[metric].titulo}</p>
+          <p className="text-label text-muted-foreground">
             {[SDR_PERIOD_LABELS[period], nota].filter(Boolean).join(" · ")}
           </p>
         </div>
@@ -149,7 +149,7 @@ export function MetricDrilldown({
           <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
             {/* Só aparece com a lista NÃO truncada: cortada no limite, a
                 diferença é paginação, e chamá-la de carteira alheia mentiria. */}
-            <span className="text-[10px] text-muted-foreground">{resumo.textoResto}</span>
+            <span className="text-label text-muted-foreground">{resumo.textoResto}</span>
             {resumo.truncado && (
               <button
                 type="button"
@@ -158,7 +158,7 @@ export function MetricDrilldown({
                   setAberto(false);
                   onVerTodos();
                 }}
-                className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-primary hover:underline"
+                className="flex shrink-0 items-center gap-1 text-label font-medium text-primary hover:underline"
               >
                 ver a lista completa <ArrowRight className="h-2.5 w-2.5" />
               </button>

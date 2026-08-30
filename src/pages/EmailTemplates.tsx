@@ -131,7 +131,7 @@ export default function EmailTemplates() {
       {categories.length > 0 && (
         <div className="flex gap-1.5 flex-wrap">
           {categories.map((c) => (
-            <Badge key={c} variant="secondary" className="text-[10px]">{c}</Badge>
+            <Badge key={c} variant="secondary" className="text-label">{c}</Badge>
           ))}
         </div>
       )}
@@ -172,7 +172,7 @@ export default function EmailTemplates() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{t.name}</p>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{t.subject}</p>
-                  {t.category && <Badge variant="outline" className="text-[8px] mt-1">{t.category}</Badge>}
+                  {t.category && <Badge variant="outline" className="text-micro mt-1">{t.category}</Badge>}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -187,7 +187,7 @@ export default function EmailTemplates() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div className="mt-2 rounded-md bg-muted/50 p-2 text-[10px] text-muted-foreground line-clamp-3 max-h-16 overflow-hidden">
+              <div className="mt-2 rounded-md bg-muted/50 p-2 text-label text-muted-foreground line-clamp-3 max-h-16 overflow-hidden">
                 {t.body_html?.replace(/<[^>]*>/g, "").slice(0, 150) || "(vazio)"}
               </div>
             </CardContent>
@@ -226,7 +226,7 @@ export default function EmailTemplates() {
                 <button
                   key={v}
                   onClick={() => setEditTemplate((p) => ({ ...p!, body_html: (p?.body_html || "") + v }))}
-                  className="rounded border border-border px-1.5 py-0.5 text-[9px] text-muted-foreground hover:bg-accent transition-colors"
+                  className="rounded border border-border px-1.5 py-0.5 text-micro text-muted-foreground hover:bg-accent transition-colors"
                 >
                   {v}
                 </button>

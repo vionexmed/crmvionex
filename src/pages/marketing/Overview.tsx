@@ -64,14 +64,14 @@ export default function MarketingOverview() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap vx-fade-up">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--vx-text-3)" }}>
+          <div className="flex items-center gap-1.5 text-meta" style={{ color: "var(--vx-text-3)" }}>
             <span>Vionex</span>
             <span style={{ color: "#CDD1D8" }}>›</span>
             <span>Marketing</span>
             <span style={{ color: "#CDD1D8" }}>›</span>
             <span style={{ color: "var(--vx-navy)", fontWeight: 500 }}>{cfg.breadcrumb}</span>
           </div>
-          <h1 className="text-[20px] font-medium tracking-tight" style={{ color: "var(--vx-navy)" }}>
+          <h1 className="text-xl font-medium tracking-tight" style={{ color: "var(--vx-navy)" }}>
             {cfg.h1}
           </h1>
           <p className="text-xs" style={{ color: "var(--vx-text-2)" }}>{cfg.sub}</p>
@@ -84,9 +84,9 @@ export default function MarketingOverview() {
 
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "var(--vx-teal-bg)", border: "0.5px solid var(--vx-teal-border)" }}>
             <span className="h-1.5 w-1.5 rounded-full vx-pulse-dot" style={{ background: "var(--vx-teal)" }} />
-            <span className="text-[11px]" style={{ color: "var(--vx-teal)" }}>Atualizado às {horaAtualizacao}</span>
+            <span className="text-meta" style={{ color: "var(--vx-teal)" }}>Atualizado às {horaAtualizacao}</span>
           </div>
-          <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-medium transition-colors hover:bg-accent" style={{ border: "0.5px solid hsl(var(--border))", color: "var(--vx-text-2)" }}>
+          <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-meta font-medium transition-colors hover:bg-accent" style={{ border: "0.5px solid hsl(var(--border))", color: "var(--vx-text-2)" }}>
             <RefreshCw className={`h-3.5 w-3.5 ${data.loading ? "animate-spin" : ""}`} /> Sincronizar
           </button>
         </div>
@@ -128,7 +128,7 @@ function PeriodFilter({ value, onChange, customDays, onCustomChange }: {
             <button
               key={o.k}
               onClick={() => onChange(o.k)}
-              className="inline-flex items-center gap-1 h-7 px-2.5 rounded text-[11px] font-medium transition-all duration-150"
+              className="inline-flex items-center gap-1 h-7 px-2.5 rounded text-meta font-medium transition-all duration-150"
               style={{
                 background: active ? "var(--vx-teal)" : "transparent",
                 color: active ? "#fff" : "var(--vx-text-2)",
@@ -147,7 +147,7 @@ function PeriodFilter({ value, onChange, customDays, onCustomChange }: {
           max={365}
           value={customDays}
           onChange={(e) => onCustomChange(Math.max(1, Math.min(365, Number(e.target.value) || 1)))}
-          className="h-7 w-16 px-2 rounded text-[11px] tabular-nums bg-card"
+          className="h-7 w-16 px-2 rounded text-meta tabular-nums bg-card"
           style={{ border: "0.5px solid hsl(var(--border))", color: "var(--vx-navy)" }}
         />
       )}
@@ -158,7 +158,7 @@ function PeriodFilter({ value, onChange, customDays, onCustomChange }: {
 function SourceBadge({ source: _source }: { source: MarketingSource }) {
   return (
     <div
-      className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[10px] font-medium"
+      className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-label font-medium"
       style={{
         background: "var(--vx-green-bg)",
         color: "var(--vx-green)",
@@ -186,7 +186,7 @@ function TabBar({ tab, onChange }: { tab: TabKey; onChange: (t: TabKey) => void 
           <button
             key={k}
             onClick={() => onChange(k)}
-            className="relative inline-flex items-center gap-2 px-4 h-9 rounded-lg text-[12px] font-semibold transition-all duration-200"
+            className="relative inline-flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-semibold transition-all duration-200"
             style={{
               background: active ? "hsl(var(--card))" : "transparent",
               color: active ? c.color : "var(--vx-text-3)",
@@ -315,10 +315,10 @@ function PanelVisao({ data, days }: PanelProps) {
           </div>
           <div className="space-y-1.5 mt-2">
             {leadSources.length === 0 && (
-              <p className="text-[11px]" style={{ color: "var(--vx-text-3)" }}>Nenhum lead no período selecionado.</p>
+              <p className="text-meta" style={{ color: "var(--vx-text-3)" }}>Nenhum lead no período selecionado.</p>
             )}
             {leadSources.slice(0, 4).map(s => (
-              <div key={s.name} className="flex items-center gap-2 text-[11px]">
+              <div key={s.name} className="flex items-center gap-2 text-meta">
                 <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
                 <span className="flex-1 truncate" style={{ color: "var(--vx-text-2)" }}>{s.name}</span>
                 <span className="tabular-nums" style={{ color: "var(--vx-navy)", fontWeight: 500 }}>{s.pct}%</span>
@@ -573,7 +573,7 @@ function HeroCard({ icon: Icon, iconColor, label, value, format, delta, sub }: a
       <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${iconColor}, ${iconColor}88)` }} />
       <div className="bg-card p-5">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] uppercase tracking-[0.10em] font-semibold" style={{ color: "var(--vx-text-3)" }}>{label}</span>
+          <span className="text-label uppercase tracking-[0.10em] font-semibold" style={{ color: "var(--vx-text-3)" }}>{label}</span>
           <div className="h-8 w-8 rounded-lg grid place-items-center" style={{ background: `${iconColor}14` }}>
             <Icon className="h-4 w-4" style={{ color: iconColor }} />
           </div>
@@ -581,12 +581,12 @@ function HeroCard({ icon: Icon, iconColor, label, value, format, delta, sub }: a
         <div className="text-[28px] leading-none font-bold tabular-nums tracking-tight" style={{ color: "var(--vx-navy)" }}>
           {formatted}
         </div>
-        {sub && <div className="text-[11px] mt-1.5" style={{ color: "var(--vx-text-2)" }}>{sub}</div>}
+        {sub && <div className="text-meta mt-1.5" style={{ color: "var(--vx-text-2)" }}>{sub}</div>}
 
         {typeof delta === "number" && (
           <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: "0.5px solid hsl(var(--border))" }}>
             <span
-              className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+              className="inline-flex items-center gap-0.5 text-label font-semibold px-1.5 py-0.5 rounded-full"
               style={{
                 background: positive ? "var(--vx-green-bg)" : "var(--vx-red-bg)",
                 color: positive ? "var(--vx-green)" : "var(--vx-red)",
@@ -595,7 +595,7 @@ function HeroCard({ icon: Icon, iconColor, label, value, format, delta, sub }: a
               {positive ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
               {positive ? "+" : ""}{delta.toFixed(1)}%
             </span>
-            <span className="text-[10px]" style={{ color: "var(--vx-text-3)" }}>vs mês anterior</span>
+            <span className="text-label" style={{ color: "var(--vx-text-3)" }}>vs mês anterior</span>
           </div>
         )}
       </div>
@@ -614,7 +614,7 @@ function Kpi({ icon: Icon, iconColor, label, value, format, delta, sub, inverted
       <div className="h-[2px]" style={{ background: iconColor || "var(--vx-teal)" }} />
       <div className="p-3.5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[9px] uppercase tracking-[0.09em] font-semibold" style={{ color: "var(--vx-text-3)" }}>{label}</span>
+          <span className="text-micro uppercase tracking-[0.09em] font-semibold" style={{ color: "var(--vx-text-3)" }}>{label}</span>
           {Icon && (
             <div className="h-6 w-6 rounded-md grid place-items-center" style={{ background: `${iconColor || "var(--vx-teal)"}14` }}>
               <Icon className="h-3 w-3" style={{ color: iconColor || "var(--vx-text-3)" }} />
@@ -623,10 +623,10 @@ function Kpi({ icon: Icon, iconColor, label, value, format, delta, sub, inverted
         </div>
         <div className="text-[18px] leading-tight font-bold tabular-nums" style={{ color: "var(--vx-navy)" }}>
           {formatted}
-          {sub && <span className="text-[11px] font-normal ml-0.5" style={{ color: "var(--vx-text-3)" }}>{sub}</span>}
+          {sub && <span className="text-meta font-normal ml-0.5" style={{ color: "var(--vx-text-3)" }}>{sub}</span>}
         </div>
         {typeof delta === "number" && (
-          <div className="mt-1.5 text-[10px] font-semibold inline-flex items-center gap-0.5" style={{ color: positive ? "var(--vx-green)" : "var(--vx-red)" }}>
+          <div className="mt-1.5 text-label font-semibold inline-flex items-center gap-0.5" style={{ color: positive ? "var(--vx-green)" : "var(--vx-red)" }}>
             {positive ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
             {delta > 0 ? "+" : ""}{Math.abs(delta) < 10 ? delta.toFixed(1) : Math.round(delta)}{format === "pct" ? "pp" : "%"}
           </div>
@@ -650,15 +650,15 @@ function ChannelMiniCard({ color, bg, icon: Icon, name, sub, activeCount, metric
               <Icon className="h-4 w-4" style={{ color }} />
             </div>
             <div>
-              <div className="text-[13px] font-medium" style={{ color: "var(--vx-navy)" }}>{name}</div>
-              <div className="text-[10px]" style={{ color: "var(--vx-text-3)" }}>{sub}</div>
+              <div className="text-corpo font-medium" style={{ color: "var(--vx-navy)" }}>{name}</div>
+              <div className="text-label" style={{ color: "var(--vx-text-3)" }}>{sub}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--vx-green-bg)", color: "var(--vx-green)" }}>
+            <span className="text-label font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--vx-green-bg)", color: "var(--vx-green)" }}>
               {activeCount} ativas
             </span>
-            <button className="text-[10px] inline-flex items-center gap-0.5 hover:underline" style={{ color }}>
+            <button className="text-label inline-flex items-center gap-0.5 hover:underline" style={{ color }}>
               Detalhes <ArrowUpRight className="h-3 w-3" />
             </button>
           </div>
@@ -666,8 +666,8 @@ function ChannelMiniCard({ color, bg, icon: Icon, name, sub, activeCount, metric
         <div className="grid grid-cols-4 gap-3 mb-4">
           {metrics.map((m: any) => (
             <div key={m.label}>
-              <div className="text-[9px] uppercase tracking-[0.07em]" style={{ color: "var(--vx-text-3)" }}>{m.label}</div>
-              <div className="text-[13px] font-medium tabular-nums mt-0.5" style={{ color: "var(--vx-navy)" }}>{m.value}</div>
+              <div className="text-micro uppercase tracking-[0.07em]" style={{ color: "var(--vx-text-3)" }}>{m.label}</div>
+              <div className="text-corpo font-medium tabular-nums mt-0.5" style={{ color: "var(--vx-navy)" }}>{m.value}</div>
             </div>
           ))}
         </div>
@@ -707,13 +707,13 @@ function FunnelCard({ stages }: { stages: FunnelStage[] }) {
           return (
             <div key={i}>
               <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="text-[11px] font-medium" style={{ color: "var(--vx-navy)" }}>{f.nome}</span>
-                <span className="text-[14px] font-medium tabular-nums" style={{ color: cor }}>{f.num}</span>
+                <span className="text-meta font-medium" style={{ color: "var(--vx-navy)" }}>{f.nome}</span>
+                <span className="text-sm font-medium tabular-nums" style={{ color: cor }}>{f.num}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--vx-teal-bg)" }}>
                 <div className="h-full rounded-full vx-grow-w" style={{ width: `${pct}%`, background: cor, animationDelay: `${i * 100}ms` }} />
               </div>
-              <div className="text-[10px] mt-1" style={{ color: "var(--vx-text-3)" }}>{f.desc}</div>
+              <div className="text-label mt-1" style={{ color: "var(--vx-text-3)" }}>{f.desc}</div>
             </div>
           );
         })}
@@ -730,7 +730,7 @@ function PendingDataCard({ title, sub, requirement }: { title: string; sub: stri
     <SubCard title={title} sub={sub}>
       <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
         <Database className="h-6 w-6" style={{ color: "var(--vx-text-3)" }} />
-        <p className="text-[11px] max-w-[220px]" style={{ color: "var(--vx-text-3)" }}>{requirement}</p>
+        <p className="text-meta max-w-[220px]" style={{ color: "var(--vx-text-3)" }}>{requirement}</p>
       </div>
     </SubCard>
   );
@@ -817,7 +817,7 @@ function CampaignTable({ rows, platform }: { rows: any[]; platform: "meta" | "go
 
   return (
     <div className="rounded-[10px] bg-card overflow-x-auto vx-fade-up" style={{ border: "0.5px solid hsl(var(--border))" }}>
-      <table className="w-full text-[11px]">
+      <table className="w-full text-meta">
         <thead>
           <tr className="text-left" style={{ borderBottom: "0.5px solid hsl(var(--border))" }}>
             {[
@@ -837,7 +837,7 @@ function CampaignTable({ rows, platform }: { rows: any[]; platform: "meta" | "go
             <tr key={r.id} className="transition-colors hover:bg-accent/40" style={{ borderBottom: "0.5px solid hsl(var(--border))" }}>
               <td className="px-3 py-2.5 whitespace-nowrap">
                 <div className="font-medium" style={{ color: "var(--vx-navy)" }}>{r.nome}</div>
-                <div className="text-[10px]" style={{ color: "var(--vx-text-3)" }}>{r.tipo}</div>
+                <div className="text-label" style={{ color: "var(--vx-text-3)" }}>{r.tipo}</div>
               </td>
               <td className="px-3 py-2.5">{statusBadge(r.status)}</td>
               <td className="px-3 py-2.5 text-right tabular-nums">{fmtBRL(r.investido)}</td>
@@ -877,8 +877,8 @@ function SectionHeader({ title, sub, children }: { title: string; sub?: string; 
   return (
     <div className="flex items-start justify-between gap-2">
       <div>
-        <h3 className="text-[12px] font-medium" style={{ color: "var(--vx-navy)" }}>{title}</h3>
-        {sub && <p className="text-[10px] mt-0.5" style={{ color: "var(--vx-text-3)" }}>{sub}</p>}
+        <h3 className="text-xs font-medium" style={{ color: "var(--vx-navy)" }}>{title}</h3>
+        {sub && <p className="text-label mt-0.5" style={{ color: "var(--vx-text-3)" }}>{sub}</p>}
       </div>
       {children}
     </div>
@@ -898,7 +898,7 @@ function Legend({ items }: { items: { color: string; label: string }[] }) {
   return (
     <div className="flex items-center gap-3">
       {items.map(i => (
-        <div key={i.label} className="flex items-center gap-1.5 text-[10px]" style={{ color: "var(--vx-text-2)" }}>
+        <div key={i.label} className="flex items-center gap-1.5 text-label" style={{ color: "var(--vx-text-2)" }}>
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: i.color }} />
           {i.label}
         </div>
@@ -910,7 +910,7 @@ function Legend({ items }: { items: { color: string; label: string }[] }) {
 function VxTooltip({ active, payload, label, prefix = "", suffix = "" }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md p-2 text-[10px] bg-card" style={{ border: "0.5px solid hsl(var(--border))", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+    <div className="rounded-md p-2 text-label bg-card" style={{ border: "0.5px solid hsl(var(--border))", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
       {label && <div className="font-medium mb-1" style={{ color: "var(--vx-navy)" }}>{label}</div>}
       {payload.map((p: any) => (
         <div key={p.dataKey || p.name} className="flex items-center gap-2">

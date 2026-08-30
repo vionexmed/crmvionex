@@ -103,7 +103,7 @@ export function MinhaAssinatura({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm">Minha assinatura</CardTitle>
-        <CardDescription className="text-[11px]">
+        <CardDescription className="text-meta">
           Vai no rodapé dos e-mails que você enviar pelo CRM. Deixe em branco para usar a
           assinatura padrão da empresa.
         </CardDescription>
@@ -117,7 +117,7 @@ export function MinhaAssinatura({
             <div className="space-y-2.5">
               {CAMPOS.map((campo) => (
                 <div key={campo.chave} className="space-y-1">
-                  <label className="text-[10px] font-medium" htmlFor={`sig-${campo.chave}`}>
+                  <label className="text-label font-medium" htmlFor={`sig-${campo.chave}`}>
                     {campo.rotulo}
                   </label>
                   <Input
@@ -130,13 +130,13 @@ export function MinhaAssinatura({
                 </div>
               ))}
               <div className="space-y-1">
-                <label className="text-[10px] font-medium">Foto</label>
+                <label className="text-label font-medium">Foto</label>
                 <LogoUploadField
                   value={dados.fotoUrl ?? ""}
                   onChange={(url) => setDados({ ...dados, fotoUrl: url })}
                   rotulo="foto"
                 />
-                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                <p className="text-label leading-relaxed text-muted-foreground">
                   Serve foto ou logotipo — a imagem aparece inteira, sem recorte. Muitos
                   clientes de e-mail só carregam imagens depois que a pessoa autoriza, então
                   a assinatura precisa continuar legível sem ela.
@@ -144,7 +144,7 @@ export function MinhaAssinatura({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-medium" htmlFor="sig-extra">
+                <label className="text-label font-medium" htmlFor="sig-extra">
                   Texto adicional
                 </label>
                 <Textarea
@@ -158,7 +158,7 @@ export function MinhaAssinatura({
             </div>
 
             <div className="space-y-2">
-              <p className="text-[10px] font-medium text-muted-foreground">
+              <p className="text-label font-medium text-muted-foreground">
                 Prévia — é exatamente o que vai no e-mail
               </p>
               <div className="min-h-[160px] rounded-md border border-border bg-white p-4">
@@ -167,7 +167,7 @@ export function MinhaAssinatura({
                   // do usuário. Nada aqui é texto cru vindo do banco.
                   <div dangerouslySetInnerHTML={{ __html: html }} />
                 ) : (
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-meta text-muted-foreground">
                     Preencha ao menos um campo para ver a prévia. Sem assinatura própria, seus
                     e-mails usam a da empresa.
                   </p>
@@ -181,14 +181,14 @@ export function MinhaAssinatura({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-[10px]"
+            className="h-7 text-label"
             onClick={() => setDados({})}
             disabled={salvando || carregando || !temAssinatura(dados)}
           >
             <Eraser className="mr-1 h-3 w-3" />
             Limpar
           </Button>
-          <Button size="sm" className="h-7 text-[10px]" onClick={salvar} disabled={salvando || carregando}>
+          <Button size="sm" className="h-7 text-label" onClick={salvar} disabled={salvando || carregando}>
             {salvando ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
             Salvar assinatura
           </Button>

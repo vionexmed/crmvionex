@@ -64,7 +64,7 @@ export function Donut({
             <span className="font-heading text-lg font-bold tabular-nums leading-none">
               {Math.round(emFoco.fracao * 100)}%
             </span>
-            <span className="mt-0.5 max-w-[72%] truncate text-[10px] text-muted-foreground">
+            <span className="mt-0.5 max-w-[72%] truncate text-label text-muted-foreground">
               {emFoco.nome}
             </span>
           </>
@@ -73,7 +73,7 @@ export function Donut({
             <span className="font-heading text-lg font-bold tabular-nums leading-none">
               {formatar(total)}
             </span>
-            <span className="mt-0.5 text-[10px] text-muted-foreground">no total</span>
+            <span className="mt-0.5 text-label text-muted-foreground">no total</span>
           </>
         )}
       </div>

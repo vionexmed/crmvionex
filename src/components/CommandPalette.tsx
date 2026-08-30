@@ -109,7 +109,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CommandItem key={d.id} onSelect={() => handleSelect(`/deals/${d.id}`)} className="gap-2">
                 <Handshake className="h-4 w-4 text-muted-foreground" />
                 <span>{d.title}</span>
-                {d.value && <Badge variant="secondary" className="ml-auto text-[9px]">R$ {Number(d.value).toLocaleString("pt-BR")}</Badge>}
+                {d.value && <Badge variant="secondary" className="ml-auto text-micro">R$ {Number(d.value).toLocaleString("pt-BR")}</Badge>}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -156,7 +156,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           {shortcuts.map((s) => (
             <CommandItem key={s.label} className="gap-2 justify-between" disabled>
               <span className="text-xs text-muted-foreground">{s.desc}</span>
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">{s.keys}</kbd>
+              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-label">{s.keys}</kbd>
             </CommandItem>
           ))}
         </CommandGroup>

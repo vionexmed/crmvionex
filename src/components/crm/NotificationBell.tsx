@@ -67,7 +67,7 @@ export function NotificationBell() {
         <button className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
           <Bell className="h-4 w-4" />
           {visibleCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-micro font-bold text-destructive-foreground">
               {visibleCount}
             </span>
           )}
@@ -99,7 +99,7 @@ export function NotificationBell() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{a.title}</p>
-                    <p className={`text-[10px] ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                    <p className={`text-label ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                       <Clock className="inline mr-0.5 h-2.5 w-2.5" />
                       {a.due_date ? formatarDataHoraCurta(a.due_date) : "Sem data"}
                       {overdue && " · Atrasada"}

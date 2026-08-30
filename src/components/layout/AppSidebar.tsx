@@ -154,7 +154,7 @@ export function AppSidebar() {
             {!collapsed && (
               <>
                 <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-                  <span className="truncate text-[13px] font-semibold text-sidebar-foreground">
+                  <span className="truncate text-corpo font-semibold text-sidebar-foreground">
                     {profile?.name || "Usuário"}
                   </span>
                   <span className="truncate text-meta text-sidebar-foreground/50">

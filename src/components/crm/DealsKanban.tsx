@@ -137,13 +137,13 @@ function DealCard({
       }}
     >
       {/* Title */}
-      <p className="truncate text-[13px] font-semibold leading-snug text-foreground mb-0.5">
+      <p className="truncate text-corpo font-semibold leading-snug text-foreground mb-0.5">
         {deal.title}
       </p>
 
       {/* Empresa (texto) · Pessoa (clicável) */}
       {(deal.company || nomeContato) && (
-        <p className="truncate text-[11px] text-muted-foreground leading-tight mb-2">
+        <p className="truncate text-meta text-muted-foreground leading-tight mb-2">
           {deal.company?.name}
           {deal.company && nomeContato && " · "}
           {nomeContato && (
@@ -242,14 +242,14 @@ function DealCard({
             );
           })()}
           <p
-            className={`line-clamp-1 flex-1 text-[11px] leading-tight ${
+            className={`line-clamp-1 flex-1 text-meta leading-tight ${
               acaoAtrasada ? "text-destructive" : "text-muted-foreground"
             }`}
           >
             {textoDe(proximaAcao) ?? ATIVIDADE_ROTULO[proximaAcao.type]}
           </p>
           <span
-            className={`shrink-0 text-[10px] font-medium ${
+            className={`shrink-0 text-label font-medium ${
               acaoAtrasada ? "text-destructive" : "text-muted-foreground"
             }`}
           >
@@ -262,13 +262,13 @@ function DealCard({
 
       {/* Bottom row */}
       <div className="flex items-center justify-between gap-1">
-        <span className="num text-[12px] font-bold text-foreground tabular-nums">
+        <span className="num text-xs font-bold text-foreground tabular-nums">
           {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
         </span>
 
         <div className="flex items-center gap-1.5">
           {probability > 0 && (
-            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none
+            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-micro font-bold leading-none
               ${probability >= 70 ? "bg-success/12 text-success" : probability >= 40 ? "bg-warning/12 text-warning" : "bg-muted text-muted-foreground"}`}>
               {probability}%
             </span>
@@ -276,7 +276,7 @@ function DealCard({
           {deal.owner && (
             <Avatar className="h-5 w-5 ring-1 ring-border">
               <AvatarImage src={deal.owner.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-primary text-[8px] font-bold">
+              <AvatarFallback className="bg-primary/10 text-primary text-micro font-bold">
                 {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>
@@ -314,12 +314,12 @@ function StageColumn({
     >
       {/* Header — Pipedrive style */}
       <div className="mb-1 px-1">
-        <h3 className="text-[13px] font-bold text-foreground leading-tight">{stage.name}</h3>
+        <h3 className="text-corpo font-bold text-foreground leading-tight">{stage.name}</h3>
         <div className="flex items-center gap-1">
-          <span className="text-[11px] text-muted-foreground font-medium">
+          <span className="text-meta text-muted-foreground font-medium">
             {formatarMoeda(total)}
           </span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-meta text-muted-foreground">
             · {deals.length} {deals.length === 1 ? "negócio" : "negócios"}
           </span>
         </div>
@@ -384,7 +384,7 @@ function CollapsibleStatusColumn({
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${color}`} />
           <span className="text-sm font-semibold">{title}</span>
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-label font-medium text-muted-foreground">
             {deals.length}
           </span>
         </div>
@@ -401,9 +401,9 @@ function CollapsibleStatusColumn({
               className="cursor-pointer rounded-md border border-border bg-card p-2 hover:shadow-sm transition-shadow"
               onClick={() => onDealClick(deal)}
             >
-              <p className="truncate text-[13px] font-medium">{deal.title}</p>
+              <p className="truncate text-corpo font-medium">{deal.title}</p>
               {deal.company && (
-                <p className="truncate text-[11px] text-muted-foreground">{deal.company.name}</p>
+                <p className="truncate text-meta text-muted-foreground">{deal.company.name}</p>
               )}
               <p className={`text-xs font-semibold mt-0.5 ${color}`}>
                 {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
@@ -439,7 +439,7 @@ function WonLostDropZone({
       }`}
     >
       <Icon className={`h-5 w-5 ${color}`} />
-      <span className={`mt-1 text-[10px] font-medium ${color}`}>{label}</span>
+      <span className={`mt-1 text-label font-medium ${color}`}>{label}</span>
     </div>
   );
 }
@@ -539,7 +539,7 @@ export function DealsKanban({
           {activeDeal && (
             <div className="w-[264px] sm:w-[288px] opacity-90">
               <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
-                <p className="text-[13px] font-medium">{activeDeal.title}</p>
+                <p className="text-corpo font-medium">{activeDeal.title}</p>
                 <p className="text-xs font-semibold text-foreground mt-0.5">
                   {formatarMoeda(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
                 </p>

@@ -325,7 +325,7 @@ export default function Inbox() {
                   <Icon className={cn("h-4 w-4 shrink-0", active && "text-primary")} />
                   <span className="flex-1 text-left truncate">{f.label}</span>
                   {count > 0 && (
-                    <span className="text-[10px] font-medium tabular-nums">{count}</span>
+                    <span className="text-label font-medium tabular-nums">{count}</span>
                   )}
                 </button>
               );
@@ -419,7 +419,7 @@ export default function Inbox() {
                       <Star className={cn("h-4 w-4", email.is_starred && "fill-amber-400 text-amber-500")} />
                     </button>
                     <div
-                      className="h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5"
+                      className="h-7 w-7 rounded-full flex items-center justify-center text-label font-semibold text-white shrink-0 mt-0.5"
                       style={{ background: senderColor(senderName) }}
                     >
                       {initials}
@@ -429,7 +429,7 @@ export default function Inbox() {
                         <p className={cn("text-sm truncate", !email.is_read ? "font-bold text-foreground" : "font-medium text-foreground/90")}>
                           {senderName}
                         </p>
-                        <span className={cn("text-[10px] shrink-0 tabular-nums", !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                        <span className={cn("text-label shrink-0 tabular-nums", !email.is_read ? "font-semibold text-foreground" : "text-muted-foreground")}>
                           {timeAgo(email.sent_at || email.created_at)}
                         </span>
                       </div>
@@ -441,20 +441,20 @@ export default function Inbox() {
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         {email.importance === "high" && (
-                          <Badge variant="outline" className="h-4 text-[8px] border-amber-500/40 text-amber-600">Importante</Badge>
+                          <Badge variant="outline" className="h-4 text-micro border-amber-500/40 text-amber-600">Importante</Badge>
                         )}
                         {email.open_count > 0 && (
-                          <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                          <span className="text-micro text-muted-foreground flex items-center gap-0.5">
                             <Eye className="h-2.5 w-2.5" />{email.open_count}
                           </span>
                         )}
                         {email.click_count > 0 && (
-                          <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                          <span className="text-micro text-muted-foreground flex items-center gap-0.5">
                             <MousePointerClick className="h-2.5 w-2.5" />{email.click_count}
                           </span>
                         )}
                         {email.snoozed_until && new Date(email.snoozed_until) > new Date() && (
-                          <span className="text-[9px] text-amber-600 flex items-center gap-0.5">
+                          <span className="text-micro text-amber-600 flex items-center gap-0.5">
                             <Clock className="h-2.5 w-2.5" />{formatarData(email.snoozed_until)}
                           </span>
                         )}
@@ -566,12 +566,12 @@ export default function Inbox() {
                   {(selectedEmail.open_count > 0 || selectedEmail.click_count > 0) && (
                     <div className="flex items-center gap-2 mt-1.5">
                       {selectedEmail.open_count > 0 && (
-                        <Badge variant="secondary" className="text-[9px] h-4">
+                        <Badge variant="secondary" className="text-micro h-4">
                           <Eye className="mr-1 h-2.5 w-2.5" />{selectedEmail.open_count}x aberto
                         </Badge>
                       )}
                       {selectedEmail.click_count > 0 && (
-                        <Badge variant="secondary" className="text-[9px] h-4">
+                        <Badge variant="secondary" className="text-micro h-4">
                           <MousePointerClick className="mr-1 h-2.5 w-2.5" />{selectedEmail.click_count}x clique
                         </Badge>
                       )}
@@ -758,7 +758,7 @@ function EmailAttachments({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium truncate" title={att.filename}>{att.filename}</p>
-                  <p className="text-[10px] text-muted-foreground">{formatBytes(att.size)}</p>
+                  <p className="text-label text-muted-foreground">{formatBytes(att.size)}</p>
                 </div>
                 <div className="flex gap-1">
                   {(isImg || isPdf) && (

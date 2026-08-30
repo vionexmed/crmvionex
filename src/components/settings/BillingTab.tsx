@@ -50,7 +50,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
             ].map((item) => (
               <div key={item.label} className="text-center">
                 <p className="text-lg font-bold">{item.count}</p>
-                <p className="text-[10px] text-muted-foreground">{item.label} {typeof item.limit === "number" ? `/ ${item.limit.toLocaleString()}` : ""}</p>
+                <p className="text-label text-muted-foreground">{item.label} {typeof item.limit === "number" ? `/ ${item.limit.toLocaleString()}` : ""}</p>
                 {typeof item.limit === "number" && (
                   <div className="mt-1 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                     <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, (item.count / item.limit) * 100)}%` }} />
@@ -70,20 +70,20 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
               <div className="flex items-center gap-2">
                 {plan.name === "Enterprise" && <Crown className="h-4 w-4 text-warning" />}
                 <CardTitle className="text-sm">{plan.name}</CardTitle>
-                {plan.current && <Badge className="text-[8px]">Atual</Badge>}
+                {plan.current && <Badge className="text-micro">Atual</Badge>}
               </div>
               <p className="text-lg font-bold">{plan.price}</p>
             </CardHeader>
             <CardContent>
               <ul className="space-y-1.5">
                 {plan.features.map((f) => (
-                  <li key={f} className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <li key={f} className="text-label text-muted-foreground flex items-center gap-1.5">
                     <span className="text-success">✓</span>{f}
                   </li>
                 ))}
               </ul>
               {!plan.current && (
-                <Button variant="outline" size="sm" className="w-full mt-4 h-8 text-[10px]">
+                <Button variant="outline" size="sm" className="w-full mt-4 h-8 text-label">
                   {plan.name === "Enterprise" ? "Falar com Vendas" : "Fazer Upgrade"}
                 </Button>
               )}
@@ -101,10 +101,10 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[10px]">Data</TableHead>
-                <TableHead className="text-[10px]">Plano</TableHead>
-                <TableHead className="text-[10px]">Valor</TableHead>
-                <TableHead className="text-[10px]">Status</TableHead>
+                <TableHead className="text-label">Data</TableHead>
+                <TableHead className="text-label">Plano</TableHead>
+                <TableHead className="text-label">Valor</TableHead>
+                <TableHead className="text-label">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -113,7 +113,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
                   <TableCell className="text-xs">{inv.date}</TableCell>
                   <TableCell className="text-xs">{inv.plan}</TableCell>
                   <TableCell className="text-xs">{inv.amount}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-[8px] text-success">{inv.status}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className="text-micro text-success">{inv.status}</Badge></TableCell>
                 </TableRow>
               ))}
             </TableBody>

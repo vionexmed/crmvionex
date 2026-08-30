@@ -43,7 +43,7 @@ export function ImportExportTab({ orgId }: { orgId: string | null }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Exportar Dados</CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Exporte qualquer entidade como arquivo CSV
           </CardDescription>
         </CardHeader>
@@ -62,7 +62,7 @@ export function ImportExportTab({ orgId }: { orgId: string | null }) {
                 ) : (
                   <span className="text-lg">{ent.icon}</span>
                 )}
-                <span className="text-[10px]">{ent.label}</span>
+                <span className="text-label">{ent.label}</span>
               </Button>
             ))}
           </div>
@@ -72,19 +72,19 @@ export function ImportExportTab({ orgId }: { orgId: string | null }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Importar Dados</CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Importe contatos e empresas via CSV. Acesse a lista de contatos ou empresas e use o botão "Importar CSV".
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-muted p-4 space-y-2">
-            <p className="text-[10px] font-medium">Formatos suportados:</p>
-            <ul className="text-[9px] text-muted-foreground space-y-1">
+            <p className="text-label font-medium">Formatos suportados:</p>
+            <ul className="text-micro text-muted-foreground space-y-1">
               <li>• <strong>CSV genérico</strong> — mapeamento de colunas manual</li>
               <li>• <strong>HubSpot Export</strong> — detecta automaticamente colunas "First Name", "Last Name", "Email"</li>
               <li>• <strong>Pipedrive Export</strong> — detecta "Person - Name", "Organization - Name"</li>
             </ul>
-            <p className="text-[9px] text-muted-foreground mt-2">
+            <p className="text-micro text-muted-foreground mt-2">
               A importação inclui preview, mapeamento e detecção de duplicatas por email.
             </p>
           </div>

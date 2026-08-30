@@ -248,16 +248,16 @@ export default function MyEmail() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <CardTitle className="text-sm">{conexao.email_address}</CardTitle>
-                <CardDescription className="text-[11px]">
+                <CardDescription className="text-meta">
                   {conexao.last_synced_at
                     ? `Última sincronização ${new Date(conexao.last_synced_at).toLocaleString("pt-BR")}`
                     : "Ainda não sincronizada"}
                 </CardDescription>
               </div>
               {conexao.invalid_since ? (
-                <Badge variant="destructive" className="shrink-0 text-[9px]">Precisa reconectar</Badge>
+                <Badge variant="destructive" className="shrink-0 text-micro">Precisa reconectar</Badge>
               ) : (
-                <Badge className="shrink-0 text-[9px]">Conectada</Badge>
+                <Badge className="shrink-0 text-micro">Conectada</Badge>
               )}
             </div>
           </CardHeader>
@@ -272,16 +272,16 @@ export default function MyEmail() {
                     <p className="text-xs font-medium text-destructive">
                       {motivoDe(conexao.invalid_reason).titulo}
                     </p>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    <p className="text-meta leading-relaxed text-muted-foreground">
                       {motivoDe(conexao.invalid_reason).explicacao}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-label text-muted-foreground">
                       Desde {new Date(conexao.invalid_since).toLocaleString("pt-BR")}. Enquanto
                       isso, e-mail enviado por você e pelas automações dos seus leads não sai.
                     </p>
                   </div>
                 </div>
-                <Button size="sm" className="h-7 text-[11px]" onClick={conectar} disabled={conectando}>
+                <Button size="sm" className="h-7 text-meta" onClick={conectar} disabled={conectando}>
                   {conectando
                     ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                     : <Plug className="mr-1.5 h-3 w-3" />}
@@ -291,14 +291,14 @@ export default function MyEmail() {
             )}
 
             <div className="space-y-1.5">
-              <div className="flex items-baseline justify-between text-[11px]">
+              <div className="flex items-baseline justify-between text-meta">
                 <span className="font-medium">Envios hoje</span>
                 <span className="text-muted-foreground tabular-nums">
                   {enviadosHoje} de {teto}
                 </span>
               </div>
               <Progress value={percentual} className="h-1.5" />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-label text-muted-foreground">
                 O limite diário protege a reputação do domínio e a cota do Gmail. Reinicia todo dia.
               </p>
             </div>

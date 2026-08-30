@@ -83,7 +83,7 @@ export function StepResend({ orgId, userId: _userId, userEmail, onComplete, setS
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">2</span>
               <span>
                 Vá em <strong>"API Keys"</strong> → <strong>"Create API Key"</strong><br />
-                Permissão necessária: <Badge variant="outline" className="text-[10px]">Sending access</Badge>
+                Permissão necessária: <Badge variant="outline" className="text-label">Sending access</Badge>
               </span>
             </div>
             <div className="flex gap-3">
@@ -125,7 +125,7 @@ export function StepResend({ orgId, userId: _userId, userEmail, onComplete, setS
                 placeholder="vendas@suaempresa.com"
                 type="email"
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-meta text-muted-foreground">
                 Emails de sequências e automações sairão deste endereço
               </p>
             </div>
@@ -166,7 +166,7 @@ export function StepResend({ orgId, userId: _userId, userEmail, onComplete, setS
                   <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
                     Domínio não verificado no Resend.
                   </span>
-                  <p className="text-[11px] text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+                  <p className="text-meta text-amber-600/80 dark:text-amber-400/70 mt-0.5">
                     Você pode continuar, mas os emails podem cair no spam.
                   </p>
                 </div>

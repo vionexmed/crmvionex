@@ -43,7 +43,7 @@ export function LeadRow({
       )}
     >
       <Avatar className="h-7 w-7 shrink-0">
-        <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">
+        <AvatarFallback className="bg-primary/10 text-label font-semibold text-primary">
           {initials(linha.titulo)}
         </AvatarFallback>
       </Avatar>
@@ -54,7 +54,7 @@ export function LeadRow({
               e-mail ou WhatsApp muda a leitura de tudo que vem depois. */}
           {linha.canal && (
             <span className={cn(
-              "shrink-0 rounded px-1.5 py-px text-[9px] font-medium",
+              "shrink-0 rounded px-1.5 py-px text-micro font-medium",
               CANAL[linha.canal]?.classe ?? "bg-muted text-muted-foreground",
             )}>
               {CANAL[linha.canal]?.rotulo ?? linha.canal}
@@ -67,11 +67,11 @@ export function LeadRow({
             "o que aconteceu" — assunto do e-mail, título da atividade, trecho
             da mensagem. */}
         {linha.conteudo && (
-          <p className="truncate text-[10px] text-muted-foreground">{linha.conteudo}</p>
+          <p className="truncate text-label text-muted-foreground">{linha.conteudo}</p>
         )}
 
         {(linha.autor || linha.subtitulo || linha.detalhe) && (
-          <p className="truncate text-[10px] text-muted-foreground/70">
+          <p className="truncate text-label text-muted-foreground/70">
             {[
               linha.autor ? `por ${linha.autor}` : null,
               linha.subtitulo,
@@ -82,12 +82,12 @@ export function LeadRow({
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-0.5">
-        {meta && <span className="text-[10px] tabular-nums text-muted-foreground">{meta}</span>}
+        {meta && <span className="text-label tabular-nums text-muted-foreground">{meta}</span>}
         {/* Só taxa de resposta preenche `respondeu`; nas outras fica fora. */}
         {linha.respondeu !== null && (
           <span
             className={cn(
-              "rounded-full px-1.5 py-px text-[9px] font-medium",
+              "rounded-full px-1.5 py-px text-micro font-medium",
               linha.respondeu
                 ? "bg-success/10 text-success"
                 : "bg-muted text-muted-foreground",

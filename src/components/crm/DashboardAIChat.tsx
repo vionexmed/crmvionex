@@ -212,7 +212,7 @@ export function DashboardAIChat({ crmData }: DashboardAIChatProps) {
           </div>
           <div>
             <span className="font-semibold">Gerente Comercial IA</span>
-            <p className="text-[10px] text-muted-foreground font-normal">
+            <p className="text-label text-muted-foreground font-normal">
               Carlos · Análise em tempo real do seu CRM
             </p>
           </div>
@@ -237,7 +237,7 @@ export function DashboardAIChat({ crmData }: DashboardAIChatProps) {
                     <button
                       key={s}
                       onClick={() => sendMessage(s)}
-                      className="text-[10px] px-2.5 py-1.5 rounded-full border border-border hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                      className="text-label px-2.5 py-1.5 rounded-full border border-border hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                     >
                       {s}
                     </button>
@@ -259,7 +259,7 @@ export function DashboardAIChat({ crmData }: DashboardAIChatProps) {
                     : "bg-muted"
                 }`}>
                   {msg.role === "assistant" ? (
-                    <div className="prose prose-xs prose-neutral dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_code]:text-[10px] [&_table]:text-[10px]">
+                    <div className="prose prose-xs prose-neutral dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_code]:text-label [&_table]:text-label">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                   ) : (

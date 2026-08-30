@@ -43,7 +43,7 @@ export function GraficoEvolucao({ dados }: { dados: PontoSerie[] }) {
     <Card className="border-0 shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">Evolução no período</CardTitle>
-        <CardDescription className="text-[11px]">
+        <CardDescription className="text-meta">
           Leads que entraram, abordagens que saíram e respostas que voltaram
         </CardDescription>
       </CardHeader>
@@ -74,7 +74,7 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
     <Card className="border-0 shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">Funil de conversão</CardTitle>
-        <CardDescription className="text-[11px]">
+        <CardDescription className="text-meta">
           Quantos chegaram a cada etapa, e a perda entre elas
         </CardDescription>
       </CardHeader>
@@ -92,7 +92,7 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
 
               return (
                 <div key={etapa.etapa}>
-                  <div className="mb-1 flex items-baseline justify-between gap-2 text-[11px]">
+                  <div className="mb-1 flex items-baseline justify-between gap-2 text-meta">
                     <span className="font-medium">{etapa.etapa}</span>
                     <span className="flex items-baseline gap-2">
                       {conversao !== null && (
@@ -141,10 +141,10 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-sm">Leads por canal</CardTitle>
-            <CardDescription className="text-[11px]">De onde cada lead chegou</CardDescription>
+            <CardDescription className="text-meta">De onde cada lead chegou</CardDescription>
           </div>
           {maioriaSemOrigem && (
-            <Badge variant="outline" className="shrink-0 text-[9px]">origem incompleta</Badge>
+            <Badge variant="outline" className="shrink-0 text-micro">origem incompleta</Badge>
           )}
         </div>
       </CardHeader>
@@ -163,7 +163,7 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
             />
             <ul className="min-w-0 flex-1 space-y-1.5">
               {dados.slice(0, 6).map((d, i) => (
-                <li key={d.canal} className="flex items-center gap-2 text-[11px]">
+                <li key={d.canal} className="flex items-center gap-2 text-meta">
                   <span className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                   <span className="flex-1 truncate">{d.canal}</span>
@@ -177,7 +177,7 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
           </div>
         )}
         {maioriaSemOrigem && (
-          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-label leading-relaxed text-muted-foreground">
             A maioria dos leads está sem origem gravada. O número só fica confiável depois de
             padronizar a captação.
           </p>
@@ -198,11 +198,11 @@ export function GraficoPessoas({ dados }: { dados: LinhaPessoa[] }) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-sm">Desempenho por pessoa</CardTitle>
-            <CardDescription className="text-[11px]">
+            <CardDescription className="text-meta">
               Leads recebidos, abordagens, reuniões e vendas no período
             </CardDescription>
           </div>
-          <Badge variant="outline" className="shrink-0 text-[9px]">só administradores</Badge>
+          <Badge variant="outline" className="shrink-0 text-micro">só administradores</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3 pt-2">
@@ -226,7 +226,7 @@ export function GraficoPessoas({ dados }: { dados: LinhaPessoa[] }) {
             ))}
             <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2">
               {["Leads", "Abordagens", "Reuniões", "Vendas"].map((n, i) => (
-                <span key={n} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <span key={n} className="flex items-center gap-1.5 text-label text-muted-foreground">
                   <span className="h-2 w-2 rounded-full" style={{ background: CHART_COLORS[i] }} />
                   {n}
                 </span>

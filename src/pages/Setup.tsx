@@ -153,7 +153,7 @@ export default function Setup() {
                 >
                   {done ? <Check className="h-3.5 w-3.5" /> : idx + 1}
                 </div>
-                <span className="hidden text-[10px] md:block whitespace-nowrap">{s.label}</span>
+                <span className="hidden text-label md:block whitespace-nowrap">{s.label}</span>
               </button>
             );
           })}

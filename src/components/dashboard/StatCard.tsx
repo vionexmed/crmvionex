@@ -169,7 +169,7 @@ export function StatCard({
       <div className={cn("h-[3px] w-full", noSource ? "bg-muted" : theme.bar)} />
       <CardContent className="p-4">
         <div className="mb-3 flex items-start justify-between gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground">
             {label}
           </span>
           <div className="flex shrink-0 items-center gap-1">
@@ -185,7 +185,7 @@ export function StatCard({
                     <Info className="h-3 w-3" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[260px] text-[11px] leading-relaxed">
+                <TooltipContent className="max-w-[260px] text-meta leading-relaxed">
                   {hint}
                 </TooltipContent>
               </Tooltip>
@@ -206,7 +206,7 @@ export function StatCard({
             <span
               className={cn(
                 "block font-heading font-bold tracking-tight",
-                emphasis ? "text-[30px] leading-none" : "text-[22px]",
+                emphasis ? "text-3xl leading-none" : "text-[22px]",
                 value === null ? "text-muted-foreground" : "text-foreground",
               )}
             >
@@ -218,7 +218,7 @@ export function StatCard({
             const comSecundario = (
               <span className="flex items-baseline gap-1.5">
                 {valor}
-                <span className="text-[12px] font-medium text-muted-foreground">
+                <span className="text-xs font-medium text-muted-foreground">
                   · {formatValue(secundario.valor, "number")} {secundario.rotulo}
                 </span>
               </span>
@@ -234,13 +234,13 @@ export function StatCard({
         )}
 
         {noSource ? (
-          <Badge variant="outline" className="mt-1.5 text-[9px] font-medium">
+          <Badge variant="outline" className="mt-1.5 text-micro font-medium">
             sem fonte
           </Badge>
         ) : delta !== null ? (
           <div
             className={cn(
-              "mt-1.5 flex items-center gap-0.5 text-[10px] font-medium",
+              "mt-1.5 flex items-center gap-0.5 text-label font-medium",
               positive ? "text-success" : delta === 0 ? "text-muted-foreground" : "text-destructive",
             )}
           >
@@ -250,7 +250,7 @@ export function StatCard({
             {delta}% vs. anterior
           </div>
         ) : (
-          <p className="mt-1.5 text-[10px] text-muted-foreground">
+          <p className="mt-1.5 text-label text-muted-foreground">
             {noComparison ? "no momento" : value === null ? "sem dados no período" : "–"}
           </p>
         )}

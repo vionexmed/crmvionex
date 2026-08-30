@@ -221,7 +221,7 @@ export default function Dashboard() {
       description="Entrada, abordagem, conversão e velocidade de atendimento"
       meta={
         lastRefresh ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-meta text-muted-foreground">
             {SDR_PERIOD_LABELS[period]} · atualizado{" "}
             {formatarHora(lastRefresh)}
           </p>
@@ -336,7 +336,7 @@ export default function Dashboard() {
             <section key={group.title} className="space-y-2">
               <div className="flex items-baseline gap-2">
                 <h2 className="font-heading text-sm font-semibold tracking-tight">{group.title}</h2>
-                <p className="text-[11px] text-muted-foreground">{group.description}</p>
+                <p className="text-meta text-muted-foreground">{group.description}</p>
               </div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
                 {group.tiles.map((tile) =>
@@ -362,7 +362,7 @@ export default function Dashboard() {
             </section>
           ))}
 
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
+          <p className="text-meta leading-relaxed text-muted-foreground">
             Métricas marcadas como <strong>sem fonte</strong> não têm dado no banco — não são zero,
             são não medidas. Passe o mouse no ícone de informação para ver o que falta gravar.
           </p>

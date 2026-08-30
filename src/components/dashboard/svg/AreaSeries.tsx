@@ -50,7 +50,7 @@ export function AreaSeries({
     <div className="flex gap-2">
       {/* Eixo Y fora do SVG: não distorce com preserveAspectRatio="none" */}
       <div
-        className="flex shrink-0 flex-col justify-between py-0.5 text-right text-[10px] tabular-nums text-muted-foreground"
+        className="flex shrink-0 flex-col justify-between py-0.5 text-right text-label tabular-nums text-muted-foreground"
         style={{ height: altura }}
         aria-hidden
       >
@@ -117,7 +117,7 @@ export function AreaSeries({
 
           {hover && (
             <div
-              className="pointer-events-none absolute z-10 min-w-[128px] rounded-md border border-border bg-popover p-2 text-[11px] shadow-md"
+              className="pointer-events-none absolute z-10 min-w-[128px] rounded-md border border-border bg-popover p-2 text-meta shadow-md"
               style={{
                 left: Math.min(hover.x + 10, 9999),
                 top: 4,
@@ -141,13 +141,13 @@ export function AreaSeries({
           )}
         </div>
 
-        <div className="mt-1 flex justify-between text-[10px] tabular-nums text-muted-foreground" aria-hidden>
+        <div className="mt-1 flex justify-between text-label tabular-nums text-muted-foreground" aria-hidden>
           {rotulos.filter((_, i) => i % passoRotulo === 0).map((r, i) => <span key={i}>{r}</span>)}
         </div>
 
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
           {series.map((s) => (
-            <span key={s.nome} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span key={s.nome} className="flex items-center gap-1.5 text-meta text-muted-foreground">
               <span className="h-2 w-2 rounded-full" style={{ background: s.cor }} />
               {s.nome}
             </span>

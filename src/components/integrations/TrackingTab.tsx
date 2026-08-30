@@ -70,18 +70,18 @@ export function TrackingTab({ orgId }: { orgId: string | null }) {
             <Globe className="h-4 w-4" />
             Rastreamento de Website
           </CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Adicione este snippet ao seu site para rastrear visitantes e aumentar o lead score automaticamente
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
-            <pre className="rounded-md bg-muted p-4 text-[9px] font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
+            <pre className="rounded-md bg-muted p-4 text-micro font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
               {snippet}
             </pre>
             <Button
               variant="outline" size="sm"
-              className="absolute top-2 right-2 h-7 text-[9px]"
+              className="absolute top-2 right-2 h-7 text-micro"
               onClick={copySnippet}
             >
               {copied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
@@ -91,7 +91,7 @@ export function TrackingTab({ orgId }: { orgId: string | null }) {
 
           <div className="space-y-2 rounded-md border border-border p-3">
             <p className="text-xs font-medium">Como funciona:</p>
-            <ul className="text-[10px] text-muted-foreground space-y-1">
+            <ul className="text-label text-muted-foreground space-y-1">
               <li>• <strong>Pageviews</strong> são registrados automaticamente como atividades</li>
               <li>• <strong>Identificação</strong>: chame <code className="bg-muted px-1 rounded">VIONEX.identify("email@exemplo.com")</code> após formulários</li>
               <li>• <strong>Eventos customizados</strong>: <code className="bg-muted px-1 rounded">{'VIONEX.track("demo_request", {"plan": "pro"})'}</code></li>

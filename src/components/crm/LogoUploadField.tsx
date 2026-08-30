@@ -91,7 +91,7 @@ export function LogoUploadField({
         >
           {uploading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Enviando...</> : <><Upload className="mr-1 h-3 w-3" />{value ? "Trocar" : `Enviar ${rotulo}`}</>}
         </Button>
-        <p className="text-[10px] text-muted-foreground">PNG ou JPG, máx. 2MB</p>
+        <p className="text-label text-muted-foreground">PNG ou JPG, máx. 2MB</p>
       </div>
     </div>
   );

@@ -277,13 +277,13 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             const minha = connections.find((c) => c.user_id === user?.id);
             if (minha) {
               return (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-meta text-muted-foreground">
                   De: <span className="font-medium">{minha.email_address}</span>
                 </p>
               );
             }
             return (
-              <p className="text-[11px] text-warning">
+              <p className="text-meta text-warning">
                 Você ainda não conectou seu e-mail — conecte em Configurações → Conectar e-mail.
               </p>
             );
@@ -294,7 +294,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             <div className="flex items-center justify-between">
               <Label className="text-xs">Para *</Label>
               {!showCcBcc && (
-                <button onClick={() => setShowCcBcc(true)} className="text-[10px] text-primary hover:underline">
+                <button onClick={() => setShowCcBcc(true)} className="text-label text-primary hover:underline">
                   Cc/Bcc
                 </button>
               )}
@@ -326,7 +326,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             {/* Templates */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-[10px]">
+                <Button variant="outline" size="sm" className="h-7 text-label">
                   <FileText className="mr-1 h-3 w-3" />Templates
                 </Button>
               </PopoverTrigger>
@@ -342,7 +342,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
                         className="w-full text-left rounded-md px-2 py-1.5 text-xs hover:bg-accent transition-colors"
                       >
                         <p className="font-medium">{t.name}</p>
-                        {t.category && <span className="text-[9px] text-muted-foreground">{t.category}</span>}
+                        {t.category && <span className="text-micro text-muted-foreground">{t.category}</span>}
                       </button>
                     ))}
                   </div>
@@ -353,7 +353,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             {/* Variables */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-[10px]">
+                <Button variant="outline" size="sm" className="h-7 text-label">
                   <Variable className="mr-1 h-3 w-3" />Variáveis
                 </Button>
               </PopoverTrigger>
@@ -366,7 +366,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
                       className="w-full text-left rounded-md px-2 py-1 text-xs hover:bg-accent transition-colors flex justify-between"
                     >
                       <span>{v.label}</span>
-                      <code className="text-[9px] text-muted-foreground">{v.key}</code>
+                      <code className="text-micro text-muted-foreground">{v.key}</code>
                     </button>
                   ))}
                 </div>
@@ -377,7 +377,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             <Button
               variant={showAiPanel ? "default" : "outline"}
               size="sm"
-              className="h-7 text-[10px] ml-auto"
+              className="h-7 text-label ml-auto"
               onClick={() => setShowAiPanel(!showAiPanel)}
             >
               <Sparkles className="mr-1 h-3 w-3" />Gerar com IA
@@ -395,7 +395,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
                   className="h-8 text-xs flex-1"
                 />
                 <Select value={aiTone} onValueChange={setAiTone}>
-                  <SelectTrigger className="h-8 w-28 text-[10px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 w-28 text-label"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="formal">Formal</SelectItem>
                     <SelectItem value="casual">Casual</SelectItem>
@@ -409,13 +409,13 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
               </div>
               {aiSubjects.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-[9px] text-muted-foreground font-medium">Sugestões de assunto:</p>
+                  <p className="text-micro text-muted-foreground font-medium">Sugestões de assunto:</p>
                   <div className="flex flex-wrap gap-1">
                     {aiSubjects.map((s, i) => (
                       <button
                         key={i}
                         onClick={() => setSubject(s)}
-                        className="text-[9px] px-2 py-1 rounded border border-border hover:bg-accent transition-colors"
+                        className="text-micro px-2 py-1 rounded border border-border hover:bg-accent transition-colors"
                       >
                         {s}
                       </button>
@@ -522,7 +522,7 @@ function EmailAutocompleteInput({ value, onChange, suggestions, placeholder }: A
               className={`w-full text-left px-3 py-1.5 text-xs flex flex-col ${i === highlight ? "bg-accent" : ""}`}
             >
               {s.name && <span className="font-medium text-foreground">{s.name}</span>}
-              <span className={s.name ? "text-muted-foreground text-[11px]" : "text-foreground"}>{s.email}</span>
+              <span className={s.name ? "text-muted-foreground text-meta" : "text-foreground"}>{s.email}</span>
             </button>
           ))}
         </div>

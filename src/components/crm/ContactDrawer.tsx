@@ -377,7 +377,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                       <Phone className="h-4 w-4 text-muted-foreground" />
                       <span>{cleanPhone}</span>
                       {digits && (
-                        <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-green-600 hover:underline">
+                        <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-meta text-green-600 hover:underline">
                           <MessageCircle className="h-3 w-3" />WhatsApp
                         </a>
                       )}
@@ -443,7 +443,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                   if (extra.length === 0) return null;
                   return (
                     <div className="rounded-md border border-border p-3 space-y-2 mt-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dados do cadastro</p>
+                      <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground">Dados do cadastro</p>
                       <div className="space-y-1.5">
                         {extra.map((f) => (
                           <div key={f.key} className="flex items-start justify-between gap-3 text-sm">
@@ -493,8 +493,8 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[10px] font-medium text-muted-foreground uppercase">{activityLabels[a.type]}</span>
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-label font-medium text-muted-foreground uppercase">{activityLabels[a.type]}</span>
+                        <span className="text-label text-muted-foreground">
                           {formatarDataHoraCurta(a.created_at!)}
                         </span>
                       </div>
@@ -520,11 +520,11 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                         <p className="text-sm font-medium">{d.title}</p>
                         <div className="flex items-center gap-2 mt-1">
                           {stage && (
-                            <Badge variant="secondary" className="text-[10px]">
+                            <Badge variant="secondary" className="text-label">
                               {stage.name}
                             </Badge>
                           )}
-                          <Badge variant="secondary" className={`text-[10px] ${d.status === "won" ? "bg-success/10 text-success" : d.status === "lost" ? "bg-destructive/10 text-destructive" : ""}`}>
+                          <Badge variant="secondary" className={`text-label ${d.status === "won" ? "bg-success/10 text-success" : d.status === "lost" ? "bg-destructive/10 text-destructive" : ""}`}>
                             {d.status === "open" ? "Aberto" : d.status === "won" ? "Ganho" : "Perdido"}
                           </Badge>
                         </div>

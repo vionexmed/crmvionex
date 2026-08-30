@@ -77,9 +77,9 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-sm">Webhooks de Saída</CardTitle>
-              <CardDescription className="text-[10px]">Envie notificações para URLs externas quando eventos ocorrerem</CardDescription>
+              <CardDescription className="text-label">Envie notificações para URLs externas quando eventos ocorrerem</CardDescription>
             </div>
-            <Button size="sm" className="h-7 text-[10px]" onClick={() => setShowCreate(true)}>
+            <Button size="sm" className="h-7 text-label" onClick={() => setShowCreate(true)}>
               <Plus className="mr-1 h-3 w-3" />Novo Webhook
             </Button>
           </div>
@@ -94,14 +94,14 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{wh.name}</span>
-                      <Badge variant={wh.is_active ? "default" : "secondary"} className="text-[8px]">
+                      <Badge variant={wh.is_active ? "default" : "secondary"} className="text-micro">
                         {wh.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate">{wh.url}</p>
+                    <p className="text-label text-muted-foreground truncate">{wh.url}</p>
                     <div className="flex gap-1 mt-1">
                       {wh.events?.map((e) => (
-                        <Badge key={e} variant="outline" className="text-[7px]">{e}</Badge>
+                        <Badge key={e} variant="outline" className="text-micro">{e}</Badge>
                       ))}
                     </div>
                   </div>
@@ -122,7 +122,7 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Webhook de Entrada</CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Receba dados de ferramentas externas (Zapier, Make, etc.) via POST
           </CardDescription>
         </CardHeader>
@@ -130,7 +130,7 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
           <div className="space-y-1">
             <Label className="text-xs">URL do Webhook</Label>
             <div className="flex gap-2">
-              <Input value={inboundUrl} readOnly className="h-8 text-[10px] font-mono" />
+              <Input value={inboundUrl} readOnly className="h-8 text-label font-mono" />
               <Button variant="outline" size="sm" className="h-8"
                 onClick={() => { navigator.clipboard.writeText(inboundUrl); toast({ title: "Copiado!" }); }}>
                 <Copy className="h-3 w-3" />
@@ -138,8 +138,8 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
             </div>
           </div>
           <div className="rounded-md bg-muted p-3">
-            <p className="text-[10px] text-muted-foreground mb-1 font-medium">Payload esperado (JSON POST):</p>
-            <pre className="text-[9px] font-mono text-muted-foreground">{`{
+            <p className="text-label text-muted-foreground mb-1 font-medium">Payload esperado (JSON POST):</p>
+            <pre className="text-micro font-mono text-muted-foreground">{`{
   "entity": "contact",
   "action": "create",
   "data": {
@@ -175,7 +175,7 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
               <Label className="text-xs">Eventos</Label>
               <div className="grid grid-cols-2 gap-2">
                 {WEBHOOK_EVENTS.map((ev) => (
-                  <label key={ev.value} className="flex items-center gap-2 text-[10px]">
+                  <label key={ev.value} className="flex items-center gap-2 text-label">
                     <Checkbox
                       checked={form.events.includes(ev.value)}
                       onCheckedChange={(checked) => {

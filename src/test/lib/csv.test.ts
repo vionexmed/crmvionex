@@ -27,9 +27,7 @@ function capturar(fn: () => void): { conteudo: string; tipo: string; nome: strin
     }
   };
   const criarUrl = vi.fn(() => "blob:x");
-  // @ts-expect-error idem
   globalThis.URL.createObjectURL = criarUrl;
-  // @ts-expect-error idem
   globalThis.URL.revokeObjectURL = vi.fn();
   const a = { href: "", download: "", click: vi.fn() };
   vi.spyOn(document, "createElement").mockReturnValue(a as unknown as HTMLAnchorElement);

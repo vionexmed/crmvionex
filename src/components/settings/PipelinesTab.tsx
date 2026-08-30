@@ -126,7 +126,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Funis e etapas</CardTitle>
-          <CardDescription className="text-[10px]">Gerencie seus funis de venda e as etapas de cada um</CardDescription>
+          <CardDescription className="text-label">Gerencie seus funis de venda e as etapas de cada um</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
@@ -142,7 +142,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
                 </SelectContent>
               </Select>
               {selectedPipeline && (
-                <Button variant="destructive" size="sm" className="h-8 text-[10px]" onClick={() => deletePipeline(selectedPipeline)}>
+                <Button variant="destructive" size="sm" className="h-8 text-label" onClick={() => deletePipeline(selectedPipeline)}>
                   <Trash2 className="h-3 w-3" />
                 </Button>
               )}
@@ -156,7 +156,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
           <CardHeader>
             <CardTitle className="text-sm">Etapas</CardTitle>
             {/* Dizia "Arraste para reordenar" e não havia arraste nenhum. */}
-            <CardDescription className="text-[10px]">Configure as etapas do funil selecionado. Use as setas para reordenar.</CardDescription>
+            <CardDescription className="text-label">Configure as etapas do funil selecionado. Use as setas para reordenar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
@@ -203,7 +203,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Razões de Perda</CardTitle>
-          <CardDescription className="text-[10px]">Motivos customizáveis quando um negócio é marcado como perdido</CardDescription>
+          <CardDescription className="text-label">Motivos customizáveis quando um negócio é marcado como perdido</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
@@ -212,7 +212,7 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
           </div>
           <div className="flex flex-wrap gap-1.5">
             {lossReasons.map((lr: any) => (
-              <Badge key={lr.id} variant="secondary" className="text-[10px] gap-1">
+              <Badge key={lr.id} variant="secondary" className="text-label gap-1">
                 {lr.label}
                 <button onClick={() => deleteLossReason(lr.id)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
               </Badge>

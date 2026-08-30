@@ -257,7 +257,7 @@ export default function Leads() {
         </Card>
       ) : (
         <div className="rounded-md border border-border overflow-hidden">
-          <div className="grid grid-cols-[auto_1.8fr_1.2fr_1.2fr_1.1fr_1.4fr_1fr_0.9fr_auto] gap-3 px-4 py-2.5 bg-muted/50 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-muted-foreground items-center">
+          <div className="grid grid-cols-[auto_1.8fr_1.2fr_1.2fr_1.1fr_1.4fr_1fr_0.9fr_auto] gap-3 px-4 py-2.5 bg-muted/50 border-b border-border text-meta font-semibold uppercase tracking-wider text-muted-foreground items-center">
             <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todos" />
             <span>Nome</span>
             <span className="flex items-center gap-1"><Phone className="h-3 w-3" />Telefone</span>
@@ -300,7 +300,7 @@ export default function Leads() {
                   value={(lead as Lead).owner_id ?? "none"}
                   onValueChange={(v) => assignOwner({ id: lead.id, ownerId: v === "none" ? null : v })}
                 >
-                  <SelectTrigger className="h-7 text-[11px]" aria-label={`Responsável por ${fullName(lead as Lead)}`}>
+                  <SelectTrigger className="h-7 text-meta" aria-label={`Responsável por ${fullName(lead as Lead)}`}>
                     <SelectValue placeholder="Sem responsável" />
                   </SelectTrigger>
                   <SelectContent>
@@ -315,15 +315,15 @@ export default function Leads() {
                   {ownerName((lead as Lead).owner_id) ?? "—"}
                 </span>
               )}
-              <Badge variant="outline" className="text-[10px] font-medium w-fit">{sourceLabel(meta(lead as Lead, "source"))}</Badge>
-              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+              <Badge variant="outline" className="text-label font-medium w-fit">{sourceLabel(meta(lead as Lead, "source"))}</Badge>
+              <span className="text-meta text-muted-foreground whitespace-nowrap">
                 {formatDistanceToNow(new Date(lead.created_at), { locale: ptBR, addSuffix: true })}
               </span>
               <div className="flex items-center gap-1.5">
                 <Button size="icon" variant="outline" className="h-7 w-7" title="Ver detalhes" onClick={() => setViewing(lead as Lead)}>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="default" className="h-7 text-[11px] px-2.5" onClick={() => openQualify(lead as Lead)}>
+                <Button size="sm" variant="default" className="h-7 text-meta px-2.5" onClick={() => openQualify(lead as Lead)}>
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                   Qualificar
                 </Button>
@@ -350,7 +350,7 @@ export default function Leads() {
                   </div>
                   <div>
                     <SheetTitle className="font-heading text-lg">{fullName(viewing)}</SheetTitle>
-                    <Badge variant="outline" className="text-[10px] mt-1">Lead</Badge>
+                    <Badge variant="outline" className="text-label mt-1">Lead</Badge>
                   </div>
                 </div>
               </SheetHeader>
@@ -361,7 +361,7 @@ export default function Leads() {
                   <div className="flex items-start gap-3 rounded-md border border-border p-3">
                     <Phone className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Telefone / WhatsApp</p>
+                      <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Telefone / WhatsApp</p>
                       {viewing.phone ? (
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-sm">{viewing.phone}</span>
@@ -369,7 +369,7 @@ export default function Leads() {
                             href={whatsappLink(viewing.phone)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-[11px] text-green-600 hover:underline"
+                            className="flex items-center gap-1 text-meta text-green-600 hover:underline"
                           >
                             <MessageCircle className="h-3 w-3" />
                             WhatsApp
@@ -385,7 +385,7 @@ export default function Leads() {
                     <div className="flex items-start gap-3 rounded-md border border-border p-3">
                       <Mail className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">E-mail</p>
+                        <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">E-mail</p>
                         <a href={`mailto:${viewing.email}`} className="text-sm text-primary hover:underline break-all">{viewing.email}</a>
                       </div>
                     </div>
@@ -394,7 +394,7 @@ export default function Leads() {
                   <div className="flex items-start gap-3 rounded-md border border-border p-3">
                     <Briefcase className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Especialidade / Empresa</p>
+                      <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Especialidade / Empresa</p>
                       <span className="text-sm">{viewing.title || (viewing.companies as any)?.name || meta(viewing, "company") || "Não informado"}</span>
                     </div>
                   </div>
@@ -403,7 +403,7 @@ export default function Leads() {
                     <div className="flex items-start gap-3 rounded-md border border-border p-3">
                       <AlignLeft className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Observações</p>
+                        <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Observações</p>
                         <span className="text-sm leading-relaxed whitespace-pre-line">{meta(viewing, "notes")}</span>
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export default function Leads() {
                   {/* Dados estruturados do cadastro (ex.: formulário Likawave) */}
                   {CADASTRO_FIELDS.some((f) => meta(viewing, f.key)) && (
                     <div className="rounded-md border border-border p-3 space-y-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dados do cadastro</p>
+                      <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground">Dados do cadastro</p>
                       <div className="grid grid-cols-1 gap-y-2">
                         {CADASTRO_FIELDS.filter((f) => meta(viewing, f.key)).map((f) => (
                           <div key={f.key} className="flex items-start justify-between gap-3 text-sm">
@@ -428,14 +428,14 @@ export default function Leads() {
                     <div className="flex items-start gap-3 rounded-md border border-border p-3">
                       <Globe className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Origem</p>
+                        <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Origem</p>
                         <span className="text-sm">{sourceLabel(meta(viewing, "source"))}</span>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 rounded-md border border-border p-3">
                       <Calendar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Recebido em</p>
+                        <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Recebido em</p>
                         <span className="text-sm">{format(new Date(viewing.created_at), "dd/MM/yyyy HH:mm")}</span>
                       </div>
                     </div>

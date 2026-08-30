@@ -37,6 +37,9 @@ export default {
         micro: ["0.5625rem", { lineHeight: "0.75rem" }],  //  9px / 12
         label: ["0.625rem", { lineHeight: "0.875rem" }],  // 10px / 14
         meta: ["0.6875rem", { lineHeight: "0.9375rem" }], // 11px / 15
+        // 13px é a base do `body`, e sete lugares a repetiam como valor
+        // arbitrário. Nomeada, ela pode mudar em um lugar só.
+        corpo: ["0.8125rem", { lineHeight: "1.125rem" }],  // 13px / 18
       },
       fontFamily: {
         sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],

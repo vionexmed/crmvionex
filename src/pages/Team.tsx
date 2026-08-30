@@ -417,14 +417,14 @@ export default function Team() {
                           onCheckedChange={(v) => toggleReceivesLeads(m.id, v)}
                           aria-label={`${m.name || m.email} recebe lead`}
                         />
-                        <span className="hidden text-[9px] uppercase tracking-wider text-muted-foreground lg:inline">
+                        <span className="hidden text-micro uppercase tracking-wider text-muted-foreground lg:inline">
                           Recebe lead
                         </span>
                       </label>
                     )}
                     {isOwner && m.id !== user?.id ? (
                       <Select value={m.role || "member"} onValueChange={(v) => changeRole(m.id, v)}>
-                        <SelectTrigger className={`h-7 text-[11px] w-36 gap-1 ${roleColor(m.role || "member")}`}>
+                        <SelectTrigger className={`h-7 text-meta w-36 gap-1 ${roleColor(m.role || "member")}`}>
                           {roleIcon(m.role || "member")}
                           <SelectValue />
                         </SelectTrigger>
@@ -435,7 +435,7 @@ export default function Team() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant="outline" className={`text-[10px] gap-1 ${roleColor(m.role || "member")}`}>
+                      <Badge variant="outline" className={`text-label gap-1 ${roleColor(m.role || "member")}`}>
                         {roleIcon(m.role || "member")}
                         {ROLES.find((r) => r.value === m.role)?.label || "Comercial"}
                       </Badge>
@@ -484,7 +484,7 @@ export default function Team() {
                             <TableCell key={role} className="text-center">
                               <Badge
                                 variant={negative ? "secondary" : "default"}
-                                className={`text-[10px] ${negative ? "bg-muted text-muted-foreground" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"}`}
+                                className={`text-label ${negative ? "bg-muted text-muted-foreground" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"}`}
                               >
                                 {value}
                               </Badge>
@@ -568,7 +568,7 @@ export default function Team() {
                         >
                           <Avatar className="h-5 w-5">
                             <AvatarImage src={m.avatar_url || ""} />
-                            <AvatarFallback className="text-[8px]">{m.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+                            <AvatarFallback className="text-micro">{m.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
                           </Avatar>
                           {m.name || m.email}
                         </button>
@@ -616,7 +616,7 @@ export default function Team() {
                   ))}
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-meta text-muted-foreground">
               A caixa de e-mail e o histórico dela não são transferidos: continuam restritos a
               administradores.
             </p>

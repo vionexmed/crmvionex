@@ -276,7 +276,7 @@ export default function Conversations() {
                           <span className="truncate text-sm font-medium">
                             {t.contact_name || `+${t.phone}`}
                           </span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                          <span className="shrink-0 text-label text-muted-foreground">
                             {formatTime(t.last_at)}
                           </span>
                         </div>
@@ -329,7 +329,7 @@ export default function Conversations() {
                         )}>
                           <div className="whitespace-pre-wrap break-words">{m.body}</div>
                           <div className={cn(
-                            "mt-1 flex items-center justify-end gap-1 text-[10px]",
+                            "mt-1 flex items-center justify-end gap-1 text-label",
                             isOut ? "text-primary-foreground/70" : "text-muted-foreground",
                           )}>
                             {formatTime(m.created_at)}
@@ -345,7 +345,7 @@ export default function Conversations() {
 
               <footer className="border-t bg-card p-3">
                 {!within24h && (
-                  <div className="mb-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700">
+                  <div className="mb-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-meta text-amber-700">
                     Janela de 24h expirada. Você precisará usar um template aprovado para reabrir a conversa.
                   </div>
                 )}

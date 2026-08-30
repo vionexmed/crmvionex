@@ -116,7 +116,7 @@ export function StepSlack({ orgId, onComplete, setStepData }: SetupStepProps) {
                     Conectado ao workspace: {workspaceName}
                   </span>
                   {workspaceUrl && (
-                    <p className="text-[11px] text-muted-foreground">{workspaceUrl}</p>
+                    <p className="text-meta text-muted-foreground">{workspaceUrl}</p>
                   )}
                 </div>
               </div>
@@ -141,7 +141,7 @@ export function StepSlack({ orgId, onComplete, setStepData }: SetupStepProps) {
                 )}
 
                 <button
-                  className="text-[11px] text-muted-foreground underline w-full text-center"
+                  className="text-meta text-muted-foreground underline w-full text-center"
                   onClick={() => setShowManual(!showManual)}
                 >
                   {showManual ? "Ocultar configuração manual" : "Configurar manualmente com Bot Token"}

@@ -141,7 +141,7 @@ export function WhatsAppOfficialCard() {
               </div>
               <div>
                 <CardTitle className="text-sm">WhatsApp Business (Meta Oficial)</CardTitle>
-                <CardDescription className="text-[10px]">
+                <CardDescription className="text-label">
                   Cloud API oficial — envio e recebimento de mensagens
                 </CardDescription>
               </div>
@@ -154,18 +154,18 @@ export function WhatsAppOfficialCard() {
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : config ? (
               <>
-                <Badge variant={config.is_active ? "default" : "secondary"} className="text-[9px]">
+                <Badge variant={config.is_active ? "default" : "secondary"} className="text-micro">
                   {config.is_active ? "Conectado" : "Inativo"}
                 </Badge>
                 {config.display_phone_number && (
-                  <span className="text-[11px] text-muted-foreground">{config.display_phone_number}</span>
+                  <span className="text-meta text-muted-foreground">{config.display_phone_number}</span>
                 )}
-                <Button variant="outline" size="sm" className="ml-auto h-7 text-[10px]" onClick={openDialog}>
+                <Button variant="outline" size="sm" className="ml-auto h-7 text-label" onClick={openDialog}>
                   Configurar
                 </Button>
               </>
             ) : (
-              <Button size="sm" className="h-7 text-[10px]" onClick={openDialog}>
+              <Button size="sm" className="h-7 text-label" onClick={openDialog}>
                 <Plus className="mr-1 h-3 w-3" />Conectar
               </Button>
             )}
@@ -183,7 +183,7 @@ export function WhatsAppOfficialCard() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-md border bg-muted/30 p-3 text-[11px] text-muted-foreground space-y-1">
+            <div className="rounded-md border bg-muted/30 p-3 text-meta text-muted-foreground space-y-1">
               <div className="font-medium text-foreground">Como obter as credenciais:</div>
               <ol className="ml-4 list-decimal space-y-0.5">
                 <li>Acesse o <a className="underline" target="_blank" rel="noreferrer" href="https://developers.facebook.com/apps">Meta for Developers</a> e crie/selecione um App</li>
@@ -209,7 +209,7 @@ export function WhatsAppOfficialCard() {
             <div className="space-y-2">
               <Label className="text-xs">Webhook URL (cole no painel Meta)</Label>
               <div className="flex gap-2">
-                <Input readOnly value={webhookUrl} className="font-mono text-[11px]" />
+                <Input readOnly value={webhookUrl} className="font-mono text-meta" />
                 <Button type="button" variant="outline" size="icon" onClick={() => copy(webhookUrl, "url")}>
                   {copied === "url" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
@@ -221,18 +221,18 @@ export function WhatsAppOfficialCard() {
               <div className="flex gap-2">
                 <Input value={form.webhook_verify_token}
                   onChange={(e) => setForm(f => ({ ...f, webhook_verify_token: e.target.value }))}
-                  className="font-mono text-[11px]" />
+                  className="font-mono text-meta" />
                 <Button type="button" variant="outline" size="icon" onClick={() => copy(form.webhook_verify_token, "tk")}>
                   {copied === "tk" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-label text-muted-foreground">
                 Use estes valores em <strong>WhatsApp → Configuração → Webhook</strong> e assine o campo <code>messages</code>.
               </p>
             </div>
 
             {config && (
-              <div className="rounded-md border bg-muted/30 p-3 text-[11px] space-y-0.5">
+              <div className="rounded-md border bg-muted/30 p-3 text-meta space-y-0.5">
                 <div><strong>Número:</strong> {config.display_phone_number || "—"}</div>
                 <div><strong>Nome verificado:</strong> {config.verified_name || "—"}</div>
               </div>

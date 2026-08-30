@@ -63,7 +63,7 @@ export function StepComplete({ completedSteps, onFinish }: StepCompleteProps) {
                 {!done && (
                   <button
                     onClick={() => navigate(item.settingsPath)}
-                    className="text-[11px] text-primary underline hover:text-primary/80"
+                    className="text-meta text-primary underline hover:text-primary/80"
                   >
                     configurar
                   </button>

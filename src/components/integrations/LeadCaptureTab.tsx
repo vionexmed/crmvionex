@@ -35,12 +35,12 @@ function CodeBlock({
   const copiado = copiedId === id;
   return (
     <div className="relative">
-      <pre className="rounded-md bg-muted p-4 text-[9px] font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
+      <pre className="rounded-md bg-muted p-4 text-micro font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
         {code}
       </pre>
       <Button
         variant="outline" size="sm"
-        className="absolute top-2 right-2 h-7 text-[9px]"
+        className="absolute top-2 right-2 h-7 text-micro"
         onClick={() => onCopy(code, id)}
       >
         {copiado ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
@@ -225,24 +225,24 @@ fetch("${endpoint}", {
             <Zap className="h-4 w-4 text-yellow-500" />
             API de Captação de Leads
           </CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Endpoint dedicado para receber leads de landing pages, formulários e qualquer sistema externo.
             Cria o contato automaticamente no CRM com status <strong>Lead</strong>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-            <Badge variant="default" className="text-[9px] shrink-0">POST</Badge>
-            <code className="text-[10px] font-mono break-all">{endpoint}</code>
+            <Badge variant="default" className="text-micro shrink-0">POST</Badge>
+            <code className="text-label font-mono break-all">{endpoint}</code>
             <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => copy(endpoint, "url")}>
               {copiedId === "url" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             </Button>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-label text-muted-foreground">
             <Key className="h-3 w-3" />
             <span>Autenticação: header <code className="bg-muted px-1 rounded">X-Api-Key: sua_chave</code></span>
             {!activeKey && (
-              <Badge variant="outline" className="text-[9px] text-yellow-600 border-yellow-400">
+              <Badge variant="outline" className="text-micro text-yellow-600 border-yellow-400">
                 Gere uma API Key na aba "API Keys" primeiro
               </Badge>
             )}
@@ -253,16 +253,16 @@ fetch("${endpoint}", {
       {/* Response format */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-[11px]">Resposta</CardTitle>
+          <CardTitle className="text-meta">Resposta</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-medium text-green-600 mb-1">✓ Sucesso (201)</p>
+              <p className="text-label font-medium text-green-600 mb-1">✓ Sucesso (201)</p>
               <CodeBlock code={`{ "success": true, "contact_id": "uuid", "deal_id": "uuid ou null" }`} id="resp-ok" copiedId={copiedId} onCopy={copy} />
             </div>
             <div>
-              <p className="text-[10px] font-medium text-red-500 mb-1">✗ Erro (400/401)</p>
+              <p className="text-label font-medium text-red-500 mb-1">✗ Erro (400/401)</p>
               <CodeBlock code={`{ "error": "mensagem de erro" }`} id="resp-err" copiedId={copiedId} onCopy={copy} />
             </div>
           </div>
@@ -272,7 +272,7 @@ fetch("${endpoint}", {
       {/* Fields reference */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-[11px] flex items-center gap-2">
+          <CardTitle className="text-meta flex items-center gap-2">
             <BookOpen className="h-3.5 w-3.5" />
             Campos Disponíveis
           </CardTitle>
@@ -282,21 +282,21 @@ fetch("${endpoint}", {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[9px]">Campo</TableHead>
-                  <TableHead className="text-[9px]">Tipo</TableHead>
-                  <TableHead className="text-[9px]">Obrigatório</TableHead>
-                  <TableHead className="text-[9px]">Descrição</TableHead>
+                  <TableHead className="text-micro">Campo</TableHead>
+                  <TableHead className="text-micro">Tipo</TableHead>
+                  <TableHead className="text-micro">Obrigatório</TableHead>
+                  <TableHead className="text-micro">Descrição</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {fields.map((f) => (
                   <TableRow key={f.name}>
-                    <TableCell className="font-mono text-[9px]">{f.name}</TableCell>
-                    <TableCell className="text-[9px] text-muted-foreground">{f.type}</TableCell>
-                    <TableCell className="text-[9px]">
-                      {f.req ? <Badge variant="destructive" className="text-[8px]">sim</Badge> : <span className="text-muted-foreground">não</span>}
+                    <TableCell className="font-mono text-micro">{f.name}</TableCell>
+                    <TableCell className="text-micro text-muted-foreground">{f.type}</TableCell>
+                    <TableCell className="text-micro">
+                      {f.req ? <Badge variant="destructive" className="text-micro">sim</Badge> : <span className="text-muted-foreground">não</span>}
                     </TableCell>
-                    <TableCell className="text-[9px] text-muted-foreground">{f.desc}</TableCell>
+                    <TableCell className="text-micro text-muted-foreground">{f.desc}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -308,32 +308,32 @@ fetch("${endpoint}", {
       {/* Code examples */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-[11px] flex items-center gap-2">
+          <CardTitle className="text-meta flex items-center gap-2">
             <Code className="h-3.5 w-3.5" />
             Exemplos de Integração
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-[10px] font-semibold mb-2">1. cURL (terminal / backend)</p>
+            <p className="text-label font-semibold mb-2">1. cURL (terminal / backend)</p>
             <CodeBlock code={curlExample} id="curl" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold mb-2">2. JavaScript (fetch) — direto no browser</p>
+            <p className="text-label font-semibold mb-2">2. JavaScript (fetch) — direto no browser</p>
             <CodeBlock code={fetchExample} id="fetch" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold mb-2">3. Formulário HTML completo pronto para copiar</p>
+            <p className="text-label font-semibold mb-2">3. Formulário HTML completo pronto para copiar</p>
             <CodeBlock code={htmlFormExample} id="html" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold mb-2">4. PHP</p>
+            <p className="text-label font-semibold mb-2">4. PHP</p>
             <CodeBlock code={phpExample} id="php" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold mb-2">5. Criar lead + negócio em um único request</p>
+            <p className="text-label font-semibold mb-2">5. Criar lead + negócio em um único request</p>
             {pipelines.length === 0 && (
-              <p className="text-[9px] text-yellow-600 mb-1">⚠ Crie um pipeline primeiro para usar pipeline_id</p>
+              <p className="text-micro text-yellow-600 mb-1">⚠ Crie um pipeline primeiro para usar pipeline_id</p>
             )}
             <CodeBlock code={withPipelineExample} id="pipeline" copiedId={copiedId} onCopy={copy} />
           </div>
@@ -344,15 +344,15 @@ fetch("${endpoint}", {
       {pipelines.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-[11px]">IDs dos seus funis</CardTitle>
-            <CardDescription className="text-[10px]">Use estes IDs no campo pipeline_id</CardDescription>
+            <CardTitle className="text-meta">IDs dos seus funis</CardTitle>
+            <CardDescription className="text-label">Use estes IDs no campo pipeline_id</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {pipelines.map((p) => (
                 <div key={p.id} className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium w-32 truncate">{p.name}</span>
-                  <code className="text-[9px] font-mono text-muted-foreground flex-1 truncate">{p.id}</code>
+                  <span className="text-label font-medium w-32 truncate">{p.name}</span>
+                  <code className="text-micro font-mono text-muted-foreground flex-1 truncate">{p.id}</code>
                   <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => copy(p.id, `pipe-${p.id}`)}>
                     {copiedId === `pipe-${p.id}` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                   </Button>
@@ -366,11 +366,11 @@ fetch("${endpoint}", {
       {/* Webhook integration note */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-[11px] flex items-center gap-2">
+          <CardTitle className="text-meta flex items-center gap-2">
             <Webhook className="h-3.5 w-3.5" />
             Receba notificações quando um lead chegar
           </CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-label">
             Configure webhooks de saída na aba "Webhooks" para receber uma chamada HTTP sempre que um lead for captado.
             Eventos disponíveis: <code className="bg-muted px-1 rounded">contact.created</code> e <code className="bg-muted px-1 rounded">deal.created</code>
           </CardDescription>
