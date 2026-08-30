@@ -182,26 +182,45 @@ describe("configuração sai da navegação sem sumir", () => {
   });
 });
 
-describe("Marketing sai do menu mas continua acessível", () => {
-  /**
-   * Seis cartões dela não têm fonte de dado (`PendingDataCard`) e o painel do
-   * Google tem `Investido: 0, Conversões: 0` cravados no código. Uma tela que
-   * mostra zeros sem explicar por quê ensina a desconfiar dos números do resto
-   * do sistema.
-   */
-  it("não está na navegação", () => {
-    const destinos = [
-      ...NAV_GRUPOS.flatMap((g) => g.items.map((i) => i.url)),
-      ...MENU_DA_CONTA.map((i) => i.url),
-    ];
-    expect(destinos.filter((u) => u.includes("marketing"))).toEqual([]);
+/**
+ * Marketing está no menu, e o que não funciona diz que não funciona.
+ *
+ * Eu a tinha tirado da navegação inteira, por causa dos cartões sem fonte de
+ * dado. Errei a avaliação: o painel do **Meta funciona** — lê `meta_campaigns` e
+ * `meta_insights`, que são tabelas sincronizadas de verdade. Só o Google não
+ * está integrado.
+ *
+ * Tirar a tela inteira escondeu o que funciona junto com o que não funciona.
+ */
+describe("Marketing está no menu, com o que não funciona declarado", () => {
+  it("é um destino da navegação", () => {
+    const destinos = NAV_GRUPOS.flatMap((g) => g.items.map((i) => i.url));
+    expect(destinos).toContain("/marketing/visao-geral");
   });
 
-  it("a rota continua existindo", () => {
-    // Sair do menu não é apagar: o trabalho feito para o Meta funciona.
-    expect(APP).toContain('path="/marketing"');
+  /**
+   * `google.campaigns` é `[]` CRAVADO no código, e o tipo `MarketingSource`
+   * tinha um valor só — `"real"` — que os dois canais usavam. Um tipo de um
+   * valor não distingue nada, e ali ele afirmava que dado inexistente era real.
+   */
+  it("o Google é marcado como não integrado, não como real", () => {
+    const hook = readFileSync("src/hooks/useMarketingData.ts", "utf8");
+    expect(hook).toContain('"nao-integrado"');
+    expect(hook).not.toMatch(/google: \{ campaigns: \[\], source: "real" \}/);
+  });
+
+  /**
+   * A tela dizia "Conecte sua conta Google Ads" e oferecia um botão para
+   * Integrações — onde não existe integração de Google Ads para conectar.
+   * Mandava a pessoa procurar uma coisa que não está lá.
+   */
+  it("a tela do Google não promete uma conexão que não existe", () => {
+    const src = readFileSync("src/pages/marketing/Overview.tsx", "utf8");
+    expect(src).toContain('integrado={false}');
+    expect(src).toMatch(/ainda não integrado/);
   });
 });
+
 
 describe("a estrutura de grupos", () => {
   /**

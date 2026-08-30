@@ -216,7 +216,29 @@ function TabBar({ tab, onChange }: { tab: TabKey; onChange: (t: TabKey) => void 
  * A linha "Aba: {tab}" saiu. Não dizia nada a quem lê: a aba está selecionada
  * na barra logo acima.
  */
-function MarketingEmptyState({ platform }: { platform: string }) {
+function MarketingEmptyState({
+  platform,
+  /**
+   * `nao-integrado` não é "sem dados no período".
+   *
+   * O Google Ads dizia "Conecte sua conta Google Ads" e oferecia um botão para
+   * Integrações -- onde não existe integração de Google Ads para conectar. A
+   * tela mandava a pessoa procurar uma coisa que não está lá.
+   */
+  integrado = true,
+}: {
+  platform: string;
+  integrado?: boolean;
+}) {
+  if (!integrado) {
+    return (
+      <EmptyState
+        icone={PlugZap}
+        titulo={`${platform} ainda não integrado`}
+        descricao={`A sincronização com ${platform} não foi construída. Não é ausência de campanha no período — é ausência da integração.`}
+      />
+    );
+  }
   return (
     <EmptyState
       icone={PlugZap}
@@ -441,7 +463,7 @@ function PanelGoogle({ data, days }: PanelProps) {
   const rows = data.google.campaigns;
 
   if (rows.length === 0) {
-    return <MarketingEmptyState platform="Google Ads" />;
+    return <MarketingEmptyState platform="Google Ads" integrado={false} />;
   }
 
   const inv = sumBy(rows, "investido");

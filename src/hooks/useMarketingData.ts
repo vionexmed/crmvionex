@@ -7,7 +7,19 @@ import {
   type PeriodKey, type Campaign, type FunnelStage, type LeadSource,
 } from "@/lib/marketing-utils";
 
-export type MarketingSource = "real";
+/**
+ * De onde vêm os números de um canal.
+ *
+ * Era um tipo de UM valor -- `"real"` -- e os dois canais o usavam, inclusive o
+ * Google, cujo `campaigns` é `[]` CRAVADO no código. Um tipo que só tem um
+ * valor não distingue nada, e aqui ele estava afirmando que dado inexistente
+ * era real.
+ */
+export type MarketingSource =
+  /** Vem de tabela sincronizada. */
+  | "real"
+  /** A integração não existe ainda -- não é "sem dados no período". */
+  | "nao-integrado";
 
 export interface DailyPoint {
   day: string;       // rótulo dd/MM
@@ -47,7 +59,7 @@ export function useMarketingData(period: PeriodKey, customDays = 30): MarketingP
   const { orgId } = useOrg();
   const [state, setState] = useState<MarketingPayload>({
     meta: { campaigns: [], source: "real" },
-    google: { campaigns: [], source: "real" },
+    google: { campaigns: [], source: "nao-integrado" },
     daily: [],
     sources: [],
     funnel: emptyFunnel,
@@ -208,7 +220,7 @@ export function useMarketingData(period: PeriodKey, customDays = 30): MarketingP
 
         setState({
           meta: { campaigns: mapped, source: "real" },
-          google: { campaigns: [], source: "real" },
+          google: { campaigns: [], source: "nao-integrado" },
           daily,
           sources,
           funnel,

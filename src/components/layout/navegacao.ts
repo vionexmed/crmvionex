@@ -1,6 +1,6 @@
 import {
   Activity, AlertTriangle, BarChart3, Building2, FileText, Handshake,
-  Inbox, LayoutDashboard, Mail, MessageSquare, Plug, Settings, Shield,
+  Inbox, LayoutDashboard, Mail, Megaphone, MessageSquare, Plug, Settings, Shield,
   Target, TrendingUp, UserPlus, Users, UsersRound, Zap,
 } from "lucide-react";
 
@@ -66,6 +66,11 @@ export const NAV_GRUPOS: GrupoNav[] = [
     label: "Análise",
     items: [
       { title: "Relatórios", url: "/reports", icon: BarChart3 },
+      // Voltou ao menu. Eu a tinha tirado por causa dos cartões sem fonte, e
+      // errei a avaliação: o painel do META funciona -- lê `meta_campaigns` e
+      // `meta_insights`, que são tabelas sincronizadas. Só o Google não está
+      // integrado, e agora a tela diz isso em vez de mostrar zero.
+      { title: "Marketing", url: "/marketing/visao-geral", icon: Megaphone, adminOnly: true },
       { title: "Metas", url: "/sales-goals", icon: Target },
       { title: "Lead Scoring", url: "/lead-scoring", icon: TrendingUp, adminOnly: true },
       { title: "Automações", url: "/automations", icon: Zap, adminOnly: true },
