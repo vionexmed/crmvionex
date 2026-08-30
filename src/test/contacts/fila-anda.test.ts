@@ -132,7 +132,11 @@ describe("a lista de leads não tem teto silencioso", () => {
   it("listLeads pagina em blocos", () => {
     const bloco = api.slice(api.indexOf("listLeads:"), api.indexOf("updateLifecycleStage:"));
     expect(bloco).toContain(".range(");
-    expect(bloco).toContain("CHUNK");
+    // Verifica o COMPORTAMENTO -- que a busca é em blocos -- e não a palavra
+    // `CHUNK`, que era o nome de uma variável local. O laço saiu daqui para
+    // `lib/paginar`, onde vive uma vez em vez de três, e o teste antigo
+    // reprovou a consolidação por causa do nome.
+    expect(bloco).toContain("buscarEmBlocos");
   });
 
   it("o selo do menu usa a mesma fonte da tela", () => {

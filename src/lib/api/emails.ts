@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { buscarEmBlocos } from "@/lib/paginar";
 
 export type Email = {
   id: string;
@@ -43,7 +44,7 @@ export type InboxContact = {
   last_name: string | null;
   email: string | null;
   avatar_url: string | null;
-  status: string | null;
+  lifecycle_stage: string | null;
   org_id: string;
 };
 
@@ -106,11 +107,17 @@ export const emailConnectionsApi = {
 
 export const inboxContactsApi = {
   list: async (orgId: string): Promise<InboxContact[]> => {
-    const { data, error } = await supabase
-      .from("contacts")
-      .select("id, first_name, last_name, email, avatar_url, status, org_id")
-      .eq("org_id", orgId);
-    if (error) throw error;
-    return (data as InboxContact[]) ?? [];
+    // Baixava a organização INTEIRA e sem teto, então acima de mil contatos o
+    // PostgREST cortava em silêncio e o destinatário sumia do seletor.
+    //
+    // `lifecycle_stage`, não `status`: a coluna legada tem 4 valores contra 6.
+    return buscarEmBlocos<InboxContact>((inicio, fim) =>
+      supabase
+        .from("contacts")
+        .select("id, first_name, last_name, email, avatar_url, lifecycle_stage, org_id")
+        .eq("org_id", orgId)
+        .order("first_name", { ascending: true })
+        .range(inicio, fim),
+    );
   },
 };

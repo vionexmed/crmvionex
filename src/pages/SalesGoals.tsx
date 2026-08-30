@@ -24,6 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PageShell } from "@/components/layout/PageShell";
 import { Target as IconeDaPagina } from "lucide-react";
+import { buscarEmBlocos } from "@/lib/paginar";
 
 const GOAL_TYPES = [
   { value: "revenue", label: "Receita (R$)", icon: TrendingUp, color: "text-emerald-500" },
@@ -114,10 +115,25 @@ export default function SalesGoals() {
     const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
 
     const computeActuals = async () => {
-      const [{ data: wonDeals }, { data: activities }, { data: newContacts }] = await Promise.all([
-        supabase.from("deals").select("id, value, owner_id").eq("org_id", orgId).eq("status", "won").gte("updated_at", startDate).lt("updated_at", endDate),
-        supabase.from("activities").select("id, user_id").eq("org_id", orgId).gte("created_at", startDate).lt("created_at", endDate),
-        supabase.from("contacts").select("id, owner_id").eq("org_id", orgId).gte("created_at", startDate).lt("created_at", endDate),
+      // Paginado, não limitado.
+      //
+      // Estas três viram CONTAGEM por vendedor. Um teto aqui não esconderia uma
+      // linha -- produziria um número errado que parece certo: a meta apareceria
+      // cumprida pela metade num mês em que foi batida. Num mês movimentado,
+      // mil atividades é pouco.
+      const [wonDeals, activities, newContacts] = await Promise.all([
+        buscarEmBlocos<{ id: string; value: number | null; owner_id: string | null }>((i, f) =>
+          supabase.from("deals").select("id, value, owner_id").eq("org_id", orgId)
+            .eq("status", "won").gte("updated_at", startDate).lt("updated_at", endDate)
+            .order("updated_at").range(i, f)),
+        buscarEmBlocos<{ id: string; user_id: string | null }>((i, f) =>
+          supabase.from("activities").select("id, user_id").eq("org_id", orgId)
+            .gte("created_at", startDate).lt("created_at", endDate)
+            .order("created_at").range(i, f)),
+        buscarEmBlocos<{ id: string; owner_id: string | null }>((i, f) =>
+          supabase.from("contacts").select("id, owner_id").eq("org_id", orgId)
+            .gte("created_at", startDate).lt("created_at", endDate)
+            .order("created_at").range(i, f)),
       ]);
 
       const teamMembers = new Map<string, string[]>();

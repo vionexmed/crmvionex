@@ -132,8 +132,13 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
     setCarregando(true);
     setFalhou(false);
     const [aRes, dRes, sRes] = await Promise.all([
-      supabase.from("activities").select("*").eq("contact_id", contact.id).order("created_at", { ascending: false }),
-      supabase.from("deals").select("*").eq("contact_id", contact.id),
+            // O histórico de um contato antigo cresce sem parar. A gaveta mostra as
+      // mais recentes, então cortar pelo fim não esconde nada que estivesse
+      // visível.
+      supabase.from("activities").select("*").eq("contact_id", contact.id)
+        .order("created_at", { ascending: false }).limit(500),
+      supabase.from("deals").select("*").eq("contact_id", contact.id)
+        .order("created_at", { ascending: false }).limit(200),
       supabase.from("pipeline_stages").select("*").eq("org_id", contact.org_id).order("order"),
     ]);
     // O erro era descartado aqui: `dRes.data || []` transforma falha em lista

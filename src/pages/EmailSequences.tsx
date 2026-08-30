@@ -87,8 +87,12 @@ export default function EmailSequences() {
     const [sRes, stRes, eRes, cRes] = await Promise.all([
       supabase.from("email_sequences").select("*").eq("org_id", orgId).order("created_at", { ascending: false }),
       supabase.from("email_sequence_steps").select("*").eq("org_id", orgId).order("step_order"),
-      supabase.from("email_sequence_enrollments").select("*").eq("org_id", orgId),
-      supabase.from("contacts").select("id,first_name,last_name,email").eq("org_id", orgId),
+      // As duas crescem com o uso. A de inscrições cresce mais rápido: uma
+      // linha por contato por sequência.
+      supabase.from("email_sequence_enrollments").select("*").eq("org_id", orgId)
+        .order("created_at", { ascending: false }).limit(2000),
+      supabase.from("contacts").select("id,first_name,last_name,email").eq("org_id", orgId)
+        .order("first_name").limit(2000),
     ]);
     const erro = [sRes, stRes, eRes, cRes].find((r) => r.error);
     if (erro) {

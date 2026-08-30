@@ -49,7 +49,11 @@ export default function Reports() {
     setCarregando(true);
     setFalhou(false);
     const [dRes, sRes, pRes, mRes, aRes, cRes, coRes] = await Promise.all([
-      supabase.from("deals").select("*").eq("org_id", orgId),
+      // Ordenado pelo mais recente antes de cortar: um relatório truncado
+      // arbitrariamente mente sobre o período; truncado pelos mais antigos
+      // mente menos.
+      supabase.from("deals").select("*").eq("org_id", orgId)
+        .order("created_at", { ascending: false }).limit(5000),
       supabase.from("pipeline_stages").select("*").eq("org_id", orgId).order("order"),
       supabase.from("pipelines").select("id,name,is_default").eq("org_id", orgId),
       supabase.from("profiles").select("id,name,email").eq("org_id", orgId),

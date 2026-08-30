@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TABLES, DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { LEAD_STAGES, type LifecycleStage } from "@/lib/contact-options";
 import type { Database } from "@/integrations/supabase/types";
+import { buscarEmBlocos } from "@/lib/paginar";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type ContactInsert = Database["public"]["Tables"]["contacts"]["Insert"];
@@ -114,40 +115,26 @@ export const contactsApi = {
    * 1000 para contornar o max-rows do PostgREST. Usado na exportação CSV e
    * na visão kanban por vendedor.
    */
-  listAll: async (orgId: string, params: ContactListParams = {}): Promise<Contact[]> => {
-    const CHUNK = 1000;
-    const all: Contact[] = [];
-    for (let page = 0; ; page++) {
-      const from = page * CHUNK;
-      const { data, error } = await buildListQuery(orgId, params).range(from, from + CHUNK - 1);
-      if (error) throw error;
-      all.push(...(data ?? []));
-      if (!data || data.length < CHUNK) break;
-    }
-    return all;
-  },
+  listAll: async (orgId: string, params: ContactListParams = {}): Promise<Contact[]> =>
+    buscarEmBlocos<Contact>((inicio, fim) => buildListQuery(orgId, params).range(inicio, fim)),
 
   /**
    * Lista leve para pickers (selects de contato em Negócios/Tarefas).
    * Inclui leads também — tarefas/negócios podem referenciar leads.
    */
-  listForPicker: async (orgId: string): Promise<Pick<Contact, "id" | "first_name" | "last_name" | "email" | "status">[]> => {
-    const CHUNK = 1000;
-    const all: Pick<Contact, "id" | "first_name" | "last_name" | "email" | "status">[] = [];
-    for (let page = 0; ; page++) {
-      const from = page * CHUNK;
-      const { data, error } = await supabase
+  listForPicker: async (
+    orgId: string,
+  ): Promise<Pick<Contact, "id" | "first_name" | "last_name" | "email" | "lifecycle_stage">[]> =>
+    // `lifecycle_stage`, não `status`: a coluna legada tem 4 valores contra 6 e
+    // o mapa entre elas perde `contacted` e `opportunity`.
+    buscarEmBlocos((inicio, fim) =>
+      supabase
         .from(TABLES.CONTACTS)
-        .select("id, first_name, last_name, email, status")
+        .select("id, first_name, last_name, email, lifecycle_stage")
         .eq("org_id", orgId)
         .order("first_name", { ascending: true })
-        .range(from, from + CHUNK - 1);
-      if (error) throw error;
-      all.push(...(data ?? []));
-      if (!data || data.length < CHUNK) break;
-    }
-    return all;
-  },
+        .range(inicio, fim),
+    ),
 
   create: async (contact: ContactInsert): Promise<Contact> => {
     const { data, error } = await supabase.from(TABLES.CONTACTS).insert(contact).select().single();
@@ -229,22 +216,15 @@ export const contactsApi = {
     // simplesmente não existiriam na tela. Antes da correção do ciclo de vida
     // quase nada chegava aqui, então o teto nunca aparecia; agora toda pessoa
     // nova entra na fila.
-    const CHUNK = 1000;
-    const all: Contact[] = [];
-    for (let page = 0; ; page++) {
-      const from = page * CHUNK;
-      const { data, error } = await supabase
+    return buscarEmBlocos<Contact>((inicio, fim) =>
+      supabase
         .from(TABLES.CONTACTS)
         .select("*, companies:companies(name)")
         .eq("org_id", orgId)
         .in("lifecycle_stage", LEAD_STAGES)
         .order("created_at", { ascending: false })
-        .range(from, from + CHUNK - 1);
-      if (error) throw error;
-      all.push(...((data ?? []) as Contact[]));
-      if (!data || data.length < CHUNK) break;
-    }
-    return all;
+        .range(inicio, fim),
+    );
   },
 
   /** Move o contato no ciclo de vida. O trigger no banco cuida da auditoria. */

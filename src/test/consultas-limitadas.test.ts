@@ -11,7 +11,8 @@
  * teto seria ruído.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 const ler = (p: string) => readFileSync(p, "utf8");
 const semComentarios = (s: string) =>
@@ -132,5 +133,90 @@ describe("Reports confere o erro das sete consultas", () => {
     expect(src).not.toMatch(/const \[, setLoading\]/);
     expect(src).toContain("<LoadingState");
     expect(src).toContain("<ErrorState");
+  });
+});
+
+/**
+ * A varredura completa: nenhuma consulta a tabela que cresce fica sem teto nem
+ * paginação.
+ *
+ * As tabelas de CONFIGURAÇÃO ficam de fora de propósito — funis, etapas, chaves
+ * de API, motivos de perda. A contagem ali é naturalmente pequena e um teto
+ * seria ruído que ninguém mantém.
+ */
+describe("nenhuma consulta a tabela que cresce fica solta", () => {
+  const CRESCEM = ["contacts", "deals", "activities", "companies", "email_sequence_enrollments"];
+
+  function arquivos(dir: string, saida: string[] = []): string[] {
+    for (const nome of readdirSync(dir)) {
+      const caminho = join(dir, nome);
+      if (statSync(caminho).isDirectory()) {
+        if (nome !== "test") arquivos(caminho, saida);
+      } else if (/\.tsx?$/.test(nome)) saida.push(caminho);
+    }
+    return saida;
+  }
+
+  it("varre src inteiro", () => {
+    const soltas: string[] = [];
+    for (const arquivo of arquivos("src")) {
+      const src = readFileSync(arquivo, "utf8");
+      for (const m of src.matchAll(/\.from\("(\w+)"\)/g)) {
+        if (!CRESCEM.includes(m[1])) continue;
+        const trecho = src.slice(m.index!, m.index! + 500);
+        if (!/\.select\(/.test(trecho.slice(0, 200))) continue;
+        // `count: "exact", head: true` não traz LINHA nenhuma -- devolve só o
+        // número, e o corte de 1000 não se aplica.
+        if (/count: "exact", head: true/.test(trecho.slice(0, 200))) continue;
+        // `.in(...)` já é limitado pela lista de ids que o chamador tem.
+        if (/\.limit\(|\.range\(|\.single\(\)|\.maybeSingle\(\)|\.in\(/.test(trecho.slice(0, 450))) continue;
+        soltas.push(`${arquivo}:${src.slice(0, m.index!).split("\n").length}  ${m[1]}`);
+      }
+    }
+    expect(soltas, `sem teto nem paginação:\n${soltas.join("\n")}`).toEqual([]);
+  });
+});
+
+describe("limitar e paginar são escolhas diferentes", () => {
+  /**
+   * `.limit()` serve quando a tela MOSTRA uma lista e o corte só esconde o que
+   * já estava fora de vista.
+   *
+   * Quando o resultado vira CONTAGEM, limitar produz um número errado que
+   * parece certo -- e é pior que um registro faltando, porque ninguém desconfia
+   * de um total. `SalesGoals` soma negócios, atividades e contatos por
+   * vendedor para medir metas: num mês movimentado, mil atividades é pouco, e a
+   * meta apareceria cumprida pela metade num mês em que foi batida.
+   */
+  it("SalesGoals pagina em vez de limitar", () => {
+    const src = semComentarios(readFileSync("src/pages/SalesGoals.tsx", "utf8"));
+    expect(src).toContain("buscarEmBlocos");
+    // Três consultas, todas paginadas.
+    expect(src.match(/buscarEmBlocos</g) ?? []).toHaveLength(3);
+  });
+
+  it("os seletores de contato paginam", () => {
+    // Um destinatário que some do seletor não tem explicação em tela.
+    for (const arquivo of ["src/lib/api/contacts.ts", "src/lib/api/emails.ts"]) {
+      expect(semComentarios(readFileSync(arquivo, "utf8")), arquivo).toContain("buscarEmBlocos");
+    }
+  });
+
+  /**
+   * O laço estava escrito duas vezes em `api/contacts.ts`, e as outras dez
+   * consultas que precisavam dele não o tinham.
+   */
+  it("o laço de paginação existe em um lugar só", () => {
+    const soltos: string[] = [];
+    for (const arquivo of ["src/lib/api/contacts.ts", "src/lib/api/emails.ts", "src/pages/SalesGoals.tsx"]) {
+      const src = semComentarios(readFileSync(arquivo, "utf8"));
+      if (/const CHUNK = 1000/.test(src)) soltos.push(arquivo);
+    }
+    expect(soltos, soltos.join("\n")).toEqual([]);
+  });
+
+  it("para no bloco incompleto, que é o único sinal do PostgREST", () => {
+    const src = readFileSync("src/lib/paginar.ts", "utf8");
+    expect(src).toMatch(/data\.length < BLOCO/);
   });
 });

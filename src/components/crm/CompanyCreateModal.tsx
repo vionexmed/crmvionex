@@ -50,7 +50,10 @@ export function CompanyCreateModal({ open, onOpenChange, onCreated }: CompanyCre
   useEffect(() => {
     if (!open || !orgId) return;
     supabase.from("contacts").select("id,first_name,last_name,email,company_id")
-      .eq("org_id", orgId).order("first_name").then(({ data }) => {
+      .eq("org_id", orgId).order("first_name")
+      // Teto declarado: acima de mil o PostgREST cortava em silêncio, e o
+      // contato sumia do seletor sem nada explicar.
+      .limit(1000).then(({ data }) => {
         if (data) setContacts(data);
       });
   }, [open, orgId]);

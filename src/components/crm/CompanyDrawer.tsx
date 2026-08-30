@@ -45,8 +45,14 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
   const fetchRelated = useCallback(async () => {
     if (!company) return;
     const [cRes, dRes, sRes] = await Promise.all([
-      supabase.from("contacts").select("*").eq("company_id", company.id),
-      supabase.from("deals").select("*").eq("company_id", company.id),
+            // Uma empresa grande pode ter centenas de contatos e negócios. A gaveta
+      // mostra os mais recentes, então o teto não esconde nada que estivesse
+      // visível -- e sem ele o corte de 1000 aconteceria de qualquer forma, em
+      // ordem arbitrária.
+      supabase.from("contacts").select("*").eq("company_id", company.id)
+        .order("created_at", { ascending: false }).limit(500),
+      supabase.from("deals").select("*").eq("company_id", company.id)
+        .order("created_at", { ascending: false }).limit(500),
       supabase.from("pipeline_stages").select("*").eq("org_id", company.org_id).order("order"),
     ]);
     setContacts(cRes.data || []);
