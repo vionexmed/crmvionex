@@ -7,7 +7,24 @@
 import { useId } from "react";
 import { useHoverTooltip } from "./useHoverTooltip";
 
-export type Serie = { nome: string; cor: string; pontos: number[]; preencher?: boolean };
+export type Serie = {
+  nome: string;
+  cor: string;
+  pontos: number[];
+  preencher?: boolean;
+  /**
+   * Escala própria, com o eixo do lado direito.
+   *
+   * Existe para séries de GRANDEZAS diferentes no mesmo gráfico -- investimento
+   * em reais e contagem de leads. Numa escala comum a contagem vira uma linha
+   * colada no zero e não se lê.
+   *
+   * Dois eixos são difíceis de ler de propósito: as duas escalas são
+   * arbitrárias, e cruzamentos entre as linhas não significam nada. Use só
+   * quando as grandezas realmente não se comparam.
+   */
+  eixoDireito?: boolean;
+};
 
 const A = 100; // largura do viewBox; a altura real vem do CSS
 const H = 100;
@@ -39,8 +56,14 @@ export function AreaSeries({
   const idGrad = useId().replace(/:/g, "");
   const { hover, aoMover, aoSair } = useHoverTooltip(rotulos.length);
 
-  // Escala compartilhada: as séries têm que ser comparáveis entre si.
-  const max = Math.max(1, ...series.flatMap((s) => s.pontos));
+  // Uma escala por eixo. As séries do mesmo eixo compartilham o máximo -- é o
+  // que as torna comparáveis entre si.
+  const daEsquerda = series.filter((s) => !s.eixoDireito);
+  const daDireita = series.filter((s) => s.eixoDireito);
+  const maxEsq = Math.max(1, ...daEsquerda.flatMap((s) => s.pontos));
+  const maxDir = Math.max(1, ...daDireita.flatMap((s) => s.pontos));
+  const escalaDe = (s: Serie) => (s.eixoDireito ? maxDir : maxEsq);
+  const max = maxEsq;
 
   // Rótulos ralos — com 30 dias, mostrar todos vira borrão.
   const passoRotulo = Math.max(1, Math.ceil(rotulos.length / 8));
@@ -73,11 +96,16 @@ export function AreaSeries({
             role="img"
             aria-label={`Evolução de ${series.map((s) => s.nome).join(", ")}`}
           >
+            {/* Um gradiente POR SÉRIE. Havia um só, com a cor da primeira: duas
+                séries preenchidas ficavam com o mesmo fundo, e a segunda
+                parecia pertencer à primeira. */}
             <defs>
-              <linearGradient id={`g-${idGrad}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={series[0]?.cor} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={series[0]?.cor} stopOpacity={0} />
-              </linearGradient>
+              {series.map((s, i) => (
+                <linearGradient key={s.nome} id={`g-${idGrad}-${i}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={s.cor} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={s.cor} stopOpacity={0} />
+                </linearGradient>
+              ))}
             </defs>
 
             {/* Grade discreta nas mesmas marcas do eixo Y */}
@@ -90,13 +118,13 @@ export function AreaSeries({
               />
             ))}
 
-            {series.map((s) => (
+            {series.map((s, i) => (
               <g key={s.nome}>
                 {s.preencher && (
-                  <path d={caminho(s.pontos, max, true)} fill={`url(#g-${idGrad})`} stroke="none" />
+                  <path d={caminho(s.pontos, escalaDe(s), true)} fill={`url(#g-${idGrad}-${i})`} stroke="none" />
                 )}
                 <path
-                  d={caminho(s.pontos, max, false)}
+                  d={caminho(s.pontos, escalaDe(s), false)}
                   fill="none" stroke={s.cor} strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"
@@ -154,6 +182,20 @@ export function AreaSeries({
           ))}
         </div>
       </div>
+
+      {daDireita.length > 0 && (
+        // Eixo secundário, do lado direito. Só aparece quando alguma série usa
+        // escala própria -- sem isso ele seria uma coluna de números sem dono.
+        <div
+          className="flex shrink-0 flex-col justify-between py-0.5 text-left text-label tabular-nums text-muted-foreground"
+          style={{ height: altura }}
+          aria-hidden
+        >
+          {[maxDir, Math.round(maxDir / 2), 0].map((m, i) => (
+            <span key={i}>{m}</span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

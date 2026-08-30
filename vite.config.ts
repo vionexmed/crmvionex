@@ -54,7 +54,6 @@ export default defineConfig(({ mode }) => {
         "react-router-dom",
         "@tanstack/react-query",
         "@supabase/supabase-js",
-        "recharts",
         "lucide-react",
         "date-fns",
         "date-fns/locale",
@@ -118,7 +117,10 @@ export default defineConfig(({ mode }) => {
             // O chunk do React precisa ser FOLHA: não importa nada.
             if (id.includes("react-router") || id.includes("@remix-run")) return "router";
 
-            if (id.includes("recharts") || id.includes("/d3-") || id.includes("victory-vendor")) return "recharts";
+            // A regra do recharts saiu junto com a biblioteca. `d3-*` e
+            // `victory-vendor` vinham só como dependências dela; se algum dia
+            // voltarem por outro caminho, caem no `vendor` e aparecem na
+            // medição do build.
             if (id.includes("@supabase")) return "supabase";
             if (id.includes("@radix-ui")) return "radix";
             if (id.includes("@sentry")) return "sentry";

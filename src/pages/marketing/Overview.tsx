@@ -5,21 +5,21 @@ import {
   Eye, Users as UsersIcon, Zap, Activity, BarChart3, RefreshCw,
   Calendar, Database, PlugZap,
 } from "lucide-react";
-import {
-  AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis,
-  PieChart, Pie, Cell, BarChart, Bar, CartesianGrid, LineChart, Line,
-} from "recharts";
+
 
 import {
   sumBy, fmtBRL, fmtNum, fmtPct,
   periodDays, type PeriodKey, type FunnelStage,
 } from "@/lib/marketing-utils";
 import { useMarketingData, type MarketingSource } from "@/hooks/useMarketingData";
-import { formatarHora } from "@/lib/formato";
+import { formatarHora, formatarNumero } from "@/lib/formato";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { EmptyState } from "@/components/layout/EstadoDaLista";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AreaSeries } from "@/components/dashboard/svg/AreaSeries";
+import { RoscaComLegenda } from "@/components/dashboard/svg/RoscaComLegenda";
+import { BarrasAgrupadas } from "@/components/dashboard/svg/BarrasAgrupadas";
 
 type TabKey = "visao" | "meta" | "google";
 
@@ -284,54 +284,35 @@ function PanelVisao({ data, days }: PanelProps) {
           <SectionHeader title="Performance dos canais" sub={`Investimento diário Meta vs Google · últimos ${days} dias`}>
             <Legend items={[{ color: "var(--vx-meta)", label: "Meta Ads" }, { color: "var(--vx-google)", label: "Google Ads" }]} />
           </SectionHeader>
-          <div className="h-[260px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <defs>
-                  <linearGradient id="gradMeta" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#1877F2" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#1877F2" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradGoogle" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#EA4335" stopOpacity={0.16} />
-                    <stop offset="100%" stopColor="#EA4335" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
-                <Tooltip content={<VxTooltip prefix="R$ " />} />
-                <Area type="monotone" dataKey="Meta" stroke="#1877F2" strokeWidth={2} fill="url(#gradMeta)" animationDuration={900} />
-                <Area type="monotone" dataKey="Google" stroke="#EA4335" strokeWidth={2} fill="url(#gradGoogle)" animationDuration={900} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="mt-4">
+            <AreaSeries
+              altura={260}
+              formatar={fmtBRL}
+              rotulos={series.map((d) => d.day)}
+              series={[
+                { nome: "Meta Ads", cor: "var(--vx-meta)", pontos: series.map((d) => d.Meta), preencher: true },
+                { nome: "Google Ads", cor: "var(--vx-google)", pontos: series.map((d) => d.Google), preencher: true },
+              ]}
+            />
           </div>
         </div>
 
         <div className="rounded-[10px] bg-card p-5 vx-fade-up vx-card-hover" style={{ border: "0.5px solid hsl(var(--border))" }}>
           <SectionHeader title="Origem dos leads" sub="Distribuição por canal" />
-          <div className="h-[180px] mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={leadSources} dataKey="count" nameKey="name" innerRadius={48} outerRadius={75} stroke="hsl(var(--card))" strokeWidth={2} animationDuration={800}>
-                  {leadSources.map((s) => <Cell key={s.name} fill={s.color} />)}
-                </Pie>
-                <Tooltip content={<VxTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
+          {/* A rosca e a lista de canais eram dois blocos separados, com a
+              legenda montada à mão logo abaixo do gráfico. `RoscaComLegenda`
+              já é o par -- e mostra o percentual, que a lista não mostrava. */}
+          <div className="mt-2">
+            <RoscaComLegenda
+              tamanho={150}
+              fatias={leadSources.map((f) => ({ nome: f.name, valor: f.count, cor: f.color }))}
+            />
           </div>
-          <div className="space-y-1.5 mt-2">
-            {leadSources.length === 0 && (
-              <p className="text-meta" style={{ color: "hsl(var(--muted-foreground))" }}>Nenhum lead no período selecionado.</p>
-            )}
-            {leadSources.slice(0, 4).map(s => (
-              <div key={s.name} className="flex items-center gap-2 text-meta">
-                <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
-                <span className="flex-1 truncate" style={{ color: "hsl(var(--muted-foreground))" }}>{s.name}</span>
-                <span className="tabular-nums" style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{s.pct}%</span>
-              </div>
-            ))}
-          </div>
+          {leadSources.length === 0 && (
+            <p className="mt-2 text-meta text-muted-foreground">
+              Nenhum lead no período selecionado.
+            </p>
+          )}
         </div>
       </div>
 
@@ -410,39 +391,35 @@ function PanelMeta({ data, days }: PanelProps) {
           <SectionHeader title="Tendência diária" sub={`Investimento e leads · últimos ${days} dias`}>
             <Legend items={[{ color: "var(--vx-meta)", label: "Investido (R$)" }, { color: "var(--vx-purple)", label: "Leads" }]} />
           </SectionHeader>
-          <div className="h-[240px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trend} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <defs>
-                  <linearGradient id="gradMetaInv" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#1877F2" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="#1877F2" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
-                <Tooltip content={<VxTooltip />} />
-                <Area yAxisId="l" type="monotone" dataKey="Investido" stroke="#1877F2" strokeWidth={2} fill="url(#gradMetaInv)" animationDuration={900} />
-                <Line yAxisId="r" type="monotone" dataKey="Leads" stroke="var(--vx-purple)" strokeWidth={2} dot={false} animationDuration={900} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="mt-4">
+            {/* Dois eixos: investimento em reais à esquerda, leads à
+                direita. Numa escala comum a contagem viraria uma linha colada
+                no zero. */}
+            <AreaSeries
+              altura={240}
+              formatar={fmtBRL}
+              rotulos={trend.map((d) => d.day)}
+              series={[
+                { nome: "Investido", cor: "var(--vx-meta)", pontos: trend.map((d) => d.Investido), preencher: true },
+                { nome: "Leads", cor: "var(--vx-purple)", pontos: trend.map((d) => d.Leads), eixoDireito: true },
+              ]}
+            />
           </div>
         </div>
 
         <div className="rounded-[10px] bg-card p-5 vx-fade-up vx-card-hover" style={{ border: "0.5px solid hsl(var(--border))" }}>
           <SectionHeader title="Ranking de campanhas" sub="Por leads gerados" />
-          <div className="h-[240px] mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 4 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="nome" type="category" width={120} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(s) => s.length > 18 ? s.slice(0, 17) + "…" : s} />
-                <Tooltip content={<VxTooltip />} />
-                <Bar dataKey="conversoes" name="Leads" fill="var(--vx-meta)" radius={[0, 4, 4, 0]} animationDuration={900} />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Já era `layout="vertical"`, ou seja barras horizontais. O nome
+              deixa de ser truncado em 18 caracteres por `tickFormatter`: a
+              linha inteira é do rótulo, e o CSS corta se precisar. */}
+          <div className="mt-2">
+            <BarrasAgrupadas
+              linhas={sorted}
+              rotulo={(c) => c.nome}
+              formatar={formatarNumero}
+              vazio="Nenhuma campanha com leads no período"
+              series={[{ nome: "Leads", cor: "var(--vx-meta)", valor: (c) => c.conversoes }]}
+            />
           </div>
         </div>
       </div>
@@ -499,57 +476,51 @@ function PanelGoogle({ data, days }: PanelProps) {
           <SectionHeader title="Tendência diária" sub={`Investimento e conversões · últimos ${days} dias`}>
             <Legend items={[{ color: "var(--vx-google)", label: "Investido (R$)" }, { color: "var(--vx-purple)", label: "Conversões" }]} />
           </SectionHeader>
-          <div className="h-[240px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trend} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <defs>
-                  <linearGradient id="gradGoogleInv" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#EA4335" stopOpacity={0.20} />
-                    <stop offset="100%" stopColor="#EA4335" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
-                <Tooltip content={<VxTooltip />} />
-                <Area yAxisId="l" type="monotone" dataKey="Investido" stroke="#EA4335" strokeWidth={2} fill="url(#gradGoogleInv)" animationDuration={900} />
-                <Line yAxisId="r" type="monotone" dataKey="Conversões" stroke="var(--vx-purple)" strokeWidth={2} dot={false} animationDuration={900} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="mt-4">
+            {/* Dois eixos: investimento em reais à esquerda, conversões à
+                direita. Numa escala comum a contagem viraria uma linha colada
+                no zero. */}
+            <AreaSeries
+              altura={240}
+              formatar={fmtBRL}
+              rotulos={trend.map((d) => d.day)}
+              series={[
+                { nome: "Investido", cor: "var(--vx-google)", pontos: trend.map((d) => d.Investido), preencher: true },
+                { nome: "Conversões", cor: "var(--vx-purple)", pontos: trend.map((d) => d["Conversões"]), eixoDireito: true },
+              ]}
+            />
           </div>
         </div>
 
         <div className="rounded-[10px] bg-card p-5 vx-fade-up vx-card-hover" style={{ border: "0.5px solid hsl(var(--border))" }}>
           <SectionHeader title="CTR vs CPC" sub="Eficiência por dia" />
-          <div className="h-[240px] mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={ctrSeries} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} tickFormatter={(v) => `${v}%`} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
-                <Tooltip content={<VxTooltip />} />
-                <Line yAxisId="l" type="monotone" dataKey="CTR" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} animationDuration={900} />
-                <Line yAxisId="r" type="monotone" dataKey="CPC" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} animationDuration={900} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="mt-2">
+            {/* Linha é área sem preenchimento -- o mesmo primitivo. CTR em
+                porcento à esquerda, CPC em reais à direita: grandezas que não
+                se comparam. */}
+            <AreaSeries
+              altura={240}
+              formatar={(v) => `${v}`}
+              rotulos={ctrSeries.map((d) => d.day)}
+              series={[
+                { nome: "CTR (%)", cor: "hsl(var(--primary))", pontos: ctrSeries.map((d) => d.CTR) },
+                { nome: "CPC (R$)", cor: "hsl(var(--warning))", pontos: ctrSeries.map((d) => d.CPC), eixoDireito: true },
+              ]}
+            />
           </div>
         </div>
       </div>
 
       <div className="rounded-[10px] bg-card p-5 vx-fade-up vx-card-hover" style={{ border: "0.5px solid hsl(var(--border))" }}>
         <SectionHeader title="Ranking de campanhas" sub="Por conversões" />
-        <div className="h-[260px] mt-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 16, bottom: 0, left: 4 }}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="nome" type="category" width={160} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(s) => s.length > 26 ? s.slice(0, 25) + "…" : s} />
-              <Tooltip content={<VxTooltip />} />
-              <Bar dataKey="conversoes" name="Conversões" fill="var(--vx-google)" radius={[0, 4, 4, 0]} animationDuration={900} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="mt-4">
+          <BarrasAgrupadas
+            linhas={sorted}
+            rotulo={(c) => c.nome}
+            formatar={formatarNumero}
+            vazio="Nenhuma campanha com conversões no período"
+            series={[{ nome: "Conversões", cor: "var(--vx-google)", valor: (c) => c.conversoes }]}
+          />
         </div>
       </div>
 
@@ -914,21 +885,6 @@ function Legend({ items }: { items: { color: string; label: string }[] }) {
   );
 }
 
-function VxTooltip({ active, payload, label, prefix = "", suffix = "" }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-md p-2 text-label bg-card" style={{ border: "0.5px solid hsl(var(--border))", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
-      {label && <div className="font-medium mb-1" style={{ color: "hsl(var(--foreground))" }}>{label}</div>}
-      {payload.map((p: any) => (
-        <div key={p.dataKey || p.name} className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.color || p.payload?.color }} />
-          <span style={{ color: "hsl(var(--muted-foreground))" }}>{p.name}:</span>
-          <span className="tabular-nums font-medium" style={{ color: "hsl(var(--foreground))" }}>{prefix}{typeof p.value === "number" ? p.value.toLocaleString("pt-BR") : p.value}{suffix}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // ────────────── Format helper ──────────────
 

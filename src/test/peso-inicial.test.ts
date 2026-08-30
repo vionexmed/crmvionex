@@ -16,7 +16,8 @@
  * O que ele guarda é a REGRA — se a separação sumir do config, o peso volta.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 const VITE = readFileSync("vite.config.ts", "utf8");
 const LAYOUT = readFileSync("src/components/layout/AppLayout.tsx", "utf8");
@@ -170,5 +171,95 @@ describe("a suíte não monta DOM onde não precisa", () => {
    */
   it("o setup não assume window", () => {
     expect(readFileSync("src/test/setup.ts", "utf8")).toContain('typeof window !== "undefined"');
+  });
+});
+
+/**
+ * O recharts saiu.
+ *
+ * Eram 328 kB (89 kB comprimidos) num chunk próprio, e cinco arquivos o
+ * importavam. Os primitivos SVG que o substituem já existiam em
+ * `dashboard/svg` -- foram escritos quando o painel saiu do recharts. O que
+ * faltava era o par que cada relatório remontava por cima deles.
+ *
+ * Medido, somando o gzip de todos os arquivos do build:
+ *
+ *     antes   656,9 kB
+ *     depois  543,2 kB
+ */
+describe("recharts não volta", () => {
+  const arquivos = (function varrer(dir: string, saida: string[] = []): string[] {
+    for (const nome of readdirSync(dir)) {
+      const caminho = join(dir, nome);
+      if (statSync(caminho).isDirectory()) varrer(caminho, saida);
+      else if (/\.tsx?$/.test(nome)) saida.push(caminho);
+    }
+    return saida;
+  })("src");
+
+  it("nenhum arquivo importa", () => {
+    const infratores = arquivos.filter((f) =>
+      /from ["']recharts["']/.test(readFileSync(f, "utf8")),
+    );
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+
+  it("saiu do package.json", () => {
+    const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+    expect({ ...pkg.dependencies, ...pkg.devDependencies }).not.toHaveProperty("recharts");
+  });
+
+  /**
+   * A regra de chunk existia só para ele. `d3-*` e `victory-vendor` vinham
+   * como dependências suas -- se voltarem por outro caminho, devem cair no
+   * `vendor` e aparecer na medição, não num chunk que finge ser de gráfico.
+   */
+  it("a regra de chunk saiu junto", () => {
+    const vite = readFileSync("vite.config.ts", "utf8").replace(/\/\/.*$/gm, "");
+    expect(vite).not.toMatch(/return "recharts"/);
+    expect(vite).not.toMatch(/"recharts",/);
+  });
+});
+
+describe("os primitivos de gráfico cobrem o que o recharts fazia", () => {
+  const PRIMITIVOS = [
+    "src/components/dashboard/svg/AreaSeries.tsx",
+    "src/components/dashboard/svg/Donut.tsx",
+    "src/components/dashboard/svg/BarRow.tsx",
+    "src/components/dashboard/svg/RoscaComLegenda.tsx",
+    "src/components/dashboard/svg/BarrasAgrupadas.tsx",
+  ];
+
+  it.each(PRIMITIVOS)("%s existe", (arquivo) => {
+    expect(readFileSync(arquivo, "utf8").length).toBeGreaterThan(0);
+  });
+
+  /**
+   * Havia UM gradiente, com a cor da primeira série: duas séries preenchidas
+   * ficavam com o mesmo fundo, e a segunda parecia pertencer à primeira. O
+   * gráfico de Meta contra Google no Marketing é exatamente esse caso.
+   */
+  it("cada série tem gradiente próprio", () => {
+    const src = readFileSync("src/components/dashboard/svg/AreaSeries.tsx", "utf8");
+    expect(src).toMatch(/id=\{`g-\$\{idGrad\}-\$\{i\}`\}/);
+  });
+
+  /**
+   * Séries de grandezas diferentes -- reais e contagem -- precisam de escalas
+   * separadas. Numa escala comum a contagem vira uma linha colada no zero.
+   */
+  it("o eixo direito tem escala própria", () => {
+    const src = readFileSync("src/components/dashboard/svg/AreaSeries.tsx", "utf8");
+    expect(src).toContain("eixoDireito");
+    expect(src).toMatch(/const maxDir = /);
+  });
+
+  /**
+   * Sem escala compartilhada entre as LINHAS, a maior barra de cada linha teria
+   * sempre a largura total e comparar linhas seria impossível.
+   */
+  it("as barras compartilham a escala entre linhas", () => {
+    const src = readFileSync("src/components/dashboard/svg/BarrasAgrupadas.tsx", "utf8");
+    expect(src).toMatch(/const max = Math\.max\(1, \.\.\.linhas\.flatMap/);
   });
 });
