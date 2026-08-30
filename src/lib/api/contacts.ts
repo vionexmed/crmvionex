@@ -7,7 +7,6 @@ import { buscarEmBlocos } from "@/lib/paginar";
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type ContactInsert = Database["public"]["Tables"]["contacts"]["Insert"];
 type ContactUpdate = Database["public"]["Tables"]["contacts"]["Update"];
-type ContactStatus = Database["public"]["Enums"]["contact_status"];
 
 export const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
@@ -194,10 +193,10 @@ export const contactsApi = {
     if (error) throw error;
   },
 
-  updateStatus: async (ids: string[], status: ContactStatus): Promise<void> => {
-    const { error } = await supabase.from(TABLES.CONTACTS).update({ status }).in("id", ids);
-    if (error) throw error;
-  },
+  // `updateStatus` saiu. Era o ÚLTIMO caminho da aplicação para escrever na
+  // coluna legada `contacts.status`, e o último consumidor -- o "Aprovar" em
+  // lote de Leads -- passou a chamar `qualify_lead`. O gatilho continua
+  // mantendo a coluna em dia para quem a leia fora do CRM.
 
   updateOwner: async (id: string, ownerId: string | null): Promise<void> => {
     const { error } = await supabase.from(TABLES.CONTACTS).update({ owner_id: ownerId }).eq("id", id);

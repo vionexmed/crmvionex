@@ -127,3 +127,48 @@ describe("o filtro de segmento salvo continua filtrando", () => {
     expect(src).toMatch(/lifecycleStage: segFilters\.estagio/);
   });
 });
+
+describe("a aplicação não escreve mais na coluna legada", () => {
+  /**
+   * `contactsApi.updateStatus` era o último caminho. O consumidor dele era o
+   * "Aprovar" em lote de Leads, e ali estava o defeito:
+   *
+   * Gravava `status: 'prospect'`. O gatilho derivava
+   * `lifecycle_stage = 'qualified'` -- pulando 'contacted' -- e, principalmente,
+   * SEM chamar `qualify_lead`. Ou seja: o botão individual "Qualificar" movia o
+   * negócio no funil e o mesmo botão em lote NÃO movia. Dois caminhos para o
+   * mesmo resultado, um incompleto, e nada em tela dizia a diferença.
+   */
+  it("updateStatus saiu da API de contatos", () => {
+    const src = semComentarios(readFileSync("src/lib/api/contacts.ts", "utf8"));
+    expect(src).not.toMatch(/updateStatus:/);
+    expect(src).not.toMatch(/\.update\(\{ status \}\)/);
+  });
+
+  it("o hook que o expunha saiu junto", () => {
+    const src = semComentarios(readFileSync("src/hooks/queries/useContacts.ts", "utf8"));
+    expect(src).not.toContain("useUpdateContactsStatus");
+  });
+
+  /**
+   * Aprovar CRIA um negócio, e negócio precisa de funil. Antes o lote não
+   * criava nada, então a falta de funil não aparecia.
+   */
+  it("o lote de Leads chama qualify_lead, a mesma do botão individual", () => {
+    const src = semComentarios(readFileSync("src/pages/Leads.tsx", "utf8"));
+    const lote = src.slice(src.indexOf("const batchUpdate"), src.indexOf("const fullName"));
+    expect(lote).toContain('supabase.rpc("qualify_lead"');
+    expect(lote).toContain("selectedPipeline");
+  });
+
+  /**
+   * `qualify_lead` cria negócio e resolve a etapa de entrada por consulta. Em
+   * paralelo, dez leads disputariam a mesma leitura.
+   */
+  it("o lote é sequencial, não paralelo", () => {
+    const src = semComentarios(readFileSync("src/pages/Leads.tsx", "utf8"));
+    const lote = src.slice(src.indexOf("const batchUpdate"), src.indexOf("const fullName"));
+    expect(lote).toMatch(/for \(const id of ids\)/);
+    expect(lote).not.toMatch(/Promise\.all\(ids/);
+  });
+});

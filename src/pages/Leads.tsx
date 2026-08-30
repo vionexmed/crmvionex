@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useLeads, useUpdateContactsStatus, useUpdateContactOwner } from "@/hooks/queries/useContacts";
+import { useLeads, useUpdateContactsLifecycle, useUpdateContactOwner } from "@/hooks/queries/useContacts";
 import { usePipelines } from "@/hooks/queries/usePipelines";
 import { useMembers } from "@/hooks/queries/useMembers";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { mensagemErro } from "@/lib/erro-supabase";
 import {
   CADASTRO_FIELDS, LIFECYCLE_LABELS, LIFECYCLE_COLORS, type LifecycleStage,
 } from "@/lib/contact-options";
@@ -85,7 +86,7 @@ export default function Leads() {
   const [qualifying, setQualifying] = useState<Lead | null>(null);
   const [selectedPipeline, setSelectedPipeline] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const { mutateAsync: updateStatus } = useUpdateContactsStatus();
+  const { mutateAsync: updateLifecycle } = useUpdateContactsLifecycle();
 
   useEffect(() => {
     if (pipelines.length > 0 && !selectedPipeline) {
@@ -174,24 +175,63 @@ export default function Leads() {
   const toggleAll = () => {
     setSelected(allSelected ? new Set() : new Set(leads.map((l) => l.id)));
   };
-  const batchUpdate = async (status: "prospect" | "churned") => {
+  /**
+   * Aprovar e recusar em lote.
+   *
+   * Duas correções aqui, e a primeira era um defeito de verdade.
+   *
+   * 1. "Aprovar" gravava `status: 'prospect'` -- a coluna LEGADA. O gatilho
+   *    então derivava `lifecycle_stage = 'qualified'`, PULANDO 'contacted', e
+   *    principalmente sem chamar `qualify_lead`. Ou seja: o botão individual
+   *    "Qualificar" movia o negócio no funil e o mesmo botão em lote não movia
+   *    -- dois caminhos para o mesmo resultado, um deles incompleto, e nada em
+   *    tela dizia a diferença. Agora o lote chama `qualify_lead` por lead, a
+   *    MESMA função.
+   *
+   * 2. "Recusar" gravava `'churned'`, que o gatilho mapeia para
+   *    'disqualified'. Escrever o estágio direto é o mesmo resultado sem
+   *    passar pela coluna de menor resolução.
+   */
+  const batchUpdate = async (acao: "aprovar" | "recusar") => {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
+
+    if (acao === "aprovar" && !selectedPipeline) {
+      toast({
+        title: "Escolha um funil",
+        description: "Aprovar cria um negócio, e ele precisa de um funil de destino.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Aprovar = vira prospect e aparece em Contatos; Recusar = churned.
-      // Não cria negócio — para isso use "Qualificar" num lead específico.
-      await updateStatus({ ids, status });
+      if (acao === "recusar") {
+        await updateLifecycle({ ids, stage: "disqualified" });
+      } else {
+        // Sequencial, não em paralelo: `qualify_lead` cria negócio e a etapa de
+        // entrada é resolvida por consulta. Em paralelo, dez leads disputariam
+        // a mesma leitura.
+        for (const id of ids) {
+          const { error } = await supabase.rpc("qualify_lead", {
+            p_contact_id: id,
+            p_pipeline_id: selectedPipeline,
+          });
+          if (error) throw error;
+        }
+        if (orgId) qc.invalidateQueries({ queryKey: contactsKeys.all(orgId) });
+      }
       setSelected(new Set());
       toast({
-        title: status === "prospect"
-          ? `${ids.length} lead(s) aprovado(s)`
+        title: acao === "aprovar"
+          ? `${ids.length} lead(s) qualificado(s)`
           : `${ids.length} lead(s) recusado(s)`,
-        description: status === "prospect"
-          ? "Movidos para Contatos como prospect."
-          : "Marcados como recusados.",
+        description: acao === "aprovar"
+          ? "Movidos para Contatos, com negócio criado no funil."
+          : "Marcados como descartados.",
       });
-    } catch (e: any) {
-      toast({ title: "Erro na ação em lote", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Erro na ação em lote", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -225,10 +265,10 @@ export default function Leads() {
       {selected.size > 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2">
           <span className="text-sm font-medium">{selected.size} selecionado(s)</span>
-          <Button size="sm" className="h-8" onClick={() => batchUpdate("prospect")}>
+          <Button size="sm" className="h-8" onClick={() => batchUpdate("aprovar")}>
             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />Aprovar
           </Button>
-          <Button size="sm" variant="outline" className="h-8 text-destructive hover:text-destructive hover:bg-destructive/5" onClick={() => batchUpdate("churned")}>
+          <Button size="sm" variant="outline" className="h-8 text-destructive hover:text-destructive hover:bg-destructive/5" onClick={() => batchUpdate("recusar")}>
             <XCircle className="mr-1.5 h-3.5 w-3.5" />Recusar
           </Button>
           <Button size="sm" variant="ghost" className="h-8 ml-auto" onClick={() => setSelected(new Set())}>

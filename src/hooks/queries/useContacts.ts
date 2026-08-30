@@ -4,9 +4,7 @@ import { activitiesApi } from "@/lib/api/activities";
 import { useOrg } from "@/hooks/useOrg";
 import type { ContactListParams } from "@/lib/api/contacts";
 import type { LifecycleStage } from "@/lib/contact-options";
-import type { Database } from "@/integrations/supabase/types";
 
-type ContactStatus = Database["public"]["Enums"]["contact_status"];
 
 export const contactsKeys = {
   all: (orgId: string) => ["contacts", orgId] as const,
@@ -71,25 +69,16 @@ export function useDeleteContacts() {
   });
 }
 
-export function useUpdateContactsStatus() {
-  const qc = useQueryClient();
-  const { orgId } = useOrg();
-  return useMutation({
-    mutationFn: ({ ids, status }: { ids: string[]; status: ContactStatus }) =>
-      contactsApi.updateStatus(ids, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: contactsKeys.all(orgId ?? "") }),
-  });
-}
-
 /**
  * Move contatos no ciclo de vida.
  *
- * Prefira este a `useUpdateContactsStatus`: escrever `status` vai para a coluna
- * LEGADA, e o trigger deriva o ciclo de vida a partir dela -- o que só funciona
- * porque os quatro valores de status mapeiam de volta para quatro dos seis
- * estágios. Passar por status é como mexer no ciclo de vida com resolução
- * menor: "prospect" pode significar 'qualified' ou 'opportunity', e a
- * derivação escolhe 'qualified', rebaixando quem estava em negociação.
+ * Havia um `useUpdateContactsStatus` ao lado, escrevendo na coluna LEGADA. Ele
+ * saiu junto com o último consumidor -- o "Aprovar" em lote de Leads.
+ *
+ * Escrever `status` é mexer no ciclo de vida com RESOLUÇÃO MENOR: são quatro
+ * valores contra seis, e o gatilho deriva de volta escolhendo um. "prospect"
+ * pode significar 'qualified' ou 'opportunity', e a derivação escolhe
+ * 'qualified' -- rebaixando quem já estava em negociação.
  */
 export function useUpdateContactsLifecycle() {
   const qc = useQueryClient();
