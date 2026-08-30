@@ -16,11 +16,15 @@ import {
 } from "@/lib/marketing-utils";
 import { useMarketingData, type MarketingSource } from "@/hooks/useMarketingData";
 import { formatarHora } from "@/lib/formato";
+import { SegmentedControl } from "@/components/layout/SegmentedControl";
+import { EmptyState } from "@/components/layout/EstadoDaLista";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type TabKey = "visao" | "meta" | "google";
 
 const tabsConfig: Record<TabKey, { label: string; icon: any; color: string; bg: string; breadcrumb: string; h1: string; sub: string }> = {
-  visao:  { label: "Visão geral", icon: LayoutGrid, color: "var(--vx-teal)",   bg: "var(--vx-teal-bg)",   breadcrumb: "Visão geral",  h1: "Visão geral de marketing", sub: "Performance consolidada de todas as fontes de tráfego" },
+  visao:  { label: "Visão geral", icon: LayoutGrid, color: "hsl(var(--primary))",   bg: "hsl(var(--primary) / 10%)",   breadcrumb: "Visão geral",  h1: "Visão geral de marketing", sub: "Performance consolidada de todas as fontes de tráfego" },
   meta:   { label: "Meta Ads",    icon: Facebook,   color: "var(--vx-meta)",   bg: "var(--vx-meta-bg)",   breadcrumb: "Meta Ads",     h1: "Meta Ads — performance",    sub: "Facebook · Instagram · Reels" },
   google: { label: "Google Ads",  icon: Chrome,     color: "var(--vx-google)", bg: "var(--vx-google-bg)", breadcrumb: "Google Ads",   h1: "Google Ads — performance",  sub: "Search · Display · YouTube" },
 };
@@ -64,17 +68,17 @@ export default function MarketingOverview() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap vx-fade-up">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-meta" style={{ color: "var(--vx-text-3)" }}>
+          <div className="flex items-center gap-1.5 text-meta" style={{ color: "hsl(var(--muted-foreground))" }}>
             <span>Vionex</span>
             <span className="text-border">›</span>
             <span>Marketing</span>
             <span className="text-border">›</span>
-            <span style={{ color: "var(--vx-navy)", fontWeight: 500 }}>{cfg.breadcrumb}</span>
+            <span style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{cfg.breadcrumb}</span>
           </div>
-          <h1 className="vx-titulo-tela" style={{ color: "var(--vx-navy)" }}>
+          <h1 className="vx-titulo-tela" style={{ color: "hsl(var(--foreground))" }}>
             {cfg.h1}
           </h1>
-          <p className="vx-subtitulo-tela" style={{ color: "var(--vx-text-2)" }}>{cfg.sub}</p>
+          <p className="vx-subtitulo-tela" style={{ color: "hsl(var(--muted-foreground))" }}>{cfg.sub}</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -82,11 +86,11 @@ export default function MarketingOverview() {
 
           <SourceBadge source="real" />
 
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "var(--vx-teal-bg)", border: "0.5px solid var(--vx-teal-border)" }}>
-            <span className="h-1.5 w-1.5 rounded-full vx-pulse-dot" style={{ background: "var(--vx-teal)" }} />
-            <span className="text-meta" style={{ color: "var(--vx-teal)" }}>Atualizado às {horaAtualizacao}</span>
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "hsl(var(--primary) / 10%)", border: "0.5px solid hsl(var(--primary) / 30%)" }}>
+            <span className="h-1.5 w-1.5 rounded-full vx-pulse-dot" style={{ background: "hsl(var(--primary))" }} />
+            <span className="text-meta" style={{ color: "hsl(var(--primary))" }}>Atualizado às {horaAtualizacao}</span>
           </div>
-          <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-meta font-medium transition-colors hover:bg-accent" style={{ border: "0.5px solid hsl(var(--border))", color: "var(--vx-text-2)" }}>
+          <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-meta font-medium transition-colors hover:bg-accent" style={{ border: "0.5px solid hsl(var(--border))", color: "hsl(var(--muted-foreground))" }}>
             <RefreshCw className={`h-3.5 w-3.5 ${data.loading ? "animate-spin" : ""}`} /> Sincronizar
           </button>
         </div>
@@ -107,49 +111,49 @@ export default function MarketingOverview() {
 
 // ────────────── Period filter ──────────────
 
+/**
+ * O seletor de período.
+ *
+ * Era a SEXTA cópia do grupo de pílulas, e tinha o teal CRAVADO como
+ * `var(--vx-teal)` no fundo do item ativo -- mesmo defeito que a barra lateral
+ * tinha: a cor de destaque é trocável em tempo de execução, e escolher roxo
+ * deixava o período selecionado teal.
+ *
+ * "Custom" também era a única palavra em inglês da tela.
+ */
 function PeriodFilter({ value, onChange, customDays, onCustomChange }: {
   value: PeriodKey;
   onChange: (k: PeriodKey) => void;
   customDays: number;
   onCustomChange: (n: number) => void;
 }) {
-  const opts: { k: PeriodKey; label: string }[] = [
-    { k: "7d", label: "7d" },
-    { k: "30d", label: "30d" },
-    { k: "90d", label: "90d" },
-    { k: "custom", label: "Custom" },
-  ];
   return (
     <div className="inline-flex items-center gap-2">
-      <div className="inline-flex p-0.5 rounded-md bg-card" style={{ border: "0.5px solid hsl(var(--border))" }}>
-        {opts.map((o) => {
-          const active = value === o.k;
-          return (
-            <button
-              key={o.k}
-              onClick={() => onChange(o.k)}
-              className="inline-flex items-center gap-1 h-7 px-2.5 rounded text-meta font-medium transition-all duration-150"
-              style={{
-                background: active ? "var(--vx-teal)" : "transparent",
-                color: active ? "#fff" : "var(--vx-text-2)",
-              }}
-            >
-              {o.k === "custom" && <Calendar className="h-3 w-3" />}
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl<PeriodKey>
+        rotuloGrupo="Período"
+        valor={value}
+        onChange={onChange}
+        compactoNoCelular={false}
+        opcoes={[
+          { valor: "7d", rotulo: "7 dias" },
+          { valor: "30d", rotulo: "30 dias" },
+          { valor: "90d", rotulo: "90 dias" },
+          { valor: "custom", rotulo: "Escolher", icone: Calendar },
+        ]}
+      />
       {value === "custom" && (
-        <input
-          type="number"
-          min={1}
-          max={365}
-          value={customDays}
-          onChange={(e) => onCustomChange(Math.max(1, Math.min(365, Number(e.target.value) || 1)))}
-          className="h-7 w-16 px-2 rounded text-meta tabular-nums bg-card"
-          style={{ border: "0.5px solid hsl(var(--border))", color: "var(--vx-navy)" }}
-        />
+        <div className="inline-flex items-center gap-1.5">
+          <Input
+            type="number"
+            min={1}
+            max={365}
+            value={customDays}
+            onChange={(e) => onCustomChange(Math.max(1, Math.min(365, Number(e.target.value) || 1)))}
+            aria-label="Número de dias do período"
+            className="h-8 w-16 text-center text-meta tabular-nums"
+          />
+          <span className="text-meta text-muted-foreground">dias</span>
+        </div>
       )}
     </div>
   );
@@ -160,8 +164,8 @@ function SourceBadge({ source: _source }: { source: MarketingSource }) {
     <div
       className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-label font-medium"
       style={{
-        background: "var(--vx-green-bg)",
-        color: "var(--vx-green)",
+        background: "hsl(var(--success) / 10%)",
+        color: "hsl(var(--success))",
         border: "0.5px solid rgba(10,102,64,0.25)",
       }}
       title="Dados reais sincronizados via Supabase"
@@ -175,52 +179,55 @@ function SourceBadge({ source: _source }: { source: MarketingSource }) {
 
 // ────────────── Tab bar ──────────────
 
+/**
+ * A barra de abas do Marketing.
+ *
+ * Era a SÉTIMA cópia deste controle no projeto, e a única que não usava nem
+ * `PageTabs` nem `SegmentedControl` -- botões com estilo em linha, incluindo a
+ * sombra e a borda escritas à mão.
+ *
+ * A cor por aba (azul do Meta, vermelho do Google) é o motivo de ela existir, e
+ * agora é uma opção do primitivo em vez de uma cópia inteira.
+ */
 function TabBar({ tab, onChange }: { tab: TabKey; onChange: (t: TabKey) => void }) {
   return (
-    <div className="inline-flex p-1 rounded-xl bg-muted/60" style={{ border: "1px solid hsl(var(--border))" }}>
-      {(Object.keys(tabsConfig) as TabKey[]).map((k) => {
-        const c = tabsConfig[k];
-        const Icon = c.icon;
-        const active = tab === k;
-        return (
-          <button
-            key={k}
-            onClick={() => onChange(k)}
-            className="relative inline-flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-semibold transition-all duration-200"
-            style={{
-              background: active ? "hsl(var(--card))" : "transparent",
-              color: active ? c.color : "var(--vx-text-3)",
-              boxShadow: active ? "var(--shadow-sm)" : "none",
-            }}
-          >
-            <Icon className="h-3.5 w-3.5" /> {c.label}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl<TabKey>
+      rotuloGrupo="Fonte de tráfego"
+      valor={tab}
+      onChange={onChange}
+      compactoNoCelular={false}
+      opcoes={(Object.keys(tabsConfig) as TabKey[]).map((k) => ({
+        valor: k,
+        rotulo: tabsConfig[k].label,
+        icone: tabsConfig[k].icon,
+        corAtiva: tabsConfig[k].color,
+      }))}
+    />
   );
 }
 
 // ────────────── Empty state ──────────────
 
-function MarketingEmptyState({ platform, tab }: { platform: string; tab: string }) {
+/**
+ * Era o décimo terceiro formato de estado vazio do projeto: ícone num anel,
+ * título, descrição -- exatamente o que `EmptyState` faz, escrito de novo com
+ * medidas próprias.
+ *
+ * A linha "Aba: {tab}" saiu. Não dizia nada a quem lê: a aba está selecionada
+ * na barra logo acima.
+ */
+function MarketingEmptyState({ platform }: { platform: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent mb-4 ring-8 ring-accent/20">
-        <PlugZap className="h-8 w-8 text-primary" />
-      </div>
-      <h3 className="vx-titulo-painel" style={{ color: "var(--vx-navy)" }}>
-        Sem dados de {platform}
-      </h3>
-      <p className="mt-2 max-w-sm text-sm" style={{ color: "var(--vx-text-2)" }}>
-        Conecte sua conta <strong>{platform}</strong> em{" "}
-        <a href="/settings/integrations" className="text-primary underline underline-offset-2">Configurações → Integrações</a>{" "}
-        para ver os dados de campanhas aqui.
-      </p>
-      <p className="mt-3 text-xs" style={{ color: "var(--vx-text-3)" }}>
-        Aba: {tab}
-      </p>
-    </div>
+    <EmptyState
+      icone={PlugZap}
+      titulo={`Sem dados de ${platform}`}
+      descricao={`Conecte sua conta ${platform} para ver as campanhas aqui.`}
+      acao={
+        <Button asChild size="sm" variant="outline">
+          <a href="/settings/integrations">Ir para Integrações</a>
+        </Button>
+      }
+    />
   );
 }
 
@@ -246,7 +253,7 @@ function PanelVisao({ data, days }: PanelProps) {
   const cvrAvg = totalClicks ? (totalLeads / totalClicks) * 100 : 0;
 
   if (!hasData) {
-    return <MarketingEmptyState platform="Meta Ads ou Google Ads" tab="Visão Geral" />;
+    return <MarketingEmptyState platform="Meta Ads ou Google Ads" />;
   }
 
   // Série diária REAL do período (Meta = insights sincronizados; Google sem integração)
@@ -257,18 +264,18 @@ function PanelVisao({ data, days }: PanelProps) {
     <div className="space-y-5">
       {/* Hero cards — deltas reais apenas quando há dados */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 vx-stagger">
-        <HeroCard icon={DollarSign} iconColor="var(--vx-teal)"   label="Total investido"   value={totalInv} format="brl"        sub={`Meta ${fmtBRL(totalMeta)} · Google ${fmtBRL(totalGoogle)}`} />
-        <HeroCard icon={TrendingUp} iconColor="var(--vx-green)"  label="Receita atribuída" value={totalRev} format="brl"        sub={`Atribuição ${days}d · last-click + view`} />
+        <HeroCard icon={DollarSign} iconColor="hsl(var(--primary))"   label="Total investido"   value={totalInv} format="brl"        sub={`Meta ${fmtBRL(totalMeta)} · Google ${fmtBRL(totalGoogle)}`} />
+        <HeroCard icon={TrendingUp} iconColor="hsl(var(--success))"  label="Receita atribuída" value={totalRev} format="brl"        sub={`Atribuição ${days}d · last-click + view`} />
         <HeroCard icon={Zap}        iconColor="var(--vx-purple)" label="ROAS consolidado"  value={roas}     format="multiplier" sub="Meta interna 3.0×" />
       </div>
 
       {/* KPIs secundários — sem deltas inventados: só valores reais do período */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 vx-stagger">
-        <Kpi icon={UsersIcon}          iconColor="var(--vx-navy)"       label="Leads totais"     value={totalLeads} format="num" />
-        <Kpi icon={DollarSign}         iconColor="var(--vx-amber)"      label="CPL médio"        value={cplMedio}   format="brl" />
-        <Kpi icon={Eye}                iconColor="var(--vx-navy)"       label="Impressões"       value={totalImp}   format="numCompact" />
-        <Kpi icon={MousePointerClick}  iconColor="var(--vx-teal-light)" label="CTR médio"        value={ctrAvg}     format="pct" />
-        <Kpi icon={TargetIcon}         iconColor="var(--vx-teal-light)" label="Conversion rate"  value={cvrAvg}     format="pct" />
+        <Kpi icon={UsersIcon}          iconColor="hsl(var(--foreground))"       label="Leads totais"     value={totalLeads} format="num" />
+        <Kpi icon={DollarSign}         iconColor="hsl(var(--warning))"      label="CPL médio"        value={cplMedio}   format="brl" />
+        <Kpi icon={Eye}                iconColor="hsl(var(--foreground))"       label="Impressões"       value={totalImp}   format="numCompact" />
+        <Kpi icon={MousePointerClick}  iconColor="hsl(var(--primary))" label="CTR médio"        value={ctrAvg}     format="pct" />
+        <Kpi icon={TargetIcon}         iconColor="hsl(var(--primary))" label="Conversion rate"  value={cvrAvg}     format="pct" />
       </div>
 
       {/* Bloco trend + lead sources */}
@@ -291,8 +298,8 @@ function PanelVisao({ data, days }: PanelProps) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
                 <Tooltip content={<VxTooltip prefix="R$ " />} />
                 <Area type="monotone" dataKey="Meta" stroke="#1877F2" strokeWidth={2} fill="url(#gradMeta)" animationDuration={900} />
                 <Area type="monotone" dataKey="Google" stroke="#EA4335" strokeWidth={2} fill="url(#gradGoogle)" animationDuration={900} />
@@ -315,13 +322,13 @@ function PanelVisao({ data, days }: PanelProps) {
           </div>
           <div className="space-y-1.5 mt-2">
             {leadSources.length === 0 && (
-              <p className="text-meta" style={{ color: "var(--vx-text-3)" }}>Nenhum lead no período selecionado.</p>
+              <p className="text-meta" style={{ color: "hsl(var(--muted-foreground))" }}>Nenhum lead no período selecionado.</p>
             )}
             {leadSources.slice(0, 4).map(s => (
               <div key={s.name} className="flex items-center gap-2 text-meta">
                 <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
-                <span className="flex-1 truncate" style={{ color: "var(--vx-text-2)" }}>{s.name}</span>
-                <span className="tabular-nums" style={{ color: "var(--vx-navy)", fontWeight: 500 }}>{s.pct}%</span>
+                <span className="flex-1 truncate" style={{ color: "hsl(var(--muted-foreground))" }}>{s.name}</span>
+                <span className="tabular-nums" style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{s.pct}%</span>
               </div>
             ))}
           </div>
@@ -364,7 +371,7 @@ function PanelMeta({ data, days }: PanelProps) {
   const rows = data.meta.campaigns;
 
   if (rows.length === 0) {
-    return <MarketingEmptyState platform="Meta Ads" tab="Meta Ads" />;
+    return <MarketingEmptyState platform="Meta Ads" />;
   }
 
   const inv = sumBy(rows, "investido");
@@ -387,14 +394,14 @@ function PanelMeta({ data, days }: PanelProps) {
     <div className="space-y-5">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 vx-stagger">
-        <Kpi icon={DollarSign}        iconColor="var(--vx-teal)"       label="Investido"    value={inv} format="brl" />
-        <Kpi icon={TrendingUp}        iconColor="var(--vx-green)"      label="Receita"      value={rev} format="brl" />
-        <Kpi icon={Eye}               iconColor="var(--vx-navy)"       label="Impressões"   value={imp} format="numCompact" />
-        <Kpi icon={Activity}          iconColor="var(--vx-grafite)"    label="Frequência"   value={freq} format="decimal" />
-        <Kpi icon={DollarSign}        iconColor="var(--vx-amber)"      label="CPM"          value={cpm} format="brl" />
-        <Kpi icon={MousePointerClick} iconColor="var(--vx-teal-light)" label="Cliques"      value={clicks} format="numCompact" />
-        <Kpi icon={DollarSign}        iconColor="var(--vx-amber)"      label="CPC"          value={cpc} format="brl" />
-        <Kpi icon={UsersIcon}         iconColor="var(--vx-navy)"       label="Leads / CPL"  value={conv} format="num"   sub={` · ${fmtBRL(cpl)}`} />
+        <Kpi icon={DollarSign}        iconColor="hsl(var(--primary))"       label="Investido"    value={inv} format="brl" />
+        <Kpi icon={TrendingUp}        iconColor="hsl(var(--success))"      label="Receita"      value={rev} format="brl" />
+        <Kpi icon={Eye}               iconColor="hsl(var(--foreground))"       label="Impressões"   value={imp} format="numCompact" />
+        <Kpi icon={Activity}          iconColor="hsl(var(--foreground))"    label="Frequência"   value={freq} format="decimal" />
+        <Kpi icon={DollarSign}        iconColor="hsl(var(--warning))"      label="CPM"          value={cpm} format="brl" />
+        <Kpi icon={MousePointerClick} iconColor="hsl(var(--primary))" label="Cliques"      value={clicks} format="numCompact" />
+        <Kpi icon={DollarSign}        iconColor="hsl(var(--warning))"      label="CPC"          value={cpc} format="brl" />
+        <Kpi icon={UsersIcon}         iconColor="hsl(var(--foreground))"       label="Leads / CPL"  value={conv} format="num"   sub={` · ${fmtBRL(cpl)}`} />
       </div>
 
       {/* Trend + Ranking */}
@@ -413,9 +420,9 @@ function PanelMeta({ data, days }: PanelProps) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} width={32} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
+                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
                 <Tooltip content={<VxTooltip />} />
                 <Area yAxisId="l" type="monotone" dataKey="Investido" stroke="#1877F2" strokeWidth={2} fill="url(#gradMetaInv)" animationDuration={900} />
                 <Line yAxisId="r" type="monotone" dataKey="Leads" stroke="var(--vx-purple)" strokeWidth={2} dot={false} animationDuration={900} />
@@ -430,8 +437,8 @@ function PanelMeta({ data, days }: PanelProps) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 4 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="nome" type="category" width={120} tick={{ fontSize: 10, fill: "var(--vx-text-2)" }} axisLine={false} tickLine={false} tickFormatter={(s) => s.length > 18 ? s.slice(0, 17) + "…" : s} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="nome" type="category" width={120} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(s) => s.length > 18 ? s.slice(0, 17) + "…" : s} />
                 <Tooltip content={<VxTooltip />} />
                 <Bar dataKey="conversoes" name="Leads" fill="var(--vx-meta)" radius={[0, 4, 4, 0]} animationDuration={900} />
               </BarChart>
@@ -457,7 +464,7 @@ function PanelGoogle({ data, days }: PanelProps) {
   const rows = data.google.campaigns;
 
   if (rows.length === 0) {
-    return <MarketingEmptyState platform="Google Ads" tab="Google Ads" />;
+    return <MarketingEmptyState platform="Google Ads" />;
   }
 
   const inv = sumBy(rows, "investido");
@@ -477,13 +484,13 @@ function PanelGoogle({ data, days }: PanelProps) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 vx-stagger">
-        <Kpi icon={DollarSign}        iconColor="var(--vx-teal)"       label="Investido"     value={inv} format="brl" />
-        <Kpi icon={TrendingUp}        iconColor="var(--vx-green)"      label="Receita"       value={rev} format="brl" />
-        <Kpi icon={Eye}               iconColor="var(--vx-navy)"       label="Impressões"    value={imp} format="numCompact" />
-        <Kpi icon={BarChart3}         iconColor="var(--vx-teal-light)" label="Imp. Share"    value={isAvg} format="pct" />
-        <Kpi icon={MousePointerClick} iconColor="var(--vx-teal-light)" label="Cliques"       value={clicks} format="numCompact" />
-        <Kpi icon={DollarSign}        iconColor="var(--vx-amber)"      label="CPC médio"     value={cpc} format="brl" />
-        <Kpi icon={TargetIcon}        iconColor="var(--vx-teal-light)" label="Conversões"    value={conv} format="num" />
+        <Kpi icon={DollarSign}        iconColor="hsl(var(--primary))"       label="Investido"     value={inv} format="brl" />
+        <Kpi icon={TrendingUp}        iconColor="hsl(var(--success))"      label="Receita"       value={rev} format="brl" />
+        <Kpi icon={Eye}               iconColor="hsl(var(--foreground))"       label="Impressões"    value={imp} format="numCompact" />
+        <Kpi icon={BarChart3}         iconColor="hsl(var(--primary))" label="Imp. Share"    value={isAvg} format="pct" />
+        <Kpi icon={MousePointerClick} iconColor="hsl(var(--primary))" label="Cliques"       value={clicks} format="numCompact" />
+        <Kpi icon={DollarSign}        iconColor="hsl(var(--warning))"      label="CPC médio"     value={cpc} format="brl" />
+        <Kpi icon={TargetIcon}        iconColor="hsl(var(--primary))" label="Conversões"    value={conv} format="num" />
         <Kpi icon={Zap}               iconColor="var(--vx-purple)"     label="Quality Score" value={qsAvg} format="decimal" sub=" /10" />
       </div>
 
@@ -502,9 +509,9 @@ function PanelGoogle({ data, days }: PanelProps) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} width={32} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={42} tickFormatter={(v) => `${(v/1000).toFixed(1)}k`} />
+                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
                 <Tooltip content={<VxTooltip />} />
                 <Area yAxisId="l" type="monotone" dataKey="Investido" stroke="#EA4335" strokeWidth={2} fill="url(#gradGoogleInv)" animationDuration={900} />
                 <Line yAxisId="r" type="monotone" dataKey="Conversões" stroke="var(--vx-purple)" strokeWidth={2} dot={false} animationDuration={900} />
@@ -519,12 +526,12 @@ function PanelGoogle({ data, days }: PanelProps) {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={ctrSeries} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} width={32} tickFormatter={(v) => `${v}%`} />
-                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} width={32} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="l" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} tickFormatter={(v) => `${v}%`} />
+                <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
                 <Tooltip content={<VxTooltip />} />
-                <Line yAxisId="l" type="monotone" dataKey="CTR" stroke="var(--vx-teal)" strokeWidth={2} dot={false} animationDuration={900} />
-                <Line yAxisId="r" type="monotone" dataKey="CPC" stroke="var(--vx-amber)" strokeWidth={2} dot={false} animationDuration={900} />
+                <Line yAxisId="l" type="monotone" dataKey="CTR" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} animationDuration={900} />
+                <Line yAxisId="r" type="monotone" dataKey="CPC" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} animationDuration={900} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -537,8 +544,8 @@ function PanelGoogle({ data, days }: PanelProps) {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 16, bottom: 0, left: 4 }}>
               <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: "var(--vx-text-3)" }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="nome" type="category" width={160} tick={{ fontSize: 10, fill: "var(--vx-text-2)" }} axisLine={false} tickLine={false} tickFormatter={(s) => s.length > 26 ? s.slice(0, 25) + "…" : s} />
+              <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="nome" type="category" width={160} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(s) => s.length > 26 ? s.slice(0, 25) + "…" : s} />
               <Tooltip content={<VxTooltip />} />
               <Bar dataKey="conversoes" name="Conversões" fill="var(--vx-google)" radius={[0, 4, 4, 0]} animationDuration={900} />
             </BarChart>
@@ -573,29 +580,29 @@ function HeroCard({ icon: Icon, iconColor, label, value, format, delta, sub }: a
       <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${iconColor}, ${iconColor}88)` }} />
       <div className="bg-card p-5">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-label uppercase tracking-[0.10em] font-semibold" style={{ color: "var(--vx-text-3)" }}>{label}</span>
+          <span className="text-label uppercase tracking-[0.10em] font-semibold" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</span>
           <div className="h-8 w-8 rounded-lg grid place-items-center" style={{ background: `${iconColor}14` }}>
             <Icon className="h-4 w-4" style={{ color: iconColor }} />
           </div>
         </div>
-        <div className="text-[28px] leading-none font-bold tabular-nums tracking-tight" style={{ color: "var(--vx-navy)" }}>
+        <div className="text-[28px] leading-none font-bold tabular-nums tracking-tight" style={{ color: "hsl(var(--foreground))" }}>
           {formatted}
         </div>
-        {sub && <div className="text-meta mt-1.5" style={{ color: "var(--vx-text-2)" }}>{sub}</div>}
+        {sub && <div className="text-meta mt-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</div>}
 
         {typeof delta === "number" && (
           <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: "0.5px solid hsl(var(--border))" }}>
             <span
               className="inline-flex items-center gap-0.5 text-label font-semibold px-1.5 py-0.5 rounded-full"
               style={{
-                background: positive ? "var(--vx-green-bg)" : "var(--vx-red-bg)",
-                color: positive ? "var(--vx-green)" : "var(--vx-red)",
+                background: positive ? "hsl(var(--success) / 10%)" : "hsl(var(--destructive) / 10%)",
+                color: positive ? "hsl(var(--success))" : "hsl(var(--destructive))",
               }}
             >
               {positive ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
               {positive ? "+" : ""}{delta.toFixed(1)}%
             </span>
-            <span className="text-label" style={{ color: "var(--vx-text-3)" }}>vs mês anterior</span>
+            <span className="text-label" style={{ color: "hsl(var(--muted-foreground))" }}>vs mês anterior</span>
           </div>
         )}
       </div>
@@ -611,22 +618,22 @@ function Kpi({ icon: Icon, iconColor, label, value, format, delta, sub, inverted
   const positive = inverted ? delta <= 0 : delta >= 0;
   return (
     <div className="rounded-xl bg-card overflow-hidden vx-card-hover" style={{ border: "1px solid hsl(var(--border))" }}>
-      <div className="h-[2px]" style={{ background: iconColor || "var(--vx-teal)" }} />
+      <div className="h-[2px]" style={{ background: iconColor || "hsl(var(--primary))" }} />
       <div className="p-3.5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-micro uppercase tracking-[0.09em] font-semibold" style={{ color: "var(--vx-text-3)" }}>{label}</span>
+          <span className="text-micro uppercase tracking-[0.09em] font-semibold" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</span>
           {Icon && (
-            <div className="h-6 w-6 rounded-md grid place-items-center" style={{ background: `${iconColor || "var(--vx-teal)"}14` }}>
-              <Icon className="h-3 w-3" style={{ color: iconColor || "var(--vx-text-3)" }} />
+            <div className="h-6 w-6 rounded-md grid place-items-center" style={{ background: `${iconColor || "hsl(var(--primary))"}14` }}>
+              <Icon className="h-3 w-3" style={{ color: iconColor || "hsl(var(--muted-foreground))" }} />
             </div>
           )}
         </div>
-        <div className="text-[18px] leading-tight font-bold tabular-nums" style={{ color: "var(--vx-navy)" }}>
+        <div className="text-[18px] leading-tight font-bold tabular-nums" style={{ color: "hsl(var(--foreground))" }}>
           {formatted}
-          {sub && <span className="text-meta font-normal ml-0.5" style={{ color: "var(--vx-text-3)" }}>{sub}</span>}
+          {sub && <span className="text-meta font-normal ml-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</span>}
         </div>
         {typeof delta === "number" && (
-          <div className="mt-1.5 text-label font-semibold inline-flex items-center gap-0.5" style={{ color: positive ? "var(--vx-green)" : "var(--vx-red)" }}>
+          <div className="mt-1.5 text-label font-semibold inline-flex items-center gap-0.5" style={{ color: positive ? "hsl(var(--success))" : "hsl(var(--destructive))" }}>
             {positive ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
             {delta > 0 ? "+" : ""}{Math.abs(delta) < 10 ? delta.toFixed(1) : Math.round(delta)}{format === "pct" ? "pp" : "%"}
           </div>
@@ -650,12 +657,12 @@ function ChannelMiniCard({ color, bg, icon: Icon, name, sub, activeCount, metric
               <Icon className="h-4 w-4" style={{ color }} />
             </div>
             <div>
-              <div className="text-corpo font-medium" style={{ color: "var(--vx-navy)" }}>{name}</div>
-              <div className="text-label" style={{ color: "var(--vx-text-3)" }}>{sub}</div>
+              <div className="text-corpo font-medium" style={{ color: "hsl(var(--foreground))" }}>{name}</div>
+              <div className="text-label" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-label font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--vx-green-bg)", color: "var(--vx-green)" }}>
+            <span className="text-label font-medium px-2 py-0.5 rounded-full" style={{ background: "hsl(var(--success) / 10%)", color: "hsl(var(--success))" }}>
               {activeCount} ativas
             </span>
             <button className="text-label inline-flex items-center gap-0.5 hover:underline" style={{ color }}>
@@ -666,8 +673,8 @@ function ChannelMiniCard({ color, bg, icon: Icon, name, sub, activeCount, metric
         <div className="grid grid-cols-4 gap-3 mb-4">
           {metrics.map((m: any) => (
             <div key={m.label}>
-              <div className="text-micro uppercase tracking-[0.07em]" style={{ color: "var(--vx-text-3)" }}>{m.label}</div>
-              <div className="text-corpo font-medium tabular-nums mt-0.5" style={{ color: "var(--vx-navy)" }}>{m.value}</div>
+              <div className="text-micro uppercase tracking-[0.07em]" style={{ color: "hsl(var(--muted-foreground))" }}>{m.label}</div>
+              <div className="text-corpo font-medium tabular-nums mt-0.5" style={{ color: "hsl(var(--foreground))" }}>{m.value}</div>
             </div>
           ))}
         </div>
@@ -695,7 +702,7 @@ function FunnelCard({ stages }: { stages: FunnelStage[] }) {
     return s.toLowerCase().includes("k") ? n * 1000 : n;
   };
   const maxNum = Math.max(1, ...stages.map((f) => parseN(f.num)));
-  const colors = ["var(--vx-teal)", "var(--vx-teal-light)", "var(--vx-navy)", "var(--vx-purple)", "var(--vx-green)"];
+  const colors = ["hsl(var(--primary))", "hsl(var(--primary))", "hsl(var(--foreground))", "var(--vx-purple)", "hsl(var(--success))"];
   return (
     <div className="rounded-[10px] bg-card p-5 vx-fade-up vx-card-hover" style={{ border: "0.5px solid hsl(var(--border))" }}>
       <SectionHeader title="Funil marketing → vendas" sub="Conversão por estágio (dados reais do período)" />
@@ -703,17 +710,17 @@ function FunnelCard({ stages }: { stages: FunnelStage[] }) {
         {stages.map((f, i) => {
           const value = parseN(f.num);
           const pct = (value / maxNum) * 100;
-          const cor = colors[i] || "var(--vx-teal)";
+          const cor = colors[i] || "hsl(var(--primary))";
           return (
             <div key={i}>
               <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="text-meta font-medium" style={{ color: "var(--vx-navy)" }}>{f.nome}</span>
+                <span className="text-meta font-medium" style={{ color: "hsl(var(--foreground))" }}>{f.nome}</span>
                 <span className="text-sm font-medium tabular-nums" style={{ color: cor }}>{f.num}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--vx-teal-bg)" }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(var(--primary) / 10%)" }}>
                 <div className="h-full rounded-full vx-grow-w" style={{ width: `${pct}%`, background: cor, animationDelay: `${i * 100}ms` }} />
               </div>
-              <div className="text-label mt-1" style={{ color: "var(--vx-text-3)" }}>{f.desc}</div>
+              <div className="text-label mt-1" style={{ color: "hsl(var(--muted-foreground))" }}>{f.desc}</div>
             </div>
           );
         })}
@@ -729,8 +736,8 @@ function PendingDataCard({ title, sub, requirement }: { title: string; sub: stri
   return (
     <SubCard title={title} sub={sub}>
       <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
-        <Database className="h-6 w-6" style={{ color: "var(--vx-text-3)" }} />
-        <p className="text-meta max-w-[220px]" style={{ color: "var(--vx-text-3)" }}>{requirement}</p>
+        <Database className="h-6 w-6" style={{ color: "hsl(var(--muted-foreground))" }} />
+        <p className="text-meta max-w-[220px]" style={{ color: "hsl(var(--muted-foreground))" }}>{requirement}</p>
       </div>
     </SubCard>
   );
@@ -803,17 +810,17 @@ function QualityScoreCard() {
 function CampaignTable({ rows, platform }: { rows: any[]; platform: "meta" | "google" }) {
   const statusBadge = (s: string) => {
     const map: Record<string, { bg: string; fg: string }> = {
-      ativo:      { bg: "var(--vx-green-bg)", fg: "var(--vx-green)" },
-      pausado:    { bg: "hsl(var(--muted))",  fg: "var(--vx-text-3)" },
-      aprendendo: { bg: "var(--vx-amber-bg)", fg: "var(--vx-amber)" },
+      ativo:      { bg: "hsl(var(--success) / 10%)", fg: "hsl(var(--success))" },
+      pausado:    { bg: "hsl(var(--muted))",  fg: "hsl(var(--muted-foreground))" },
+      aprendendo: { bg: "hsl(var(--warning) / 10%)", fg: "hsl(var(--warning))" },
     };
     const c = map[s];
     return <span className="text-[9.5px] font-medium px-1.5 py-0.5 rounded capitalize" style={{ background: c.bg, color: c.fg }}>{s}</span>;
   };
-  const colorRoas = (v: number) => v >= 3 ? "var(--vx-green)" : v >= 1 ? "var(--vx-amber)" : "var(--vx-red)";
-  const colorCtr  = (v: number) => v >= 3 ? "var(--vx-green)" : v >= 1 ? "var(--vx-amber)" : "var(--vx-red)";
-  const colorIs   = (v: number) => v >= 80 ? "var(--vx-green)" : v >= 60 ? "var(--vx-amber)" : "var(--vx-red)";
-  const colorQs   = (v: number) => v >= 7 ? "var(--vx-green)" : v >= 5 ? "var(--vx-amber)" : "var(--vx-red)";
+  const colorRoas = (v: number) => v >= 3 ? "hsl(var(--success))" : v >= 1 ? "hsl(var(--warning))" : "hsl(var(--destructive))";
+  const colorCtr  = (v: number) => v >= 3 ? "hsl(var(--success))" : v >= 1 ? "hsl(var(--warning))" : "hsl(var(--destructive))";
+  const colorIs   = (v: number) => v >= 80 ? "hsl(var(--success))" : v >= 60 ? "hsl(var(--warning))" : "hsl(var(--destructive))";
+  const colorQs   = (v: number) => v >= 7 ? "hsl(var(--success))" : v >= 5 ? "hsl(var(--warning))" : "hsl(var(--destructive))";
 
   return (
     <div className="rounded-[10px] bg-card overflow-x-auto vx-fade-up" style={{ border: "0.5px solid hsl(var(--border))" }}>
@@ -828,7 +835,7 @@ function CampaignTable({ rows, platform }: { rows: any[]; platform: "meta" | "go
               "CPL", "ROAS",
               ...(platform === "meta" ? ["Receita"] : ["Q.Score"]),
             ].map((h, i) => (
-              <th key={i} className={`px-3 py-2.5 text-[9.5px] uppercase tracking-[0.05em] font-medium ${i >= 2 ? "text-right" : ""}`} style={{ color: "var(--vx-text-3)" }}>{h}</th>
+              <th key={i} className={`px-3 py-2.5 text-[9.5px] uppercase tracking-[0.05em] font-medium ${i >= 2 ? "text-right" : ""}`} style={{ color: "hsl(var(--muted-foreground))" }}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -836,8 +843,8 @@ function CampaignTable({ rows, platform }: { rows: any[]; platform: "meta" | "go
           {rows.map((r) => (
             <tr key={r.id} className="transition-colors hover:bg-accent/40" style={{ borderBottom: "0.5px solid hsl(var(--border))" }}>
               <td className="px-3 py-2.5 whitespace-nowrap">
-                <div className="font-medium" style={{ color: "var(--vx-navy)" }}>{r.nome}</div>
-                <div className="text-label" style={{ color: "var(--vx-text-3)" }}>{r.tipo}</div>
+                <div className="font-medium" style={{ color: "hsl(var(--foreground))" }}>{r.nome}</div>
+                <div className="text-label" style={{ color: "hsl(var(--muted-foreground))" }}>{r.tipo}</div>
               </td>
               <td className="px-3 py-2.5">{statusBadge(r.status)}</td>
               <td className="px-3 py-2.5 text-right tabular-nums">{fmtBRL(r.investido)}</td>
@@ -845,7 +852,7 @@ function CampaignTable({ rows, platform }: { rows: any[]; platform: "meta" | "go
               {platform === "meta" ? (
                 <>
                   <td className="px-3 py-2.5 text-right tabular-nums">{fmtNum(r.alcance)}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: r.frequencia > 3.5 ? "var(--vx-red)" : undefined }}>{r.frequencia.toFixed(2)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums" style={{ color: r.frequencia > 3.5 ? "hsl(var(--destructive))" : undefined }}>{r.frequencia.toFixed(2)}</td>
                   <td className="px-3 py-2.5 text-right tabular-nums">R$ {r.cpm.toFixed(2)}</td>
                 </>
               ) : (
@@ -877,8 +884,8 @@ function SectionHeader({ title, sub, children }: { title: string; sub?: string; 
   return (
     <div className="flex items-start justify-between gap-2">
       <div>
-        <h3 className="vx-titulo-secao" style={{ color: "var(--vx-navy)" }}>{title}</h3>
-        {sub && <p className="text-label mt-0.5" style={{ color: "var(--vx-text-3)" }}>{sub}</p>}
+        <h3 className="vx-titulo-secao" style={{ color: "hsl(var(--foreground))" }}>{title}</h3>
+        {sub && <p className="text-label mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</p>}
       </div>
       {children}
     </div>
@@ -898,7 +905,7 @@ function Legend({ items }: { items: { color: string; label: string }[] }) {
   return (
     <div className="flex items-center gap-3">
       {items.map(i => (
-        <div key={i.label} className="flex items-center gap-1.5 text-label" style={{ color: "var(--vx-text-2)" }}>
+        <div key={i.label} className="flex items-center gap-1.5 text-label" style={{ color: "hsl(var(--muted-foreground))" }}>
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: i.color }} />
           {i.label}
         </div>
@@ -911,12 +918,12 @@ function VxTooltip({ active, payload, label, prefix = "", suffix = "" }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-md p-2 text-label bg-card" style={{ border: "0.5px solid hsl(var(--border))", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
-      {label && <div className="font-medium mb-1" style={{ color: "var(--vx-navy)" }}>{label}</div>}
+      {label && <div className="font-medium mb-1" style={{ color: "hsl(var(--foreground))" }}>{label}</div>}
       {payload.map((p: any) => (
         <div key={p.dataKey || p.name} className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.color || p.payload?.color }} />
-          <span style={{ color: "var(--vx-text-2)" }}>{p.name}:</span>
-          <span className="tabular-nums font-medium" style={{ color: "var(--vx-navy)" }}>{prefix}{typeof p.value === "number" ? p.value.toLocaleString("pt-BR") : p.value}{suffix}</span>
+          <span style={{ color: "hsl(var(--muted-foreground))" }}>{p.name}:</span>
+          <span className="tabular-nums font-medium" style={{ color: "hsl(var(--foreground))" }}>{prefix}{typeof p.value === "number" ? p.value.toLocaleString("pt-BR") : p.value}{suffix}</span>
         </div>
       ))}
     </div>

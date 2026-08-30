@@ -99,8 +99,26 @@ describe("os tokens --vx-* funcionam no tema escuro", () => {
     expect(semPar).toEqual([]);
   });
 
-  it("há tokens para cobrir", () => {
-    expect(nomes(raiz).size).toBeGreaterThan(15);
+  /**
+   * Eram 21 tokens `--vx-*`. Sobraram CINCO, e não por descuido: os outros
+   * dezesseis duplicavam tokens que o sistema já tinha.
+   *
+   *   --vx-navy, --vx-grafite    →  --foreground
+   *   --vx-text-2, --vx-text-3   →  --muted-foreground  (o text-3 era o MESMO
+   *                                 valor: #9AA3B0)
+   *   --vx-green                 →  --success       (#0A6640, idêntico)
+   *   --vx-red                   →  --destructive   (#B02020, idêntico)
+   *   --vx-amber                 →  --warning       (#92610A, idêntico)
+   *   --vx-teal*                 →  --primary, que é TROCÁVEL -- o teal fixo
+   *                                 ignorava a cor escolhida pelo usuário
+   *
+   * Os cinco que ficam são identidade de terceiros e não seguem tema nenhum:
+   * o azul do Meta, o vermelho do Google e uma cor de série de gráfico.
+   */
+  it("os que restam são identidade de marca, não tema", () => {
+    expect([...nomes(raiz)].sort()).toEqual([
+      "--vx-google", "--vx-google-bg", "--vx-meta", "--vx-meta-bg", "--vx-purple",
+    ]);
   });
 });
 

@@ -43,22 +43,7 @@
     --warning: 35 87% 30%;             /* #92610A */
     --warning-foreground: 0 0% 100%;
     /* Vionex extras (direct hex tokens for components) */
-    --vx-navy: #0A1E3D;
-    --vx-teal: #007B8A;
-    --vx-teal-light: #00A4B5;
-    --vx-teal-bg: #EAF5F7;
-    --vx-teal-border: #B2DDE2;
-    --vx-grafite: #3A3F47;
-    --vx-text-2: #4A5568;
-    --vx-text-3: #9AA3B0;
-    --vx-green: #0A6640;
-    --vx-green-bg: #E6F5EF;
-    --vx-red: #B02020;
-    --vx-red-bg: #FDE8E8;
-    --vx-amber: #92610A;
-    --vx-amber-bg: #FFF3E0;
     --vx-purple: #5B21B6;
-    --vx-purple-bg: #F3EFFF;
     --vx-meta: #1877F2;
     --vx-meta-bg: #EEF4FF;
     --vx-google: #EA4335;
@@ -120,22 +105,7 @@
      * escuro fica com aparência de erro de renderização.
      *
      * Corrigir aqui conserta as 115 chamadas sem tocar em nenhuma delas. */
-    --vx-navy: #E8EDF5;
-    --vx-teal: #22C3D6;
-    --vx-teal-light: #4DD5E6;
-    --vx-teal-bg: #0C2E33;
-    --vx-teal-border: #1B4A52;
-    --vx-grafite: #C9CED6;
-    --vx-text-2: #A8B2C1;
-    --vx-text-3: #7C8697;
-    --vx-green: #34D399;
-    --vx-green-bg: #0C2B20;
-    --vx-red: #F87171;
-    --vx-red-bg: #331414;
-    --vx-amber: #FBBF24;
-    --vx-amber-bg: #332512;
     --vx-purple: #A78BFA;
-    --vx-purple-bg: #241A3D;
     --vx-meta: #5B9CF8;
     --vx-meta-bg: #14203A;
     --vx-google: #F87171;
@@ -477,7 +447,9 @@
 
 /* Hover card com borda teal */
 .vx-card-hover { transition: border-color .2s ease, background .2s ease; }
-.vx-card-hover:hover { border-color: var(--vx-teal-border); }
+/* Era `var(--vx-teal-border)`: teal fixo. A borda de realce tem de seguir a cor
+   de destaque escolhida, como todo o resto. */
+.vx-card-hover:hover { border-color: hsl(var(--primary) / 30%); }
 
 /* Onboarding animations */
 .onboarding-slide-in {

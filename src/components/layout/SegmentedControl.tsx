@@ -17,6 +17,17 @@ export type OpcaoSegmento<T extends string> = {
   valor: T;
   rotulo: string;
   icone?: LucideIcon;
+  /**
+   * Cor do texto quando esta opção está ativa.
+   *
+   * Existe para a barra do Marketing, onde cada aba tem a cor da plataforma --
+   * azul do Meta, vermelho do Google. Sem isso ela manteria a sétima cópia
+   * própria deste controle, que é como as seis anteriores apareceram.
+   *
+   * Só cor de TEXTO, e só quando ativa: o fundo continua sendo o do tema, então
+   * a pílula não vira um bloco colorido.
+   */
+  corAtiva?: string;
 };
 
 export function SegmentedControl<T extends string>({
@@ -45,7 +56,7 @@ export function SegmentedControl<T extends string>({
         className,
       )}
     >
-      {opcoes.map(({ valor: v, rotulo, icone: Icone }) => {
+      {opcoes.map(({ valor: v, rotulo, icone: Icone, corAtiva }) => {
         const ativo = v === valor;
         return (
           <button
@@ -60,9 +71,11 @@ export function SegmentedControl<T extends string>({
               "flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:px-3",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               ativo
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
+              ativo && !corAtiva && "text-foreground",
             )}
+            style={ativo && corAtiva ? { color: corAtiva } : undefined}
           >
             {Icone && <Icone className="h-3.5 w-3.5 shrink-0" />}
             <span className={compactoNoCelular ? "hidden sm:inline" : undefined}>

@@ -196,3 +196,59 @@ describe("os cartões respiram igual", () => {
     expect([...valores].sort()).toEqual(["p-0", "p-3"]);
   });
 });
+
+/**
+ * A página de Marketing tinha um design system PARALELO.
+ *
+ * 938 linhas, 88 estilos em linha, 21 tokens `--vx-*` próprios, e três cópias
+ * locais de primitivos que já existiam: a sétima barra de abas do projeto, a
+ * sexta cópia do grupo de pílulas e o décimo terceiro formato de estado vazio.
+ *
+ * Dezesseis dos 21 tokens duplicavam tokens do sistema — três deles com valor
+ * IDÊNTICO. E o teal aparecia cravado como `var(--vx-teal)` em vinte lugares,
+ * o mesmo defeito da barra lateral: a cor de destaque é trocável, e escolher
+ * roxo deixava a página teal.
+ */
+describe("Marketing entra no sistema", () => {
+  const OVERVIEW = readFileSync("src/pages/marketing/Overview.tsx", "utf8");
+  const SEM_COMENTARIOS = OVERVIEW.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  it("usa os primitivos em vez de cópias locais", () => {
+    expect(OVERVIEW).toContain('from "@/components/layout/SegmentedControl"');
+    expect(OVERVIEW).toContain('from "@/components/layout/EstadoDaLista"');
+  });
+
+  it("não monta o próprio grupo de pílulas", () => {
+    // Duas cópias havia: a barra de abas e o seletor de período.
+    expect(SEM_COMENTARIOS.match(/<SegmentedControl</g) ?? []).toHaveLength(2);
+  });
+
+  /**
+   * `--primary` segue a escolha do usuário; `--vx-teal` não. Era o mesmo
+   * defeito de `.vx-nav-active` e da barra de rolagem.
+   */
+  it("a cor de destaque vem do token trocável", () => {
+    expect(SEM_COMENTARIOS).not.toContain("var(--vx-teal");
+    expect(SEM_COMENTARIOS).toContain("hsl(var(--primary))");
+  });
+
+  it("texto e cores semânticas vêm do sistema", () => {
+    for (const morto of ["--vx-navy", "--vx-text-2", "--vx-text-3", "--vx-green", "--vx-red", "--vx-amber"]) {
+      expect(SEM_COMENTARIOS, `${morto} ainda em uso`).not.toContain(`var(${morto})`);
+    }
+  });
+
+  /**
+   * Os que ficam são identidade de TERCEIROS: o azul do Facebook e o vermelho
+   * do Google não seguem tema nenhum, e derivá-los de um token os tornaria
+   * errados.
+   */
+  it("só sobram as cores de plataforma", () => {
+    // Sem comentários: o comentário que explica por que o teal saiu menciona
+    // `var(--vx-teal)`, e reprovaria a regra que ele documenta.
+    const usados = new Set([...SEM_COMENTARIOS.matchAll(/var\((--vx-[a-z0-9-]+)\)/g)].map((m) => m[1]));
+    expect([...usados].sort()).toEqual([
+      "--vx-google", "--vx-google-bg", "--vx-meta", "--vx-meta-bg", "--vx-purple",
+    ]);
+  });
+});
