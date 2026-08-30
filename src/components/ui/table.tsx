@@ -46,7 +46,11 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        // `h-12` (48px) era o default do shadcn, calibrado para base 16px. Aqui
+        // a base é 13px e o cabeçalho fica desproporcional -- quase o dobro da
+        // altura da linha de dado. `.vx-table` já define padding próprio para
+        // as 18 tabelas do projeto; esta altura é o piso para quem não usa.
+        "h-9 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

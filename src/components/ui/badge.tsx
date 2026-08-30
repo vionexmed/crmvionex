@@ -4,7 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  // `rounded-full` + `px-2.5` + `font-semibold` fazia cada selo virar uma
+  // pílula gorda. Numa linha de tabela com quatro colunas de dado, três selos
+  // assim dominam a linha e o dado vira secundário.
+  //
+  // Raio do token (o mesmo de tudo), menos preenchimento lateral, e peso médio
+  // em vez de semibold: o selo passa a ser uma marca, não um botão.
+  "inline-flex items-center rounded-[var(--radius)] border px-2 py-0.5 text-label font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {

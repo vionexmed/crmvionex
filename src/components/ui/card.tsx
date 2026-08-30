@@ -3,7 +3,21 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)} {...props} />
+  <div
+    ref={ref}
+    // `shadow-sm` saiu, e `rounded-lg` virou `rounded-[--radius]`.
+    //
+    // A sombra somada à borda dá DOIS sinais para a mesma coisa -- "isto é um
+    // plano separado" -- e o resultado é uma tela onde tudo parece flutuar um
+    // pouco. No estilo escolhido a separação é uma linha fina e o respiro em
+    // volta; a sombra fica para o que de fato paira sobre o conteúdo: menu
+    // suspenso, diálogo, dica.
+    //
+    // O raio vem do token porque havia `rounded-md` (115 usos) e `rounded-lg`
+    // (92) competindo -- dois arredondamentos na mesma tela.
+    className={cn("rounded-[var(--radius)] border bg-card text-card-foreground", className)}
+    {...props}
+  />
 ));
 Card.displayName = "Card";
 
