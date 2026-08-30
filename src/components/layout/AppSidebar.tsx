@@ -61,7 +61,7 @@ export function AppSidebar() {
     <>
       <Sidebar collapsible="icon" className="border-r border-sidebar-border">
         {/* Header — Logo */}
-        <SidebarHeader className="px-2 py-2 border-b border-sidebar-border/50">
+        <SidebarHeader className="px-2 py-2 border-b border-sidebar-border">
           <div className="flex items-center justify-center">
             <img
               src={vionexLogo}
@@ -93,7 +93,7 @@ export function AppSidebar() {
             <SidebarGroup key={group.label} className={collapsed ? "mt-2 py-0" : ""}>
               <SidebarGroupContent>
                 {!collapsed && (
-                  <p className="mb-1 mt-3 px-2 text-label font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">
+                  <p className="mb-1 mt-3 px-2 text-label font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/60">
                     {group.label}
                   </p>
                 )}
@@ -104,15 +104,20 @@ export function AppSidebar() {
                         <NavLink
                           to={item.url}
                           end={item.url === "/dashboard"}
-                          className="vx-nav-item flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sidebar-foreground/80 text-sm"
+                          className="vx-nav-item flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sidebar-foreground text-sm"
                           activeClassName="vx-nav-active"
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
                           {!collapsed && <span className="flex-1">{item.title}</span>}
                           {/* A contagem só faz sentido em Leads, e só quando há
-                              o que atender. */}
+                              o que atender.
+
+                              Era um selo VERMELHO. Vermelho num menu significa
+                              erro, e a cada carregamento a tela dizia "alerta"
+                              sobre uma fila de trabalho perfeitamente normal.
+                              Agora é só o número. */}
                           {item.url === "/leads" && leadCount > 0 && !collapsed && (
-                            <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive/90 px-1 text-micro font-bold leading-none text-white">
+                            <span className="text-label font-semibold tabular-nums text-sidebar-foreground/70">
                               {leadCount > 99 ? "99+" : leadCount}
                             </span>
                           )}
@@ -129,7 +134,7 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         tooltip="Em Risco"
                         onClick={() => setAtRiskOpen(true)}
-                        className="vx-nav-item flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground/80"
+                        className="vx-nav-item flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground"
                       >
                         <ICONE_RISCO className="h-4 w-4 shrink-0 text-warning/80" />
                         {!collapsed && <span>Em Risco</span>}
@@ -143,7 +148,7 @@ export function AppSidebar() {
         </SidebarContent>
 
         {/* Footer — User */}
-        <SidebarFooter className="border-t border-sidebar-border/50 p-3">
+        <SidebarFooter className="border-t border-sidebar-border p-3">
           <div className={`flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent/50 ${collapsed ? "justify-center" : ""}`}>
             <Avatar className="h-8 w-8 shrink-0 ring-2 ring-sidebar-primary/20">
               <AvatarImage src={profile?.avatar_url || ""} />
@@ -157,13 +162,13 @@ export function AppSidebar() {
                   <span className="truncate text-corpo font-semibold text-sidebar-foreground">
                     {profile?.name || "Usuário"}
                   </span>
-                  <span className="truncate text-meta text-sidebar-foreground/50">
+                  <span className="truncate text-meta text-sidebar-foreground/70">
                     {profile?.email}
                   </span>
                 </div>
                 <button
                   onClick={signOut}
-                  className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                  className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
                   aria-label="Sair"
                 >
                   <LogOut className="h-3.5 w-3.5" />

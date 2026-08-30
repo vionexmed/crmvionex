@@ -138,3 +138,75 @@ describe("título usa o token de texto", () => {
     expect(CSS).not.toContain(".dark h1, .dark h2");
   });
 });
+
+/**
+ * A lateral clara.
+ *
+ * Era navy `#0A1E3D` contra conteúdo claro -- o padrão de CRM de 2010–2020. O
+ * peso visual da tela ia para o MENU em vez de ir para o trabalho.
+ *
+ * Agora a lateral é o mesmo plano do conteúdo, separada só pela linha. No tema
+ * escuro ela continua escura: o que muda é deixar de ser um bloco diferente.
+ */
+describe("a lateral é o mesmo plano do conteúdo", () => {
+  const bloco = (seletor: string) => {
+    const i = CSS.indexOf(seletor);
+    return CSS.slice(i, CSS.indexOf("}", i));
+  };
+  const valor = (escopo: string, token: string) => {
+    const b = bloco(escopo);
+    return b.match(new RegExp(`${token}:\\s*([^;]+);`))?.[1]?.trim();
+  };
+
+  it("no tema claro, a lateral é clara", () => {
+    const fundo = valor(":root {", "--sidebar-background");
+    expect(fundo, "ainda é o navy").not.toMatch(/^217 72%/);
+    // Luminosidade alta é o que faz ser "clara". O navy era 14%.
+    const lum = Number(fundo?.match(/(\d+)%\s*$/)?.[1] ?? 0);
+    expect(lum).toBeGreaterThan(90);
+  });
+
+  /**
+   * `0 0% 60%` era cinza puro calibrado para o navy. Sobre fundo claro fica
+   * ilegível -- é a primeira coisa que quebra ao inverter a lateral.
+   */
+  it("o texto da lateral é escuro no tema claro", () => {
+    const lum = Number(valor(":root {", "--sidebar-foreground")?.match(/(\d+)%\s*$/)?.[1] ?? 100);
+    expect(lum).toBeLessThan(50);
+  });
+
+  it("no tema escuro a lateral acompanha o fundo, não se destaca dele", () => {
+    const fundo = valor(".dark {", "--sidebar-background");
+    const conteudo = valor(".dark {", "--background");
+    const sat = (v?: string) => Number(v?.match(/\d+ (\d+)%/)?.[1] ?? 0);
+    // Era 72% de saturação contra 50% do conteúdo: um navy destacado.
+    expect(sat(fundo)).toBe(sat(conteudo));
+  });
+
+  /**
+   * `--muted` era IDÊNTICO a `--background` (ambos `220 14% 97%`), então o
+   * truque padrão de kanban -- coluna cinza, cartão branco -- era invisível.
+   * Está documentado no CLAUDE.md como armadilha.
+   */
+  it("muted deixou de ser idêntico ao fundo", () => {
+    expect(valor(":root {", "--muted")).not.toBe(valor(":root {", "--background"));
+  });
+
+  /**
+   * A barra de 2px à esquerda funcionava contra o navy. Com a lateral clara ela
+   * vira um traço competindo com a linha de separação da coluna -- duas
+   * verticais paralelas a dois pixels de distância.
+   */
+  it("o item ativo é pastilha, não barra lateral", () => {
+    expect(bloco(".vx-nav-active {")).not.toContain("border-left");
+  });
+
+  /**
+   * 45% da cor de destaque era calibrado para o navy, onde a barra precisava se
+   * destacar de um fundo muito escuro.
+   */
+  it("a barra de rolagem da lateral não grita", () => {
+    const i = CSS.indexOf('[data-sidebar="sidebar"], [data-sidebar="sidebar"] *');
+    expect(CSS.slice(i, i + 200)).not.toContain("--sidebar-primary");
+  });
+});

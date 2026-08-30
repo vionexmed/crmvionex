@@ -6,7 +6,10 @@
   :root {
     /* === VIONEX OFFICIAL PALETTE === */
     /* Surfaces */
-    --background: 220 14% 97%;         /* #F7F8FA surface */
+    /* Branco, não cinza. O cartão passa a se separar do fundo por uma LINHA,
+       não por diferença de tom -- que é o princípio do estilo escolhido:
+       hierarquia por respiro e tipografia, não por caixa dentro de caixa. */
+    --background: 0 0% 100%;
     --foreground: 213 41% 10%;         /* #0F1923 text-1 */
     --card: 0 0% 100%;
     --card-foreground: 213 41% 10%;
@@ -17,25 +20,38 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 97%;
     --secondary-foreground: 213 41% 10%;
-    --muted: 220 14% 97%;
+    /* `--muted` era IDÊNTICO a `--background` (ambos 220 14% 97%). O truque
+       padrão de kanban -- coluna cinza, cartão branco -- era invisível no tema
+       claro, e o CLAUDE.md documenta isso como armadilha. Agora são tons
+       distintos de verdade. */
+    --muted: 220 14% 96%;
     --muted-foreground: 218 11% 65%;   /* #9AA3B0 text-3 */
     --accent: 188 38% 94%;             /* #EAF5F7 teal-bg */
     --accent-foreground: 187 100% 27%;
     --destructive: 0 70% 41%;          /* #B02020 */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 12% 91%;             /* #E4E7EC */
+    /* Mais clara: com o fundo branco, a borda antiga ficava pesada demais
+       para o papel que passa a ter -- separar, não emoldurar. */
+    --border: 220 13% 93%;
     --input: 220 12% 91%;
     --ring: 187 100% 27%;
     /* ▶ Radius aumentado para look mais moderno */
-    --radius: 0.5rem;
+    /* 10px, e UM raio só. Havia `rounded-md` (115 usos) e `rounded-lg` (92)
+       competindo -- dois arredondamentos diferentes na mesma tela. */
+    --radius: 0.625rem;
     /* Sidebar — Vionex navy */
-    --sidebar-background: 217 72% 14%; /* #0A1E3D */
-    --sidebar-foreground: 0 0% 60%;
-    --sidebar-primary: 187 97% 36%;    /* #00A4B5 teal-light */
+    /* A lateral deixa de ser um bloco navy e passa a ser o mesmo plano do
+       conteúdo, separada só pela linha. É a mudança que mais se vê, e a razão
+       dela: com a navegação escura, o peso visual da tela ia para o menu em vez
+       de ir para o trabalho. */
+    --sidebar-background: 220 14% 98%;
+    /* Cinza de 60% sobre fundo claro é ilegível -- era pensado para o navy. */
+    --sidebar-foreground: 215 16% 40%;
+    --sidebar-primary: 187 100% 27%;   /* o mesmo teal do conteúdo, não o claro */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 50% 18%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 35% 22%;
+    --sidebar-accent: 220 14% 94%;
+    --sidebar-accent-foreground: 213 41% 10%;
+    --sidebar-border: 220 13% 93%;
     --sidebar-ring: 187 100% 35%;
     /* Semantic */
     --success: 152 82% 22%;            /* #0A6640 */
@@ -75,13 +91,16 @@
     --border: 217 30% 18%;
     --input: 217 30% 18%;
     --ring: 187 100% 35%;
-    --sidebar-background: 217 72% 10%;
-    --sidebar-foreground: 0 0% 60%;
+    /* No escuro a lateral continua escura -- o que muda é ela deixar de ser um
+       bloco DIFERENTE do conteúdo. Antes era 72% de saturação contra 50% do
+       fundo: um navy destacado. Agora é o mesmo plano, separado pela linha. */
+    --sidebar-background: 217 50% 9%;
+    --sidebar-foreground: 215 16% 65%;
     --sidebar-primary: 187 100% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 50% 16%;
+    --sidebar-accent: 217 40% 15%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 35% 20%;
+    --sidebar-border: 217 30% 18%;
     --sidebar-ring: 187 100% 35%;
     --success: 152 60% 35%;
     --success-foreground: 0 0% 98%;
@@ -258,16 +277,23 @@
    * destaque é trocável em tempo de execução: o ThemeContext sobrescreve
    * `--sidebar-primary` conforme a escolha do usuário. Com o hex fixo, escolher
    * roxo deixava o item ativo teal, e ninguém entendia por quê. */
+  /* Fundo suave em vez de barra lateral colorida.
+   *
+   * A barra de 2px à esquerda funcionava contra o navy, onde o contraste era
+   * alto e o fundo suave quase não aparecia. Com a lateral clara ela vira um
+   * traço que compete com a linha de separação da coluna -- duas verticais
+   * paralelas a dois pixels de distância.
+   *
+   * O item ativo agora é uma pastilha: fundo na cor de destaque, texto na cor
+   * de destaque, sem traço. É o padrão do estilo escolhido. */
   .vx-nav-active {
-    background: hsl(var(--sidebar-primary) / 14%) !important;
+    background: hsl(var(--sidebar-primary) / 10%) !important;
     color: hsl(var(--sidebar-primary)) !important;
-    border-left: 2px solid hsl(var(--sidebar-primary));
     font-weight: 600;
   }
   .vx-nav-active svg { color: hsl(var(--sidebar-primary)) !important; }
   .vx-nav-item {
-    border-left: 2px solid transparent;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
   }
   /* Era `rgba(255,255,255,0.06)`: branco fixo, que assume barra lateral
    * escura. No tema claro o realce simplesmente não aparecia. */
@@ -356,18 +382,21 @@
  * que o item ativo da navegação tinha: a cor de destaque é trocável em tempo de
  * execução, e escolher roxo deixava a barra de rolagem teal. */
 [data-sidebar="sidebar"], [data-sidebar="sidebar"] * {
-  scrollbar-color: hsl(var(--sidebar-primary) / 45%) transparent;
+  /* Era 45% -- calibrado para o navy, onde a barra precisava se destacar de um
+     fundo muito escuro. Sobre fundo claro, a mesma opacidade vira um traço
+     colorido gritando ao lado do menu. */
+  scrollbar-color: hsl(var(--sidebar-foreground) / 25%) transparent;
 }
 [data-sidebar="sidebar"] ::-webkit-scrollbar,
 [data-sidebar="sidebar"]::-webkit-scrollbar { width: 5px; height: 5px; }
 [data-sidebar="sidebar"] ::-webkit-scrollbar-thumb,
 [data-sidebar="sidebar"]::-webkit-scrollbar-thumb {
-  background: hsl(var(--sidebar-primary) / 38%);
+  background: hsl(var(--sidebar-foreground) / 22%);
   border-radius: 999px;
 }
 [data-sidebar="sidebar"] ::-webkit-scrollbar-thumb:hover,
 [data-sidebar="sidebar"]::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--sidebar-primary) / 70%);
+  background: hsl(var(--sidebar-foreground) / 40%);
 }
 [data-sidebar="sidebar"] ::-webkit-scrollbar-track,
 [data-sidebar="sidebar"]::-webkit-scrollbar-track { background: transparent; }
