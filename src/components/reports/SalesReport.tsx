@@ -9,16 +9,14 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
-} from "recharts";
+import { RoscaComLegenda } from "@/components/dashboard/svg/RoscaComLegenda";
+import { BarrasAgrupadas } from "@/components/dashboard/svg/BarrasAgrupadas";
 import {
   TrendingUp, XCircle, Download, Clock, Trophy, Target,
 } from "lucide-react";
 import {
   Deal, Stage, Profile, Company,
-  fmt, pct, CHART_COLORS, tooltipStyle, MONTHS_PT,
+  fmt, pct, CHART_COLORS, MONTHS_PT,
   downloadCSV,
 } from "@/components/reports/types";
 
@@ -170,17 +168,15 @@ export function SalesReport({ deals, stages, members, companies }: {
         <Card>
           <CardHeader><CardTitle>Waterfall de Negócios</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={waterfallData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {waterfallData.map((e, i) => <Cell key={i} fill={e.fill} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {/* A cor pertence à LINHA aqui, não à série: ganho é verde,
+                perdido é vermelho, aberto é neutro. */}
+            <BarrasAgrupadas
+              linhas={waterfallData}
+              rotulo={(w) => w.name}
+              formatar={fmt}
+              vazio="Nenhum negócio no período"
+              series={[{ nome: "Valor", cor: (w) => w.fill, valor: (w) => w.value }]}
+            />
           </CardContent>
         </Card>
 
@@ -211,15 +207,13 @@ export function SalesReport({ deals, stages, members, companies }: {
         <Card>
           <CardHeader><CardTitle>Taxa de conversão por etapa</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={stageConversion}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" domain={[0, 100]} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v}%`} />
-                <Bar dataKey="rate" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <BarrasAgrupadas
+              linhas={stageConversion}
+              rotulo={(e) => e.name}
+              formatar={(v) => `${v}%`}
+              vazio="Nenhuma etapa com movimento"
+              series={[{ nome: "Conversão", cor: CHART_COLORS[0], valor: (e) => e.rate }]}
+            />
           </CardContent>
         </Card>
 
@@ -227,15 +221,15 @@ export function SalesReport({ deals, stages, members, companies }: {
         <Card>
           <CardHeader><CardTitle>Tempo médio por etapa (dias)</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={avgTimePerStage} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} dias`} />
-                <Bar dataKey="days" fill="hsl(var(--warning))" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {/* Este já era `layout="vertical"` no recharts, ou seja, barras
+                horizontais -- a troca não muda nada aqui. */}
+            <BarrasAgrupadas
+              linhas={avgTimePerStage}
+              rotulo={(e) => e.name}
+              formatar={(v) => `${v} d`}
+              vazio="Sem tempo de permanência registrado"
+              series={[{ nome: "Dias", cor: "hsl(var(--warning))", valor: (e) => e.days }]}
+            />
           </CardContent>
         </Card>
 
@@ -244,15 +238,14 @@ export function SalesReport({ deals, stages, members, companies }: {
           <CardHeader><CardTitle>Motivos de Perda</CardTitle></CardHeader>
           <CardContent>
             {lossReasons.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={lossReasons} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
-                    {lossReasons.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <RoscaComLegenda
+                tamanho={140}
+                fatias={lossReasons.map((l, i) => ({
+                  nome: l.name,
+                  valor: l.value,
+                  cor: CHART_COLORS[i % CHART_COLORS.length],
+                }))}
+              />
             ) : <div className="flex h-[200px] items-center justify-center text-xs text-muted-foreground">Nenhuma perda registrada</div>}
           </CardContent>
         </Card>

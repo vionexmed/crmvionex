@@ -7,12 +7,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FAIXAS_PREVISAO, calcularPrevisao, totaisDaPrevisao } from "@/lib/previsao";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-} from "recharts";
+import { BarrasAgrupadas } from "@/components/dashboard/svg/BarrasAgrupadas";
 import {
   Deal, Stage,
-  fmt, tooltipStyle,
+  fmt,
 } from "@/components/reports/types";
 
 export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
@@ -39,10 +37,6 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
   const totals = useMemo(() => totaisDaPrevisao(buckets), [buckets]);
 
   // Chart data
-  const chartData = buckets.map((b) => ({
-    month: b.rotulo,
-    ...Object.fromEntries(FAIXAS_PREVISAO.map((f) => [f.rotulo, b[f.chave]])),
-  }));
 
   // Inline probability edit
   const updateProbability = async (dealId: string, newProb: number) => {
@@ -75,20 +69,20 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
       <Card>
         <CardHeader><CardTitle>Previsão de Receita — Próximos 3 Meses</CardTitle></CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-              {/* A cor acompanha a faixa, e a faixa mais confiável é a
-                  verde. Antes ≥80% era vermelha aqui e verde em Negócios. */}
-              <Bar dataKey="Comprometido" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Provável" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Possível" fill="hsl(var(--warning))" radius={[4, 4, 0, 0]} />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
-            </BarChart>
-          </ResponsiveContainer>
+          {/* Faixa, cor e rótulo saem de FAIXAS_PREVISAO -- a mesma lista dos
+              cartões acima e do selo por negócio abaixo, para que as três
+              leituras da mesma coisa não possam divergir. */}
+          <BarrasAgrupadas
+            linhas={buckets}
+            rotulo={(b) => b.rotulo}
+            formatar={fmt}
+            vazio="Nenhum negócio aberto nos próximos três meses"
+            series={FAIXAS_PREVISAO.map((faixa) => ({
+              nome: faixa.rotulo,
+              cor: faixa.corCss,
+              valor: (b: (typeof buckets)[number]) => b[faixa.chave],
+            }))}
+          />
         </CardContent>
       </Card>
 
@@ -101,7 +95,10 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
               <div className="flex items-center gap-3 text-label">
                 {FAIXAS_PREVISAO.map((faixa) => (
                   <span key={faixa.chave}>
-                    <span className={`mr-1 inline-block h-2 w-2 rounded-full ${faixa.cor.replace("text-", "bg-")}`} />
+                    <span
+                      className="mr-1 inline-block h-2 w-2 rounded-full"
+                      style={{ background: faixa.corCss }}
+                    />
                     {faixa.rotulo}: {fmt(bucket[faixa.chave])}
                   </span>
                 ))}

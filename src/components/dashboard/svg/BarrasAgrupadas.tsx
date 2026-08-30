@@ -19,8 +19,14 @@ export function BarrasAgrupadas<T>({
   linhas: T[];
   /** O nome que identifica a linha — a pessoa, a etapa, o mês. */
   rotulo: (item: T) => string;
-  /** Cada série tem um nome, uma cor e como extrair o valor da linha. */
-  series: { nome: string; cor: string; valor: (item: T) => number }[];
+  /**
+   * Cada série tem um nome, uma cor e como extrair o valor da linha.
+   *
+   * `cor` aceita função para o caso de uma série só onde a cor pertence à
+   * LINHA, não à série -- o waterfall de negócios, onde ganho é verde, perdido
+   * é vermelho e aberto é neutro.
+   */
+  series: { nome: string; cor: string | ((item: T) => string); valor: (item: T) => number }[];
   formatar?: (v: number) => string;
   vazio?: string;
 }) {
@@ -46,17 +52,28 @@ export function BarrasAgrupadas<T>({
           rotulo={rotulo(item)}
           max={max}
           formatar={formatar}
-          valores={series.map((s) => ({ nome: s.nome, valor: s.valor(item), cor: s.cor }))}
+          valores={series.map((s) => ({
+            nome: s.nome,
+            valor: s.valor(item),
+            cor: typeof s.cor === "function" ? s.cor(item) : s.cor,
+          }))}
         />
       ))}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2">
-        {series.map((s) => (
-          <span key={s.nome} className="flex items-center gap-1.5 text-label text-muted-foreground">
-            <span className="h-2 w-2 rounded-full" style={{ background: s.cor }} />
-            {s.nome}
-          </span>
-        ))}
-      </div>
+      {/* Uma série só não precisa de legenda: o rótulo de cada linha já diz o
+          que é, e a legenda repetiria o título do cartão. */}
+      {series.length > 1 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2">
+          {series.map((s) => (
+            <span key={s.nome} className="flex items-center gap-1.5 text-label text-muted-foreground">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ background: typeof s.cor === "function" ? undefined : s.cor }}
+              />
+              {s.nome}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

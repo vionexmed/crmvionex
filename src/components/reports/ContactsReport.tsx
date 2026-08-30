@@ -1,15 +1,15 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, AreaChart, Area,
-} from "recharts";
+import { AreaSeries } from "@/components/dashboard/svg/AreaSeries";
+import { RoscaComLegenda } from "@/components/dashboard/svg/RoscaComLegenda";
+import { BarrasAgrupadas } from "@/components/dashboard/svg/BarrasAgrupadas";
+import { formatarNumero } from "@/lib/formato";
 import { Download } from "lucide-react";
 import { LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
 import {
   Contact, Profile,
-  pct, CHART_COLORS, tooltipStyle, MONTHS_PT,
+  pct, CHART_COLORS, MONTHS_PT,
   downloadCSV,
 } from "@/components/reports/types";
 
@@ -107,38 +107,33 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
             </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={monthlyGrowth}>
-                <defs>
-                  <linearGradient id="contactGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" fill="url(#contactGrad)" strokeWidth={2} name="Cumulativo" />
-                <Bar dataKey="novos" fill="hsl(var(--success))" radius={[3, 3, 0, 0]} name="Novos" />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {/* A série "Novos" NUNCA foi desenhada.
+                Era um `<Bar>` dentro de um `<AreaChart>`, e o recharts descarta
+                filhos que o tipo do gráfico não conhece -- só `ComposedChart`
+                aceita barra e área juntas. A legenda mostrava "Novos" e a linha
+                não existia. Agora as duas séries aparecem. */}
+            <AreaSeries
+              formatar={formatarNumero}
+              rotulos={monthlyGrowth.map((m) => m.month)}
+              series={[
+                { nome: "Cumulativo", cor: CHART_COLORS[0], pontos: monthlyGrowth.map((m) => m.total), preencher: true },
+                { nome: "Novos no mês", cor: CHART_COLORS[1], pontos: monthlyGrowth.map((m) => m.novos) },
+              ]}
+            />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Distribuição por Status</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Distribuição por ciclo de vida</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={byStatus} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                  {byStatus.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <RoscaComLegenda
+              formatar={formatarNumero}
+              fatias={byStatus.map((b, i) => ({
+                nome: b.name,
+                valor: b.value,
+                cor: CHART_COLORS[i % CHART_COLORS.length],
+              }))}
+            />
           </CardContent>
         </Card>
       </div>
@@ -147,15 +142,13 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
         <Card>
           <CardHeader><CardTitle>Contatos por Dono</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={byOwner}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Contatos" />
-              </BarChart>
-            </ResponsiveContainer>
+            <BarrasAgrupadas
+              linhas={byOwner}
+              rotulo={(o) => o.name}
+              formatar={formatarNumero}
+              vazio="Nenhum contato com dono definido"
+              series={[{ nome: "Contatos", cor: CHART_COLORS[0], valor: (o) => o.count }]}
+            />
           </CardContent>
         </Card>
       )}

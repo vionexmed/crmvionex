@@ -26,8 +26,10 @@ export type FaixaPrevisao = {
   rotulo: string;
   /** Probabilidade mínima do negócio para entrar nesta faixa. */
   minimo: number;
-  /** Classe de cor, na ordem do mais confiável para o menos. */
+  /** Classe Tailwind, para texto. */
   cor: string;
+  /** A mesma cor em CSS, para preencher barra e fatia de gráfico. */
+  corCss: string;
   descricao: string;
 };
 
@@ -37,6 +39,7 @@ export const FAIXAS_PREVISAO: FaixaPrevisao[] = [
     rotulo: "Comprometido",
     minimo: 80,
     cor: "text-success",
+    corCss: "hsl(var(--success))",
     descricao: "Negócios com 80% ou mais de probabilidade",
   },
   {
@@ -44,6 +47,7 @@ export const FAIXAS_PREVISAO: FaixaPrevisao[] = [
     rotulo: "Provável",
     minimo: 50,
     cor: "text-primary",
+    corCss: "hsl(var(--primary))",
     descricao: "Negócios com 50% ou mais",
   },
   {
@@ -51,6 +55,7 @@ export const FAIXAS_PREVISAO: FaixaPrevisao[] = [
     rotulo: "Possível",
     minimo: 30,
     cor: "text-warning",
+    corCss: "hsl(var(--warning))",
     descricao: "Negócios com 30% ou mais",
   },
 ];
