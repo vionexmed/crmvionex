@@ -18,12 +18,12 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Trash2, MoreHorizontal, Users, Play, Pause, Mail, Clock,
-} from "lucide-react";
+  Plus, Trash2, MoreHorizontal, Users, Play, Pause, Mail, Clock, Zap} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { Zap as IconeDaPagina } from "lucide-react";
+import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 
 type Sequence = {
   id: string; org_id: string; name: string; description: string | null;
@@ -56,6 +56,11 @@ export default function EmailSequences() {
   const { toast } = useToast();
 
   const [sequences, setSequences] = useState<Sequence[]>([]);
+  // Quatro consultas em paralelo e nenhum erro conferido: cada `|| []`
+  // transformava falha em lista vazia. "Nenhuma sequência criada" aparecia
+  // enquanto carregava e também quando o banco recusava.
+  const [carregando, setCarregando] = useState(true);
+  const [falhou, setFalhou] = useState(false);
   const [steps, setSteps] = useState<Step[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -76,16 +81,26 @@ export default function EmailSequences() {
 
   const fetchAll = useCallback(async () => {
     if (!orgId) return;
+    setCarregando(true);
+    setFalhou(false);
     const [sRes, stRes, eRes, cRes] = await Promise.all([
       supabase.from("email_sequences").select("*").eq("org_id", orgId).order("created_at", { ascending: false }),
       supabase.from("email_sequence_steps").select("*").eq("org_id", orgId).order("step_order"),
       supabase.from("email_sequence_enrollments").select("*").eq("org_id", orgId),
       supabase.from("contacts").select("id,first_name,last_name,email").eq("org_id", orgId),
     ]);
+    const erro = [sRes, stRes, eRes, cRes].find((r) => r.error);
+    if (erro) {
+      console.error("EmailSequences:", erro.error);
+      setFalhou(true);
+      setCarregando(false);
+      return;
+    }
     setSequences((sRes.data as Sequence[]) || []);
     setSteps((stRes.data as Step[]) || []);
     setEnrollments((eRes.data as Enrollment[]) || []);
     setContacts((cRes.data as Contact[]) || []);
+    setCarregando(false);
   }, [orgId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -209,8 +224,21 @@ export default function EmailSequences() {
               </Card>
             );
           })}
-          {sequences.length === 0 && (
-            <div className="py-16 text-center text-sm text-muted-foreground">Nenhuma sequência criada</div>
+          {carregando && <LoadingState linhas={4} />}
+
+          {!carregando && falhou && (
+            <ErrorState
+              descricao="As sequências não puderam ser carregadas. Nenhum dado foi alterado."
+              onTentarNovamente={() => fetchAll()}
+            />
+          )}
+
+          {!carregando && !falhou && sequences.length === 0 && (
+            <EmptyState
+              icone={Zap}
+              titulo="Nenhuma sequência criada"
+              descricao="Uma sequência envia e-mails em etapas, com espera entre elas."
+            />
           )}
         </div>
 

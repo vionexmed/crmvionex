@@ -37,6 +37,7 @@ import { useCompanies } from "@/hooks/queries/useCompanies";
 import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
 import { ATIVIDADE_JA_ACONTECEU } from "@/lib/atividade-tipos";
+import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -111,7 +112,10 @@ export default function Activities() {
   const { orgId } = useOrg();
   const { toast } = useToast();
 
-  const { data: activities = [] } = useActivities();
+  // `isLoading` e `isError` existiam e eram descartados. A tabela mostrava
+  // "Nenhuma atividade encontrada" enquanto a consulta rodava, e o MESMO texto
+  // se ela falhasse -- três situações, uma resposta só.
+  const { data: activities = [], isLoading: carregando, isError: falhou, refetch } = useActivities();
   // `useContacts({pageSize: 1000})` truncava em 1000 EM SILÊNCIO -- passando
   // disso, o contato simplesmente não aparecia no select e não havia como saber
   // por quê. Com leads entrando na lista de contatos, o teto deixou de ser
@@ -530,16 +534,33 @@ export default function Activities() {
                   </TableRow>
                 );
               })}
-              {filtered.length === 0 && (
+              {/* Carregando, falhou e vazio agora são três respostas, e a
+                  ordem é obrigatória: erro ANTES de vazio. Consulta que falhou
+                  devolve lista vazia, e dizer "nenhuma atividade" nesse caso é
+                  afirmar um fato que a tela não conhece. */}
+              {(carregando || falhou || filtered.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-16 text-muted-foreground">
-                    <div className="space-y-2">
-                      <CheckSquare className="h-8 w-8 mx-auto text-muted-foreground/40" />
-                      <p className="text-sm">Nenhuma atividade encontrada</p>
-                      <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
-                        <Plus className="mr-1.5 h-3.5 w-3.5" />Criar atividade
-                      </Button>
-                    </div>
+                  <TableCell colSpan={10} className="p-0">
+                    {carregando ? (
+                      <LoadingState linhas={6} className="p-4" />
+                    ) : falhou ? (
+                      <ErrorState
+                        descricao="As atividades não puderam ser carregadas. Nenhum dado foi alterado."
+                        onTentarNovamente={() => refetch()}
+                        className="m-4"
+                      />
+                    ) : (
+                      <EmptyState
+                        icone={CheckSquare}
+                        titulo="Nenhuma atividade encontrada"
+                        descricao="Registre uma ligação, reunião ou nota para começar o histórico."
+                        acao={
+                          <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+                            <Plus className="mr-1.5 h-3.5 w-3.5" />Criar atividade
+                          </Button>
+                        }
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               )}

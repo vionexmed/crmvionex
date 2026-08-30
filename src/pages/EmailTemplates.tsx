@@ -14,10 +14,11 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Edit2, Trash2, MoreHorizontal, Copy, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, MoreHorizontal, Copy, Search, FileText} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageShell } from "@/components/layout/PageShell";
 import { FileText as IconeDaPagina } from "lucide-react";
+import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 
 type Template = {
   id: string; org_id: string; name: string; subject: string; body_html: string;
@@ -31,14 +32,33 @@ export default function EmailTemplates() {
   const { toast } = useToast();
 
   const [templates, setTemplates] = useState<Template[]>([]);
+  // A tela não tinha estado de carregamento NEM de erro. A grade nascia vazia,
+  // e continuava vazia para sempre se a consulta falhasse -- sem nada em tela
+  // que dissesse a diferença.
+  const [carregando, setCarregando] = useState(true);
+  const [falhou, setFalhou] = useState(false);
   const [search, setSearch] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [editTemplate, setEditTemplate] = useState<Partial<Template> | null>(null);
 
   const fetch = useCallback(async () => {
     if (!orgId) return;
-    const { data } = await supabase.from("email_templates").select("*").eq("org_id", orgId).order("created_at", { ascending: false });
-    setTemplates((data as Template[]) || []);
+    setCarregando(true);
+    setFalhou(false);
+    const { data, error } = await supabase
+      .from("email_templates")
+      .select("*")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    // O erro era descartado por `|| []`, que transforma falha em lista vazia.
+    if (error) {
+      console.error("EmailTemplates:", error);
+      setFalhou(true);
+    } else {
+      setTemplates((data as Template[]) || []);
+    }
+    setCarregando(false);
   }, [orgId]);
 
   useEffect(() => { fetch(); }, [fetch]);
@@ -113,6 +133,34 @@ export default function EmailTemplates() {
             <Badge key={c} variant="secondary" className="text-[10px]">{c}</Badge>
           ))}
         </div>
+      )}
+
+      {carregando && <LoadingState linhas={6} />}
+
+      {!carregando && falhou && (
+        <ErrorState
+          descricao="Os templates não puderam ser carregados. Nenhum dado foi alterado."
+          onTentarNovamente={() => fetch()}
+        />
+      )}
+
+      {!carregando && !falhou && filtered.length === 0 && (
+        <EmptyState
+          icone={FileText}
+          titulo={search ? "Nenhum template encontrado" : "Nenhum template criado"}
+          descricao={
+            search
+              ? "Nenhum template corresponde ao que você buscou."
+              : "Templates poupam reescrever o mesmo e-mail toda vez."
+          }
+          acao={
+            !search && (
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" />Novo template
+              </Button>
+            )
+          }
+        />
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

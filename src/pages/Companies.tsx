@@ -29,6 +29,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCompanies, useDeleteCompany, companiesKeys } from "@/hooks/queries/useCompanies";
 import { useMembers } from "@/hooks/queries/useMembers";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
+import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
+import { SegmentedControl } from "@/components/layout/SegmentedControl";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 
@@ -47,7 +49,11 @@ export default function Companies() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const { data: companies = [] } = useCompanies();
+  // `isLoading` e `isError` existiam e eram DESCARTADOS: a página
+  // desestruturava só `data`. Enquanto a consulta rodava, a tabela mostrava
+  // "Nenhuma empresa encontrada" -- e mostrava o mesmo se a consulta falhasse.
+  // Três situações, uma resposta só, e a errada nas duas primeiras.
+  const { data: companies = [], isLoading: carregando, isError: falhou, refetch } = useCompanies();
   const { data: members = [] } = useMembers();
   const deleteCompany = useDeleteCompany();
 
@@ -170,14 +176,15 @@ export default function Companies() {
       description={`${filtered.length} empresas no diretório`}
       actions={
         <>
-          <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
-            <button onClick={() => setViewMode("table")} aria-label="Visualização tabela" className={`flex items-center gap-1 rounded-md px-2 sm:px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">Tabela</span>
-            </button>
-            <button onClick={() => setViewMode("cards")} aria-label="Visualização cartões" className={`flex items-center gap-1 rounded-md px-2 sm:px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "cards" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">Cartões</span>
-            </button>
-          </div>
+          <SegmentedControl<ViewMode>
+            rotuloGrupo="Visualização"
+            valor={viewMode}
+            onChange={setViewMode}
+            opcoes={[
+              { valor: "table", rotulo: "Tabela", icone: List },
+              { valor: "cards", rotulo: "Cartões", icone: LayoutGrid },
+            ]}
+          />
           <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} aria-label="Alternar filtros">
             <Filter className="mr-1 h-3.5 w-3.5" /><span className="hidden sm:inline">Filtros</span>
           </Button>
@@ -253,7 +260,35 @@ export default function Companies() {
         </div>
       )}
 
-      {viewMode === "table" && (
+      {carregando && <LoadingState linhas={8} />}
+
+      {!carregando && falhou && (
+        <ErrorState
+          descricao="A lista de empresas não pôde ser carregada. Nenhum dado foi alterado."
+          onTentarNovamente={() => refetch()}
+        />
+      )}
+
+      {!carregando && !falhou && filtered.length === 0 && (
+        <EmptyState
+          icone={Building2Icon}
+          titulo={search ? "Nenhuma empresa encontrada" : "Nenhuma empresa cadastrada"}
+          descricao={
+            search
+              ? "Nenhuma empresa corresponde ao que você buscou."
+              : "Cadastre a primeira empresa ou importe uma planilha."
+          }
+          acao={
+            !search && (
+              <Button size="sm" onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" />Nova empresa
+              </Button>
+            )
+          }
+        />
+      )}
+
+      {!carregando && !falhou && filtered.length > 0 && viewMode === "table" && (
         <div className="vx-table">
           <div className="overflow-x-auto">
           <Table>
@@ -302,16 +337,13 @@ export default function Companies() {
                   </TableCell>
                 </TableRow>
               ))}
-              {paginated.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">Nenhuma empresa encontrada</TableCell></TableRow>
-              )}
             </TableBody>
           </Table>
           </div>
         </div>
       )}
 
-      {viewMode === "cards" && (
+      {!carregando && !falhou && filtered.length > 0 && viewMode === "cards" && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {paginated.map((c) => (
             <Card key={c.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrawerCompany(c)}>

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { PageShell } from "@/components/layout/PageShell";
-import { CheckSquare as CheckSquareIcon } from "lucide-react";
+import { CheckSquare as CheckSquareIcon, CheckSquare} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import { useContactsPicker } from "@/hooks/queries/useContacts";
 import { useDeals } from "@/hooks/queries/useDeals";
 import { useOrg } from "@/hooks/useOrg";
 import type { Database } from "@/integrations/supabase/types";
+import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -71,7 +72,10 @@ export default function Tasks() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { data: allActivities = [] } = useActivities("task");
+  // Os três estados que a tela não distinguia: "Nenhuma tarefa pendente 🎉"
+  // aparecia enquanto carregava e também quando a consulta falhava -- um
+  // parabéns por um trabalho que ninguém sabe se foi feito.
+  const { data: allActivities = [], isLoading: carregando, isError: falhou, refetch } = useActivities("task");
   const { data: membersData = [] } = useMembers();
   // Lista leve p/ o select de contatos — sem o teto de 1000 linhas e inclui leads
   const { data: contactsPicker = [] } = useContactsPicker();
@@ -393,10 +397,28 @@ export default function Tasks() {
                   </TableRow>
                 );
               })}
-              {filtered.length === 0 && (
+              {(carregando || falhou || filtered.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
-                    {dateFilter === "done" ? "Nenhuma tarefa concluída" : "Nenhuma tarefa pendente 🎉"}
+                  <TableCell colSpan={7} className="p-0">
+                    {carregando ? (
+                      <LoadingState linhas={5} className="p-4" />
+                    ) : falhou ? (
+                      <ErrorState
+                        descricao="As tarefas não puderam ser carregadas. Nenhum dado foi alterado."
+                        onTentarNovamente={() => refetch()}
+                        className="m-4"
+                      />
+                    ) : (
+                      <EmptyState
+                        icone={CheckSquare}
+                        titulo={dateFilter === "done" ? "Nenhuma tarefa concluída" : "Nenhuma tarefa pendente"}
+                        descricao={
+                          dateFilter === "done"
+                            ? "Tarefas concluídas aparecem aqui."
+                            : "Nada em aberto neste período."
+                        }
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               )}
