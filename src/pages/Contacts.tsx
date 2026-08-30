@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SegmentedControl } from "@/components/layout/SegmentedControl";
+import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
+import { formatarData } from "@/lib/formato";
 import { Users as UsersIcon } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,7 +163,13 @@ export default function Contacts() {
     sortDir,
     ...filters,
   };
-  const { data: result, isFetching } = useContacts(queryParams);
+  const {
+    data: result,
+    isFetching,
+    isLoading,
+    isError,
+    refetch,
+  } = useContacts(queryParams);
   const contacts = result?.data ?? [];
   const totalCount = result?.count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -339,22 +348,23 @@ export default function Contacts() {
         kicker="Diretório"
         title="Contatos"
         description={`${totalCount} contatos cadastrados`}
-        pattern="dots"
         actions={
           <>
-            <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
-              {[
-                { mode: "table" as const, icon: List, label: "Tabela" },
-                { mode: "cards" as const, icon: LayoutGrid, label: "Cartões" },
+            {/* Quatro telas tinham a própria cópia deste seletor, já divergentes
+                em raio e espaçamento, e nenhuma anunciava seleção. */}
+            <SegmentedControl<ViewMode>
+              rotuloGrupo="Visualização"
+              valor={viewMode}
+              onChange={setViewMode}
+              opcoes={[
+                { valor: "table" as const, rotulo: "Tabela", icone: List },
+                { valor: "cards" as const, rotulo: "Cartões", icone: LayoutGrid },
                 // Distribuição por vendedor é ação de gestor
-                ...(isAdmin ? [{ mode: "owner" as const, icon: Users, label: "Vendedor" }] : []),
-              ].map(({ mode, icon: Icon, label }) => (
-                <button key={mode} onClick={() => setViewMode(mode)} aria-label={`Visualização ${label}`}
-                  className={`flex items-center gap-1 rounded-md px-2 sm:px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                  <Icon className="h-3.5 w-3.5" /><span className="hidden sm:inline">{label}</span>
-                </button>
-              ))}
-            </div>
+                ...(isAdmin
+                  ? [{ valor: "owner" as const, rotulo: "Vendedor", icone: Users }]
+                  : []),
+              ]}
+            />
             <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
               <Filter className="mr-1 h-3.5 w-3.5" /><span className="hidden sm:inline">Filtros</span>
             </Button>
@@ -551,12 +561,33 @@ export default function Contacts() {
                     <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs hidden lg:table-cell">
-                    {c.created_at ? new Date(c.created_at).toLocaleDateString("pt-BR") : "—"}
+                    {formatarData(c.created_at)}
                   </TableCell>
                 </TableRow>
               ))}
               {contacts.length === 0 && (
-                <TableRow><TableCell colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum contato encontrado</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={9} className="p-0">
+                    {/* Carregando, falhou e vazio pediam a MESMA frase antes.
+                        Falha de consulta virava "nenhum contato encontrado" --
+                        afirmação que a tela não tinha como sustentar. */}
+                    {isLoading ? (
+                      <LoadingState linhas={5} className="p-3" />
+                    ) : isError ? (
+                      <ErrorState onTentarNovamente={() => refetch()} className="m-3" />
+                    ) : (
+                      <EmptyState
+                        icone={UsersIcon}
+                        titulo="Nenhum contato encontrado"
+                        descricao={
+                          debouncedSearch || Object.values(filters).some(Boolean)
+                            ? "Nenhum resultado para a busca e os filtros atuais."
+                            : "Cadastre o primeiro contato ou importe uma planilha."
+                        }
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
@@ -589,7 +620,23 @@ export default function Contacts() {
             </Card>
           ))}
           {contacts.length === 0 && (
-            <div className="col-span-full py-10 text-center text-muted-foreground">Nenhum contato encontrado</div>
+            <div className="col-span-full">
+              {isLoading ? (
+                <LoadingState linhas={4} />
+              ) : isError ? (
+                <ErrorState onTentarNovamente={() => refetch()} />
+              ) : (
+                <EmptyState
+                  icone={UsersIcon}
+                  titulo="Nenhum contato encontrado"
+                  descricao={
+                    debouncedSearch || Object.values(filters).some(Boolean)
+                      ? "Nenhum resultado para a busca e os filtros atuais."
+                      : "Cadastre o primeiro contato ou importe uma planilha."
+                  }
+                />
+              )}
+            </div>
           )}
         </div>
       )}

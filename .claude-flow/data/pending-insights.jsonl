@@ -587,3 +587,7 @@
 {"type":"edit","file":"/Users/lucas/Desktop/Vionex/Projetos/crmvionex-main/supabase/migrations/20260827140000_metricas_coerentes.sql","success":true,"timestamp":1787881343308,"sessionId":null}
 {"type":"edit","file":"/Users/lucas/Desktop/Vionex/Projetos/crmvionex-main/src/test/dashboard/metricas-coerentes.test.ts","success":true,"timestamp":1787881518556,"sessionId":null}
 {"type":"edit","file":"/Users/lucas/Desktop/Vionex/Projetos/crmvionex-main/src/test/tema.test.ts","success":true,"timestamp":1788045169074,"sessionId":null}
+{"type":"edit","file":"/Users/lucas/Desktop/Vionex/Projetos/crmvionex-main/src/components/layout/SegmentedControl.tsx","success":true,"timestamp":1788047727578,"sessionId":null}
+{"type":"edit","file":"/Users/lucas/Desktop/Vionex/Projetos/crmvionex-main/src/components/layout/EstadoDaLista.tsx","success":true,"timestamp":1788047752073,"sessionId":null}
+{"type":"edit","file":"/Users/lucas/Desktop/Vionex/Projetos/crmvionex-main/src/lib/formato.ts","success":true,"timestamp":1788047807830,"sessionId":null}
+{"type":"edit","file":"/Users/lucas/Desktop/Vionex/Projetos/crmvionex-main/src/test/lib/formato.test.ts","success":true,"timestamp":1788047833414,"sessionId":null}
