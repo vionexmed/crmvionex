@@ -101,7 +101,7 @@ export function MinhaAssinatura({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader>
         <CardTitle>Minha assinatura</CardTitle>
         <CardDescription>
           Vai no rodapé dos e-mails que você enviar pelo CRM. Deixe em branco para usar a

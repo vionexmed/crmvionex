@@ -364,7 +364,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             tabela email_connections carregava duas dimensões sobrepostas
             (purpose e scope_type). Ficou só o modelo por pessoa. */}
         <Card className="md:col-span-2">
-          <CardHeader className="pb-3">
+          <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                 <Mail className="h-4 w-4 text-primary" />
@@ -539,7 +539,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           const Icon = intg.icon;
           return (
             <Card key={intg.provider}>
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">

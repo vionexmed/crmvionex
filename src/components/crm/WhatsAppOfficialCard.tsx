@@ -133,7 +133,7 @@ export function WhatsAppOfficialCard() {
   return (
     <>
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10">

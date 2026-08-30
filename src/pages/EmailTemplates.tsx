@@ -167,7 +167,7 @@ export default function EmailTemplates() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((t) => (
           <Card key={t.id} className="group hover:border-primary/30 transition-colors">
-            <CardContent className="p-4">
+            <CardContent>
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{t.name}</p>

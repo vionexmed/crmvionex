@@ -9,7 +9,18 @@ Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+    <div
+      ref={ref}
+      // `p-6` (24px) era o default e NINGUÉM o queria: 42 dos 86 cabeçalhos
+      // sobrescreviam, e nenhum sobrescrevia PARA p-6. A base tipográfica aqui
+      // é 13px, não os 16px que o Tailwind assume, então 24px de respiro é
+      // proporcionalmente exagerado.
+      //
+      // `pb-2` porque é o que 27 dos 42 já escreviam: o subtítulo fica colado
+      // no título, e o vão maior vem do conteúdo abaixo.
+      className={cn("flex flex-col space-y-1.5 p-4 pb-2", className)}
+      {...props}
+    />
   ),
 );
 CardHeader.displayName = "CardHeader";
@@ -44,13 +55,27 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
 CardDescription.displayName = "CardDescription";
 
 const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />,
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      // Dois valores de respiro, e os dois são deliberados:
+      //
+      //   p-4  cartão normal — este default
+      //   p-3  cartão em espaço ESTREITO: grade de métricas com três a cinco
+      //        colunas, gaveta, painel lateral. São 15 lugares, todos em
+      //        contêiner apertado, e apertar ali é o certo.
+      //
+      // O que não existe mais é o terceiro valor por acidente.
+      className={cn("p-4 pt-0", className)}
+      {...props}
+    />
+  ),
 );
 CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
+    <div ref={ref} className={cn("flex items-center p-4 pt-0", className)} {...props} />
   ),
 );
 CardFooter.displayName = "CardFooter";

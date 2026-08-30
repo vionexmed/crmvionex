@@ -205,7 +205,7 @@ export function DashboardAIChat({ crmData }: DashboardAIChatProps) {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-2 border-b">
+      <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
             <Briefcase className="h-4 w-4 text-primary" />

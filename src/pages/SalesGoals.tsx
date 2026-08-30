@@ -307,7 +307,7 @@ export default function SalesGoals() {
 
       {/* Goals Table */}
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader>
           <CardTitle>Metas do Período</CardTitle>
         </CardHeader>
         <CardContent>

@@ -344,7 +344,7 @@ export default function Companies() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {paginated.map((c) => (
             <Card key={c.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrawerCompany(c)}>
-              <CardContent className="p-4 space-y-2">
+              <CardContent className="space-y-2">
                 <div className="flex items-center gap-3">
                   {c.domain ? (
                     <img src={`https://logo.clearbit.com/${c.domain}`} alt="" className="h-10 w-10 rounded-md bg-muted object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />

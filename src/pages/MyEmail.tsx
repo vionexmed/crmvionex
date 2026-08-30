@@ -244,7 +244,7 @@ export default function MyEmail() {
         <Skeleton className="h-[168px] rounded-lg" />
       ) : conexao ? (
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <CardTitle>{conexao.email_address}</CardTitle>

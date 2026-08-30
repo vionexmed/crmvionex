@@ -414,7 +414,7 @@ export default function DealDetail() {
         <div className="col-span-2 space-y-4">
           {/* Add activity form */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader>
               <CardTitle className="font-medium">Adicionar Atividade</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -474,7 +474,7 @@ export default function DealDetail() {
           />
           {/* Contact */}
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader>
               <CardTitle className="flex items-center gap-2 font-medium text-muted-foreground">
                 <User className="h-4 w-4" />Contato
               </CardTitle>
@@ -505,7 +505,7 @@ export default function DealDetail() {
 
           {/* Company */}
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader>
               <CardTitle className="flex items-center gap-2 font-medium text-muted-foreground">
                 <Building2 className="h-4 w-4" />Empresa
               </CardTitle>
@@ -522,7 +522,7 @@ export default function DealDetail() {
 
           {/* Owner */}
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader>
               <CardTitle className="flex items-center gap-2 font-medium text-muted-foreground">
                 <User className="h-4 w-4" />Responsável
               </CardTitle>
@@ -544,7 +544,7 @@ export default function DealDetail() {
 
           {/* Details */}
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader>
               <CardTitle className="font-medium text-muted-foreground">Detalhes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">

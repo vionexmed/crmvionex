@@ -167,7 +167,7 @@ export function StatCard({
       onClick={clickable ? () => (onCardClick ? onCardClick() : navigate(href!)) : undefined}
     >
       <div className={cn("h-[3px] w-full", noSource ? "bg-muted" : theme.bar)} />
-      <CardContent className="p-4">
+      <CardContent>
         <div className="mb-3 flex items-start justify-between gap-2">
           <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground">
             {label}

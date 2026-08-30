@@ -41,7 +41,7 @@ export function GraficoEvolucao({ dados }: { dados: PontoSerie[] }) {
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <CardTitle>Evolução no período</CardTitle>
         <CardDescription>
           Leads que entraram, abordagens que saíram e respostas que voltaram
@@ -72,7 +72,7 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <CardTitle>Funil de conversão</CardTitle>
         <CardDescription>
           Quantos chegaram a cada etapa, e a perda entre elas
@@ -137,7 +137,7 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle>Leads por canal</CardTitle>
@@ -194,7 +194,7 @@ export function GraficoPessoas({ dados }: { dados: LinhaPessoa[] }) {
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle>Desempenho por pessoa</CardTitle>

@@ -66,7 +66,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
       <div className="grid gap-4 md:grid-cols-3">
         {plans.map((plan) => (
           <Card key={plan.name} className={plan.current ? "border-primary" : ""}>
-            <CardHeader className="pb-3">
+            <CardHeader>
               <div className="flex items-center gap-2">
                 {plan.name === "Enterprise" && <Crown className="h-4 w-4 text-warning" />}
                 <CardTitle>{plan.name}</CardTitle>

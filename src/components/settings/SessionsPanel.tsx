@@ -171,7 +171,7 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
 
         return (
           <Card key={userId}>
-            <CardHeader className="pb-3">
+            <CardHeader>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <Avatar className="h-8 w-8 shrink-0">

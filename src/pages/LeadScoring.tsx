@@ -365,7 +365,7 @@ export default function LeadScoring() {
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Rules config */}
           <Card className="lg:col-span-1">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Regras de Pontuação</CardTitle>
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={openNewRule}>
                 <Plus className="mr-1 h-3 w-3" />Nova Regra
@@ -464,7 +464,7 @@ export default function LeadScoring() {
               const f = seg.filters as any;
               return (
                 <Card key={seg.id} className="group hover:border-primary/30 transition-colors">
-                  <CardContent className="p-4">
+                  <CardContent>
                     <div className="flex items-start justify-between">
                       <div className="min-w-0">
                         <p className="text-sm font-medium">{seg.name}</p>

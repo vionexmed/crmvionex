@@ -73,7 +73,7 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
 
       {/* Comparison chart */}
       <Card>
-        <CardHeader className="pb-2"><CardTitle>Previsão de Receita — Próximos 3 Meses</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Previsão de Receita — Próximos 3 Meses</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData}>
@@ -95,7 +95,7 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
       {/* Monthly deal breakdown */}
       {buckets.map((bucket) => (
         <Card key={bucket.chave}>
-          <CardHeader className="pb-2">
+          <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="capitalize">{bucket.rotulo}</CardTitle>
               <div className="flex items-center gap-3 text-label">

@@ -190,7 +190,7 @@ export default function EmailSequences() {
                 className={`cursor-pointer transition-colors hover:border-primary/30 ${isSelected ? "border-primary" : ""}`}
                 onClick={() => setSelectedSeq(seq)}
               >
-                <CardContent className="p-4">
+                <CardContent>
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">

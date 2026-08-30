@@ -554,7 +554,7 @@ export default function Automations() {
             const triggerInfo = TRIGGER_LABELS[auto.trigger.type] || { label: auto.trigger.type, icon: "⚙️" };
             return (
               <Card key={auto.id} className={`group transition-colors ${auto.is_active ? "border-primary/20" : "opacity-60"}`}>
-                <CardContent className="p-4">
+                <CardContent>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg ${auto.is_active ? "bg-primary/10" : "bg-muted"}`}>
@@ -625,7 +625,7 @@ export default function Automations() {
         <div className="grid gap-3 sm:grid-cols-2">
           {TEMPLATES.map((tmpl, i) => (
             <Card key={i} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => useTemplate(tmpl)}>
-              <CardContent className="p-4">
+              <CardContent>
                 <div className="flex items-start gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-lg">
                     {TRIGGER_LABELS[tmpl.trigger.type]?.icon}
@@ -746,7 +746,9 @@ export default function Automations() {
                 </div>
                 {formConditions.map((cond, i) => (
                   <Card key={i} className="border-warning/20">
-                    <CardContent className="p-2">
+                    {/* Mesma natureza da linha de ação logo abaixo, que usava p-2.5 --
+                        dois valores para a mesma coisa, dez linhas de distância. */}
+                    <CardContent className="p-3">
                       <div className="flex items-center gap-2">
                         {i > 0 && (
                           <Select value={cond.logic || "AND"} onValueChange={(v) => updateCondition(i, { logic: v as "AND" | "OR" })}>
@@ -797,7 +799,7 @@ export default function Automations() {
                   const info = ACTION_LABELS[action.type] || { label: action.type, icon: "⚙️" };
                   return (
                     <Card key={i} className="border-success/20">
-                      <CardContent className="p-2.5">
+                      <CardContent className="p-3">
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs">{info.icon}</span>

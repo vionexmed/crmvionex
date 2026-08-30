@@ -131,3 +131,68 @@ describe("nenhuma classe .vx-* morta", () => {
     expect(CSS.split("{").length).toBe(CSS.split("}").length);
   });
 });
+
+/**
+ * O respiro interno dos cartões.
+ *
+ * O primitivo nascia com `p-6` (24px) e **ninguém o queria**: 68 dos 116
+ * `CardContent` e 42 dos 86 `CardHeader` sobrescreviam, e **nenhum sobrescrevia
+ * PARA p-6**. Metade dos cartões ficava em 24px e metade em 12–16px, então dois
+ * cartões lado a lado respiravam diferente.
+ *
+ * A base tipográfica aqui é 13px, não os 16px que o Tailwind assume — 24px de
+ * respiro é proporcionalmente exagerado.
+ */
+describe("os cartões respiram igual", () => {
+  const CARD = readFileSync("src/components/ui/card.tsx", "utf8");
+
+  it("o default é p-4, não p-6", () => {
+    expect(CARD).not.toMatch(/cn\("[^"]*\bp-6\b/);
+    expect(CARD).toMatch(/CardContent[\s\S]*?cn\("p-4 pt-0"/);
+  });
+
+  /**
+   * `pb-2` porque é o que 27 dos 42 cabeçalhos já escreviam: o subtítulo fica
+   * colado no título, e o vão maior vem do conteúdo abaixo.
+   */
+  it("o cabeçalho fecha com pb-2", () => {
+    expect(CARD).toMatch(/CardHeader[\s\S]*?cn\("flex flex-col space-y-1\.5 p-4 pb-2"/);
+  });
+
+  /**
+   * Se o default está certo, ninguém repete `p-4`. E `pb-2`/`pb-3`/`pb-4` no
+   * cabeçalho eram diferenças de 4px — ruído, não decisão.
+   */
+  it("nenhum cartão repete o padding do default", () => {
+    const infratores: string[] = [];
+    for (const arquivo of TSX) {
+      const src = readFileSync(arquivo, "utf8");
+      for (const m of src.matchAll(/<Card(Content|Header) className="([^"]*)"/g)) {
+        const classes = m[2].split(" ");
+        if (classes.includes("p-4")) infratores.push(`${arquivo}  <Card${m[1]} ${m[2]}`);
+        if (m[1] === "Header" && classes.some((c) => /^pb-[234]$/.test(c))) {
+          infratores.push(`${arquivo}  <CardHeader ${m[2]}`);
+        }
+      }
+    }
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+
+  /**
+   * `p-3` fica, e é deliberado: são 13 lugares, TODOS em contêiner apertado —
+   * grade de métricas com três a cinco colunas, gaveta, painel lateral. O que
+   * não existe mais é um terceiro valor por acidente.
+   */
+  it("só há dois valores de respiro", () => {
+    const valores = new Set<string>();
+    for (const arquivo of TSX) {
+      const src = readFileSync(arquivo, "utf8");
+      for (const m of src.matchAll(/<CardContent className="([^"]*)"/g)) {
+        for (const c of m[1].split(" ")) if (/^p-\d$/.test(c)) valores.add(c);
+      }
+    }
+    // `p-0` é estrutural: o conteúdo desenha a própria borda (tabela dentro do
+    // cartão, por exemplo).
+    expect([...valores].sort()).toEqual(["p-0", "p-3"]);
+  });
+});

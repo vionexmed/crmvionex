@@ -108,7 +108,7 @@ export default function Login() {
 
         <Card className="border-border">
           <Tabs defaultValue="login">
-            <CardHeader className="pb-4">
+            <CardHeader>
               <PageTabs
                 abas={[
                   { valor: "login", rotulo: "Entrar", icone: LogIn },
