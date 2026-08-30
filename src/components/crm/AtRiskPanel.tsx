@@ -59,9 +59,43 @@ export function AtRiskPanel({ open, onOpenChange }: AtRiskPanelProps) {
     setLoading(true);
     try {
       const [dealsRes, contactsRes, activitiesRes, stagesRes, rulesRes] = await Promise.all([
-        supabase.from("deals").select("*").eq("org_id", orgId).eq("status", "open"),
-        supabase.from("contacts").select("*").eq("org_id", orgId),
-        supabase.from("activities").select("*").eq("org_id", orgId).order("created_at", { ascending: false }),
+        // Ordenados pelo MAIS PARADO primeiro, e com teto declarado.
+        //
+        // Sem `.limit()` o PostgREST corta em 1000 em silêncio, numa ordem que
+        // ele escolhe -- então o painel já era truncado, só que de forma
+        // invisível e imprevisível. Ordenar por `updated_at` ascendente é o
+        // critério do próprio painel: quem está parado há mais tempo é
+        // exatamente quem tem risco, então o corte agora descarta o que nunca
+        // apareceria na lista.
+        supabase
+          .from("deals")
+          .select("id,title,value,currency,stage_id,close_date,created_at")
+          .eq("org_id", orgId)
+          .eq("status", "open")
+          .order("updated_at", { ascending: true, nullsFirst: true })
+          .limit(2000),
+        supabase
+          .from("contacts")
+          .select("id,first_name,last_name,email,created_at")
+          .eq("org_id", orgId)
+          .order("updated_at", { ascending: true, nullsFirst: true })
+          .limit(2000),
+        // Limite e recorte de colunas.
+        //
+        // Baixava a tabela `activities` INTEIRA, sem teto, toda vez que o painel
+        // abria. E o painel usa só três campos: para saber a última atividade
+        // por negócio/contato e o vencimento em aberto.
+        //
+        // 2000 mais recentes cobre a janela que as regras de risco olham (as
+        // padrão são de 7 a 21 dias). Atividade mais antiga que isso não muda
+        // nenhuma decisão de risco -- e ordenar por created_at desc garante que
+        // o que entra no corte é o que importa.
+        supabase
+          .from("activities")
+          .select("id,deal_id,contact_id,created_at,due_date,completed_at")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false })
+          .limit(2000),
         supabase.from("pipeline_stages").select("*").eq("org_id", orgId),
         supabase.from("risk_rules").select("*").eq("org_id", orgId).eq("is_active", true),
       ]);

@@ -112,7 +112,22 @@ export default function LeadScoring() {
   const fetchAll = useCallback(async () => {
     if (!orgId) return;
     const [cRes, rRes, sRes, hRes, mRes] = await Promise.all([
-      supabase.from("contacts").select("id,first_name,last_name,email,status,lead_score,org_id,created_at,owner_id").eq("org_id", orgId).order("lead_score", { ascending: false }),
+      // O corte no SERVIDOR, não no cliente.
+      //
+      // Baixava todos os contatos da organização e depois cortava com
+      // `.slice(0, 100)` na renderização -- ou seja, trafegava a base inteira
+      // para exibir cem linhas. Com 5 mil contatos, são 5 mil registros na rede
+      // e na memória para mostrar 2% deles.
+      //
+      // 200 dá folga sobre os dois cortes de exibição (50 e 100) sem trazer a
+      // base. A ordenação por pontuação já está aqui, então os 200 são os que
+      // importam.
+      supabase
+        .from("contacts")
+        .select("id,first_name,last_name,email,status,lead_score,org_id,created_at,owner_id")
+        .eq("org_id", orgId)
+        .order("lead_score", { ascending: false })
+        .limit(200),
       supabase.from("lead_scoring_rules").select("*").eq("org_id", orgId).order("points", { ascending: false }),
       supabase.from("segments").select("*").eq("org_id", orgId).order("created_at", { ascending: false }),
       supabase.from("lead_score_history").select("*").eq("org_id", orgId).order("created_at", { ascending: false }).limit(200),

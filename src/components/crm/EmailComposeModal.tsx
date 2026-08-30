@@ -71,9 +71,28 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
     setTo(defaultTo || ""); setSubject(""); setBody(""); setCc(""); setBcc("");
     setContactId(defaultContactId || "none"); setDealId(defaultDealId || "none");
     Promise.all([
-      supabase.from("contacts").select("id,first_name,last_name,email,org_id").eq("org_id", orgId),
-      supabase.from("deals").select("id,title,org_id,contact_id").eq("org_id", orgId),
-      supabase.from("email_templates").select("*").eq("org_id", orgId),
+      // Tetos, porque isto roda ao ABRIR o modal.
+      //
+      // Baixava contatos, negócios e modelos da organização inteira para
+      // preencher três seletores -- e o custo aparecia como demora entre clicar
+      // em "Escrever" e a janela responder.
+      //
+      // Os seletores têm busca, então o que importa é ter um conjunto útil na
+      // abertura, não a base completa. 500 cobre com folga o que cabe num
+      // seletor sem rolar para sempre.
+      supabase
+        .from("contacts")
+        .select("id,first_name,last_name,email,org_id")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("deals")
+        .select("id,title,org_id,contact_id")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase.from("email_templates").select("*").eq("org_id", orgId).limit(200),
       supabase.from("emails").select("from_email,to_emails,cc_emails,bcc_emails").eq("org_id", orgId).order("created_at", { ascending: false }).limit(500),
     ]).then(([c, d, t, e]) => {
       const contactsList = (c.data as Contact[]) || [];

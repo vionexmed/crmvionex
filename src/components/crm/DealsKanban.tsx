@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trophy, XCircle, ChevronDown, ChevronRight } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_COR, aconteceuEm } from "@/lib/atividade-tipos";
+import { formatarTempoRelativo } from "@/lib/formato";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -76,9 +75,25 @@ function DealCard({
   // propósito. "Abordagem" no painel exige call/email/meeting, porque anotar algo
   // não é falar com ninguém. "Interação" é a última coisa que aconteceu neste
   // registro, e uma nota é. Por isso esta linha não se chama abordagem.
-  const ultimaInteracao = atividades
+  const concluidas = atividades
     .filter((a) => a.completed_at)
-    .sort((a, b) => aconteceuEm(b) - aconteceuEm(a))[0] ?? null;
+    .sort((a, b) => aconteceuEm(b) - aconteceuEm(a));
+
+  /**
+   * TODAS as notas, não só a última -- e o card cresce conforme.
+   *
+   * Mostrava só a interação mais recente, então o segundo registro do mesmo
+   * negócio ficava invisível: você anotava e o card não mudava, o que faz
+   * parecer que o registro não funcionou.
+   *
+   * Nota tem tratamento próprio porque é o que a pessoa ESCREVEU -- ligação e
+   * reunião costumam ter título genérico ("Ligação"), e empilhar cinco linhas
+   * dizendo "Ligação" não informaria nada.
+   */
+  const notas = concluidas.filter((a) => a.type === "note");
+
+  /** A última interação que NÃO é nota, para o card não repetir o que já listou. */
+  const ultimaInteracao = concluidas.find((a) => a.type !== "note") ?? null;
 
   // Próxima ação: pendente COM prazo. Sem prazo não há o que cobrar, e a
   // atividade viraria uma linha permanente sem informação de urgência.
@@ -156,6 +171,33 @@ function DealCard({
         </p>
       )}
 
+      {/* Todas as notas, da mais recente para a mais antiga.
+          Sem teto: o pedido foi explicitamente que o card cresça com elas. O
+          limite prático é a coluna rolar, o que já acontece. */}
+      {notas.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {notas.map((n) => (
+            <div
+              key={n.id}
+              className="flex items-start gap-1.5 rounded-md bg-muted/60 px-2 py-1.5"
+            >
+              <FileText className="mt-px h-3 w-3 shrink-0 text-muted-foreground" />
+              <p className="flex-1 text-meta leading-tight text-muted-foreground">
+                {textoDe(n) ?? ATIVIDADE_ROTULO.note}
+              </p>
+              {n.completed_at && (
+                <span
+                  title={new Date(n.completed_at).toLocaleString("pt-BR")}
+                  className="shrink-0 text-label text-muted-foreground"
+                >
+                  {formatarTempoRelativo(n.completed_at)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Última interação: o que aconteceu, e quando.
           `line-clamp-2` em vez de truncate -- cortar em 40 caracteres devolveria
           "Cliente pediu para retornar na..." e a informação útil ficaria fora. */}
@@ -169,18 +211,15 @@ function DealCard({
               />
             );
           })()}
-          <p className="line-clamp-2 flex-1 text-[11px] leading-tight text-muted-foreground">
+          <p className="line-clamp-2 flex-1 text-meta leading-tight text-muted-foreground">
             {textoDe(ultimaInteracao) ?? ATIVIDADE_ROTULO[ultimaInteracao.type]}
           </p>
           {ultimaInteracao.completed_at && (
             <span
               title={new Date(ultimaInteracao.completed_at).toLocaleString("pt-BR")}
-              className="shrink-0 text-[10px] text-muted-foreground"
+              className="shrink-0 text-label text-muted-foreground"
             >
-              {formatDistanceToNow(new Date(ultimaInteracao.completed_at), {
-                locale: ptBR,
-                addSuffix: true,
-              })}
+              {formatarTempoRelativo(ultimaInteracao.completed_at)}
             </span>
           )}
         </div>
@@ -274,7 +313,7 @@ function StageColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-[220px] sm:w-[240px] shrink-0 flex-col transition-colors ${
+      className={`flex w-[264px] sm:w-[288px] shrink-0 flex-col transition-colors ${
         isOver ? "bg-primary/5" : ""
       }`}
     >
@@ -503,7 +542,7 @@ export function DealsKanban({
 
         <DragOverlay>
           {activeDeal && (
-            <div className="w-[220px] opacity-90">
+            <div className="w-[264px] sm:w-[288px] opacity-90">
               <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
                 <p className="text-[13px] font-medium">{activeDeal.title}</p>
                 <p className="text-xs font-semibold text-foreground mt-0.5">

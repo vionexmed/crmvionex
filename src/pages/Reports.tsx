@@ -19,6 +19,7 @@ import { ActivitiesReport } from "@/components/reports/ActivitiesReport";
 import { ForecastReport } from "@/components/reports/ForecastReport";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { CustomReportBuilder } from "@/components/reports/CustomReportBuilder";
+import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
 
 export default function Reports() {
   const { orgId } = useOrg();
@@ -30,7 +31,11 @@ export default function Reports() {
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [, setLoading] = useState(true);
+  // `const [, setLoading]` -- o estado era escrito e DESCARTADO. A página
+  // mostrava tabelas e gráficos vazios enquanto buscava, indistinguível de "não
+  // há dados", e continuava vazia para sempre se alguma consulta falhasse.
+  const [carregando, setCarregando] = useState(true);
+  const [falhou, setFalhou] = useState(false);
 
   // Global filters
   const [period, setPeriod] = useState<PeriodFilter>("this_month");
@@ -39,16 +44,36 @@ export default function Reports() {
 
   const fetchAll = useCallback(async () => {
     if (!orgId) return;
-    setLoading(true);
+    setCarregando(true);
+    setFalhou(false);
     const [dRes, sRes, pRes, mRes, aRes, cRes, coRes] = await Promise.all([
       supabase.from("deals").select("*").eq("org_id", orgId),
       supabase.from("pipeline_stages").select("*").eq("org_id", orgId).order("order"),
       supabase.from("pipelines").select("id,name,is_default").eq("org_id", orgId),
       supabase.from("profiles").select("id,name,email").eq("org_id", orgId),
       supabase.from("activities").select("*").eq("org_id", orgId).order("created_at", { ascending: false }).limit(1000),
-      supabase.from("contacts").select("id,first_name,last_name,status,lead_score,created_at,owner_id").eq("org_id", orgId),
-      supabase.from("companies").select("id,name").eq("org_id", orgId),
+      supabase
+        .from("contacts")
+        .select("id,first_name,last_name,status,lead_score,created_at,owner_id")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(5000),
+      supabase.from("companies").select("id,name").eq("org_id", orgId).limit(2000),
     ]);
+
+    // Sete consultas, nenhum erro conferido.
+    //
+    // Cada resultado virava `|| []` e o erro sumia. Falha de rede ou de RLS
+    // produzia um relatório com zeros, e zero é uma AFIRMAÇÃO -- alguém lê
+    // "nenhuma venda no período" e toma decisão com base nisso.
+    const erro = [dRes, sRes, pRes, mRes, aRes, cRes, coRes].find((r) => r.error);
+    if (erro) {
+      console.error("Reports:", erro.error);
+      setFalhou(true);
+      setCarregando(false);
+      return;
+    }
+
     setDeals((dRes.data as Deal[]) || []);
     setStages((sRes.data as Stage[]) || []);
     setPipelines((pRes.data as Pipeline[]) || []);
@@ -56,7 +81,7 @@ export default function Reports() {
     setActivities((aRes.data as ActivityRow[]) || []);
     setContacts((cRes.data as Contact[]) || []);
     setCompanies((coRes.data as Company[]) || []);
-    setLoading(false);
+    setCarregando(false);
   }, [orgId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -128,6 +153,18 @@ export default function Reports() {
         }
       />
 
+      {/* Carregando e falhou passam a ter tela própria.
+          Zero num relatório é uma AFIRMAÇÃO, e quem lê "nenhuma venda no
+          período" toma decisão com base nisso. */}
+      {carregando ? (
+        <LoadingState linhas={6} />
+      ) : falhou ? (
+        <ErrorState
+          titulo="Não foi possível carregar os relatórios"
+          descricao="Uma das consultas falhou. Os números abaixo estariam incompletos, então não são exibidos."
+          onTentarNovamente={() => fetchAll()}
+        />
+      ) : (
       <Tabs defaultValue="sales" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="sales" className="text-xs gap-1"><BarChart3 className="h-3.5 w-3.5" />Vendas</TabsTrigger>
@@ -157,6 +194,7 @@ export default function Reports() {
           <CustomReportBuilder deals={deals} contacts={contacts} activities={activities} stages={stages} members={members} orgId={orgId} />
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }

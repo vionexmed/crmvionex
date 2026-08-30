@@ -211,3 +211,44 @@ describe("o mapa de tipos de atividade tem um dono só", () => {
     expect(src).not.toMatch(/call: Phone, email: Mail/);
   });
 });
+
+describe("o card mostra TODAS as notas", () => {
+  /**
+   * Mostrava só a interação mais recente, então o segundo registro do mesmo
+   * negócio ficava invisível: você anotava e o card não mudava, o que faz
+   * parecer que o registro não funcionou.
+   */
+  it("lista as notas, não só a última", () => {
+    expect(kanban).toMatch(/const notas = concluidas\.filter\(\(a\) => a\.type === "note"\)/);
+    expect(kanban).toContain("{notas.map((n) => (");
+  });
+
+  it("não impõe teto", () => {
+    // O pedido foi explicitamente que o card cresça com elas. O limite prático
+    // é a coluna rolar, o que já acontece.
+    const bloco = kanban.slice(kanban.indexOf("const notas ="), kanban.indexOf("const ultimaInteracao"));
+    expect(bloco).not.toMatch(/\.slice\(0,\s*\d/);
+  });
+
+  /**
+   * Ligação e reunião costumam ter título genérico ("Ligação"). Empilhar cinco
+   * linhas dizendo "Ligação" não informaria nada -- por isso só nota vira lista,
+   * e a última interação não-nota aparece separada.
+   */
+  it("a última interação não repete o que a lista já mostrou", () => {
+    expect(kanban).toMatch(/concluidas\.find\(\(a\) => a\.type !== "note"\)/);
+  });
+
+  it("usa o formatador nativo, não o date-fns", () => {
+    // "há menos de um minuto" tem 21 caracteres e foi o que quebrou o layout.
+    expect(kanban).toContain("formatarTempoRelativo(");
+    expect(kanban).not.toContain("formatDistanceToNow");
+  });
+
+  it("a largura do clone acompanha a da coluna", () => {
+    // Já esteve dessincronizado: o clone tinha w-[220px] fixo enquanto a coluna
+    // ia a sm:w-[240px].
+    expect((kanban.match(/w-\[264px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((kanban.match(/w-\[288px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+});

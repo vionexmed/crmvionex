@@ -45,7 +45,14 @@ export const activitiesApi = {
       .eq("org_id", orgId)
       .order("due_date", { ascending: true, nullsFirst: false });
     if (type) query = query.eq("type", type); // filtra no servidor (Tarefas não precisa baixar tudo)
-    const { data, error } = await query;
+    // Teto explícito.
+    //
+    // Sem ele o PostgREST corta em 1000 EM SILÊNCIO -- a atividade some da tela
+    // e não há como saber por quê. Já mordeu duas vezes neste projeto (a lista
+    // de contatos e o seletor de Atividades). Declarar 1000 não muda o
+    // resultado; muda o fato de o corte ser uma DECISÃO em vez de um efeito
+    // colateral, e deixa o lugar certo para paginar quando a base pedir.
+    const { data, error } = await query.limit(1000);
     if (error) throw error;
     return data ?? [];
   },
