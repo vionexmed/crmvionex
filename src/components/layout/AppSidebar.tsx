@@ -100,7 +100,7 @@ export function AppSidebar() {
             <SidebarGroup key={group.label} className={collapsed ? "mt-2 py-0" : ""}>
               <SidebarGroupContent>
                 {!collapsed && (
-                  <p className="mb-1 mt-3 px-2 text-label font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/60">
+                  <p className="mb-1 mt-3 px-2 text-label font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
                     {group.label}
                   </p>
                 )}
@@ -111,7 +111,7 @@ export function AppSidebar() {
                         <NavLink
                           to={item.url}
                           end={item.url === "/dashboard"}
-                          className="vx-nav-item flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sidebar-foreground text-sm"
+                          className="vx-nav-item flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sidebar-foreground/85 text-sm"
                           activeClassName="vx-nav-active"
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
@@ -124,7 +124,7 @@ export function AppSidebar() {
                               sobre uma fila de trabalho perfeitamente normal.
                               Agora é só o número. */}
                           {item.url === "/leads" && leadCount > 0 && !collapsed && (
-                            <span className="text-label font-semibold tabular-nums text-sidebar-foreground/70">
+                            <span className="text-label font-semibold tabular-nums text-sidebar-foreground/60">
                               {leadCount > 99 ? "99+" : leadCount}
                             </span>
                           )}
@@ -141,7 +141,7 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         tooltip="Em Risco"
                         onClick={() => setAtRiskOpen(true)}
-                        className="vx-nav-item flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground"
+                        className="vx-nav-item flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground/85"
                       >
                         <ICONE_RISCO className="h-4 w-4 shrink-0 text-warning/80" />
                         {!collapsed && <span>Em Risco</span>}
@@ -169,7 +169,7 @@ export function AppSidebar() {
                   <span className="truncate text-corpo font-semibold text-sidebar-foreground">
                     {profile?.name || "Usuário"}
                   </span>
-                  <span className="truncate text-meta text-sidebar-foreground/70">
+                  <span className="truncate text-meta text-sidebar-foreground/55">
                     {profile?.email}
                   </span>
                 </div>
@@ -180,7 +180,7 @@ export function AppSidebar() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      className="shrink-0 rounded-md p-1.5 text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       aria-label="Conta e configurações"
                     >
                       <MoreHorizontal className="h-4 w-4" />

@@ -280,20 +280,19 @@ export default function Dashboard() {
           {/* Uma faixa, não quatro cartões.
               A moldura é uma só e a divisória entre os números é uma linha:
               os quatro passam a ser uma leitura em vez de quatro objetos. */}
-          {/* A divisória é o FUNDO aparecendo pelo vão de 1px entre as células.
-              `divide-x` só divide numa direção, e com 2 colunas no celular e 4
-              no computador a conta de quais células levam borda muda a cada
-              quebra -- vira uma pilha de `nth-child` que erra em algum tamanho.
-              Aqui a grade não sabe quantas colunas tem, e funciona igual. */}
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
+          {/* Cartões separados, não uma faixa.
+              Cheguei a juntá-los numa moldura só com divisória de 1px, e ali os
+              quatro números liam como linha de tabela. No painel de comando cada
+              métrica é um objeto que se levanta do fundo -- é a elevação que os
+              separa, então não precisam nem de moldura comum nem de divisória. */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {tilesDestaque.map((tile) =>
               isLoading ? (
-                <Skeleton key={tile.key} className="h-[132px]" />
+                <Skeleton key={tile.key} className="h-[132px] rounded-lg" />
               ) : (
                 <StatCard
                   key={tile.key}
                   emphasis
-                  emFaixa
                   label={tile.label}
                   value={metrics?.[tile.key]?.value ?? null}
                   previous={metrics?.[tile.key]?.previous ?? null}
@@ -344,10 +343,11 @@ export default function Dashboard() {
         <TabsContent value="indicadores" className="mt-4 space-y-6">
           {GROUPS.map((group) => (
             <Secao key={group.title} titulo={group.title} descricao={group.description}>
-              {/* Mesma faixa da aba anterior. Dezesseis métricas em cartões
-                  soltos eram dezesseis caixas -- e como estão em grupos de
-                  três a cinco, a moldura por grupo é o que faz o grupo se ler
-                  como grupo. */}
+              {/* Aqui a faixa FICA. São dezesseis métricas em grupos de três a
+                  cinco: como cartões soltos seriam dezesseis objetos flutuando,
+                  e a elevação deixaria de significar "isto importa" para
+                  significar "isto é um cartão". A moldura por grupo é o que faz
+                  o grupo se ler como grupo. */}
               <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-3 xl:grid-cols-5">
                 {group.tiles.map((tile) =>
                   isLoading ? (

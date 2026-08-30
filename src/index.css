@@ -6,14 +6,13 @@
   :root {
     /* === VIONEX OFFICIAL PALETTE === */
     /* Surfaces */
-    /* Quase branco -- era `220 14% 97%` (#F7F8FA), um cinza que puxava tudo
-       para trás. O ganho é a página deixar de parecer papel cinza.
+    /* Cinza claro, e é ele que faz o cartão branco LEVANTAR.
        
-       Não é branco PURO de propósito: `--card` é branco, e igualar os dois
-       criaria a mesma armadilha que `--muted` tinha. Um pontinho de diferença
-       basta para o cartão ler como levantado, e é o que permite o truque de
-       separar coluna de kanban da página. */
-    --background: 220 20% 99%;
+       Cheguei a clarear para quase branco, na direção "editorial", e ali o
+       cartão só existia pela borda. No estilo escolhido -- painel de comando --
+       o cartão é um plano acima do fundo, e um plano precisa de algo de onde se
+       levantar. */
+    --background: 220 14% 97%;
     --foreground: 213 41% 10%;         /* #0F1923 text-1 */
     --card: 0 0% 100%;
     --card-foreground: 213 41% 10%;
@@ -24,11 +23,12 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 97%;
     --secondary-foreground: 213 41% 10%;
-    /* `--muted` era IDÊNTICO a `--background` (ambos 220 14% 97%). O truque
-       padrão de kanban -- coluna cinza, cartão branco -- era invisível no tema
-       claro, e o CLAUDE.md documenta isso como armadilha. Agora são tons
-       distintos de verdade. */
-    --muted: 220 14% 96%;
+    /* Um degrau ABAIXO do fundo, não igual a ele.
+       
+       Os dois eram `220 14% 97%` -- idênticos -- e o truque padrão de kanban,
+       coluna cinza sobre página, era invisível. Está no CLAUDE.md como
+       armadilha. Ao voltar o fundo para 97%, o muted teve de descer junto. */
+    --muted: 220 13% 93%;
     --muted-foreground: 218 11% 65%;   /* #9AA3B0 text-3 */
     --accent: 188 38% 94%;             /* #EAF5F7 teal-bg */
     --accent-foreground: 187 100% 27%;
@@ -44,18 +44,21 @@
        competindo -- dois arredondamentos diferentes na mesma tela. */
     --radius: 0.625rem;
     /* Sidebar — Vionex navy */
-    /* A lateral deixa de ser um bloco navy e passa a ser o mesmo plano do
-       conteúdo, separada só pela linha. É a mudança que mais se vê, e a razão
-       dela: com a navegação escura, o peso visual da tela ia para o menu em vez
-       de ir para o trabalho. */
-    --sidebar-background: 220 14% 98%;
-    /* Cinza de 60% sobre fundo claro é ilegível -- era pensado para o navy. */
-    --sidebar-foreground: 215 16% 40%;
-    --sidebar-primary: 187 100% 27%;   /* o mesmo teal do conteúdo, não o claro */
+    /* O navy da marca, #0A1E3D.
+       
+       Cheguei a clareá-la inteira. A lateral escura contra conteúdo claro é o
+       formato de "painel de comando": ela ancora a tela pela esquerda e a luz
+       fica onde o trabalho está. Foi a escolha, e é a identidade do Vionex. */
+    --sidebar-background: 217 72% 14%;
+    /* Era `0 0% 60%`: cinza PURO sobre um fundo azulado, o que faz o texto
+       parecer sujo. Mesmo tom de claridade, com o azul do fundo dentro dele. */
+    --sidebar-foreground: 213 20% 72%;
+    /* O teal CLARO (#00A4B5). O escuro do conteúdo some contra o navy. */
+    --sidebar-primary: 187 97% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 94%;
-    --sidebar-accent-foreground: 213 41% 10%;
-    --sidebar-border: 220 13% 93%;
+    --sidebar-accent: 217 45% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 217 38% 24%;
     --sidebar-ring: 187 100% 35%;
     /* Semantic */
     --success: 152 82% 22%;            /* #0A6640 */
@@ -95,16 +98,15 @@
     --border: 217 30% 18%;
     --input: 217 30% 18%;
     --ring: 187 100% 35%;
-    /* No escuro a lateral continua escura -- o que muda é ela deixar de ser um
-       bloco DIFERENTE do conteúdo. Antes era 72% de saturação contra 50% do
-       fundo: um navy destacado. Agora é o mesmo plano, separado pela linha. */
-    --sidebar-background: 217 50% 9%;
-    --sidebar-foreground: 215 16% 65%;
+    /* No escuro a lateral é mais ESCURA que o conteúdo, não mais clara: mantém
+       o mesmo papel de âncora que tem no tema claro. */
+    --sidebar-background: 217 55% 5%;
+    --sidebar-foreground: 213 20% 68%;
     --sidebar-primary: 187 100% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 40% 15%;
+    --sidebar-accent: 217 45% 16%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 30% 18%;
+    --sidebar-border: 217 35% 20%;
     --sidebar-ring: 187 100% 35%;
     --success: 152 60% 35%;
     --success-foreground: 0 0% 98%;
@@ -291,7 +293,9 @@
    * O item ativo agora é uma pastilha: fundo na cor de destaque, texto na cor
    * de destaque, sem traço. É o padrão do estilo escolhido. */
   .vx-nav-active {
-    background: hsl(var(--sidebar-primary) / 10%) !important;
+    /* 18% e não 10%: contra o navy, dez por cento de teal quase não aparece --
+       o valor tinha sido calibrado para a lateral clara. */
+    background: hsl(var(--sidebar-primary) / 18%) !important;
     color: hsl(var(--sidebar-primary)) !important;
     font-weight: 600;
   }
@@ -386,21 +390,20 @@
  * que o item ativo da navegação tinha: a cor de destaque é trocável em tempo de
  * execução, e escolher roxo deixava a barra de rolagem teal. */
 [data-sidebar="sidebar"], [data-sidebar="sidebar"] * {
-  /* Era 45% -- calibrado para o navy, onde a barra precisava se destacar de um
-     fundo muito escuro. Sobre fundo claro, a mesma opacidade vira um traço
-     colorido gritando ao lado do menu. */
-  scrollbar-color: hsl(var(--sidebar-foreground) / 25%) transparent;
+  /* Deriva de `--sidebar-foreground`, que já é claro sobre o navy. Antes era um
+     teal a 45% cravado -- gritava, e ignorava a troca de cor de destaque. */
+  scrollbar-color: hsl(var(--sidebar-foreground) / 30%) transparent;
 }
 [data-sidebar="sidebar"] ::-webkit-scrollbar,
 [data-sidebar="sidebar"]::-webkit-scrollbar { width: 5px; height: 5px; }
 [data-sidebar="sidebar"] ::-webkit-scrollbar-thumb,
 [data-sidebar="sidebar"]::-webkit-scrollbar-thumb {
-  background: hsl(var(--sidebar-foreground) / 22%);
+  background: hsl(var(--sidebar-foreground) / 28%);
   border-radius: 999px;
 }
 [data-sidebar="sidebar"] ::-webkit-scrollbar-thumb:hover,
 [data-sidebar="sidebar"]::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--sidebar-foreground) / 40%);
+  background: hsl(var(--sidebar-foreground) / 48%);
 }
 [data-sidebar="sidebar"] ::-webkit-scrollbar-track,
 [data-sidebar="sidebar"]::-webkit-scrollbar-track { background: transparent; }
@@ -498,6 +501,29 @@
     scroll-snap-type: x mandatory;
   }
   .overflow-x-auto > * { scroll-snap-align: start; }
+}
+
+/* Um plano acima do fundo.
+ *
+ * Duas camadas de sombra: a curta e mais opaca ancora o cartão na superfície, a
+ * longa e difusa dá a altura. Só a longa faz o objeto parecer flutuar sem
+ * apoio; só a curta não levanta nada.
+ *
+ * A cor vem do navy da marca, não de preto puro: sombra preta sobre um fundo
+ * levemente azulado fica cinza-morta. */
+.vx-elevado {
+  box-shadow:
+    0 1px 2px hsl(217 72% 14% / 0.06),
+    0 4px 12px hsl(217 72% 14% / 0.05);
+}
+
+.dark .vx-elevado {
+  /* No escuro a sombra quase não existe -- não há luz para bloquear. A
+   * separação vem de uma linha de realce no topo, que é como uma superfície
+   * elevada se lê num ambiente escuro. */
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.06),
+    0 2px 8px hsl(0 0% 0% / 0.3);
 }
 
 /* ── Hierarquia de texto ──────────────────────────────────────────────────

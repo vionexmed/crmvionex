@@ -46,12 +46,34 @@ describe("o cartão não tem dois sinais para a mesma coisa", () => {
   const CARD = semComentarios(readFileSync("src/components/ui/card.tsx", "utf8"));
 
   /**
-   * Sombra somada à borda dá dois sinais de "isto é um plano separado", e o
-   * resultado é uma tela onde tudo parece flutuar um pouco. A sombra fica para
-   * o que de fato paira: menu suspenso, diálogo, dica.
+   * Sombra OU borda, não as duas.
+   *
+   * O primitivo do shadcn vinha com `border` E `shadow-sm`: dois sinais para a
+   * mesma coisa. Cheguei a tirar a sombra e ficar só com a linha; a escolha foi
+   * o contrário -- o cartão se levanta do fundo cinza, e aí a borda vira
+   * redundante.
    */
-  it("sem sombra por padrão", () => {
-    expect(CARD).not.toMatch(/cn\("[^"]*shadow-/);
+  it("elevação em vez de borda", () => {
+    expect(CARD).toContain("vx-elevado");
+    expect(CARD).not.toMatch(/cn\("[^"]*\bborder\b/);
+  });
+
+  /**
+   * Duas camadas: a curta e opaca ancora o cartão na superfície, a longa e
+   * difusa dá a altura. Só a longa faz o objeto flutuar sem apoio.
+   */
+  it("a elevação tem duas camadas", () => {
+    const i = CSS.indexOf(".vx-elevado {");
+    const bloco = CSS.slice(i, CSS.indexOf("}", i));
+    expect((bloco.match(/hsl\(/g) ?? []).length).toBe(2);
+  });
+
+  /**
+   * No escuro não há luz para bloquear -- sombra preta sobre fundo preto não
+   * existe. A separação vem de uma linha de realce no topo.
+   */
+  it("no tema escuro a elevação é realce, não sombra", () => {
+    expect(CSS).toMatch(/\.dark \.vx-elevado \{[\s\S]*?0 0 0 1px/);
   });
 
   /**

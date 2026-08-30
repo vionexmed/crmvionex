@@ -5,17 +5,20 @@ import { cn } from "@/lib/utils";
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    // `shadow-sm` saiu, e `rounded-lg` virou `rounded-[--radius]`.
+    // Sombra em vez de borda -- não as duas.
     //
-    // A sombra somada à borda dá DOIS sinais para a mesma coisa -- "isto é um
-    // plano separado" -- e o resultado é uma tela onde tudo parece flutuar um
-    // pouco. No estilo escolhido a separação é uma linha fina e o respiro em
-    // volta; a sombra fica para o que de fato paira sobre o conteúdo: menu
-    // suspenso, diálogo, dica.
+    // O primitivo do shadcn vinha com `border` E `shadow-sm`: dois sinais para
+    // a mesma coisa, "isto é um plano separado". Cheguei a tirar a sombra e
+    // ficar só com a linha; no estilo escolhido é o contrário -- o cartão se
+    // levanta do fundo cinza, e a borda vira redundante.
     //
-    // O raio vem do token porque havia `rounded-md` (115 usos) e `rounded-lg`
-    // (92) competindo -- dois arredondamentos na mesma tela.
-    className={cn("rounded-lg border bg-card text-card-foreground", className)}
+    // A sombra é em duas camadas: uma curta e opaca que ancora o cartão na
+    // superfície, e uma longa e difusa que dá a altura. Uma sombra só, sem a
+    // curta, faz o cartão parecer flutuar sem apoio.
+    //
+    // O raio vem da escala derivada do token, porque havia `rounded-md` (115
+    // usos) e `rounded-lg` (92) competindo na mesma tela.
+    className={cn("vx-elevado rounded-lg bg-card text-card-foreground", className)}
     {...props}
   />
 ));

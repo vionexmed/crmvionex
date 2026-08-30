@@ -19,20 +19,31 @@ const TILE = semComentarios(readFileSync("src/components/dashboard/StatCard.tsx"
 const PAINEL = semComentarios(readFileSync("src/pages/Dashboard.tsx", "utf8"));
 const GRAFICOS = semComentarios(readFileSync("src/components/dashboard/SdrCharts.tsx", "utf8"));
 
-describe("o número é o elemento, não o cartão", () => {
+describe("o tile de métrica tem presença sem competir", () => {
+  /**
+   * A versão original tinha barra colorida de 3px no topo, bolha circular no
+   * ícone e sombra -- três coisas dizendo "sou importante", e o número
+   * competindo com as três.
+   *
+   * Cheguei a tirar tudo, inclusive a elevação, e ficou chapado demais: sem
+   * barra e sem sombra o cartão deixava de ser um objeto e virava um retângulo
+   * desenhado. O meio-termo mantém a elevação e o ícone, e larga a barra.
+   */
   it("sem barra colorida no topo", () => {
-    // Era `<div className="h-[3px] w-full" />` com a cor do acento.
     expect(TILE).not.toMatch(/h-\[3px\]/);
   });
 
-  it("sem bolha circular no ícone", () => {
-    // A bolha dava ao ícone o peso de um botão, e ele não é clicável nem
-    // nomeia nada que o rótulo já não nomeie.
-    expect(TILE).not.toMatch(/rounded-full[\s\S]{0,80}Icon/);
+  it("o cartão se levanta do fundo", () => {
+    expect(TILE).toContain("vx-elevado");
   });
 
-  it("sem sombra", () => {
-    expect(TILE).not.toMatch(/shadow-/);
+  /**
+   * A bolha circular dava ao ícone o contorno de um botão -- e ele não é
+   * clicável. Quadrado com raio o assenta sem fingir que se pode tocar.
+   */
+  it("o ícone tem fundo quadrado, não bolha", () => {
+    expect(TILE).toMatch(/h-6 w-6 items-center justify-center rounded-md/);
+    expect(TILE).not.toMatch(/rounded-full[\s\S]{0,60}<Icon/);
   });
 
   /**
@@ -45,30 +56,55 @@ describe("o número é o elemento, não o cartão", () => {
   });
 });
 
-describe("as métricas são uma faixa, não cartões soltos", () => {
+describe("cartão solto no destaque, faixa no detalhe", () => {
   /**
-   * `divide-x` divide numa direção só, e com 2 colunas no celular e 4 no
-   * computador a conta de quais células levam borda muda a cada quebra --
-   * vira uma pilha de `nth-child` que erra em algum tamanho.
+   * Duas decisões OPOSTAS, e as duas deliberadas.
    *
-   * `gap-px` sobre fundo da cor da borda funciona sem a grade saber quantas
-   * colunas tem.
+   * Nos quatro do destaque, cada métrica é um objeto que se levanta do fundo --
+   * a elevação separa, e não precisa de moldura comum. Cheguei a juntá-los numa
+   * faixa com divisória de 1px e ali os quatro liam como linha de tabela.
+   *
+   * Nos DEZESSEIS de Indicadores é o contrário: cartões soltos seriam dezesseis
+   * objetos flutuando, e a elevação deixaria de significar "isto importa" para
+   * significar "isto é um cartão". Ali a moldura por grupo é o que faz o grupo
+   * se ler como grupo.
    */
-  it("a divisória é o fundo aparecendo pelo vão", () => {
-    const faixas = PAINEL.match(/gap-px[^"]*bg-border/g) ?? [];
-    expect(faixas.length, "as duas abas usam a faixa").toBeGreaterThanOrEqual(2);
+  it("o destaque usa cartões separados", () => {
+    const i = PAINEL.indexOf('value="visao"');
+    const bloco = PAINEL.slice(i, i + 700);
+    expect(bloco).toMatch(/grid grid-cols-2 gap-3[^"]*lg:grid-cols-4/);
+    expect(bloco).not.toContain("gap-px");
   });
 
-  it("nenhuma faixa depende de nth-child", () => {
+  it("os indicadores usam a faixa", () => {
+    const i = PAINEL.indexOf('value="indicadores"');
+    expect(PAINEL.slice(i, i + 900)).toMatch(/gap-px[^"]*bg-border/);
+  });
+
+  it("a faixa não depende de nth-child", () => {
+    // `divide-x` divide numa direção só, e com colunas responsivas a conta de
+    // quais células levam borda muda a cada quebra.
     expect(PAINEL).not.toMatch(/nth-child/);
   });
+});
 
-  it("o tile dentro da faixa não desenha moldura própria", () => {
-    expect(TILE).toContain("emFaixa");
-    // Precisa de fundo próprio: é ele que tapa a grade e deixa só o vão à mostra.
-    expect(TILE).toMatch(/emFaixa \? "[^"]*bg-background/);
+describe("o funil é um tom em intensidades", () => {
+  /**
+   * `CHART_COLORS[i]` dava uma cor da paleta por etapa -- e na ordem,
+   * "Clientes", que é o OBJETIVO do funil, caía no vermelho: a cor de erro.
+   *
+   * Um funil é uma coisa avançando, não quatro coisas distintas.
+   */
+  it("a cor vem do token de destaque, não da paleta por índice", () => {
+    const src = semComentarios(
+      readFileSync("src/components/dashboard/SdrCharts.tsx", "utf8"),
+    );
+    const i = src.indexOf("backgroundColor:");
+    expect(src.slice(i, i + 120)).toContain("var(--primary)");
+    expect(src.slice(i, i + 120)).not.toContain("CHART_COLORS");
   });
 });
+
 
 describe("os gráficos usam o cartão padrão", () => {
   /**

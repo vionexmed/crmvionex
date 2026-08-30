@@ -118,7 +118,12 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
                       className="h-full rounded-sm transition-all"
                       style={{
                         width: `${largura}%`,
-                        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                        // Degradê da marca, do escuro ao claro, em vez de uma
+                        // cor da paleta por etapa. `CHART_COLORS[i]` fazia
+                        // "Clientes" -- o objetivo do funil -- cair no VERMELHO,
+                        // que é a cor de erro. Um funil é UMA coisa avançando,
+                        // então é um tom em intensidades, não um arco-íris.
+                        backgroundColor: `hsl(var(--primary) / ${1 - i * 0.18})`,
                       }}
                     />
                   </div>

@@ -25,11 +25,11 @@ export type StatAccent = "primary" | "success" | "warning" | "destructive";
 // `bar` e `bubble` saíram junto com a barra colorida do topo e a bolha do
 // ícone. Sobrou a cor do ícone, que é a única que ainda diz algo: distingue
 // métrica de volume (primary) de métrica de qualidade (success/warning).
-const ACCENT: Record<StatAccent, { icon: string }> = {
-  primary: { icon: "text-primary" },
-  success: { icon: "text-success" },
-  warning: { icon: "text-warning" },
-  destructive: { icon: "text-destructive" },
+const ACCENT: Record<StatAccent, { icon: string; fundo: string }> = {
+  primary: { icon: "text-primary", fundo: "bg-primary/10" },
+  success: { icon: "text-success", fundo: "bg-success/10" },
+  warning: { icon: "text-warning", fundo: "bg-warning/10" },
+  destructive: { icon: "text-destructive", fundo: "bg-destructive/10" },
 };
 
 export interface StatCardProps {
@@ -169,23 +169,22 @@ export function StatCard({
   const positive = delta !== null && (lowerIsBetter ? delta < 0 : delta > 0);
 
   return (
-    // O NÚMERO é o elemento, não o cartão.
+    // Cartão levantado, com o número mandando dentro dele.
     //
-    // Antes: barra colorida de 3px no topo, bolha de ícone circular, sombra,
-    // e o valor competindo com tudo isso. Quatro tiles lado a lado viravam
-    // quatro objetos decorados, e para ler os quatro números era preciso
-    // atravessar a decoração de cada um.
+    // A versão original tinha barra colorida de 3px no topo, bolha circular no
+    // ícone e sombra -- e o valor competia com os três. Cheguei a tirar tudo,
+    // inclusive a sombra, e ficou chapado demais: sem barra e sem elevação, o
+    // cartão deixava de ser um objeto e virava um retângulo desenhado.
     //
-    // Agora o cartão é uma superfície plana com uma linha, e a hierarquia é
-    // tipográfica: rótulo pequeno acima, número grande, variação pequena
-    // abaixo. O ícone some -- ele nomeava a métrica que o rótulo já nomeia.
+    // O meio-termo: o cartão volta a se levantar do fundo e o ícone volta a
+    // aparecer, mas a barra colorida não -- ela era a terceira coisa dizendo
+    // "sou importante", depois da sombra e do número.
     <div
       className={cn(
-        "group relative p-4 transition-colors",
-        // Fundo próprio: é ele que tapa a grade e deixa só o vão de 1px à
-        // mostra, formando a divisória.
-        emFaixa ? "min-w-0 bg-background" : "rounded-lg border border-border",
-        clickable && "cursor-pointer hover:bg-muted/60",
+        "group relative rounded-lg bg-card p-4 transition-shadow",
+        // Na faixa a elevação é do contêiner, não de cada célula.
+        emFaixa ? "min-w-0" : "vx-elevado",
+        clickable && "cursor-pointer hover:shadow-[0_2px_4px_hsl(217_72%_14%/0.08),0_8px_20px_hsl(217_72%_14%/0.08)]",
         noSource && "opacity-60",
       )}
       onClick={clickable ? () => (onCardClick ? onCardClick() : navigate(href!)) : undefined}
@@ -213,10 +212,17 @@ export function StatCard({
                 </TooltipContent>
               </Tooltip>
             )}
-            {/* Sem bolha. O ícone vira uma marca discreta ao lado do rótulo --
-                a bolha circular colorida dava a ele o peso de um botão, e ele
-                não é clicável nem nomeia nada que o rótulo já não nomeie. */}
-            <Icon className={cn("h-3.5 w-3.5", noSource ? "text-muted-foreground/50" : theme.icon)} />
+            {/* Quadrado com raio, não bolha. A bolha circular dava ao ícone o
+                contorno de um botão -- e ele não é clicável. O fundo tênue o
+                assenta sem fingir que se pode tocar. */}
+            <span
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-md",
+                noSource ? "bg-muted" : theme.fundo,
+              )}
+            >
+              <Icon className={cn("h-3.5 w-3.5", noSource ? "text-muted-foreground/50" : theme.icon)} />
+            </span>
           </div>
         </div>
 

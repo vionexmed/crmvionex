@@ -140,73 +140,86 @@ describe("título usa o token de texto", () => {
 });
 
 /**
- * A lateral clara.
+ * A lateral navy — a âncora da tela.
  *
- * Era navy `#0A1E3D` contra conteúdo claro -- o padrão de CRM de 2010–2020. O
- * peso visual da tela ia para o MENU em vez de ir para o trabalho.
+ * Cheguei a clareá-la inteira, na direção "editorial", e a escolha foi voltar:
+ * no formato de painel de comando a lateral escura ancora a tela pela esquerda
+ * e a luz fica onde o trabalho está. É também a identidade do Vionex.
  *
- * Agora a lateral é o mesmo plano do conteúdo, separada só pela linha. No tema
- * escuro ela continua escura: o que muda é deixar de ser um bloco diferente.
+ * O que NÃO voltou foi o descuido: as opacidades, a pastilha ativa e a barra de
+ * rolagem continuam derivando de token, e a cor de destaque segue trocável.
  */
-describe("a lateral é o mesmo plano do conteúdo", () => {
+describe("a lateral ancora a tela", () => {
   const bloco = (seletor: string) => {
     const i = CSS.indexOf(seletor);
     return CSS.slice(i, CSS.indexOf("}", i));
   };
-  const valor = (escopo: string, token: string) => {
-    const b = bloco(escopo);
-    return b.match(new RegExp(`${token}:\\s*([^;]+);`))?.[1]?.trim();
-  };
+  const valor = (escopo: string, token: string) =>
+    bloco(escopo).match(new RegExp(`${token}:\\s*([^;]+);`))?.[1]?.trim();
 
-  it("no tema claro, a lateral é clara", () => {
-    const fundo = valor(":root {", "--sidebar-background");
-    expect(fundo, "ainda é o navy").not.toMatch(/^217 72%/);
-    // Luminosidade alta é o que faz ser "clara". O navy era 14%.
-    const lum = Number(fundo?.match(/(\d+)%\s*$/)?.[1] ?? 0);
-    expect(lum).toBeGreaterThan(90);
+  it("é o navy da marca no tema claro", () => {
+    expect(valor(":root {", "--sidebar-background")).toBe("217 72% 14%");
   });
 
   /**
-   * `0 0% 60%` era cinza puro calibrado para o navy. Sobre fundo claro fica
-   * ilegível -- é a primeira coisa que quebra ao inverter a lateral.
+   * Era `0 0% 60%`: cinza PURO sobre um fundo azulado, o que faz o texto
+   * parecer sujo. Mesma claridade, com o azul do fundo dentro dele.
    */
-  it("o texto da lateral é escuro no tema claro", () => {
-    const lum = Number(valor(":root {", "--sidebar-foreground")?.match(/(\d+)%\s*$/)?.[1] ?? 100);
-    expect(lum).toBeLessThan(50);
-  });
-
-  it("no tema escuro a lateral acompanha o fundo, não se destaca dele", () => {
-    const fundo = valor(".dark {", "--sidebar-background");
-    const conteudo = valor(".dark {", "--background");
-    const sat = (v?: string) => Number(v?.match(/\d+ (\d+)%/)?.[1] ?? 0);
-    // Era 72% de saturação contra 50% do conteúdo: um navy destacado.
-    expect(sat(fundo)).toBe(sat(conteudo));
+  it("o texto da lateral não é cinza puro", () => {
+    const v = valor(":root {", "--sidebar-foreground");
+    expect(v).not.toMatch(/^0 0%/);
+    const [matiz, sat] = v!.split(" ");
+    expect(Number(matiz)).toBeGreaterThan(180);
+    expect(Number(sat.replace("%", ""))).toBeGreaterThan(0);
   });
 
   /**
-   * `--muted` era IDÊNTICO a `--background` (ambos `220 14% 97%`), então o
-   * truque padrão de kanban -- coluna cinza, cartão branco -- era invisível.
-   * Está documentado no CLAUDE.md como armadilha.
+   * O teal ESCURO do conteúdo some contra o navy. A lateral usa o claro
+   * (#00A4B5), e é por isso que `--sidebar-primary` existe separado de
+   * `--primary`.
    */
-  it("muted deixou de ser idêntico ao fundo", () => {
+  it("a cor de destaque da lateral é a clara", () => {
+    expect(valor(":root {", "--sidebar-primary")).toBe("187 97% 36%");
+  });
+
+  it("no escuro a lateral é mais escura que o conteúdo, não mais clara", () => {
+    const lum = (v?: string) => Number(v?.match(/(\d+)%\s*$/)?.[1] ?? 0);
+    expect(lum(valor(".dark {", "--sidebar-background")))
+      .toBeLessThan(lum(valor(".dark {", "--background")));
+  });
+
+  /**
+   * `--muted` era IDÊNTICO a `--background` (ambos `220 14% 97%`), e o truque
+   * padrão de kanban — coluna cinza, cartão branco — era invisível. Ao voltar o
+   * fundo para 97%, o muted teve de descer junto.
+   */
+  it("muted continua distinto do fundo", () => {
     expect(valor(":root {", "--muted")).not.toBe(valor(":root {", "--background"));
   });
 
   /**
-   * A barra de 2px à esquerda funcionava contra o navy. Com a lateral clara ela
-   * vira um traço competindo com a linha de separação da coluna -- duas
-   * verticais paralelas a dois pixels de distância.
+   * A pastilha do item ativo é 18% da cor de destaque. Chegou a ser 10%,
+   * calibrado para a lateral clara — contra o navy, dez por cento quase não
+   * aparece.
    */
-  it("o item ativo é pastilha, não barra lateral", () => {
-    expect(bloco(".vx-nav-active {")).not.toContain("border-left");
+  it("o item ativo aparece contra o navy", () => {
+    const b = bloco(".vx-nav-active {");
+    expect(b).toContain("--sidebar-primary");
+    expect(b).toMatch(/\/ 18%/);
+    // Sem barra lateral colorida: era um traço de 2px competindo com a linha
+    // de separação da coluna.
+    expect(b).not.toContain("border-left");
   });
 
   /**
-   * 45% da cor de destaque era calibrado para o navy, onde a barra precisava se
-   * destacar de um fundo muito escuro.
+   * Era um teal a 45% CRAVADO, que gritava e ignorava a troca de cor de
+   * destaque. Deriva do texto da lateral, que já é claro sobre o navy.
    */
-  it("a barra de rolagem da lateral não grita", () => {
+  it("a barra de rolagem deriva de token", () => {
     const i = CSS.indexOf('[data-sidebar="sidebar"], [data-sidebar="sidebar"] *');
-    expect(CSS.slice(i, i + 200)).not.toContain("--sidebar-primary");
+    const trecho = CSS.slice(i, i + 260);
+    expect(trecho).not.toMatch(/rgba?\(/);
+    expect(trecho).toContain("--sidebar-foreground");
   });
 });
+
