@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
 import type { Email, InboxContact as Contact } from "@/lib/api/emails";
 import { formatarData, formatarDataCurta } from "@/lib/formato";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Folder =
   | "inbox"
@@ -269,7 +270,7 @@ export default function Inbox() {
     return `hsl(${h} 60% 45%)`;
   };
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   // Caixa pessoal sem conta conectada. Antes esta tela não existia: o usuário
   // caía numa caixa vazia sem entender por quê, e a única CTA apontava para

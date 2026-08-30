@@ -32,6 +32,7 @@ import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { formatarData, formatarMoedaInteira } from "@/lib/formato";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 
@@ -163,7 +164,7 @@ export default function Companies() {
   };
 
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

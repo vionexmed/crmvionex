@@ -24,6 +24,7 @@ import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { Zap as IconeDaPagina } from "lucide-react";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Sequence = {
   id: string; org_id: string; name: string; description: string | null;
@@ -161,7 +162,7 @@ export default function EmailSequences() {
     toast({ title: "Contato inscrito na sequência" });
   };
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

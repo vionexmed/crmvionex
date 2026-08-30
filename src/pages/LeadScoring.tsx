@@ -31,6 +31,7 @@ import { LIFECYCLE_COLORS, LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/c
 import { PageShell } from "@/components/layout/PageShell";
 import { TrendingUp as IconeDaPagina } from "lucide-react";
 import { formatarDataHoraCurta } from "@/lib/formato";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Contact = {
   id: string; first_name: string; last_name: string | null; email: string | null;
@@ -324,7 +325,7 @@ export default function LeadScoring() {
     return history.filter((h) => h.contact_id === historyContactId);
   }, [history, historyContactId]);
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

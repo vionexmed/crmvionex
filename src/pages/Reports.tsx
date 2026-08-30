@@ -21,6 +21,7 @@ import { ForecastReport } from "@/components/reports/ForecastReport";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { CustomReportBuilder } from "@/components/reports/CustomReportBuilder";
 import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 export default function Reports() {
   const { orgId } = useOrg();
@@ -112,7 +113,7 @@ export default function Reports() {
     return list;
   }, [contacts, ownerFilter]);
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

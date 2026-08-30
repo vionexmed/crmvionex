@@ -37,6 +37,7 @@ import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { LinhaDeEtapa } from "@/components/crm/LinhaDeEtapa";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 export type { DealWithRelations } from "@/lib/api/deals";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
@@ -282,9 +283,7 @@ export default function Deals() {
     }
   };
 
-  if (!orgId) {
-    return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
-  }
+  if (!orgId) return <SemOrganizacao />;
 
   const openDeals = filteredAllDeals.filter((d) => d.status === "open");
   const wonDeals  = filteredAllDeals.filter((d) => d.status === "won");

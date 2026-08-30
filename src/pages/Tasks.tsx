@@ -38,6 +38,7 @@ import { useOrg } from "@/hooks/useOrg";
 import type { Database } from "@/integrations/supabase/types";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { formatarDataCurta } from "@/lib/formato";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -236,7 +237,7 @@ export default function Tasks() {
     }
   };
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

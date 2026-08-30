@@ -32,6 +32,7 @@ import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { Workflow as IconeDaPagina } from "lucide-react";
 import { formatarDataHoraCurta } from "@/lib/formato";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 // ── Types ──────────────────────────────────────────────
 type TriggerType =
@@ -505,7 +506,7 @@ export default function Automations() {
     }
   };
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

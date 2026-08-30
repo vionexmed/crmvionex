@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type SortKey = "name" | "email" | "status" | "created_at" | "title";
@@ -341,7 +342,7 @@ export default function Contacts() {
     }
   };
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

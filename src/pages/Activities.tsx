@@ -39,6 +39,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { ATIVIDADE_JA_ACONTECEU } from "@/lib/atividade-tipos";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { formatarDataCurta } from "@/lib/formato";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -293,7 +294,7 @@ export default function Activities() {
 
   const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell

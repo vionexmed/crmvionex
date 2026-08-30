@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageShell } from "@/components/layout/PageShell";
 import { FileText as IconeDaPagina } from "lucide-react";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
+import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Template = {
   id: string; org_id: string; name: string; subject: string; body_html: string;
@@ -107,7 +108,7 @@ export default function EmailTemplates() {
     toast({ title: "Template duplicado" });
   };
 
-  if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
+  if (!orgId) return <SemOrganizacao />;
 
   return (
     <PageShell
