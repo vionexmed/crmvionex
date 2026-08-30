@@ -6,8 +6,7 @@
  * oposto — e para base 16px, quando aqui a base é 13px.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 
 /**
  * Comentário explicando por que X saiu contém X, e reprova a regra que
@@ -18,14 +17,6 @@ const semComentarios = (s: string) =>
   s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
 const CSS = readFileSync("src/index.css", "utf8");
-const TSX = (function varrer(dir: string, saida: string[] = []): string[] {
-  for (const nome of readdirSync(dir)) {
-    const caminho = join(dir, nome);
-    if (statSync(caminho).isDirectory()) varrer(caminho, saida);
-    else if (nome.endsWith(".tsx")) saida.push(caminho);
-  }
-  return saida;
-})("src");
 
 describe("os tokens de superfície são distintos entre si", () => {
   const valor = (token: string) => {
