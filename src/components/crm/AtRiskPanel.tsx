@@ -13,12 +13,10 @@ import { AlertTriangle, Clock, TrendingDown, Settings2, User, Briefcase, Activit
 import { RiskRulesManager, type RiskRule } from "./RiskRulesManager";
 import type { Database } from "@/integrations/supabase/types";
 import { PageTabs } from "@/components/layout/PageTabs";
+import { formatarMoeda } from "@/lib/formato";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
-function formatCurrency(v: number, c: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: c }).format(v);
-}
 
 function daysBetween(d1: Date, d2: Date) {
   return Math.floor((d2.getTime() - d1.getTime()) / 86400000);
@@ -81,7 +79,7 @@ function RiskCard({ item }: { item: AtRiskItem }) {
           </div>
           {item.value !== undefined && item.value > 0 && (
             <span className="text-sm font-bold text-primary shrink-0 ml-2">
-              {formatCurrency(item.value, item.currency)}
+              {formatarMoeda(item.value, item.currency)}
             </span>
           )}
         </div>
@@ -375,7 +373,7 @@ export function AtRiskPanel({ open, onOpenChange }: AtRiskPanelProps) {
                 <p className="text-[9px] text-muted-foreground uppercase">Médio risco</p>
               </div>
               <div className="rounded-md border border-border p-2 text-center">
-                <p className="text-sm font-bold text-primary">{formatCurrency(totalDealValue)}</p>
+                <p className="text-sm font-bold text-primary">{formatarMoeda(totalDealValue)}</p>
                 <p className="text-[9px] text-muted-foreground uppercase">Valor em risco</p>
               </div>
             </div>

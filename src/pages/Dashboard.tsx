@@ -45,6 +45,7 @@ import { MetricLeadsSheet } from "@/components/dashboard/MetricLeadsSheet";
 // gráficos entram na mesma pintura dos números.
 import SdrChartsPanel from "@/components/dashboard/SdrChartsPanel";
 import { PageTabs } from "@/components/layout/PageTabs";
+import { formatarHora } from "@/lib/formato";
 
 type TileConfig = {
   key: MetricKey;
@@ -222,7 +223,7 @@ export default function Dashboard() {
         lastRefresh ? (
           <p className="text-[11px] text-muted-foreground">
             {SDR_PERIOD_LABELS[period]} · atualizado{" "}
-            {lastRefresh.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            {formatarHora(lastRefresh)}
           </p>
         ) : undefined
       }

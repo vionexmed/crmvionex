@@ -1,3 +1,4 @@
+import { formatarMoedaInteira } from "@/lib/formato";
 // ── Types ─────────────────────────────────────
 export type Stage = { id: string; name: string; order: number; color: string | null; win_probability: number | null; pipeline_id: string };
 export type Deal = {
@@ -29,8 +30,12 @@ export type Company = { id: string; name: string };
 export type PeriodFilter = "all" | "this_month" | "last_month" | "this_quarter" | "this_year";
 
 // ── Helpers ───────────────────────────────────
-export const fmt = (v: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+/**
+ * Mantido como `fmt` porque nove componentes de relatório importam este nome.
+ * O que muda é a implementação: era o décimo `Intl.NumberFormat` construído a
+ * cada chamada, agora usa o formatador em cache do módulo compartilhado.
+ */
+export const fmt = (v: number) => formatarMoedaInteira(v);
 
 export const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
 

@@ -15,11 +15,21 @@
 
 const cacheMoeda = new Map<string, Intl.NumberFormat>();
 
-function formatadorDe(moeda: string): Intl.NumberFormat {
-  let f = cacheMoeda.get(moeda);
+/**
+ * A chave aceita o sufixo ":0" para a variante sem centavos -- `"BRL"` e
+ * `"BRL:0"` são formatadores diferentes e precisam de entradas diferentes no
+ * cache, senão o segundo devolveria o primeiro.
+ */
+function formatadorDe(chave: string): Intl.NumberFormat {
+  let f = cacheMoeda.get(chave);
   if (!f) {
-    f = new Intl.NumberFormat("pt-BR", { style: "currency", currency: moeda });
-    cacheMoeda.set(moeda, f);
+    const [moeda, semCentavos] = chave.split(":");
+    f = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: moeda,
+      ...(semCentavos === "0" ? { maximumFractionDigits: 0 } : {}),
+    });
+    cacheMoeda.set(chave, f);
   }
   return f;
 }
@@ -28,6 +38,24 @@ function formatadorDe(moeda: string): Intl.NumberFormat {
 export function formatarMoeda(valor: number | null | undefined, moeda = "BRL"): string {
   return formatadorDe(moeda || "BRL").format(Number(valor) || 0);
 }
+
+/**
+ * "R$ 1.235" — sem centavos.
+ *
+ * Para faturamento de empresa e total de relatório, onde os centavos são ruído
+ * e a largura da coluna importa. Existia duplicado em `reports/types.ts` (como
+ * `fmt`) e em `Companies.formatRevenue`.
+ */
+export function formatarMoedaInteira(valor: number | null | undefined, moeda = "BRL"): string {
+  return formatadorDe(`${moeda || "BRL"}:0`).format(Number(valor) || 0);
+}
+
+/** "1.234" — número simples com separador de milhar. */
+export function formatarNumero(valor: number | null | undefined): string {
+  return numeroSimples.format(Number(valor) || 0);
+}
+
+const numeroSimples = new Intl.NumberFormat("pt-BR");
 
 /**
  * "R$ 1,2 mil" / "R$ 3,4 mi" — para eixo de gráfico e cabeçalho de coluna, onde
@@ -64,6 +92,42 @@ export function formatarDataHora(d: string | Date | null | undefined): string {
   if (!d) return "—";
   const data = typeof d === "string" ? new Date(d) : d;
   return isNaN(data.getTime()) ? "—" : dataLonga.format(data);
+}
+
+const dataHoraCurta = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+});
+const mesAno = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" });
+const horaMinuto = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+/**
+ * "12 set, 14:30" — para linha do tempo e registro de execução, onde a HORA é o
+ * dado e o ano é ruído. Era o formato mais repetido do projeto: seis arquivos
+ * escreviam as quatro opções à mão.
+ */
+export function formatarDataHoraCurta(d: string | Date | null | undefined): string {
+  if (!d) return "—";
+  const data = typeof d === "string" ? new Date(d) : d;
+  return isNaN(data.getTime()) ? "—" : dataHoraCurta.format(data);
+}
+
+/**
+ * "14:30" — só a hora.
+ *
+ * Para "atualizado às", e para mensagem do dia de hoje, onde repetir a data
+ * seria ruído. Três arquivos escreviam as duas opções à mão.
+ */
+export function formatarHora(d: string | Date | null | undefined): string {
+  if (!d) return "—";
+  const data = typeof d === "string" ? new Date(d) : d;
+  return isNaN(data.getTime()) ? "—" : horaMinuto.format(data);
+}
+
+/** "setembro de 2026" — cabeçalho de navegador de mês. */
+export function formatarMesAno(d: string | Date | null | undefined): string {
+  if (!d) return "—";
+  const data = typeof d === "string" ? new Date(d) : d;
+  return isNaN(data.getTime()) ? "—" : mesAno.format(data);
 }
 
 const relativo = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });

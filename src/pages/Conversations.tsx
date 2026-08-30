@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { formatarDataCurta, formatarHora } from "@/lib/formato";
 
 type WAMessage = {
   id: string;
@@ -42,9 +43,9 @@ function formatTime(iso: string | null) {
   const d = new Date(iso);
   const today = new Date();
   if (d.toDateString() === today.toDateString()) {
-    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    return formatarHora(d);
   }
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  return formatarDataCurta(d);
 }
 
 function initials(name: string | null, phone: string) {

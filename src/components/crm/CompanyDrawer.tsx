@@ -17,15 +17,13 @@ import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Handshake, LayoutList } from "lucide-react";
+import { formatarData, formatarMoeda } from "@/lib/formato";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
-function formatCurrency(value: number, currency: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
-}
 
 interface CompanyDrawerProps {
   company: Company | null;
@@ -106,11 +104,11 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
               <p className="text-[10px] text-muted-foreground uppercase">Negócios</p>
             </div>
             <div className="rounded-lg border border-border p-2.5 text-center">
-              <p className="text-lg font-bold text-primary">{formatCurrency(totalValue)}</p>
+              <p className="text-lg font-bold text-primary">{formatarMoeda(totalValue)}</p>
               <p className="text-[10px] text-muted-foreground uppercase">Valor Total</p>
             </div>
             <div className="rounded-lg border border-border p-2.5 text-center">
-              <p className="text-lg font-bold text-success">{formatCurrency(wonValue)}</p>
+              <p className="text-lg font-bold text-success">{formatarMoeda(wonValue)}</p>
               <p className="text-[10px] text-muted-foreground uppercase">Ganhos</p>
             </div>
           </div>
@@ -180,12 +178,12 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
                 {company.revenue && (
                   <div className="flex items-center gap-3 text-sm">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span>Receita: {formatCurrency(Number(company.revenue))}</span>
+                    <span>Receita: {formatarMoeda(Number(company.revenue))}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-3 text-sm">
                   <span className="text-muted-foreground">Criado em</span>
-                  <span>{company.created_at ? new Date(company.created_at).toLocaleDateString("pt-BR") : "—"}</span>
+                  <span>{company.created_at ? formatarData(company.created_at) : "—"}</span>
                 </div>
               </div>
             )}
@@ -228,7 +226,7 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
                           </Badge>
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-primary">{formatCurrency(Number(d.value) || 0, d.currency || "BRL")}</span>
+                      <span className="text-sm font-bold text-primary">{formatarMoeda(Number(d.value) || 0, d.currency || "BRL")}</span>
                     </div>
                   </CardContent>
                 </Card>

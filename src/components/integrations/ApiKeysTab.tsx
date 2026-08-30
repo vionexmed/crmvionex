@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Key, Copy, EyeOff, Eye, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatarData } from "@/lib/formato";
 
 type ApiKey = {
   id: string; org_id: string; name: string; key_prefix: string; key_hash: string;
@@ -141,7 +142,7 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs">{k.request_count}</TableCell>
-                    <TableCell className="text-xs">{k.created_at ? new Date(k.created_at).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell className="text-xs">{k.created_at ? formatarData(k.created_at) : "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         {k.is_active ? (

@@ -17,9 +17,9 @@ import { AreaSeries } from "./svg/AreaSeries";
 import { Donut } from "./svg/Donut";
 import { BarRow } from "./svg/BarRow";
 import type { PontoSerie, EtapaFunil, FatiaCanal, LinhaPessoa } from "@/hooks/useSdrCharts";
+import { formatarNumero } from "@/lib/formato";
 
-const nf = new Intl.NumberFormat("pt-BR");
-const fmt = (v: number) => nf.format(v);
+const fmt = (v: number) => formatarNumero(v);
 
 /** dd/MM sem o off-by-one de fuso que `new Date("2026-08-17")` causa. */
 const rotuloDia = (iso: string) => {

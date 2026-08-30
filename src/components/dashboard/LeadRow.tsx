@@ -9,10 +9,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, initials } from "@/lib/utils";
 import type { LinhaDrilldown } from "@/hooks/useSdrMetricLeads";
 import { CANAL } from "./canais";
+import { formatarMoeda } from "@/lib/formato";
 
 
-const moeda = (v: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 export function LeadRow({
   linha,
@@ -27,7 +26,7 @@ export function LeadRow({
   // linha é estreita e o que importa muda conforme a métrica.
   const meta =
     linha.valor !== null
-      ? moeda(linha.valor)
+      ? formatarMoeda(linha.valor)
       : linha.quando
         ? format(new Date(linha.quando), "dd/MM HH:mm")
         : null;

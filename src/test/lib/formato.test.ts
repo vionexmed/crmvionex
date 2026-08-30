@@ -9,6 +9,8 @@
  * de verdade para verificar.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import {
   formatarMoeda,
   formatarMoedaCurta,
@@ -16,6 +18,10 @@ import {
   formatarDataCurta,
   formatarDataHora,
   formatarTempoRelativo,
+  formatarDataHoraCurta,
+  formatarMesAno,
+  formatarMoedaInteira,
+  formatarNumero,
   diasAte,
 } from "@/lib/formato";
 
@@ -139,5 +145,115 @@ describe("diasAte", () => {
     // Zero significaria "vence hoje", que é afirmação diferente de "não sei".
     expect(diasAte(null)).toBeNull();
     expect(diasAte("qualquer coisa")).toBeNull();
+  });
+});
+
+describe("moeda sem centavos", () => {
+  /**
+   * Faturamento de empresa e total de relatório: os centavos são ruído e a
+   * largura da coluna importa. Existia duplicado em `reports/types.ts` (como
+   * `fmt`) e em `Companies.formatRevenue`.
+   */
+  it("arredonda e não mostra centavos", () => {
+    expect(normalizar(formatarMoedaInteira(1234.56))).toBe("R$ 1.235");
+  });
+
+  /**
+   * O cache é por CHAVE, e "BRL" com centavos e "BRL" sem são formatadores
+   * diferentes. Sem o sufixo na chave, o segundo receberia o primeiro do cache
+   * e voltaria a mostrar centavos -- um bug que só apareceria na ordem certa de
+   * chamadas.
+   */
+  it("não colide no cache com a variante com centavos", () => {
+    expect(normalizar(formatarMoeda(10))).toBe("R$ 10,00");
+    expect(normalizar(formatarMoedaInteira(10))).toBe("R$ 10");
+    expect(normalizar(formatarMoeda(10))).toBe("R$ 10,00");
+  });
+
+  it("trata ausência como zero", () => {
+    expect(normalizar(formatarMoedaInteira(null))).toBe("R$ 0");
+  });
+});
+
+describe("número simples", () => {
+  it("separa milhar", () => {
+    expect(formatarNumero(1234567)).toBe("1.234.567");
+  });
+
+  it("ausência é zero, não vazio", () => {
+    expect(formatarNumero(null)).toBe("0");
+  });
+});
+
+describe("data com hora, sem ano", () => {
+  /**
+   * Era o formato MAIS repetido do projeto: seis arquivos escreviam as quatro
+   * opções à mão. Serve linha do tempo e registro de execução, onde a hora é o
+   * dado e o ano é ruído.
+   */
+  const d = new Date("2026-09-12T14:30:00");
+
+  it("traz dia, mês e hora", () => {
+    const s = formatarDataHoraCurta(d);
+    expect(s).toMatch(/12/);
+    expect(s).toMatch(/14:30/);
+    expect(s).not.toMatch(/2026/);
+  });
+
+  it("nunca imprime Invalid Date", () => {
+    for (const v of [null, undefined, "", "não é data"]) {
+      expect(formatarDataHoraCurta(v as string | null)).toBe("—");
+      expect(formatarMesAno(v as string | null)).toBe("—");
+    }
+  });
+});
+
+describe("mês e ano", () => {
+  it("mês por extenso, para navegador de mês", () => {
+    expect(formatarMesAno(new Date("2026-09-12T12:00:00"))).toContain("setembro");
+    expect(formatarMesAno(new Date("2026-09-12T12:00:00"))).toContain("2026");
+  });
+});
+
+/**
+ * Ninguém formata moeda ou data à mão.
+ *
+ * `formatCurrency` estava reescrito em 13 arquivos, e em 12 deles o
+ * `Intl.NumberFormat` era construído DENTRO da função de formatar -- um objeto
+ * novo por célula renderizada. Numa tabela de 50 linhas com 3 colunas de valor,
+ * são 150 construções por render.
+ *
+ * Data era pior: `toLocaleDateString` inline em 17 arquivos, com OITO formatos
+ * diferentes para quatro propósitos -- telas vizinhas mostravam a mesma data de
+ * jeitos diferentes.
+ */
+describe("ninguém formata à mão", () => {
+  const arquivos = (function varrer(dir: string, saida: string[] = []): string[] {
+    for (const nome of readdirSync(dir)) {
+      const caminho = join(dir, nome);
+      if (statSync(caminho).isDirectory()) varrer(caminho, saida);
+      else if (/\.tsx?$/.test(nome)) saida.push(caminho);
+    }
+    return saida;
+  })("src").filter((f) => !f.endsWith("lib/formato.ts") && !f.includes("/test/"));
+
+  it("Intl.NumberFormat só existe no módulo compartilhado", () => {
+    const infratores = arquivos.filter((f) => readFileSync(f, "utf8").includes("new Intl.NumberFormat"));
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+
+  it("nenhum toLocaleDateString inline", () => {
+    const infratores = arquivos.filter((f) => readFileSync(f, "utf8").includes("toLocaleDateString"));
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+
+  /**
+   * `toLocaleTimeString` também: eram três arquivos com o mesmo
+   * `{ hour: "2-digit", minute: "2-digit" }`. Três usos é repetição, não
+   * exceção.
+   */
+  it("nenhum toLocaleTimeString inline", () => {
+    const infratores = arquivos.filter((f) => readFileSync(f, "utf8").includes("toLocaleTimeString"));
+    expect(infratores, infratores.join("\n")).toEqual([]);
   });
 });

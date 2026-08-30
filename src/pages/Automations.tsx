@@ -31,6 +31,7 @@ import {
 import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { Workflow as IconeDaPagina } from "lucide-react";
+import { formatarDataHoraCurta } from "@/lib/formato";
 
 // ── Types ──────────────────────────────────────────────
 type TriggerType =
@@ -592,7 +593,7 @@ export default function Automations() {
                         <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
                           <span className="flex items-center gap-0.5"><Play className="h-2.5 w-2.5" /> {auto.run_count}x executada</span>
                           {auto.error_count > 0 && <span className="flex items-center gap-0.5 text-destructive"><AlertTriangle className="h-2.5 w-2.5" /> {auto.error_count} erros</span>}
-                          {auto.last_run_at && <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> {new Date(auto.last_run_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>}
+                          {auto.last_run_at && <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> {formatarDataHoraCurta(auto.last_run_at)}</span>}
                         </div>
                       </div>
                     </div>
@@ -665,7 +666,7 @@ export default function Automations() {
                 return (
                   <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedLog(log); setLogDetailOpen(true); }}>
                     <TableCell className="text-xs text-muted-foreground">
-                      {log.executed_at ? new Date(log.executed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+                      {log.executed_at ? formatarDataHoraCurta(log.executed_at) : "—"}
                     </TableCell>
                     <TableCell className="text-sm font-medium">{auto?.name || "—"}</TableCell>
                     <TableCell>

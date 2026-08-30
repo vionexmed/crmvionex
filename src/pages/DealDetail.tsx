@@ -36,13 +36,11 @@ import { useCompanies } from "@/hooks/queries/useCompanies";
 import { ContactDrawer } from "@/components/crm/ContactDrawer";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
+import { formatarData, formatarDataHoraCurta, formatarMoeda } from "@/lib/formato";
 
 type ActivityType = Database["public"]["Enums"]["activity_type"];
 type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];
 
-function formatCurrency(value: number, currency: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
-}
 
 // Ícones e rótulos vêm de lib/atividade-tipos.ts. Estavam declarados aqui e em
 // mais cinco arquivos, e as cópias já haviam divergido.
@@ -338,7 +336,7 @@ export default function DealDetail() {
               </div>
             ) : (
               <span className="text-xl font-bold text-primary cursor-pointer hover:opacity-80" onClick={() => { setValueDraft(String(deal.value || 0)); setCurrencyDraft(deal.currency || "BRL"); setEditingValue(true); }}>
-                {formatCurrency(Number(deal.value) || 0, deal.currency || "BRL")}
+                {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
               </span>
             )}
 
@@ -453,7 +451,7 @@ export default function DealDetail() {
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs font-medium text-muted-foreground">{activityLabels[a.type]}</span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(a.created_at!).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        {formatarDataHoraCurta(a.created_at!)}
                       </span>
                     </div>
                     <p className="text-sm font-medium">{a.title}</p>
@@ -554,7 +552,7 @@ export default function DealDetail() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />Fechamento</span>
-                <span>{deal.close_date ? new Date(deal.close_date).toLocaleDateString("pt-BR") : "—"}</span>
+                <span>{deal.close_date ? formatarData(deal.close_date) : "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-muted-foreground"><Percent className="h-3.5 w-3.5" />Probabilidade</span>
@@ -562,7 +560,7 @@ export default function DealDetail() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Criado em</span>
-                <span>{deal.created_at ? new Date(deal.created_at).toLocaleDateString("pt-BR") : "—"}</span>
+                <span>{deal.created_at ? formatarData(deal.created_at) : "—"}</span>
               </div>
               {deal.loss_reason && (
                 <div className="mt-2 rounded-md bg-destructive/10 p-2">

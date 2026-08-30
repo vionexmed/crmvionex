@@ -38,6 +38,7 @@ import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
 import { ATIVIDADE_JA_ACONTECEU } from "@/lib/atividade-tipos";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
+import { formatarDataCurta } from "@/lib/formato";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -73,7 +74,7 @@ type DateFilter =
 const HISTORICO: DateFilter[] = ["feitas", "todas"];
 
 const dataCurta = (iso: string) =>
-  new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
+  formatarDataCurta(iso);
 const dataLonga = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bot, Send, Loader2, Sparkles, User, Briefcase } from "lucide-react";
+import { formatarNumero } from "@/lib/formato";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -48,7 +49,7 @@ interface DashboardAIChatProps {
 
 function buildCrmContext(data: CrmData): string {
   const num = (v: number | null, sufixo = "") =>
-    v === null ? "não disponível" : `${new Intl.NumberFormat("pt-BR").format(v)}${sufixo}`;
+    v === null ? "não disponível" : `${formatarNumero(v)}${sufixo}`;
 
   const duracao = (v: number | null) => {
     if (v === null) return "não disponível";

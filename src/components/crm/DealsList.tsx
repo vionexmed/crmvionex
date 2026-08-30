@@ -9,12 +9,10 @@ import { Trophy, XCircle, Trash2, AlertTriangle } from "lucide-react";
 import type { DealWithRelations } from "@/lib/api/deals";
 import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
+import { formatarData, formatarMoeda } from "@/lib/formato";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
-function formatCurrency(value: number, currency: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
-}
 
 type SortKey = "title" | "value" | "close_date" | "probability" | "status" | "created_at";
 
@@ -126,7 +124,7 @@ export function DealsList({
                     </div>
                   </TableCell>
                   <TableCell className="font-semibold text-primary">
-                    {formatCurrency(Number(deal.value) || 0, deal.currency || "BRL")}
+                    {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
                   </TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell">{getStageName(deal.stage_id)}</TableCell>
                   <TableCell className="hidden lg:table-cell">
@@ -138,7 +136,7 @@ export function DealsList({
                     {deal.close_date ? (
                       <div className={`flex items-center gap-1 text-sm ${isUrgent ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                         {isUrgent && <AlertTriangle className="h-3 w-3" />}
-                        {new Date(deal.close_date).toLocaleDateString("pt-BR")}
+                        {formatarData(deal.close_date)}
                       </div>
                     ) : "—"}
                   </TableCell>

@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { formatarNumero } from "@/lib/formato";
 
 export type StatFormat = "number" | "percent" | "duration";
 export type StatAccent = "primary" | "success" | "warning" | "destructive";
@@ -119,7 +120,7 @@ function formatValue(value: number, format: StatFormat): string {
     const days = Math.floor(hours / 24);
     return `${days}d ${hours % 24}h`;
   }
-  return new Intl.NumberFormat("pt-BR").format(value);
+  return formatarNumero(value);
 }
 
 /** Variação percentual. null quando não há base de comparação. */

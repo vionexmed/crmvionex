@@ -3,12 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { DealWithRelations } from "@/lib/api/deals";
 import type { Database } from "@/integrations/supabase/types";
+import { formatarMesAno, formatarMoeda } from "@/lib/formato";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
-function formatCurrency(value: number, currency: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
-}
 
 interface DealsForecastProps {
   deals: DealWithRelations[];
@@ -31,7 +29,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
     deals.forEach((d) => {
       const date = d.close_date ? new Date(d.close_date) : new Date();
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const label = formatarMesAno(date);
 
       if (!map[key]) {
         map[key] = { month: key, label, committed: 0, bestCase: 0, pipeline: 0, deals: [] };
@@ -74,7 +72,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
             <CardTitle className="text-sm font-medium text-muted-foreground">Comprometido (≥80%)</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="text-2xl font-bold text-success">{formatCurrency(totals.committed)}</span>
+            <span className="text-2xl font-bold text-success">{formatarMoeda(totals.committed)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -82,7 +80,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
             <CardTitle className="text-sm font-medium text-muted-foreground">Melhor Caso (≥50%)</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="text-2xl font-bold text-primary">{formatCurrency(totals.bestCase)}</span>
+            <span className="text-2xl font-bold text-primary">{formatarMoeda(totals.bestCase)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -90,7 +88,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
             <CardTitle className="text-sm font-medium text-muted-foreground">Valor em aberto</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="text-2xl font-bold text-foreground">{formatCurrency(totals.pipeline)}</span>
+            <span className="text-2xl font-bold text-foreground">{formatarMoeda(totals.pipeline)}</span>
           </CardContent>
         </Card>
       </div>
@@ -106,17 +104,17 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-success" />
                     <span className="text-muted-foreground">Comprometido:</span>
-                    <span className="font-semibold text-success">{formatCurrency(bucket.committed)}</span>
+                    <span className="font-semibold text-success">{formatarMoeda(bucket.committed)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-primary" />
                     <span className="text-muted-foreground">Melhor caso:</span>
-                    <span className="font-semibold text-primary">{formatCurrency(bucket.bestCase)}</span>
+                    <span className="font-semibold text-primary">{formatarMoeda(bucket.bestCase)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-muted-foreground" />
                     <span className="text-muted-foreground">Em aberto:</span>
-                    <span className="font-semibold">{formatCurrency(bucket.pipeline)}</span>
+                    <span className="font-semibold">{formatarMoeda(bucket.pipeline)}</span>
                   </div>
                 </div>
               </div>
@@ -151,7 +149,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
                         <Badge variant="secondary" className="text-xs">{stageName}</Badge>
                         <Badge variant="secondary" className="text-xs">{deal.probability || 0}%</Badge>
                         <span className="font-semibold text-primary">
-                          {formatCurrency(Number(deal.value) || 0, deal.currency || "BRL")}
+                          {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
                         </span>
                       </div>
                     </div>

@@ -37,6 +37,7 @@ import { useDeals } from "@/hooks/queries/useDeals";
 import { useOrg } from "@/hooks/useOrg";
 import type { Database } from "@/integrations/supabase/types";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
+import { formatarDataCurta } from "@/lib/formato";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -368,7 +369,7 @@ export default function Tasks() {
                         <span className={`text-xs flex items-center gap-1 ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                           {overdue && <AlertTriangle className="h-3 w-3" />}
                           <Clock className="h-3 w-3" />
-                          {new Date(t.due_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                          {formatarDataCurta(t.due_date)}
                         </span>
                       )}
                     </TableCell>

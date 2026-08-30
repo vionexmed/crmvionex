@@ -9,6 +9,7 @@ import {
   Bell, Phone, Mail, Calendar, FileText, CheckSquare, Clock, Check,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { formatarDataHoraCurta } from "@/lib/formato";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -100,7 +101,7 @@ export function NotificationBell() {
                     <p className="text-xs font-medium truncate">{a.title}</p>
                     <p className={`text-[10px] ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                       <Clock className="inline mr-0.5 h-2.5 w-2.5" />
-                      {a.due_date ? new Date(a.due_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem data"}
+                      {a.due_date ? formatarDataHoraCurta(a.due_date) : "Sem data"}
                       {overdue && " · Atrasada"}
                     </p>
                   </div>

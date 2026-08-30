@@ -30,6 +30,7 @@ import { indexarPorId } from "@/lib/utils";
 import { LIFECYCLE_COLORS, LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
 import { PageShell } from "@/components/layout/PageShell";
 import { TrendingUp as IconeDaPagina } from "lucide-react";
+import { formatarDataHoraCurta } from "@/lib/formato";
 
 type Contact = {
   id: string; first_name: string; last_name: string | null; email: string | null;
@@ -594,7 +595,7 @@ export default function LeadScoring() {
                   return (
                     <TableRow key={h.id}>
                       <TableCell className="text-xs text-muted-foreground">
-                        {h.created_at ? new Date(h.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+                        {h.created_at ? formatarDataHoraCurta(h.created_at) : "—"}
                       </TableCell>
                       <TableCell className="text-sm font-medium">{c ? `${c.first_name} ${c.last_name || ""}` : "—"}</TableCell>
                       <TableCell><Badge variant="outline" className="text-[8px]">{h.event_type || "manual"}</Badge></TableCell>

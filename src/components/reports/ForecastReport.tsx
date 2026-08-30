@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { formatarMesAno } from "@/lib/formato";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -36,7 +37,7 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
     for (let i = 0; i < 3; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const label = formatarMesAno(d);
       result.push({ key, label, pessimist: 0, realist: 0, optimist: 0, pipeline: 0, deals: [] });
     }
     openDeals.forEach((deal) => {

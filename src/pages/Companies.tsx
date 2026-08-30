@@ -30,6 +30,7 @@ import { useCompanies, useDeleteCompany, companiesKeys } from "@/hooks/queries/u
 import { useMembers } from "@/hooks/queries/useMembers";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
+import { formatarData, formatarMoedaInteira } from "@/lib/formato";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -161,10 +162,6 @@ export default function Companies() {
     toast({ title: "CSV exportado" });
   };
 
-  const formatRevenue = (v: number | null) => {
-    if (!v) return "—";
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
-  };
 
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
@@ -331,9 +328,9 @@ export default function Companies() {
                   <TableCell className="text-muted-foreground hidden sm:table-cell">{c.domain}</TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell">{c.industry}</TableCell>
                   <TableCell className="text-muted-foreground hidden lg:table-cell">{c.size}</TableCell>
-                  <TableCell className="text-muted-foreground hidden lg:table-cell">{formatRevenue(Number(c.revenue))}</TableCell>
+                  <TableCell className="text-muted-foreground hidden lg:table-cell">{formatarMoedaInteira(Number(c.revenue))}</TableCell>
                   <TableCell className="text-muted-foreground text-xs hidden md:table-cell">
-                    {c.created_at ? new Date(c.created_at).toLocaleDateString("pt-BR") : "—"}
+                    {c.created_at ? formatarData(c.created_at) : "—"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -360,7 +357,7 @@ export default function Companies() {
                   </div>
                 </div>
                 {c.domain && <p className="text-xs text-muted-foreground">{c.domain}</p>}
-                {c.revenue && <p className="text-sm font-semibold text-primary">{formatRevenue(Number(c.revenue))}</p>}
+                {c.revenue && <p className="text-sm font-semibold text-primary">{formatarMoedaInteira(Number(c.revenue))}</p>}
               </CardContent>
             </Card>
           ))}

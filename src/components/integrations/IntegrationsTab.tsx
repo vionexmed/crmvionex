@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogoUploadField } from "@/components/crm/LogoUploadField";
 import { WhatsAppOfficialCard } from "@/components/crm/WhatsAppOfficialCard";
+import { formatarData } from "@/lib/formato";
 
 type IntegrationConfig = {
   id: string; org_id: string; provider: string; config: any; is_active: boolean;
@@ -458,7 +459,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                       ) : (
                         <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
                           {c.connected_at
-                            ? new Date(c.connected_at).toLocaleDateString("pt-BR")
+                            ? formatarData(c.connected_at)
                             : "—"}
                         </span>
                       )}

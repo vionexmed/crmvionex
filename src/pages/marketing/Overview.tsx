@@ -15,6 +15,7 @@ import {
   periodDays, type PeriodKey, type FunnelStage,
 } from "@/lib/marketing-utils";
 import { useMarketingData, type MarketingSource } from "@/hooks/useMarketingData";
+import { formatarHora } from "@/lib/formato";
 
 type TabKey = "visao" | "meta" | "google";
 
@@ -56,7 +57,7 @@ export default function MarketingOverview() {
   const data = useMarketingData(period, customDays);
   const days = periodDays(period, customDays);
 
-  const horaAtualizacao = data.updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const horaAtualizacao = formatarHora(data.updatedAt);
 
   return (
     <div className="space-y-5 p-5 md:p-6 lg:p-8 max-w-[1600px] mx-auto">

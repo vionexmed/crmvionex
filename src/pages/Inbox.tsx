@@ -26,6 +26,7 @@ import { EmailComposeModal } from "@/components/crm/EmailComposeModal";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
 import type { Email, InboxContact as Contact } from "@/lib/api/emails";
+import { formatarData, formatarDataCurta } from "@/lib/formato";
 
 type Folder =
   | "inbox"
@@ -256,7 +257,7 @@ export default function Inbox() {
     if (hrs < 24) return `${hrs}h`;
     const days = Math.floor(hrs / 24);
     if (days < 7) return `${days}d`;
-    return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    return formatarDataCurta(d);
   };
 
   const getInitials = (name: string) =>
@@ -453,7 +454,7 @@ export default function Inbox() {
                         )}
                         {email.snoozed_until && new Date(email.snoozed_until) > new Date() && (
                           <span className="text-[9px] text-amber-600 flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />{new Date(email.snoozed_until).toLocaleDateString("pt-BR")}
+                            <Clock className="h-2.5 w-2.5" />{formatarData(email.snoozed_until)}
                           </span>
                         )}
                       </div>

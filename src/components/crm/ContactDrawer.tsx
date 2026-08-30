@@ -31,6 +31,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Activity, Handshake, LayoutList, StickyNote } from "lucide-react";
+import { formatarData, formatarDataCurta, formatarDataHoraCurta, formatarMoeda } from "@/lib/formato";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -63,9 +64,6 @@ const LIFECYCLE_BADGE: Record<LifecycleStage, string> = {
 const activityIcons = ATIVIDADE_ICONE;
 const activityLabels = ATIVIDADE_ROTULO;
 
-function formatCurrency(value: number, currency: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
-}
 
 interface ContactDrawerProps {
   contact: Contact | null;
@@ -460,7 +458,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
 
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span>Criado em</span>
-                  <span>{contact.created_at ? new Date(contact.created_at).toLocaleDateString("pt-BR") : "—"}</span>
+                  <span>{contact.created_at ? formatarData(contact.created_at) : "—"}</span>
                 </div>
               </div>
             )}
@@ -497,7 +495,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-[10px] font-medium text-muted-foreground uppercase">{activityLabels[a.type]}</span>
                         <span className="text-[10px] text-muted-foreground">
-                          {new Date(a.created_at!).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {formatarDataHoraCurta(a.created_at!)}
                         </span>
                       </div>
                       <p className="text-sm font-medium">{a.title}</p>
@@ -532,7 +530,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                         </div>
                       </div>
                       <span className="text-sm font-bold text-primary">
-                        {formatCurrency(Number(d.value) || 0, d.currency || "BRL")}
+                        {formatarMoeda(Number(d.value) || 0, d.currency || "BRL")}
                       </span>
                     </div>
                   </CardContent>
@@ -548,7 +546,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
               <div key={a.id} className="rounded-lg border border-border p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs text-muted-foreground">
-                    {new Date(a.created_at!).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                    {formatarDataCurta(a.created_at!)}
                   </span>
                 </div>
                 <p className="text-sm font-medium">{a.title}</p>

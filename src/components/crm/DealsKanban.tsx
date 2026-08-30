@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_COR, aconteceuEm } from "@/lib/atividade-tipos";
-import { formatarTempoRelativo } from "@/lib/formato";
+import { formatarDataCurta, formatarTempoRelativo } from "@/lib/formato";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -10,14 +10,12 @@ import {
 } from "@dnd-kit/core";
 import type { DealWithRelations } from "@/lib/api/deals";
 import type { Database } from "@/integrations/supabase/types";
+import { formatarMoeda } from "@/lib/formato";
 
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 
-function formatCurrency(value: number, currency: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
-}
 
 /* ── Deal Card (Pipedrive-style) ─────────────────────────── */
 
@@ -257,10 +255,7 @@ function DealCard({
           >
             {acaoAtrasada
               ? "atrasada"
-              : new Date(proximaAcao.due_date!).toLocaleDateString("pt-BR", {
-                  day: "numeric",
-                  month: "short",
-                })}
+              : formatarDataCurta(proximaAcao.due_date)}
           </span>
         </div>
       )}
@@ -268,7 +263,7 @@ function DealCard({
       {/* Bottom row */}
       <div className="flex items-center justify-between gap-1">
         <span className="num text-[12px] font-bold text-foreground tabular-nums">
-          {formatCurrency(Number(deal.value) || 0, deal.currency || "BRL")}
+          {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
         </span>
 
         <div className="flex items-center gap-1.5">
@@ -322,7 +317,7 @@ function StageColumn({
         <h3 className="text-[13px] font-bold text-foreground leading-tight">{stage.name}</h3>
         <div className="flex items-center gap-1">
           <span className="text-[11px] text-muted-foreground font-medium">
-            {formatCurrency(total)}
+            {formatarMoeda(total)}
           </span>
           <span className="text-[11px] text-muted-foreground">
             · {deals.length} {deals.length === 1 ? "negócio" : "negócios"}
@@ -394,7 +389,7 @@ function CollapsibleStatusColumn({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{formatCurrency(total)}</span>
+          <span className="text-xs text-muted-foreground">{formatarMoeda(total)}</span>
           {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
         </div>
       </button>
@@ -411,7 +406,7 @@ function CollapsibleStatusColumn({
                 <p className="truncate text-[11px] text-muted-foreground">{deal.company.name}</p>
               )}
               <p className={`text-xs font-semibold mt-0.5 ${color}`}>
-                {formatCurrency(Number(deal.value) || 0, deal.currency || "BRL")}
+                {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
               </p>
             </div>
           ))}
@@ -546,7 +541,7 @@ export function DealsKanban({
               <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
                 <p className="text-[13px] font-medium">{activeDeal.title}</p>
                 <p className="text-xs font-semibold text-foreground mt-0.5">
-                  {formatCurrency(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
+                  {formatarMoeda(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
                 </p>
               </div>
             </div>
