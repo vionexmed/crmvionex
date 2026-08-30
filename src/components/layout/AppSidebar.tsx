@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  LayoutDashboard, Users, UserPlus, Building2, Activity, BarChart3,
-  Settings, LogOut, CheckSquare, AlertTriangle, Inbox, FileText, Zap,
-  Target, Plug, Shield, Handshake, MessageSquare, TrendingUp,
-  Megaphone, Mail,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import vionexLogo from "@/assets/vionex-logo-sidebar.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -18,61 +13,7 @@ import { AtRiskPanel } from "@/components/crm/AtRiskPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { LEAD_STAGES } from "@/lib/contact-options";
-
-type NavItem = { title: string; url: string; icon: React.ElementType; adminOnly?: boolean };
-
-const navGroups: { label: string; items: NavItem[] }[] = [
-  {
-    label: "Principal",
-    items: [
-      { title: "Dashboard",  url: "/dashboard",  icon: LayoutDashboard },
-      { title: "Contatos",   url: "/contacts",   icon: Users },
-      { title: "Empresas",   url: "/companies",  icon: Building2 },
-      { title: "Negócios",       url: "/deals",      icon: Handshake },
-      { title: "Atividades", url: "/activities", icon: Activity },
-      { title: "Tarefas",    url: "/tasks",      icon: CheckSquare },
-    ],
-  },
-  {
-    label: "Atendimento",
-    items: [
-      // Os dois CANAIS de atendimento, em paralelo: WhatsApp e e-mail.
-      // Cada pessoa vê só a própria caixa — a RLS impede ver a do colega.
-      { title: "WhatsApp",         url: "/conversations",   icon: MessageSquare },
-      { title: "E-mail",           url: "/inbox",           icon: Inbox },
-      { title: "Templates",        url: "/email-templates", icon: FileText,      adminOnly: true },
-      { title: "Sequências",       url: "/email-sequences", icon: Zap,           adminOnly: true },
-    ],
-  },
-  {
-    label: "Marketing",
-    items: [
-      { title: "Visão Geral",     url: "/marketing/visao-geral", icon: Megaphone, adminOnly: true },
-    ],
-  },
-  {
-    label: "Analytics",
-    items: [
-      { title: "Metas",        url: "/sales-goals",  icon: Target },
-      { title: "Lead Scoring", url: "/lead-scoring", icon: TrendingUp, adminOnly: true },
-      { title: "Relatórios",   url: "/reports",      icon: BarChart3 },
-      { title: "Automações",   url: "/automations",  icon: Zap,        adminOnly: true },
-    ],
-  },
-  {
-    label: "Admin",
-    items: [
-      // Todo mundo vê quem é da equipe; só admin consegue alterar.
-      { title: "Equipe",       url: "/team",                  icon: Users },
-      // Abas de empresa só aparecem para admin dentro da própria página.
-      { title: "Configurações", url: "/settings",             icon: Settings },
-      // Conectar a conta é configuração pessoal, não operação de atendimento.
-      { title: "Conectar e-mail", url: "/settings/email",       icon: Mail },
-      { title: "Integrações",  url: "/settings/integrations", icon: Plug,     adminOnly: true },
-      { title: "Segurança",    url: "/settings/security",     icon: Shield,   adminOnly: true },
-    ],
-  },
-];
+import { NAV_GRUPOS, ICONE_RISCO } from "./navegacao";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -82,7 +23,7 @@ export function AppSidebar() {
   const { orgId } = useOrg();
 
   // Comercial (member) só vê os itens não-admin
-  const visibleGroups = navGroups
+  const visibleGroups = NAV_GRUPOS
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => isAdmin || !item.adminOnly),
@@ -145,49 +86,6 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="px-2 py-2">
-          {/* Leads + Em Risco — sempre no topo */}
-          <SidebarGroup>
-            <SidebarGroupContent>
-              {!collapsed && (
-                <p className="mb-1 px-2 text-label font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">
-                  Principal
-                </p>
-              )}
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/leads")} tooltip="Leads">
-                    <NavLink
-                      to="/leads"
-                      className="vx-nav-item flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sidebar-foreground/80 text-sm"
-                      activeClassName="vx-nav-active"
-                    >
-                      <UserPlus className="h-4 w-4 shrink-0" />
-                      {!collapsed && (
-                        <span className="flex-1">Leads</span>
-                      )}
-                      {leadCount > 0 && !collapsed && (
-                        <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive/90 px-1 text-micro font-bold text-white leading-none">
-                          {leadCount > 99 ? "99+" : leadCount}
-                        </span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip="Em Risco"
-                    onClick={() => setAtRiskOpen(true)}
-                    className="vx-nav-item flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sidebar-foreground/80 text-sm cursor-pointer"
-                  >
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-warning/80" />
-                    {!collapsed && <span>Em Risco</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
           {/* Nav groups */}
           {visibleGroups.map((group) => (
             // Sem rótulo, o espaço que o separava some e os grupos encostam.
@@ -210,11 +108,34 @@ export function AppSidebar() {
                           activeClassName="vx-nav-active"
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span>{item.title}</span>}
+                          {!collapsed && <span className="flex-1">{item.title}</span>}
+                          {/* A contagem só faz sentido em Leads, e só quando há
+                              o que atender. */}
+                          {item.url === "/leads" && leadCount > 0 && !collapsed && (
+                            <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive/90 px-1 text-micro font-bold leading-none text-white">
+                              {leadCount > 99 ? "99+" : leadCount}
+                            </span>
+                          )}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+
+                  {/* "Em Risco" abre um painel, não uma rota -- por isso fica
+                      fora de NAV_GRUPOS e é renderizado aqui, ao lado de Leads,
+                      que é o outro item de fila de trabalho. */}
+                  {group.label === "Atenção" && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        tooltip="Em Risco"
+                        onClick={() => setAtRiskOpen(true)}
+                        className="vx-nav-item flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground/80"
+                      >
+                        <ICONE_RISCO className="h-4 w-4 shrink-0 text-warning/80" />
+                        {!collapsed && <span>Em Risco</span>}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

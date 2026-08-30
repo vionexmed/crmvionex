@@ -23,7 +23,9 @@ const NotFound = () => {
           <Button onClick={() => navigate(-1)} variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />Voltar
           </Button>
-          <Button onClick={() => navigate("/")}>
+          {/* `/` é o LOGIN, não o painel. O botão dizia "Dashboard" com ícone de
+              casa e jogava quem já estava autenticado na tela de entrada. */}
+          <Button onClick={() => navigate("/dashboard")}>
             <Home className="mr-2 h-4 w-4" />Dashboard
           </Button>
         </div>

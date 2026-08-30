@@ -104,7 +104,9 @@ export default function Setup() {
       case "resend": return <StepResend {...props} />;
       
       case "slack": return <StepSlack {...props} />;
-      case "complete": return <StepComplete completedSteps={completedSteps} onFinish={() => navigate("/")} />;
+      // `/` é o LOGIN. Terminar a configuração inicial jogava o usuário recém
+      // cadastrado de volta na tela de entrada, como se tivesse saído.
+      case "complete": return <StepComplete completedSteps={completedSteps} onFinish={() => navigate("/dashboard")} />;
       default: return null;
     }
   };
