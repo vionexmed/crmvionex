@@ -65,7 +65,7 @@ export function AICopilotStep({ orgId, setCanContinue, setStepData }: Onboarding
 
       {!alreadyConfigured && (
         <>
-          <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
+          <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
             <p className="text-sm font-medium">Como obter sua chave:</p>
             <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
               <li>Acesse <span className="font-mono text-foreground">console.anthropic.com</span> e crie uma conta</li>

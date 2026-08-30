@@ -39,7 +39,7 @@ export function Secao({
     <section
       className={cn(
         "space-y-3",
-        contornada && "rounded-[var(--radius)] border border-border p-4",
+        contornada && "rounded-lg border border-border p-4",
         className,
       )}
     >

@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center" role="alert">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-destructive/10">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
           <h2 className="vx-titulo-painel">Algo deu errado</h2>

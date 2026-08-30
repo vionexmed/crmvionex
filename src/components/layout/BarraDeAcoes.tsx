@@ -22,7 +22,7 @@ export function BarraDeFiltros({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-end gap-3 rounded-[var(--radius)] border border-border bg-muted/40 p-3",
+        "flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/40 p-3",
         className,
       )}
       // O painel aparece e some com um botão. Sem `role`/`aria-label`, quem usa
@@ -59,7 +59,7 @@ export function BarraDeSelecao({
       className={cn(
         // Cor de destaque em vez de cinza: a seleção é um ESTADO, e a faixa
         // precisa dizer isso sem depender de o usuário lembrar que marcou algo.
-        "flex flex-wrap items-center gap-2 rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-2",
+        "flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2",
         className,
       )}
       role="status"

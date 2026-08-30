@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
 import { LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
+import { ATIVIDADE_ROTULO, type ActivityType } from "@/lib/atividade-tipos";
 import {
   Deal, Contact, ActivityRow, Stage, Profile,
   fmt, downloadCSV,
@@ -92,9 +93,8 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
         created_at: c.created_at?.slice(0, 10) || "—",
       }));
     } else {
-      const typeLabels: Record<string, string> = { call: "Ligação", email: "Email", meeting: "Reunião", note: "Nota", task: "Tarefa" };
       return activities.map((a) => ({
-        title: a.title, type: typeLabels[a.type] || a.type,
+        title: a.title, type: ATIVIDADE_ROTULO[a.type as ActivityType] || a.type,
         user: members.find((m) => m.id === a.user_id)?.name || "—",
         completed: a.completed_at ? "Sim" : "Não",
         created_at: a.created_at?.slice(0, 10) || "—",

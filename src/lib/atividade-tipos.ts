@@ -1,4 +1,5 @@
 import { Phone, Mail, CalendarDays, FileText, CheckSquare } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 export type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -24,10 +25,7 @@ export type ActivityType = Database["public"]["Enums"]["activity_type"];
  * pelo mesmo motivo.
  */
 
-export const ATIVIDADE_ICONE: Record<
-  ActivityType,
-  React.ComponentType<{ className?: string }>
-> = {
+export const ATIVIDADE_ICONE: Record<ActivityType, LucideIcon> = {
   call: Phone,
   email: Mail,
   meeting: CalendarDays,

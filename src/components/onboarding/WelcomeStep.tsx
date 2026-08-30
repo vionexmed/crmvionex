@@ -13,7 +13,7 @@ export function WelcomeStep({ userName, onNext }: OnboardingStepProps) {
 
   return (
     <div className="text-center space-y-8 py-6">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-primary">
         <Handshake className="h-7 w-7 text-primary-foreground" />
       </div>
 
@@ -29,7 +29,7 @@ export function WelcomeStep({ userName, onNext }: OnboardingStepProps) {
 
       <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
         {features.map((f) => (
-          <div key={f.label} className="flex flex-col items-center gap-2 rounded-xl border border-border bg-muted/50 p-4">
+          <div key={f.label} className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/50 p-4">
             <f.icon className="h-6 w-6 text-primary" />
             <span className="text-sm font-medium">{f.label}</span>
             <span className="text-xs text-muted-foreground">{f.desc}</span>

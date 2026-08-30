@@ -228,7 +228,7 @@ export function OnboardingModal() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
         ref={modalRef}
-        className="relative w-full h-full md:w-[92vw] md:max-w-[640px] md:h-auto md:max-h-[85vh] md:rounded-2xl border border-border bg-card flex flex-col overflow-hidden"
+        className="relative w-full h-full md:w-[92vw] md:max-w-[640px] md:h-auto md:max-h-[85vh] md:rounded-lg border border-border bg-card flex flex-col overflow-hidden"
       >
         {showFooter && (
           <div className="px-6 pt-5 pb-3 border-b border-border shrink-0">

@@ -143,7 +143,7 @@ export function PipelineStep({ orgId, setCanContinue, onNext: _onNext, setStepDa
               <button
                 key={key}
                 onClick={() => setSelected(key)}
-                className={`flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors ${
+                className={`flex items-start gap-3 rounded-lg border-2 p-4 text-left transition-colors ${
                   selected === key ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
                 }`}
               >

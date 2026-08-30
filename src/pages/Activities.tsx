@@ -23,7 +23,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Phone, Mail, Calendar, FileText, CheckSquare, List,
+  Plus, CheckSquare, List,
   CalendarDays, Trash2, Edit2, MoreHorizontal,
   ChevronLeft, ChevronRight, Search,
 } from "lucide-react";
@@ -36,10 +36,11 @@ import { useAllContacts } from "@/hooks/queries/useContacts";
 import { useCompanies } from "@/hooks/queries/useCompanies";
 import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
-import { ATIVIDADE_JA_ACONTECEU } from "@/lib/atividade-tipos";
+import { ATIVIDADE_ICONE, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_ROTULO } from "@/lib/atividade-tipos";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { formatarDataCurta, formatarDataHora } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
+import { SegmentedControl } from "@/components/layout/SegmentedControl";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -48,12 +49,6 @@ type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-const typeIcons: Record<ActivityType, React.ComponentType<{ className?: string }>> = {
-  call: Phone, email: Mail, meeting: Calendar, note: FileText, task: CheckSquare,
-};
-const typeLabels: Record<ActivityType, string> = {
-  call: "Ligação", email: "Email", meeting: "Reunião", note: "Nota", task: "Tarefa",
-};
 const typeColors: Record<ActivityType, string> = {
   call: "text-emerald-600",
   email: "text-blue-600",
@@ -320,14 +315,21 @@ export default function Activities() {
       description={`${filtered.length} atividades${counts.overdue > 0 ? ` · ${counts.overdue} atrasadas` : ""}`}
       actions={
         <>
-          <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
-            <button onClick={() => setViewMode("list")} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              <List className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={() => setViewMode("calendar")} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "calendar" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              <CalendarDays className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          {/* Era a SEXTA cópia do grupo de pílulas -- consolidei cinco e passei
+              por esta duas vezes sem ver, porque os botões estão dentro do
+              `actions` do PageShell e não perto de uma lista.
+
+              E nenhum dos dois botões tinha rótulo acessível: eram dois ícones
+              sem nome, e quem usa leitor de tela ouvia "botão, botão". */}
+          <SegmentedControl<ViewMode>
+            rotuloGrupo="Visualização"
+            valor={viewMode}
+            onChange={setViewMode}
+            opcoes={[
+              { valor: "list", rotulo: "Lista", icone: List },
+              { valor: "calendar", rotulo: "Calendário", icone: CalendarDays },
+            ]}
+          />
           <Button onClick={() => setCreateOpen(true)} size="sm">
             <Plus className="mr-1.5 h-3.5 w-3.5" />Atividade
           </Button>
@@ -345,7 +347,7 @@ export default function Activities() {
           Tudo
         </button>
         {(["call", "meeting", "task", "email", "note"] as ActivityType[]).map((t) => {
-          const Icon = typeIcons[t];
+          const Icon = ATIVIDADE_ICONE[t];
           return (
             <button
               key={t}
@@ -353,7 +355,7 @@ export default function Activities() {
               className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${typeFilter === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
             >
               <Icon className="h-3 w-3" />
-              {typeLabels[t]}
+              {ATIVIDADE_ROTULO[t]}
             </button>
           );
         })}
@@ -432,7 +434,7 @@ export default function Activities() {
             </TableHeader>
             <TableBody>
               {filtered.map((a) => {
-                const Icon = typeIcons[a.type];
+                const Icon = ATIVIDADE_ICONE[a.type];
                 const contact = getContact(a.contact_id);
                 const deal = getDeal(a.deal_id);
                 const company = getCompany(a.company_id) || (contact?.company_id ? getCompany(contact.company_id) : null);
@@ -616,7 +618,7 @@ export default function Activities() {
                   </div>
                   <div className="space-y-0.5">
                     {dayActivities.slice(0, 3).map((a) => {
-                      const ActIcon = typeIcons[a.type];
+                      const ActIcon = ATIVIDADE_ICONE[a.type];
                       return (
                         <div key={a.id} className={`flex items-center gap-1 rounded px-1 py-0.5 text-micro truncate bg-muted/50 ${isOverdue(a) ? "ring-1 ring-destructive" : ""}`}>
                           <ActIcon className={`h-2.5 w-2.5 shrink-0 ${typeColors[a.type]}`} />
@@ -791,21 +793,23 @@ function ActivityCreateEditModal({ open, onOpenChange, activity, contacts, compa
           <DialogDescription>{typeHints[type]}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          <div className="flex gap-1 rounded-lg border border-border bg-muted/50 p-1">
-            {(["task", "note", "call", "meeting", "email"] as ActivityType[]).map((t) => {
-              const Icon = typeIcons[t];
-              return (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors ${type === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {typeLabels[t]}
-                </button>
-              );
-            })}
-          </div>
+          {/* A SÉTIMA cópia, e a que mais custava: cinco opções, cada uma com
+              a classe inteira repetida na linha. Aqui o grupo ocupa a largura
+              do diálogo, por isso `className="w-full"` e cada botão crescendo
+              -- é o único uso em que as opções dividem o espaço em vez de se
+              acomodarem ao texto. */}
+          <SegmentedControl<ActivityType>
+            className="w-full [&>button]:flex-1"
+            rotuloGrupo="Tipo de atividade"
+            valor={type}
+            onChange={setType}
+            compactoNoCelular={false}
+            opcoes={(["task", "note", "call", "meeting", "email"] as ActivityType[]).map((t) => ({
+              valor: t,
+              rotulo: ATIVIDADE_ROTULO[t],
+              icone: ATIVIDADE_ICONE[t],
+            }))}
+          />
 
           <div className="space-y-1">
             <Label className="text-xs">

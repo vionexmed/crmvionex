@@ -184,7 +184,7 @@ export function StatCard({
         "group relative p-4 transition-colors",
         // Fundo próprio: é ele que tapa a grade e deixa só o vão de 1px à
         // mostra, formando a divisória.
-        emFaixa ? "min-w-0 bg-background" : "rounded-[var(--radius)] border border-border",
+        emFaixa ? "min-w-0 bg-background" : "rounded-lg border border-border",
         clickable && "cursor-pointer hover:bg-muted/60",
         noSource && "opacity-60",
       )}

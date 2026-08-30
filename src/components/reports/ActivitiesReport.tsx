@@ -8,6 +8,7 @@ import { RoscaComLegenda } from "@/components/dashboard/svg/RoscaComLegenda";
 import { BarrasAgrupadas } from "@/components/dashboard/svg/BarrasAgrupadas";
 import { formatarNumero } from "@/lib/formato";
 import { Download } from "lucide-react";
+import { ATIVIDADE_ROTULO, type ActivityType } from "@/lib/atividade-tipos";
 import {
   ActivityRow, Profile,
   pct, CHART_COLORS,
@@ -15,13 +16,12 @@ import {
 } from "@/components/reports/types";
 
 export function ActivitiesReport({ activities, members }: { activities: ActivityRow[]; members: Profile[] }) {
-  const typeLabels: Record<string, string> = { call: "Ligação", email: "Email", meeting: "Reunião", note: "Nota", task: "Tarefa" };
 
   // By type donut
   const byType = useMemo(() => {
     const map: Record<string, number> = {};
     activities.forEach((a) => { map[a.type] = (map[a.type] || 0) + 1; });
-    return Object.entries(map).map(([type, count]) => ({ name: typeLabels[type] || type, value: count }));
+    return Object.entries(map).map(([type, count]) => ({ name: ATIVIDADE_ROTULO[type as ActivityType] || type, value: count }));
   }, [activities]);
 
   type UserActivityRow = { name: string; total: number; call: number; email: number; meeting: number; note: number; task: number };

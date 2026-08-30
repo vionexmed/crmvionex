@@ -300,7 +300,7 @@ export default function Inbox() {
       {/* ============== Sidebar (Gmail-style) ============== */}
       <aside className="w-56 shrink-0 border-r border-border flex flex-col">
         <div className="p-3">
-          <Button onClick={() => setComposeOpen(true)} className="w-full justify-start gap-2 rounded-2xl shadow-sm h-11" size="lg">
+          <Button onClick={() => setComposeOpen(true)} className="w-full justify-start gap-2 rounded-lg shadow-sm h-11" size="lg">
             <Pencil className="h-4 w-4" />
             Escrever
           </Button>
@@ -481,7 +481,7 @@ export default function Inbox() {
           <div
             className={cn(
               expanded
-                ? "fixed inset-4 md:inset-10 z-50 bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden"
+                ? "fixed inset-4 md:inset-10 z-50 bg-background border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden"
                 : "flex-1 min-w-0 flex flex-col",
             )}
           >

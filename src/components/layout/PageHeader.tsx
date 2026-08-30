@@ -19,7 +19,7 @@ export function PageHeader({
   meta,
 }: PageHeaderProps) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border bg-card" style={{background: 'linear-gradient(135deg, hsl(var(--card)) 70%, hsl(var(--accent)) 100%)'}}>
+    <div className="relative overflow-hidden rounded-lg border border-border bg-card" style={{background: 'linear-gradient(135deg, hsl(var(--card)) 70%, hsl(var(--accent)) 100%)'}}>
       {/* Accent edge */}
       <div
         aria-hidden

@@ -10,7 +10,7 @@ const badgeVariants = cva(
   //
   // Raio do token (o mesmo de tudo), menos preenchimento lateral, e peso médio
   // em vez de semibold: o selo passa a ser uma marca, não um botão.
-  "inline-flex items-center rounded-[var(--radius)] border px-2 py-0.5 text-label font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-lg border px-2 py-0.5 text-label font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {

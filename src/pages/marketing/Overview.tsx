@@ -544,7 +544,7 @@ function HeroCard({ icon: Icon, iconColor, label, value, format, delta, sub }: a
   const positive = delta >= 0;
   return (
     <div
-      className="relative rounded-xl overflow-hidden vx-card-hover"
+      className="relative rounded-lg overflow-hidden vx-card-hover"
       style={{ border: "1px solid hsl(var(--border))", boxShadow: "var(--shadow-sm)" }}
     >
       {/* Top accent bar */}
@@ -588,7 +588,7 @@ function Kpi({ icon: Icon, iconColor, label, value, format, delta, sub, inverted
   const formatted = formatValue(animated, format);
   const positive = inverted ? delta <= 0 : delta >= 0;
   return (
-    <div className="rounded-xl bg-card overflow-hidden vx-card-hover" style={{ border: "1px solid hsl(var(--border))" }}>
+    <div className="rounded-lg bg-card overflow-hidden vx-card-hover" style={{ border: "1px solid hsl(var(--border))" }}>
       <div className="h-[2px]" style={{ background: iconColor || "hsl(var(--primary))" }} />
       <div className="p-3.5">
         <div className="flex items-center justify-between mb-2">

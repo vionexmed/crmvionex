@@ -6,17 +6,14 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Bell, Phone, Mail, Calendar, FileText, CheckSquare, Clock, Check,
+  Bell, Clock, Check,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { formatarDataHoraCurta } from "@/lib/formato";
+import { ATIVIDADE_ICONE } from "@/lib/atividade-tipos";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
-type ActivityType = Database["public"]["Enums"]["activity_type"];
 
-const typeIcons: Record<ActivityType, React.ComponentType<{ className?: string }>> = {
-  call: Phone, email: Mail, meeting: Calendar, note: FileText, task: CheckSquare,
-};
 
 export function NotificationBell() {
   const { orgId } = useOrg();
@@ -89,7 +86,7 @@ export function NotificationBell() {
             </div>
           ) : (
             pending.map((a) => {
-              const Icon = typeIcons[a.type];
+              const Icon = ATIVIDADE_ICONE[a.type];
               const overdue = isOverdue(a);
               const read = dismissed.has(a.id);
               return (

@@ -83,7 +83,7 @@ export function EmailStep({ orgId, userEmail, setCanContinue, setStepData }: Onb
 
       {!alreadyConfigured && (
         <>
-          <details className="rounded-xl border border-border bg-muted/50 p-4">
+          <details className="rounded-lg border border-border bg-muted/50 p-4">
             <summary className="text-sm font-medium cursor-pointer">Como obter</summary>
             <ol className="text-sm text-muted-foreground mt-2 space-y-1 list-decimal list-inside">
               <li>Crie conta gratuita em <span className="font-mono text-foreground">resend.com</span></li>

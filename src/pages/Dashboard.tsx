@@ -285,7 +285,7 @@ export default function Dashboard() {
               no computador a conta de quais células levam borda muda a cada
               quebra -- vira uma pilha de `nth-child` que erra em algum tamanho.
               Aqui a grade não sabe quantas colunas tem, e funciona igual. */}
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius)] border border-border bg-border lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
             {tilesDestaque.map((tile) =>
               isLoading ? (
                 <Skeleton key={tile.key} className="h-[132px]" />
@@ -348,7 +348,7 @@ export default function Dashboard() {
                   soltos eram dezesseis caixas -- e como estão em grupos de
                   três a cinco, a moldura por grupo é o que faz o grupo se ler
                   como grupo. */}
-              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius)] border border-border bg-border lg:grid-cols-3 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-3 xl:grid-cols-5">
                 {group.tiles.map((tile) =>
                   isLoading ? (
                     <Skeleton key={tile.key} className="h-[104px]" />

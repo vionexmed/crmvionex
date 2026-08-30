@@ -324,7 +324,7 @@ export default function Conversations() {
                     return (
                       <li key={m.id} className={cn("flex", isOut ? "justify-end" : "justify-start")}>
                         <div className={cn(
-                          "max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm",
+                          "max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm",
                           isOut ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
                         )}>
                           <div className="whitespace-pre-wrap break-words">{m.body}</div>

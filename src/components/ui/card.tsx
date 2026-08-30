@@ -15,7 +15,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     //
     // O raio vem do token porque havia `rounded-md` (115 usos) e `rounded-lg`
     // (92) competindo -- dois arredondamentos na mesma tela.
-    className={cn("rounded-[var(--radius)] border bg-card text-card-foreground", className)}
+    className={cn("rounded-lg border bg-card text-card-foreground", className)}
     {...props}
   />
 ));

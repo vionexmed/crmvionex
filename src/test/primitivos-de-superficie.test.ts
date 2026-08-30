@@ -58,8 +58,17 @@ describe("o cartão não tem dois sinais para a mesma coisa", () => {
    * Havia `rounded-md` (115 usos) e `rounded-lg` (92) competindo — dois
    * arredondamentos na mesma tela. O token é a fonte única.
    */
-  it("o raio vem do token", () => {
-    expect(CARD).toContain("rounded-[var(--radius)]");
+  /**
+   * `rounded-lg` JÁ é o token: o config define `lg: "var(--radius)"`.
+   *
+   * Eu tinha escrito `rounded-[var(--radius)]`, que dá o mesmo pixel e é uma
+   * QUARTA forma de dizer a mesma coisa -- exatamente o problema que vim
+   * resolver. A escala derivada é sm(6) / md(8) / lg(10), e é ela que deve
+   * aparecer no código.
+   */
+  it("o raio vem da escala derivada do token", () => {
+    expect(CARD).toMatch(/rounded-lg/);
+    expect(CARD).not.toContain("rounded-[var(");
   });
 });
 
