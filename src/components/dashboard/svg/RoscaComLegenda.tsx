@@ -34,9 +34,15 @@ export function RoscaComLegenda({
   const ocultas = ordenadas.length - visiveis.length;
 
   return (
-    <div className="flex items-center gap-4">
+    // `flex-wrap` e `justify-center`: na coluna estreita do painel, rosca de
+    // 168px mais a legenda não cabem lado a lado, e sem quebrar a legenda
+    // esmagaria até "WhatsApp" virar "Wha…". Quebrando, a rosca fica em cima e
+    // a legenda embaixo, com a largura toda.
+    //
+    // `min-w-[180px]` na legenda é o gatilho: abaixo disso ela desce.
+    <div className="flex flex-wrap items-center justify-center gap-4">
       <Donut fatias={ordenadas} formatar={formatar} tamanho={tamanho} />
-      <ul className="min-w-0 flex-1 space-y-1.5">
+      <ul className="w-full min-w-[180px] flex-1 space-y-1.5 sm:w-auto">
         {visiveis.map((f) => (
           <li key={f.nome} className="flex items-center gap-2 text-meta">
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: f.cor }} />

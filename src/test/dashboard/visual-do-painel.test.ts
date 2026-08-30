@@ -87,3 +87,59 @@ describe("os grupos de indicador usam o primitivo de seção", () => {
     expect(PAINEL).not.toMatch(/<section[\s\S]{0,200}vx-titulo-secao/);
   });
 });
+
+/**
+ * O layout do painel: coluna principal e lateral, não pilha.
+ *
+ * Os quatro gráficos ficavam empilhados, todos com o mesmo peso, e nada dizia
+ * qual olhar primeiro. Mas eles respondem perguntas de níveis diferentes:
+ * "o que aconteceu" é acompanhamento diário, "onde está travando" é consulta
+ * pontual.
+ */
+describe("os gráficos têm hierarquia", () => {
+  const PANEL = semComentarios(
+    readFileSync("src/components/dashboard/SdrChartsPanel.tsx", "utf8"),
+  );
+
+  it("duas colunas, a principal com o dobro", () => {
+    expect(PANEL).toMatch(/lg:grid-cols-\[minmax\(0,2fr\)_minmax\(0,1fr\)\]/);
+  });
+
+  /**
+   * `minmax(0, …)` em vez de `2fr 1fr` puro: sem ele a coluna não pode encolher
+   * abaixo do conteúdo, e um rótulo longo empurra a grade para fora da tela.
+   */
+  it("as colunas podem encolher abaixo do conteúdo", () => {
+    expect(PANEL).toContain("minmax(0,2fr)");
+    expect(PANEL).toContain("minmax(0,1fr)");
+  });
+
+  /**
+   * No celular vira uma coluna, e a ordem do DOM passa a ser a ordem de
+   * leitura. Evolução primeiro; funil e canais depois.
+   */
+  it("a evolução vem antes do funil na ordem do DOM", () => {
+    expect(PANEL.indexOf("GraficoEvolucao")).toBeLessThan(PANEL.indexOf("GraficoFunil"));
+  });
+
+  it("o esqueleto tem a mesma forma do conteúdo", () => {
+    // Esqueleto empilhado seguido de conteúdo em duas colunas faz a tela
+    // pular quando os dados chegam.
+    expect(PANEL).toMatch(/carregando[\s\S]{0,400}lg:grid-cols-\[minmax/);
+  });
+});
+
+describe("a rosca cabe na coluna estreita", () => {
+  const ROSCA = semComentarios(
+    readFileSync("src/components/dashboard/svg/RoscaComLegenda.tsx", "utf8"),
+  );
+
+  /**
+   * Rosca de 168px mais a legenda não cabem lado a lado numa coluna de ~340px.
+   * Sem quebrar, a legenda esmagaria até "WhatsApp" virar "Wha…".
+   */
+  it("quebra em vez de esmagar", () => {
+    expect(ROSCA).toContain("flex-wrap");
+    expect(ROSCA).toMatch(/min-w-\[180px\]/);
+  });
+});
