@@ -181,7 +181,7 @@ export function AICopilot() {
                 <Bot className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold">AI Copilot</h3>
+                <h3 className="vx-titulo-secao">AI Copilot</h3>
                 <p className="text-micro text-muted-foreground">⌘+J para abrir · Powered by Lovable AI</p>
               </div>
             </div>

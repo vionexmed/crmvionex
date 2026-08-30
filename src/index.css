@@ -498,3 +498,52 @@
   }
   .overflow-x-auto > * { scroll-snap-align: start; }
 }
+
+/* ── Hierarquia de texto ──────────────────────────────────────────────────
+ *
+ * Havia QUATORZE combinações diferentes de classe para título, entre `<h1>`,
+ * `<h2>` e `<h3>` soltos -- `text-2xl font-bold tracking-tight`, `text-xl
+ * font-bold`, `text-lg font-semibold`, `text-lg font-bold`, `text-base
+ * font-semibold`, `text-xs font-medium`… O nome da tela mudava de TAMANHO e de
+ * FONTE conforme onde você estava, porque `font-heading` (Poppins) aparecia em
+ * umas e as outras herdavam Nunito.
+ *
+ * São três níveis, e a diferença entre eles é de PAPEL, não de gosto:
+ *
+ *   .vx-titulo-tela    o nome da tela. Idêntico ao que o PageHeader renderiza,
+ *                      para que as telas que não usam a casca -- entrada,
+ *                      wizard, erro -- não pareçam de outro sistema.
+ *   .vx-titulo-painel   o nome do REGISTRO dentro de uma gaveta ou painel.
+ *                      Menor que o da tela porque não é a tela.
+ *   .vx-titulo-secao    um bloco dentro da tela. Igual ao CardTitle.
+ *
+ * Reduzir a UM só faria o nome de uma coluna de kanban ter o mesmo peso que o
+ * nome da página, e aí a hierarquia some junto com a divergência.
+ */
+.vx-titulo-tela {
+  @apply font-heading text-xl sm:text-2xl font-bold tracking-tight leading-tight;
+}
+
+.vx-titulo-painel {
+  @apply font-heading text-base font-semibold tracking-tight leading-tight;
+}
+
+.vx-titulo-secao {
+  @apply text-sm font-semibold leading-none tracking-tight;
+}
+
+/* Os subtítulos, um por nível de título.
+ *
+ * Havia oito formas para a linha que acompanha o nome da tela: `text-sm
+ * text-muted-foreground mt-1`, `text-muted-foreground` puro, `text-xs`,
+ * `mt-2 text-muted-foreground`… O título já estava padronizado e a linha
+ * abaixo dele não, então o par continuava desalinhado entre telas. */
+.vx-subtitulo-tela {
+  @apply mt-1 text-sm text-muted-foreground;
+}
+
+/* Um degrau abaixo do título de seção, e sempre em cor secundária. É o mesmo
+ * do CardDescription -- a mesma linha, com ou sem cartão em volta. */
+.vx-subtitulo {
+  @apply text-meta text-muted-foreground;
+}

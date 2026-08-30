@@ -37,11 +37,13 @@ export function PageHeader({
                 {kicker}
               </p>
             )}
-            <h1 className="font-heading text-xl sm:text-2xl font-bold tracking-tight leading-tight truncate">
+            {/* A classe, não as utilidades soltas: assim o nível existe em UM
+                lugar, e as telas sem casca (entrada, wizard, erro) usam o mesmo. */}
+            <h1 className="vx-titulo-tela truncate">
               {title}
             </h1>
             {description && (
-              <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+              <p className="vx-subtitulo-tela">
                 {description}
               </p>
             )}

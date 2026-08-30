@@ -537,7 +537,7 @@ export default function Inbox() {
           <ScrollArea className="flex-1">
             <div className="max-w-3xl mx-auto px-6 py-6 space-y-4">
               <div className="flex items-start justify-between gap-4">
-                <h1 className="text-xl font-semibold leading-tight">{selectedEmail.subject || "(sem assunto)"}</h1>
+                <h1 className="vx-titulo-tela">{selectedEmail.subject || "(sem assunto)"}</h1>
                 <button
                   onClick={() => toggleStar(selectedEmail)}
                   className="text-muted-foreground hover:text-amber-500 mt-1"

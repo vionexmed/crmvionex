@@ -88,7 +88,7 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
               <Avatar className="h-14 w-14"><AvatarFallback className="bg-primary/10 text-primary text-lg"><Building2 className="h-6 w-6" /></AvatarFallback></Avatar>
             )}
             <div className="flex-1">
-              <h2 className="text-lg font-bold">{company.name}</h2>
+              <h2 className="vx-titulo-painel">{company.name}</h2>
               {company.industry && <p className="text-sm text-muted-foreground">{company.industry}</p>}
               {company.domain && <p className="text-xs text-muted-foreground">{company.domain}</p>}
             </div>
@@ -100,7 +100,7 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
           {/* Metrics */}
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="rounded-lg border border-border p-2.5 text-center">
-              <p className="text-lg font-bold">{totalDeals}</p>
+              <p className="vx-titulo-painel">{totalDeals}</p>
               <p className="text-label text-muted-foreground uppercase">Negócios</p>
             </div>
             <div className="rounded-lg border border-border p-2.5 text-center">

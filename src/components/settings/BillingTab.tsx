@@ -39,7 +39,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
       {/* Usage */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-1.5"><CreditCard className="h-4 w-4" />Uso Atual</CardTitle>
+          <CardTitle className="flex items-center gap-1.5"><CreditCard className="h-4 w-4" />Uso Atual</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
@@ -69,7 +69,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 {plan.name === "Enterprise" && <Crown className="h-4 w-4 text-warning" />}
-                <CardTitle className="text-sm">{plan.name}</CardTitle>
+                <CardTitle>{plan.name}</CardTitle>
                 {plan.current && <Badge className="text-micro">Atual</Badge>}
               </div>
               <p className="text-lg font-bold">{plan.price}</p>
@@ -95,7 +95,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
       {/* Invoices */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Histórico de Faturas</CardTitle>
+          <CardTitle>Histórico de Faturas</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

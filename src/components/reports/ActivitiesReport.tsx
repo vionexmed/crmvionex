@@ -62,7 +62,7 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Atividades por Tipo</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Atividades por Tipo</CardTitle></CardHeader>
           <CardContent>
             {byType.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -79,7 +79,7 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Atividades por Vendedor</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Atividades por Vendedor</CardTitle></CardHeader>
           <CardContent>
             {userActivity.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -105,7 +105,7 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Comparativo por Vendedor</CardTitle>
+            <CardTitle>Comparativo por Vendedor</CardTitle>
             <Button variant="outline" size="sm" className="h-7 text-label" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
           </div>
         </CardHeader>

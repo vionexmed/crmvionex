@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
-          <h2 className="text-lg font-semibold">Algo deu errado</h2>
+          <h2 className="vx-titulo-painel">Algo deu errado</h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
             Um erro inesperado ocorreu neste componente. Tente recarregar a página.
           </p>

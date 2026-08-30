@@ -122,7 +122,7 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
     return (
       <Card className="border-destructive/40">
         <CardHeader>
-          <CardTitle className="text-base">Sessões indisponíveis</CardTitle>
+          <CardTitle className="font-heading text-xl">Sessões indisponíveis</CardTitle>
           <CardDescription>
             {erro.includes("does not exist") || erro.includes("Could not find")
               ? "A função list_org_sessions ainda não existe no banco. Aplique a migração 20260818150000_sessoes.sql."
@@ -180,11 +180,11 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <CardTitle className="flex items-center gap-2 text-sm">
+                    <CardTitle className="flex items-center gap-2">
                       <span className="truncate">{p.pessoa}</span>
                       {euMesmo && <Badge variant="secondary" className="text-micro">você</Badge>}
                     </CardTitle>
-                    <CardDescription className="truncate text-meta">
+                    <CardDescription className="truncate">
                       {p.email} · {PAPEL[p.papel] ?? p.papel}
                     </CardDescription>
                   </div>

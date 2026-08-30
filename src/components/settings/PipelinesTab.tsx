@@ -125,8 +125,8 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Funis e etapas</CardTitle>
-          <CardDescription className="text-label">Gerencie seus funis de venda e as etapas de cada um</CardDescription>
+          <CardTitle>Funis e etapas</CardTitle>
+          <CardDescription>Gerencie seus funis de venda e as etapas de cada um</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
@@ -154,9 +154,9 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
       {selectedPipeline && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Etapas</CardTitle>
+            <CardTitle>Etapas</CardTitle>
             {/* Dizia "Arraste para reordenar" e não havia arraste nenhum. */}
-            <CardDescription className="text-label">Configure as etapas do funil selecionado. Use as setas para reordenar.</CardDescription>
+            <CardDescription>Configure as etapas do funil selecionado. Use as setas para reordenar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
@@ -202,8 +202,8 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Razões de Perda</CardTitle>
-          <CardDescription className="text-label">Motivos customizáveis quando um negócio é marcado como perdido</CardDescription>
+          <CardTitle>Razões de Perda</CardTitle>
+          <CardDescription>Motivos customizáveis quando um negócio é marcado como perdido</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">

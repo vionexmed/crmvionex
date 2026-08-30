@@ -62,8 +62,8 @@ export function CompleteStep({ stepData, completedSteps, onComplete }: Onboardin
   return (
     <div className="space-y-6 py-4">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">VIONEX configurado! 🎉</h2>
-        <p className="text-muted-foreground">
+        <h2 className="vx-titulo-tela">VIONEX configurado! 🎉</h2>
+        <p className="vx-subtitulo-tela">
           {configuredCount}/{items.length} itens configurados. Aqui está o resumo:
         </p>
       </div>

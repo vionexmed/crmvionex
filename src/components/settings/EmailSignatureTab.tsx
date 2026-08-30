@@ -81,13 +81,13 @@ export function EmailSignatureTab({ orgId }: { orgId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Assinatura padrão da empresa</CardTitle>
+          <CardTitle>Assinatura padrão da empresa</CardTitle>
           {/* A descrição dizia "usada automaticamente nos e-mails enviados",
               como se sempre valesse. Não vale: `gmail-send` resolve na ordem
               pessoal → empresa → legado, então quem montou a própria assinatura
               em Meu e-mail nunca vê esta. Um admin configurava isto e não
               entendia por que os próprios e-mails saíam diferentes. */}
-          <CardDescription className="text-label">
+          <CardDescription>
             Vale para quem ainda não montou a própria em <strong>Meu e-mail</strong>.
             A assinatura pessoal, quando existe, tem preferência sobre esta.
           </CardDescription>
@@ -141,8 +141,8 @@ export function EmailSignatureTab({ orgId }: { orgId: string | null }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Pré-visualização</CardTitle>
-          <CardDescription className="text-label">Como sua assinatura aparecerá nos e-mails</CardDescription>
+          <CardTitle>Pré-visualização</CardTitle>
+          <CardDescription>Como sua assinatura aparecerá nos e-mails</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border border-border bg-background p-4">

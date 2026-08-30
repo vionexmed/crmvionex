@@ -42,8 +42,8 @@ export function ImportExportTab({ orgId }: { orgId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Exportar Dados</CardTitle>
-          <CardDescription className="text-label">
+          <CardTitle>Exportar Dados</CardTitle>
+          <CardDescription>
             Exporte qualquer entidade como arquivo CSV
           </CardDescription>
         </CardHeader>
@@ -71,8 +71,8 @@ export function ImportExportTab({ orgId }: { orgId: string | null }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Importar Dados</CardTitle>
-          <CardDescription className="text-label">
+          <CardTitle>Importar Dados</CardTitle>
+          <CardDescription>
             Importe contatos e empresas via CSV. Acesse a lista de contatos ou empresas e use o botão "Importar CSV".
           </CardDescription>
         </CardHeader>

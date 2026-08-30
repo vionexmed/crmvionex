@@ -57,8 +57,8 @@ export function AICopilotStep({ orgId, setCanContinue, setStepData }: Onboarding
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold">Ative o AI Copilot</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="vx-titulo-tela">Ative o AI Copilot</h3>
+        <p className="vx-subtitulo-tela mt-1">
           O VIONEX usa Claude da Anthropic para gerar emails, analisar negócios e sugerir próximos passos.
         </p>
       </div>

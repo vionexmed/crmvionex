@@ -248,7 +248,7 @@ export default function EmailSequences() {
           <div className="flex-1 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold">{selectedSeq.name}</h2>
+                <h2 className="vx-titulo-painel">{selectedSeq.name}</h2>
                 {selectedSeq.description && <p className="text-xs text-muted-foreground">{selectedSeq.description}</p>}
               </div>
               <div className="flex gap-2">

@@ -60,8 +60,8 @@ export function StepContacts({ orgId, userId, onComplete, setStepData }: SetupSt
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <Users className="h-6 w-6 text-primary" />
         </div>
-        <CardTitle>Adicione seu primeiro contato</CardTitle>
-        <CardDescription>Crie um contato manualmente ou importe depois em lote</CardDescription>
+        <CardTitle className="font-heading text-xl">Adicione seu primeiro contato</CardTitle>
+        <CardDescription className="text-corpo">Crie um contato manualmente ou importe depois em lote</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {alreadyCreated && (

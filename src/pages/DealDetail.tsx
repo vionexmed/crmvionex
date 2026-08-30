@@ -155,7 +155,7 @@ export default function DealDetail() {
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <XCircle className="mx-auto h-10 w-10 text-destructive" />
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Não foi possível carregar o negócio</h2>
+          <h2 className="vx-titulo-painel">Não foi possível carregar o negócio</h2>
           <p className="text-sm text-muted-foreground">
             A consulta ao banco falhou. O negócio não foi alterado.
           </p>
@@ -311,7 +311,7 @@ export default function DealDetail() {
                 <button onClick={() => { setEditingTitle(false); setTitleDraft(deal.title); }} className="text-muted-foreground"><X className="h-5 w-5" /></button>
               </div>
             ) : (
-              <h1 className="text-2xl font-bold tracking-tight group cursor-pointer" onClick={() => { setTitleDraft(deal.title); setEditingTitle(true); }}>
+              <h1 className="vx-titulo-tela group cursor-pointer" onClick={() => { setTitleDraft(deal.title); setEditingTitle(true); }}>
                 {deal.title}
                 <Edit2 className="ml-2 inline h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
               </h1>
@@ -417,7 +417,7 @@ export default function DealDetail() {
           {/* Add activity form */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Adicionar Atividade</CardTitle>
+              <CardTitle className="font-medium">Adicionar Atividade</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex gap-2">
@@ -477,7 +477,7 @@ export default function DealDetail() {
           {/* Contact */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <CardTitle className="flex items-center gap-2 font-medium text-muted-foreground">
                 <User className="h-4 w-4" />Contato
               </CardTitle>
             </CardHeader>
@@ -508,7 +508,7 @@ export default function DealDetail() {
           {/* Company */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <CardTitle className="flex items-center gap-2 font-medium text-muted-foreground">
                 <Building2 className="h-4 w-4" />Empresa
               </CardTitle>
             </CardHeader>
@@ -525,7 +525,7 @@ export default function DealDetail() {
           {/* Owner */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <CardTitle className="flex items-center gap-2 font-medium text-muted-foreground">
                 <User className="h-4 w-4" />Responsável
               </CardTitle>
             </CardHeader>
@@ -547,7 +547,7 @@ export default function DealDetail() {
           {/* Details */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Detalhes</CardTitle>
+              <CardTitle className="font-medium text-muted-foreground">Detalhes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-center justify-between">

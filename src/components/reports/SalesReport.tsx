@@ -168,7 +168,7 @@ export function SalesReport({ deals, stages, members, companies }: {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Waterfall */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Waterfall de Negócios</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Waterfall de Negócios</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={waterfallData}>
@@ -186,7 +186,7 @@ export function SalesReport({ deals, stages, members, companies }: {
 
         {/* Funnel */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Negócios por etapa</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Negócios por etapa</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-1.5">
               {funnelData.map((s) => {
@@ -209,7 +209,7 @@ export function SalesReport({ deals, stages, members, companies }: {
 
         {/* Conversion rates */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Taxa de conversão por etapa</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Taxa de conversão por etapa</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={stageConversion}>
@@ -225,7 +225,7 @@ export function SalesReport({ deals, stages, members, companies }: {
 
         {/* Avg time per stage */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Tempo médio por etapa (dias)</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Tempo médio por etapa (dias)</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={avgTimePerStage} layout="vertical">
@@ -241,7 +241,7 @@ export function SalesReport({ deals, stages, members, companies }: {
 
         {/* Loss reasons */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Motivos de Perda</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Motivos de Perda</CardTitle></CardHeader>
           <CardContent>
             {lossReasons.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
@@ -262,7 +262,7 @@ export function SalesReport({ deals, stages, members, companies }: {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Negócios Agrupados</CardTitle>
+            <CardTitle>Negócios Agrupados</CardTitle>
             <div className="flex gap-2">
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
                 <SelectTrigger className="h-7 w-32 text-label"><SelectValue /></SelectTrigger>
@@ -316,7 +316,7 @@ export function SalesReport({ deals, stages, members, companies }: {
       {/* Owner performance */}
       {ownerStats.length > 0 && (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Performance por Vendedor</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Performance por Vendedor</CardTitle></CardHeader>
           <CardContent>
             <div className="rounded-md border overflow-hidden">
               <Table>

@@ -221,11 +221,11 @@ fetch("${endpoint}", {
       {/* Header info */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-yellow-500" />
             API de Captação de Leads
           </CardTitle>
-          <CardDescription className="text-label">
+          <CardDescription>
             Endpoint dedicado para receber leads de landing pages, formulários e qualquer sistema externo.
             Cria o contato automaticamente no CRM com status <strong>Lead</strong>.
           </CardDescription>
@@ -253,7 +253,7 @@ fetch("${endpoint}", {
       {/* Response format */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-meta">Resposta</CardTitle>
+          <CardTitle>Resposta</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 gap-3">
@@ -272,7 +272,7 @@ fetch("${endpoint}", {
       {/* Fields reference */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-meta flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-3.5 w-3.5" />
             Campos Disponíveis
           </CardTitle>
@@ -308,7 +308,7 @@ fetch("${endpoint}", {
       {/* Code examples */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-meta flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Code className="h-3.5 w-3.5" />
             Exemplos de Integração
           </CardTitle>
@@ -344,8 +344,8 @@ fetch("${endpoint}", {
       {pipelines.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-meta">IDs dos seus funis</CardTitle>
-            <CardDescription className="text-label">Use estes IDs no campo pipeline_id</CardDescription>
+            <CardTitle>IDs dos seus funis</CardTitle>
+            <CardDescription>Use estes IDs no campo pipeline_id</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -366,11 +366,11 @@ fetch("${endpoint}", {
       {/* Webhook integration note */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-meta flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Webhook className="h-3.5 w-3.5" />
             Receba notificações quando um lead chegar
           </CardTitle>
-          <CardDescription className="text-label">
+          <CardDescription>
             Configure webhooks de saída na aba "Webhooks" para receber uma chamada HTTP sempre que um lead for captado.
             Eventos disponíveis: <code className="bg-muted px-1 rounded">contact.created</code> e <code className="bg-muted px-1 rounded">deal.created</code>
           </CardDescription>

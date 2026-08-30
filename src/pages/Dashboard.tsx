@@ -335,7 +335,7 @@ export default function Dashboard() {
           {GROUPS.map((group) => (
             <section key={group.title} className="space-y-2">
               <div className="flex items-baseline gap-2">
-                <h2 className="font-heading text-sm font-semibold tracking-tight">{group.title}</h2>
+                <h2 className="vx-titulo-secao">{group.title}</h2>
                 <p className="text-meta text-muted-foreground">{group.description}</p>
               </div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">

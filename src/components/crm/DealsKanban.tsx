@@ -314,7 +314,7 @@ function StageColumn({
     >
       {/* Header — Pipedrive style */}
       <div className="mb-1 px-1">
-        <h3 className="text-corpo font-bold text-foreground leading-tight">{stage.name}</h3>
+        <h3 className="vx-titulo-secao text-foreground">{stage.name}</h3>
         <div className="flex items-center gap-1">
           <span className="text-meta text-muted-foreground font-medium">
             {formatarMoeda(total)}

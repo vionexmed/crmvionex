@@ -95,8 +95,8 @@ export function StepSlack({ orgId, onComplete, setStepData }: SetupStepProps) {
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: "#4A154B20" }}>
           <MessageSquare className="h-6 w-6" style={{ color: "#4A154B" }} />
         </div>
-        <h2 className="text-xl font-bold">Notificações no Slack</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        <h2 className="vx-titulo-tela">Notificações no Slack</h2>
+        <p className="vx-subtitulo-tela mx-auto mt-1 max-w-md">
           Receba alertas de deals ganhos, resumo diário e mencione contatos diretamente no Slack.
         </p>
       </div>
@@ -105,7 +105,7 @@ export function StepSlack({ orgId, onComplete, setStepData }: SetupStepProps) {
         {/* Part A — Connect */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Conectar ao Slack</CardTitle>
+            <CardTitle>Conectar ao Slack</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {connectionStatus === "connected" ? (
@@ -173,7 +173,7 @@ export function StepSlack({ orgId, onComplete, setStepData }: SetupStepProps) {
         {connectionStatus === "connected" && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Configurar notificações</CardTitle>
+              <CardTitle>Configurar notificações</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2">

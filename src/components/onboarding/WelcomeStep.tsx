@@ -18,10 +18,10 @@ export function WelcomeStep({ userName, onNext }: OnboardingStepProps) {
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">
+        <h2 className="vx-titulo-tela">
           Bem-vindo ao VIONEX, {firstName}! 👋
         </h2>
-        <p className="text-muted-foreground max-w-md mx-auto">
+        <p className="vx-subtitulo-tela max-w-md mx-auto">
           Vamos configurar tudo em menos de 5 minutos.
           Você pode pular qualquer integração agora e configurar depois em Configurações.
         </p>

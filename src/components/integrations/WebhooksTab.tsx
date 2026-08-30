@@ -76,8 +76,8 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm">Webhooks de Saída</CardTitle>
-              <CardDescription className="text-label">Envie notificações para URLs externas quando eventos ocorrerem</CardDescription>
+              <CardTitle>Webhooks de Saída</CardTitle>
+              <CardDescription>Envie notificações para URLs externas quando eventos ocorrerem</CardDescription>
             </div>
             <Button size="sm" className="h-7 text-label" onClick={() => setShowCreate(true)}>
               <Plus className="mr-1 h-3 w-3" />Novo Webhook
@@ -121,8 +121,8 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
       {/* Inbound Webhook */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Webhook de Entrada</CardTitle>
-          <CardDescription className="text-label">
+          <CardTitle>Webhook de Entrada</CardTitle>
+          <CardDescription>
             Receba dados de ferramentas externas (Zapier, Make, etc.) via POST
           </CardDescription>
         </CardHeader>

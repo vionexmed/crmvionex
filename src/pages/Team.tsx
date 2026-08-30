@@ -320,11 +320,11 @@ export default function Team() {
           {isAdmin && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   Convidar via Magic Link
                 </CardTitle>
-                <CardDescription className="text-xs">O convidado receberá um link de acesso por email</CardDescription>
+                <CardDescription>O convidado receberá um link de acesso por email</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
@@ -356,7 +356,7 @@ export default function Team() {
           {invitations.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Convites Pendentes ({invitations.length})</CardTitle>
+                <CardTitle>Convites Pendentes ({invitations.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -388,7 +388,7 @@ export default function Team() {
           {/* Members list */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Membros ({members.length})</CardTitle>
+              <CardTitle>Membros ({members.length})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -456,8 +456,8 @@ export default function Team() {
         <TabsContent value="permissions" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Controle de Acesso (RBAC)</CardTitle>
-              <CardDescription className="text-xs">
+              <CardTitle>Controle de Acesso (RBAC)</CardTitle>
+              <CardDescription>
                 O que cada papel pode fazer. Essas regras são aplicadas no banco de dados
                 (Row Level Security) — valem para o app, exportações e API.
               </CardDescription>
@@ -509,7 +509,7 @@ export default function Team() {
           {isAdmin && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Nova Equipe</CardTitle>
+                <CardTitle>Nova Equipe</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
@@ -540,7 +540,7 @@ export default function Team() {
               <Card key={team.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       {team.name}
                     </CardTitle>

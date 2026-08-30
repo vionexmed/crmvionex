@@ -34,8 +34,8 @@ export function AppearanceTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-1.5"><Palette className="h-4 w-4" />Tema</CardTitle>
-          <CardDescription className="text-label">Escolha entre modo claro, escuro ou automático</CardDescription>
+          <CardTitle className="flex items-center gap-1.5"><Palette className="h-4 w-4" />Tema</CardTitle>
+          <CardDescription>Escolha entre modo claro, escuro ou automático</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">
@@ -55,8 +55,8 @@ export function AppearanceTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Cor de Destaque</CardTitle>
-          <CardDescription className="text-label">Cor primária da interface</CardDescription>
+          <CardTitle>Cor de Destaque</CardTitle>
+          <CardDescription>Cor primária da interface</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-3">
@@ -73,7 +73,7 @@ export function AppearanceTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Densidade da Tabela</CardTitle>
+          <CardTitle>Densidade da Tabela</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">

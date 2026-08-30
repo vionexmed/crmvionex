@@ -140,8 +140,8 @@ export function WhatsAppOfficialCard() {
                 <MessageCircle className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <CardTitle className="text-sm">WhatsApp Business (Meta Oficial)</CardTitle>
-                <CardDescription className="text-label">
+                <CardTitle>WhatsApp Business (Meta Oficial)</CardTitle>
+                <CardDescription>
                   Cloud API oficial — envio e recebimento de mensagens
                 </CardDescription>
               </div>

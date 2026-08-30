@@ -90,8 +90,8 @@ export function GeneralTab({ orgId, userId, profile }: { orgId: string | null; u
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Perfil Pessoal</CardTitle>
-          <CardDescription className="text-label">Suas informações pessoais</CardDescription>
+          <CardTitle>Perfil Pessoal</CardTitle>
+          <CardDescription>Suas informações pessoais</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -116,8 +116,8 @@ export function GeneralTab({ orgId, userId, profile }: { orgId: string | null; u
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Organização</CardTitle>
-          <CardDescription className="text-label">Configurações gerais da organização</CardDescription>
+          <CardTitle>Organização</CardTitle>
+          <CardDescription>Configurações gerais da organização</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -153,8 +153,8 @@ export function GeneralTab({ orgId, userId, profile }: { orgId: string | null; u
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Indústrias</CardTitle>
-          <CardDescription className="text-label">Personalize as opções de indústria disponíveis ao cadastrar empresas</CardDescription>
+          <CardTitle>Indústrias</CardTitle>
+          <CardDescription>Personalize as opções de indústria disponíveis ao cadastrar empresas</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">

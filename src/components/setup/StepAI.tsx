@@ -33,8 +33,8 @@ export function StepAI({ orgId: _orgId, onComplete, setStepData }: SetupStepProp
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <Brain className="h-6 w-6 text-primary" />
         </div>
-        <CardTitle>AI Copilot</CardTitle>
-        <CardDescription>
+        <CardTitle className="font-heading text-xl">AI Copilot</CardTitle>
+        <CardDescription className="text-corpo">
           Inteligência artificial integrada ao seu CRM para insights, redação de emails e análise de risco.
         </CardDescription>
       </CardHeader>

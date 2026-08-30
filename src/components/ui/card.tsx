@@ -16,14 +16,29 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props} />
+    <h3
+      ref={ref}
+      // `text-2xl` era o default e NUNCA era o que se queria: 81 dos 86 usos
+      // sobrescreviam, 66 deles para `text-sm`. O default agora é o caso comum
+      // -- título de seção dentro de um cartão -- e quem quer maior declara.
+      className={cn("text-sm font-semibold leading-none tracking-tight", className)}
+      {...props}
+    />
   ),
 );
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+    <p
+      ref={ref}
+      // 11px, um degrau abaixo do título de 14. Os call sites usavam 10px em 26
+      // lugares e 11px em 6; 10px ao lado de um título de 14 abre um vão de
+      // quatro degraus e o texto some. Onze ainda é claramente secundário e se
+      // lê.
+      className={cn("text-meta text-muted-foreground", className)}
+      {...props}
+    />
   ),
 );
 CardDescription.displayName = "CardDescription";

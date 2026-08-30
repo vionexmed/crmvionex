@@ -131,8 +131,8 @@ export function CompanyStep({ orgId, userId, setCanContinue, onNext, setOrgId, s
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold">Conte-nos sobre sua empresa</h3>
-        <p className="text-sm text-muted-foreground mt-1">Essas informações personalizam sua experiência</p>
+        <h3 className="vx-titulo-tela">Conte-nos sobre sua empresa</h3>
+        <p className="vx-subtitulo-tela mt-1">Essas informações personalizam sua experiência</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

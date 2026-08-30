@@ -71,8 +71,8 @@ export function CustomFieldsTab({ orgId }: { orgId: string | null }) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm">Campos Customizados</CardTitle>
-              <CardDescription className="text-label">Adicione campos extras para suas entidades</CardDescription>
+              <CardTitle>Campos Customizados</CardTitle>
+              <CardDescription>Adicione campos extras para suas entidades</CardDescription>
             </div>
             <Button size="sm" className="h-7 text-label" onClick={() => setShowCreate(true)}>
               <Plus className="mr-1 h-3 w-3" />Novo Campo

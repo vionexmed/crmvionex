@@ -173,7 +173,7 @@ function OwnerColumn({
               <UserX className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
           )}
-          <h3 className="text-sm font-semibold truncate max-w-[140px]">
+          <h3 className="vx-titulo-secao truncate max-w-[140px]">
             {owner?.name || "Sem responsável"}
           </h3>
           <span className="rounded-full bg-muted px-1.5 py-0.5 text-label font-medium text-muted-foreground">

@@ -15,8 +15,8 @@ const NotFound = () => {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="text-center max-w-md">
         <div className="mb-6 text-8xl font-bold text-primary/20">404</div>
-        <h1 className="text-2xl font-bold">Página não encontrada</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="vx-titulo-tela">Página não encontrada</h1>
+        <p className="vx-subtitulo-tela mt-2">
           A página <code className="rounded bg-muted px-1.5 py-0.5 text-sm">{location.pathname}</code> não existe ou foi movida.
         </p>
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">

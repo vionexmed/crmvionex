@@ -366,7 +366,7 @@ export default function LeadScoring() {
           {/* Rules config */}
           <Card className="lg:col-span-1">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm">Regras de Pontuação</CardTitle>
+              <CardTitle>Regras de Pontuação</CardTitle>
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={openNewRule}>
                 <Plus className="mr-1 h-3 w-3" />Nova Regra
               </Button>

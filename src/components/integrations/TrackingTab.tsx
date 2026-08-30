@@ -66,11 +66,11 @@ export function TrackingTab({ orgId }: { orgId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
             Rastreamento de Website
           </CardTitle>
-          <CardDescription className="text-label">
+          <CardDescription>
             Adicione este snippet ao seu site para rastrear visitantes e aumentar o lead score automaticamente
           </CardDescription>
         </CardHeader>

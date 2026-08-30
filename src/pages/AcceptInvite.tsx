@@ -168,7 +168,7 @@ export default function AcceptInvite() {
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-base">Não foi possível abrir o convite</CardTitle>
+            <CardTitle className="font-heading text-xl">Não foi possível abrir o convite</CardTitle>
             <CardDescription className="pt-1 leading-relaxed">{erro}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -196,12 +196,12 @@ export default function AcceptInvite() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
             <Handshake className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Você foi convidado(a)!</h1>
+          <h1 className="vx-titulo-tela">Você foi convidado(a)!</h1>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Concluir cadastro</CardTitle>
-            <CardDescription>
+            <CardTitle className="font-heading text-xl">Concluir cadastro</CardTitle>
+            <CardDescription className="text-corpo">
               Defina seu nome e uma senha para acessar o CRM
               {email && <> — entrando como <span className="font-medium">{email}</span></>}
             </CardDescription>

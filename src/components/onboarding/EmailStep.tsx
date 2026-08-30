@@ -75,8 +75,8 @@ export function EmailStep({ orgId, userEmail, setCanContinue, setStepData }: Onb
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold">Configure o envio de emails</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="vx-titulo-tela">Configure o envio de emails</h3>
+        <p className="vx-subtitulo-tela mt-1">
           Necessário para enviar cadências e emails de automação. A sincronização da caixa de entrada (Gmail/Outlook) é configurada em Configurações.
         </p>
       </div>

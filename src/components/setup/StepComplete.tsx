@@ -36,8 +36,8 @@ export function StepComplete({ completedSteps, onFinish }: StepCompleteProps) {
         <PartyPopper className="h-8 w-8 text-primary" />
       </div>
       <div>
-        <h2 className="text-2xl font-bold">Setup completo!</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h2 className="vx-titulo-tela">Setup completo!</h2>
+        <p className="vx-subtitulo-tela mt-1">
           Seu VIONEX está pronto para uso. Confira o que foi configurado:
         </p>
       </div>

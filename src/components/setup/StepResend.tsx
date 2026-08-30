@@ -55,8 +55,8 @@ export function StepResend({ orgId, userId: _userId, userEmail, onComplete, setS
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <Mail className="h-6 w-6 text-primary" />
         </div>
-        <h2 className="text-xl font-bold">Configure o envio de emails</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        <h2 className="vx-titulo-tela">Configure o envio de emails</h2>
+        <p className="vx-subtitulo-tela mx-auto mt-1 max-w-md">
           Necessário para enviar emails de sequências e automações pelo VIONEX.
           Não é necessário para a sincronização da sua caixa de entrada — isso é configurado no próximo passo.
         </p>
@@ -66,7 +66,7 @@ export function StepResend({ orgId, userId: _userId, userEmail, onComplete, setS
         {/* Left column — instructions */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Como configurar</CardTitle>
+            <CardTitle>Como configurar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <div className="flex gap-3">
@@ -103,7 +103,7 @@ export function StepResend({ orgId, userId: _userId, userEmail, onComplete, setS
         {/* Right column — inputs */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Credenciais</CardTitle>
+            <CardTitle>Credenciais</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

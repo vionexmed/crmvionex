@@ -158,7 +158,7 @@ function SessionsTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Shield className="h-4 w-4" />Política de senha
           </CardTitle>
           <CardDescription>O que está de fato em vigor</CardDescription>

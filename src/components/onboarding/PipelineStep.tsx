@@ -130,8 +130,8 @@ export function PipelineStep({ orgId, setCanContinue, onNext: _onNext, setStepDa
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold">Como é o seu processo de vendas?</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="vx-titulo-tela">Como é o seu processo de vendas?</h3>
+        <p className="vx-subtitulo-tela mt-1">
           {alreadyCreated ? "Funil configurado com sucesso." : "Escolha um modelo ou crie do zero. Você pode editar as etapas a qualquer momento."}
         </p>
       </div>

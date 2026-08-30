@@ -81,8 +81,8 @@ export function StepPipeline({ orgId, onComplete, setStepData }: SetupStepProps)
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <GitBranch className="h-6 w-6 text-primary" />
         </div>
-        <CardTitle>Crie seu funil de vendas</CardTitle>
-        <CardDescription>Defina as etapas do seu processo comercial</CardDescription>
+        <CardTitle className="font-heading text-xl">Crie seu funil de vendas</CardTitle>
+        <CardDescription className="text-corpo">Defina as etapas do seu processo comercial</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {alreadyCreated && (

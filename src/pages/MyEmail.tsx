@@ -247,8 +247,8 @@ export default function MyEmail() {
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <CardTitle className="text-sm">{conexao.email_address}</CardTitle>
-                <CardDescription className="text-meta">
+                <CardTitle>{conexao.email_address}</CardTitle>
+                <CardDescription>
                   {conexao.last_synced_at
                     ? `Última sincronização ${new Date(conexao.last_synced_at).toLocaleString("pt-BR")}`
                     : "Ainda não sincronizada"}

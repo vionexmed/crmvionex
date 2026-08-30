@@ -46,7 +46,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
         {FAIXAS_PREVISAO.map((faixa) => (
           <Card key={faixa.chave}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="font-medium text-muted-foreground">
                 {faixa.rotulo} <span className="text-xs">(≥{faixa.minimo}%)</span>
               </CardTitle>
             </CardHeader>
@@ -59,7 +59,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
         ))}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Valor em aberto</CardTitle>
+            <CardTitle className="font-medium text-muted-foreground">Valor em aberto</CardTitle>
           </CardHeader>
           <CardContent>
             <span className="text-2xl font-bold text-foreground">{formatarMoeda(totals.pipeline)}</span>
@@ -73,7 +73,7 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
           <Card key={bucket.chave}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base capitalize">{bucket.rotulo}</CardTitle>
+                <CardTitle className="capitalize">{bucket.rotulo}</CardTitle>
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-success" />

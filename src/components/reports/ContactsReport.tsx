@@ -102,7 +102,7 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Crescimento Mensal</CardTitle>
+              <CardTitle>Crescimento Mensal</CardTitle>
               <Button variant="outline" size="sm" className="h-7 text-label" onClick={exportCSV}><Download className="h-3 w-3 mr-1" />CSV</Button>
             </div>
           </CardHeader>
@@ -128,7 +128,7 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Distribuição por Status</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Distribuição por Status</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -145,7 +145,7 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
 
       {byOwner.length > 0 && (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Contatos por Dono</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Contatos por Dono</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={byOwner}>

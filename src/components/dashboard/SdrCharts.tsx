@@ -42,8 +42,8 @@ export function GraficoEvolucao({ dados }: { dados: PontoSerie[] }) {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Evolução no período</CardTitle>
-        <CardDescription className="text-meta">
+        <CardTitle>Evolução no período</CardTitle>
+        <CardDescription>
           Leads que entraram, abordagens que saíram e respostas que voltaram
         </CardDescription>
       </CardHeader>
@@ -73,8 +73,8 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Funil de conversão</CardTitle>
-        <CardDescription className="text-meta">
+        <CardTitle>Funil de conversão</CardTitle>
+        <CardDescription>
           Quantos chegaram a cada etapa, e a perda entre elas
         </CardDescription>
       </CardHeader>
@@ -140,8 +140,8 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-sm">Leads por canal</CardTitle>
-            <CardDescription className="text-meta">De onde cada lead chegou</CardDescription>
+            <CardTitle>Leads por canal</CardTitle>
+            <CardDescription>De onde cada lead chegou</CardDescription>
           </div>
           {maioriaSemOrigem && (
             <Badge variant="outline" className="shrink-0 text-micro">origem incompleta</Badge>
@@ -197,8 +197,8 @@ export function GraficoPessoas({ dados }: { dados: LinhaPessoa[] }) {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-sm">Desempenho por pessoa</CardTitle>
-            <CardDescription className="text-meta">
+            <CardTitle>Desempenho por pessoa</CardTitle>
+            <CardDescription>
               Leads recebidos, abordagens, reuniões e vendas no período
             </CardDescription>
           </div>

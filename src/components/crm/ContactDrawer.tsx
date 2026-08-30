@@ -244,7 +244,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h2 className="text-lg font-bold">{contact.first_name} {contact.last_name}</h2>
+              <h2 className="vx-titulo-painel">{contact.first_name} {contact.last_name}</h2>
               {contact.title && <p className="text-sm text-muted-foreground">{contact.title}</p>}
               <div className="mt-1.5 flex items-center gap-2">
                 <Badge variant="secondary" className={LIFECYCLE_BADGE[contact.lifecycle_stage ?? "lead"]}>

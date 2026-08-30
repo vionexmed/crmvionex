@@ -41,12 +41,12 @@ export default function ResetPassword() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
             <Handshake className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Nova senha</h1>
+          <h1 className="vx-titulo-tela">Nova senha</h1>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Redefinir senha</CardTitle>
-            <CardDescription>Digite sua nova senha</CardDescription>
+            <CardTitle className="font-heading text-xl">Redefinir senha</CardTitle>
+            <CardDescription className="text-corpo">Digite sua nova senha</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleReset} className="space-y-4">

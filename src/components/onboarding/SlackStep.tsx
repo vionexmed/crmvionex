@@ -134,8 +134,8 @@ export function SlackStep({ orgId, setCanContinue, setStepData }: OnboardingStep
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold">Receba alertas no Slack</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="vx-titulo-tela">Receba alertas no Slack</h3>
+        <p className="vx-subtitulo-tela mt-1">
           Notificações de deals ganhos, resumo diário do pipeline e alertas de negócios em risco direto no seu canal.
         </p>
       </div>

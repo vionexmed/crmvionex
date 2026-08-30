@@ -370,8 +370,8 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                 <Mail className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-sm">Google — credenciais OAuth</CardTitle>
-                <CardDescription className="text-label">
+                <CardTitle>Google — credenciais OAuth</CardTitle>
+                <CardDescription>
                   Configuradas uma vez pela empresa. Cada pessoa conecta o próprio Gmail depois.
                 </CardDescription>
               </div>
@@ -546,8 +546,8 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-sm">{intg.name}</CardTitle>
-                      <CardDescription className="text-label">{intg.description}</CardDescription>
+                      <CardTitle>{intg.name}</CardTitle>
+                      <CardDescription>{intg.description}</CardDescription>
                     </div>
                   </div>
                   {cfg && <Switch checked={cfg.is_active} onCheckedChange={(v) => toggleActive(cfg.id, v)} />}

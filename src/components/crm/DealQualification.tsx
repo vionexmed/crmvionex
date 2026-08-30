@@ -88,7 +88,7 @@ export function DealQualification({ dealId, qualification, onUpdate }: Props) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+          <CardTitle className="flex items-center gap-2 font-medium">
             <Shield className="h-4 w-4 text-primary" />Qualificação BANT
           </CardTitle>
           <div className="flex items-center gap-2">

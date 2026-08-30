@@ -102,8 +102,8 @@ export default function Login() {
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center gap-2">
           <img src={vionexLogo} alt="VIONEX" className="h-24 w-24 object-contain" />
-          <h1 className="text-2xl font-bold tracking-tight">VIONEX</h1>
-          <p className="text-sm text-muted-foreground">Gerencie seus relacionamentos com inteligência</p>
+          <h1 className="vx-titulo-tela">VIONEX</h1>
+          <p className="vx-subtitulo-tela">Gerencie seus relacionamentos com inteligência</p>
         </div>
 
         <Card className="border-border">
@@ -224,7 +224,7 @@ export default function Login() {
                   <div className="py-8 text-center">
                     <Mail className="mx-auto mb-4 h-12 w-12 text-primary" />
                     <CardTitle className="mb-2">Verifique seu email</CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-corpo">
                       Enviamos um link mágico para <strong>{email}</strong>
                     </CardDescription>
                   </div>

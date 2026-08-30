@@ -579,7 +579,7 @@ export default function Activities() {
               const d = new Date(p.year, p.month - 1);
               return { year: d.getFullYear(), month: d.getMonth() };
             })}><ChevronLeft className="h-4 w-4" /></Button>
-            <h3 className="text-sm font-semibold">{monthNames[calMonth.month]} {calMonth.year}</h3>
+            <h3 className="vx-titulo-secao">{monthNames[calMonth.month]} {calMonth.year}</h3>
             <Button variant="outline" size="sm" onClick={() => setCalMonth((p) => {
               const d = new Date(p.year, p.month + 1);
               return { year: d.getFullYear(), month: d.getMonth() };

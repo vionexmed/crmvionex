@@ -71,10 +71,10 @@ export default function MarketingOverview() {
             <span style={{ color: "#CDD1D8" }}>›</span>
             <span style={{ color: "var(--vx-navy)", fontWeight: 500 }}>{cfg.breadcrumb}</span>
           </div>
-          <h1 className="text-xl font-medium tracking-tight" style={{ color: "var(--vx-navy)" }}>
+          <h1 className="vx-titulo-tela" style={{ color: "var(--vx-navy)" }}>
             {cfg.h1}
           </h1>
-          <p className="text-xs" style={{ color: "var(--vx-text-2)" }}>{cfg.sub}</p>
+          <p className="vx-subtitulo-tela" style={{ color: "var(--vx-text-2)" }}>{cfg.sub}</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -209,7 +209,7 @@ function MarketingEmptyState({ platform, tab }: { platform: string; tab: string 
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent mb-4 ring-8 ring-accent/20">
         <PlugZap className="h-8 w-8 text-primary" />
       </div>
-      <h3 className="text-base font-semibold" style={{ color: "var(--vx-navy)" }}>
+      <h3 className="vx-titulo-painel" style={{ color: "var(--vx-navy)" }}>
         Sem dados de {platform}
       </h3>
       <p className="mt-2 max-w-sm text-sm" style={{ color: "var(--vx-text-2)" }}>
@@ -877,7 +877,7 @@ function SectionHeader({ title, sub, children }: { title: string; sub?: string; 
   return (
     <div className="flex items-start justify-between gap-2">
       <div>
-        <h3 className="text-xs font-medium" style={{ color: "var(--vx-navy)" }}>{title}</h3>
+        <h3 className="vx-titulo-secao" style={{ color: "var(--vx-navy)" }}>{title}</h3>
         {sub && <p className="text-label mt-0.5" style={{ color: "var(--vx-text-3)" }}>{sub}</p>}
       </div>
       {children}
