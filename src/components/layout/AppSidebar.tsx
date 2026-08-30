@@ -149,7 +149,7 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupContent>
               {!collapsed && (
-                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">
+                <p className="mb-1 px-2 text-label font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">
                   Principal
                 </p>
               )}
@@ -166,7 +166,7 @@ export function AppSidebar() {
                         <span className="flex-1">Leads</span>
                       )}
                       {leadCount > 0 && !collapsed && (
-                        <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive/90 px-1 text-[9px] font-bold text-white leading-none">
+                        <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive/90 px-1 text-micro font-bold text-white leading-none">
                           {leadCount > 99 ? "99+" : leadCount}
                         </span>
                       )}
@@ -195,7 +195,7 @@ export function AppSidebar() {
             <SidebarGroup key={group.label} className={collapsed ? "mt-2 py-0" : ""}>
               <SidebarGroupContent>
                 {!collapsed && (
-                  <p className="mb-1 mt-3 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">
+                  <p className="mb-1 mt-3 px-2 text-label font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">
                     {group.label}
                   </p>
                 )}
@@ -236,7 +236,7 @@ export function AppSidebar() {
                   <span className="truncate text-[13px] font-semibold text-sidebar-foreground">
                     {profile?.name || "Usuário"}
                   </span>
-                  <span className="truncate text-[11px] text-sidebar-foreground/50">
+                  <span className="truncate text-meta text-sidebar-foreground/50">
                     {profile?.email}
                   </span>
                 </div>

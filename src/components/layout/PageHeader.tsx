@@ -34,7 +34,7 @@ export function PageHeader({
           </div>
           <div className="min-w-0">
             {kicker && (
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 {kicker}
               </p>
             )}

@@ -11,6 +11,33 @@ export default {
       screens: { "2xl": "1400px" },
     },
     extend: {
+      /**
+       * Os três degraus ABAIXO de `text-xs`, que o Tailwind não oferece.
+       *
+       * O projeto tinha 487 tamanhos arbitrários em px, e a leitura óbvia era
+       * "a escala está quebrada". Medindo, o quadro é outro: `text-xs` (546
+       * usos) e `text-sm` (379) seguem sendo os cavalos de batalha, e quase
+       * todo arbitrário está no extremo PEQUENO -- 10px (262), 9px (107),
+       * 11px (78), 8px (24). O Tailwind simplesmente não tem nome para eles,
+       * porque assume corpo de 16px, e aqui o corpo é 13px.
+       *
+       * Por isso a escala é ADITIVA, não substitutiva: trocar o valor de
+       * `text-xs` mexeria em 546 lugares de uma vez. Aqui nada muda de tamanho
+       * -- os nomes só param de ser inventados.
+       *
+       * 8px foi absorvido em `micro`: um pixel a mais é imperceptível nas
+       * iniciais de avatar, e 8px está abaixo do mínimo legível de qualquer
+       * jeito. Uma medida a menos na régua.
+       *
+       * A entrelinha vem junto de propósito. Tamanho sem entrelinha declarada
+       * herda a do contexto, e é daí que vem a sensação de texto "apertado" em
+       * umas telas e "solto" em outras usando o mesmo tamanho.
+       */
+      fontSize: {
+        micro: ["0.5625rem", { lineHeight: "0.75rem" }],  //  9px / 12
+        label: ["0.625rem", { lineHeight: "0.875rem" }],  // 10px / 14
+        meta: ["0.6875rem", { lineHeight: "0.9375rem" }], // 11px / 15
+      },
       fontFamily: {
         sans: ['Nunito', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
         heading: ['Poppins', 'sans-serif'],

@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { formatarData } from "@/lib/formato";
+import { initials } from "@/lib/utils";
 import { Users as UsersIcon } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,7 @@ import {
 } from "lucide-react";
 import { ContactsKanbanByOwner } from "@/components/crm/ContactsKanbanByOwner";
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+  Tooltip, TooltipContent, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { ContactDrawer } from "@/components/crm/ContactDrawer";
@@ -107,7 +108,7 @@ function LifecycleBadge({ stage }: { stage: LifecycleStage | null }) {
 function OriginBadge({ metadata }: { metadata: unknown }) {
   const o = getContactOrigin(metadata as Record<string, unknown> | null);
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5 text-label font-medium text-muted-foreground whitespace-nowrap">
       <span className="h-2 w-2 rounded-full shrink-0" style={{ background: o.color }} />
       {o.label}
     </span>
@@ -138,6 +139,7 @@ export default function Contacts() {
 
   // Debounce search to avoid a query on every keystroke
   const debouncedSearch = useDebounce(search, 300);
+
 
   // Reset to page 0 when filters/search/sort change
   useEffect(() => { setPage(0); }, [debouncedSearch, filters, sortKey, sortDir]);
@@ -182,6 +184,17 @@ export default function Contacts() {
 
   // Supporting data (small datasets, cached separately)
   const { data: companies = [] } = useCompanies();
+  /**
+   * Empresa por id, em vez de `.find()` dentro do `.map()` das linhas.
+   *
+   * Com 50 linhas e 200 empresas, aquilo era 10 mil comparações por render --
+   * e refazia tudo a cada tecla digitada na busca. O mapa é O(1) por linha e
+   * só é reconstruído quando a lista de empresas muda.
+   */
+  const empresaPorId = useMemo(
+    () => new Map(companies.map((co) => [co.id, co])),
+    [companies],
+  );
   const { data: members = [] } = useMembers();
   const { data: lastActivityMap = new Map() } = useLastActivities();
 
@@ -312,7 +325,7 @@ export default function Contacts() {
         search: debouncedSearch || undefined, sortKey, sortDir, ...filters,
       });
       const rows = allContacts.map((c) => {
-        const comp = companies.find((co) => co.id === (c as Record<string, unknown>).company_id);
+        const comp = empresaPorId.get((c as Record<string, unknown>).company_id as string);
         return {
           Nome: c.first_name, Sobrenome: c.last_name || "", Email: c.email || "",
           Telefone: cleanPhone(c.phone), Cargo: c.title || "", Empresa: comp?.name || "", "Ciclo de vida": LIFECYCLE_LABELS[c.lifecycle_stage ?? "lead"],
@@ -333,6 +346,16 @@ export default function Contacts() {
     }
   };
 
+  /**
+   * Definido DENTRO do render, e isso custa caro.
+   *
+   * Um componente declarado no corpo de outro é um tipo novo a cada render: o
+   * React não compara, desmonta e remonta a subárvore. Aqui isso significa
+   * remontar todos os cabeçalhos da tabela a cada tecla digitada na busca.
+   *
+   * Fica como está por ora -- mover para fora exige passar `toggleSort` por
+   * prop, e o piloto já mudou bastante. Está anotado como dívida.
+   */
   const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
     <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-foreground transition-colors">
       {label}<ArrowUpDown className="h-3 w-3" />
@@ -515,7 +538,7 @@ export default function Contacts() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 shrink-0">
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {c.first_name?.[0] || "?"}{c.last_name?.[0] || ""}
+                          {initials(`${c.first_name ?? ""} ${c.last_name ?? ""}`)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
@@ -526,16 +549,14 @@ export default function Contacts() {
                             if (days === null || days < 14) return null;
                             const isHigh = days >= 21;
                             return (
-                              <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded ${isHigh ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
+                                    <span className={`inline-flex items-center gap-0.5 text-micro font-semibold px-1 py-0.5 rounded ${isHigh ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
                                       <AlertTriangle className="h-2.5 w-2.5" />{days}d
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="text-xs">{days} dias sem atividade</TooltipContent>
                                 </Tooltip>
-                              </TooltipProvider>
                             );
                           })()}
                         </div>
@@ -546,7 +567,7 @@ export default function Contacts() {
                   <TableCell className="text-muted-foreground text-xs">{c.email || "—"}</TableCell>
                   <TableCell className="text-muted-foreground hidden sm:table-cell text-xs">
                     {(() => {
-                      const comp = companies.find((co) => co.id === (c as Record<string, unknown>).company_id);
+                      const comp = empresaPorId.get((c as Record<string, unknown>).company_id as string);
                       if (comp) return comp.name;
                       const meta = (c as Record<string, unknown>).metadata as Record<string, string> | null;
                       return meta?.empresa_manual || "—";
@@ -603,7 +624,7 @@ export default function Contacts() {
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                      {c.first_name?.[0] || "?"}{c.last_name?.[0] || ""}
+                      {initials(`${c.first_name ?? ""} ${c.last_name ?? ""}`)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="overflow-hidden">
