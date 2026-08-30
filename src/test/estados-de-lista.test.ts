@@ -20,7 +20,6 @@ const TELAS = [
   "src/pages/Contacts.tsx",
   "src/pages/Companies.tsx",
   "src/pages/Activities.tsx",
-  "src/pages/Tasks.tsx",
   "src/pages/EmailTemplates.tsx",
   "src/pages/EmailSequences.tsx",
   "src/pages/Reports.tsx",
@@ -66,7 +65,6 @@ describe("os hooks de consulta param de descartar o estado", () => {
   it.each([
     ["src/pages/Companies.tsx", "useCompanies"],
     ["src/pages/Activities.tsx", "useActivities"],
-    ["src/pages/Tasks.tsx", "useActivities"],
   ])("%s lê isLoading e isError de %s", (arquivo, hook) => {
     const src = semComentarios(readFileSync(arquivo, "utf8"));
     const linha = src.split("\n").find((l) => l.includes(`= ${hook}(`));

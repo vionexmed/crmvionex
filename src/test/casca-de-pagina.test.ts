@@ -28,7 +28,6 @@ const COM_CASCA = [
   "src/pages/Deals.tsx",
   "src/pages/Companies.tsx",
   "src/pages/Activities.tsx",
-  "src/pages/Tasks.tsx",
   "src/pages/Reports.tsx",
   "src/pages/SalesGoals.tsx",
   "src/pages/LeadScoring.tsx",
@@ -144,7 +143,6 @@ describe("o PageHeader não carrega prop morta", () => {
 
   it.each([
     "src/pages/Reports.tsx",
-    "src/pages/Tasks.tsx",
     "src/pages/Conversations.tsx",
     "src/pages/Activities.tsx",
     "src/pages/Companies.tsx",

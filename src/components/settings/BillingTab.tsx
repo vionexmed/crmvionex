@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { CreditCard, Crown } from "lucide-react";
+import { formatarNumero } from "@/lib/formato";
 
 export function BillingTab({ orgId }: { orgId: string | null }) {
   const [org, setOrg] = useState<any>(null);
@@ -50,7 +51,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
             ].map((item) => (
               <div key={item.label} className="text-center">
                 <p className="text-lg font-bold">{item.count}</p>
-                <p className="text-label text-muted-foreground">{item.label} {typeof item.limit === "number" ? `/ ${item.limit.toLocaleString()}` : ""}</p>
+                <p className="text-label text-muted-foreground">{item.label} {typeof item.limit === "number" ? `/ ${formatarNumero(item.limit)}` : ""}</p>
                 {typeof item.limit === "number" && (
                   <div className="mt-1 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                     <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, (item.count / item.limit) * 100)}%` }} />

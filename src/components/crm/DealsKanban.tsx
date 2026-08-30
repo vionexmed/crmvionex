@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_COR, aconteceuEm } from "@/lib/atividade-tipos";
-import { formatarDataCurta, formatarTempoRelativo } from "@/lib/formato";
+import { formatarDataCurta, formatarDataHora, formatarTempoRelativo } from "@/lib/formato";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -185,7 +185,7 @@ function DealCard({
               </p>
               {n.completed_at && (
                 <span
-                  title={new Date(n.completed_at).toLocaleString("pt-BR")}
+                  title={formatarDataHora(n.completed_at)}
                   className="shrink-0 text-label text-muted-foreground"
                 >
                   {formatarTempoRelativo(n.completed_at)}
@@ -214,7 +214,7 @@ function DealCard({
           </p>
           {ultimaInteracao.completed_at && (
             <span
-              title={new Date(ultimaInteracao.completed_at).toLocaleString("pt-BR")}
+              title={formatarDataHora(ultimaInteracao.completed_at)}
               className="shrink-0 text-label text-muted-foreground"
             >
               {formatarTempoRelativo(ultimaInteracao.completed_at)}

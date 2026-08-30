@@ -31,7 +31,7 @@ import {
 import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { Workflow as IconeDaPagina } from "lucide-react";
-import { formatarDataHoraCurta } from "@/lib/formato";
+import { formatarDataHora, formatarDataHoraCurta } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 // ── Types ──────────────────────────────────────────────
@@ -840,7 +840,7 @@ export default function Automations() {
           <DialogHeader>
             <DialogTitle>Detalhe da Execução</DialogTitle>
             <DialogDescription>
-              {selectedLog?.executed_at ? new Date(selectedLog.executed_at).toLocaleString("pt-BR") : "—"}
+              {selectedLog?.executed_at ? formatarDataHora(selectedLog.executed_at) : "—"}
             </DialogDescription>
           </DialogHeader>
           {selectedLog && (

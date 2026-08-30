@@ -252,6 +252,18 @@ describe("ninguém formata à mão", () => {
    * `{ hour: "2-digit", minute: "2-digit" }`. Três usos é repetição, não
    * exceção.
    */
+  /**
+   * O buraco que faltava. A varredura proibia `toLocaleDateString` e
+   * `toLocaleTimeString` e deixava `toLocaleString` passar -- e ele estava em
+   * NOVE lugares, formatando data, dinheiro e número.
+   *
+   * Uma regra que cobre dois dos três casos dá a impressão de estar fechada.
+   */
+  it("nenhum toLocaleString inline", () => {
+    const infratores = arquivos.filter((f) => /\.toLocaleString\(/.test(readFileSync(f, "utf8")));
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+
   it("nenhum toLocaleTimeString inline", () => {
     const infratores = arquivos.filter((f) => readFileSync(f, "utf8").includes("toLocaleTimeString"));
     expect(infratores, infratores.join("\n")).toEqual([]);

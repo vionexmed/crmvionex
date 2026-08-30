@@ -38,7 +38,7 @@ import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
 import { ATIVIDADE_JA_ACONTECEU } from "@/lib/atividade-tipos";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
-import { formatarDataCurta } from "@/lib/formato";
+import { formatarDataCurta, formatarDataHora } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
@@ -76,8 +76,7 @@ const HISTORICO: DateFilter[] = ["feitas", "todas"];
 
 const dataCurta = (iso: string) =>
   formatarDataCurta(iso);
-const dataLonga = (iso: string) =>
-  new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
 
 /** Quando a atividade de fato aconteceu. due_date é previsão, não registro. */
 function aconteceuEm(a: Activity): number {
@@ -132,7 +131,12 @@ export default function Activities() {
   const updateActivity = useUpdateActivity();
   const deleteActivities = useDeleteActivities();
 
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  // O tipo vem da URL. É o que permite `/activities?tipo=task` substituir a
+  // tela de Tarefas, que era esta mesma consulta com `type=task` fixo e 379
+  // linhas próprias para exibi-la.
+  const [typeFilter, setTypeFilter] = useState<string>(
+    () => new URLSearchParams(window.location.search).get("tipo") ?? "all",
+  );
   const [dateFilter, setDateFilter] = useState<DateFilter>("todo");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -140,6 +144,18 @@ export default function Activities() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editActivity, setEditActivity] = useState<Activity | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // A URL acompanha o filtro, para que a tela seja compartilhável e o botão
+  // Voltar funcione. Sem `replace`, cada clique num tipo empilharia uma entrada
+  // no histórico e sair da tela exigiria voltar tantas vezes quantos cliques.
+  useEffect(() => {
+    const atual = searchParams.get("tipo") ?? "all";
+    if (atual === typeFilter) return;
+    const novo = new URLSearchParams(searchParams);
+    if (typeFilter === "all") novo.delete("tipo");
+    else novo.set("tipo", typeFilter);
+    setSearchParams(novo, { replace: true });
+  }, [typeFilter, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (searchParams.get("action") === "new") {
@@ -481,21 +497,21 @@ export default function Activities() {
                           nenhuma, e "o que foi feito" ficava sem quando. */}
                       {a.due_date ? (
                         <span
-                          title={`Vence em ${dataLonga(a.due_date)}`}
+                          title={`Vence em ${formatarDataHora(a.due_date)}`}
                           className={`text-xs whitespace-nowrap ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}
                         >
                           {dataCurta(a.due_date)}
                         </span>
                       ) : a.completed_at ? (
                         <span
-                          title={`Concluída em ${dataLonga(a.completed_at)}`}
+                          title={`Concluída em ${formatarDataHora(a.completed_at)}`}
                           className="whitespace-nowrap text-xs font-medium text-success"
                         >
                           ✓ {dataCurta(a.completed_at)}
                         </span>
                       ) : a.created_at ? (
                         <span
-                          title={`Registrada em ${dataLonga(a.created_at)}`}
+                          title={`Registrada em ${formatarDataHora(a.created_at)}`}
                           className="whitespace-nowrap text-xs text-muted-foreground/70"
                         >
                           {dataCurta(a.created_at)}

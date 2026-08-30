@@ -26,10 +26,24 @@ describe("todo destino do menu existe no roteador", () => {
   const destinos = NAV_GRUPOS.flatMap((g) => g.items.map((i) => i.url));
 
   it.each(destinos)("%s é uma rota", (url) => {
+    // A query string não faz parte do caminho: "Tarefas" é
+    // `/activities?tipo=task`, o mesmo destino de Atividades com um filtro
+    // pré-selecionado.
+    const caminho = url.split("?")[0];
     // Rota aninhada aparece no App como caminho relativo: /marketing/visao-geral
     // está declarada como <Route path="visao-geral"> dentro de /marketing.
-    const existe = ROTAS.has(url) || ROTAS.has(url.split("/").pop()!);
+    const existe = ROTAS.has(caminho) || ROTAS.has(caminho.split("/").pop()!);
     expect(existe, `${url} não está no roteador`).toBe(true);
+  });
+
+  /**
+   * `/tasks` era uma tela inteira e virou redirecionamento. A rota TEM de
+   * continuar existindo: quem tem o link salvo ou nos favoritos precisa chegar
+   * ao mesmo lugar.
+   */
+  it("o caminho antigo de Tarefas continua atendendo", () => {
+    expect(APP).toContain('<Route path="/tasks"');
+    expect(APP).toMatch(/path="\/tasks" element=\{<Navigate to="\/activities\?tipo=task" replace \/>\}/);
   });
 
   it("nenhum destino é a raiz", () => {

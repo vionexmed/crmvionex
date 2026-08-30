@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Mail, Plug, Loader2, Unplug, ShieldCheck, TriangleAlert } from "lucide-react";
+import { formatarDataHora } from "@/lib/formato";
 
 type MinhaConexao = {
   id: string;
@@ -250,7 +251,7 @@ export default function MyEmail() {
                 <CardTitle>{conexao.email_address}</CardTitle>
                 <CardDescription>
                   {conexao.last_synced_at
-                    ? `Última sincronização ${new Date(conexao.last_synced_at).toLocaleString("pt-BR")}`
+                    ? `Última sincronização ${formatarDataHora(conexao.last_synced_at)}`
                     : "Ainda não sincronizada"}
                 </CardDescription>
               </div>
@@ -276,7 +277,7 @@ export default function MyEmail() {
                       {motivoDe(conexao.invalid_reason).explicacao}
                     </p>
                     <p className="text-label text-muted-foreground">
-                      Desde {new Date(conexao.invalid_since).toLocaleString("pt-BR")}. Enquanto
+                      Desde {formatarDataHora(conexao.invalid_since)}. Enquanto
                       isso, e-mail enviado por você e pelas automações dos seus leads não sai.
                     </p>
                   </div>

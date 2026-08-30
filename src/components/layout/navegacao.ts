@@ -45,7 +45,10 @@ export const NAV_GRUPOS: GrupoNav[] = [
       { title: "Empresas", url: "/companies", icon: Building2 },
       { title: "Negócios", url: "/deals", icon: Handshake, noCelular: true },
       { title: "Atividades", url: "/activities", icon: Activity, noCelular: true },
-      { title: "Tarefas", url: "/tasks", icon: CheckSquare },
+      // Tarefas é o filtro `tipo=task` de Atividades, não uma tela própria.
+      // Eram duas telas fazendo a MESMA consulta, e os filtros de data de
+      // Atividades já eram superconjunto dos de Tarefas.
+      { title: "Tarefas", url: "/activities?tipo=task", icon: CheckSquare },
     ],
   },
   {

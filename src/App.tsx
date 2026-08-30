@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -89,7 +89,6 @@ const Companies        = lazyChunk(() => import("./pages/Companies"));
 const Deals            = lazyChunk(() => import("./pages/Deals"));
 const DealDetail       = lazyChunk(() => import("./pages/DealDetail"));
 const Activities       = lazyChunk(() => import("./pages/Activities"));
-const Tasks            = lazyChunk(() => import("./pages/Tasks"));
 const Inbox            = lazyChunk(() => import("./pages/Inbox"));
 const MyEmail          = lazyChunk(() => import("./pages/MyEmail"));
 const Conversations    = lazyChunk(() => import("./pages/Conversations"));
@@ -173,7 +172,12 @@ const App = () => (
                 <Route path="/deals" element={<SuspenseRoute><Deals /></SuspenseRoute>} />
                 <Route path="/deals/:id" element={<SuspenseRoute><DealDetail /></SuspenseRoute>} />
                 <Route path="/activities" element={<SuspenseRoute><Activities /></SuspenseRoute>} />
-                <Route path="/tasks" element={<SuspenseRoute><Tasks /></SuspenseRoute>} />
+                {/* `/tasks` era uma tela inteira que fazia `useActivities("task")`
+                    -- a mesma consulta de Atividades com o tipo fixo, e 500
+                    linhas próprias para exibi-la. Vira redirecionamento, e não
+                    some: link salvo e favorito continuam chegando ao mesmo
+                    lugar. `replace` para o botão Voltar não cair de novo aqui. */}
+                <Route path="/tasks" element={<Navigate to="/activities?tipo=task" replace />} />
                 <Route path="/reports" element={<SuspenseRoute><Reports /></SuspenseRoute>} />
                 <Route path="/sales-goals" element={<SuspenseRoute><SalesGoals /></SuspenseRoute>} />
 

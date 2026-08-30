@@ -15,6 +15,7 @@ import { PageTabs } from "@/components/layout/PageTabs";
 import { MonitorSmartphone, ScrollText } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { Shield as IconeDaPagina } from "lucide-react";
+import { formatarDataHora } from "@/lib/formato";
 
 export default function SecuritySettings() {
   const { orgId } = useOrg();
@@ -125,7 +126,7 @@ function AuditLogTab({ orgId }: { orgId: string | null }) {
               filtered.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="text-xs whitespace-nowrap">
-                    {new Date(log.created_at).toLocaleString("pt-BR")}
+                    {formatarDataHora(log.created_at)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={actionColors[log.action] || ""}>

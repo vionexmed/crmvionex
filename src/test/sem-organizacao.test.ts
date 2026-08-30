@@ -27,9 +27,10 @@ describe("uma resposta só para quem não tem organização", () => {
     expect(infratores, infratores.join("\n")).toEqual([]);
   });
 
-  it("as onze usam o componente compartilhado", () => {
+  it("as dez usam o componente compartilhado", () => {
+    // Eram onze; `Tasks` virou um filtro de `Activities` e a tela saiu.
     const usam = PAGINAS.filter((f) => readFileSync(f, "utf8").includes("<SemOrganizacao />"));
-    expect(usam.length).toBe(11);
+    expect(usam.length).toBe(10);
   });
 
   /**

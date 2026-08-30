@@ -1,3 +1,4 @@
+import { formatarMoedaInteira, formatarNumero } from "@/lib/formato";
 /**
  * Utilitários e tipos do módulo de marketing.
  * Substitui o antigo marketingMockData.ts — que misturava utilitários com
@@ -5,9 +6,9 @@
  */
 
 export const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  formatarMoedaInteira(n);
 
-export const fmtNum = (n: number) => n.toLocaleString("pt-BR");
+export const fmtNum = (n: number) => formatarNumero(n);
 export const fmtPct = (n: number) => `${n.toFixed(2)}%`;
 
 export type Campaign = {

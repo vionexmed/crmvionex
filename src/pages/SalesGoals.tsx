@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageShell } from "@/components/layout/PageShell";
 import { Target as IconeDaPagina } from "lucide-react";
 import { buscarEmBlocos } from "@/lib/paginar";
+import { formatarMoedaInteira } from "@/lib/formato";
 
 const GOAL_TYPES = [
   { value: "revenue", label: "Receita (R$)", icon: TrendingUp, color: "text-emerald-500" },
@@ -252,7 +253,7 @@ export default function SalesGoals() {
   const goalTypeInfo = (type: string) => GOAL_TYPES.find((gt) => gt.value === type) || GOAL_TYPES[0];
 
   const formatValue = (type: string, value: number) => {
-    if (type === "revenue") return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`;
+    if (type === "revenue") return formatarMoedaInteira(value);
     return String(value);
   };
 
