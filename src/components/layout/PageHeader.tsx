@@ -6,7 +6,6 @@ interface PageHeaderProps {
   kicker?: string;
   title: string;
   description?: string;
-  pattern?: string; // kept for API compatibility, no longer used
   actions?: ReactNode;
   meta?: ReactNode;
 }

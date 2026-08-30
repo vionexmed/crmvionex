@@ -23,7 +23,7 @@ import {
   Gauge, RefreshCw, TriangleAlert,
   LineChart, ListFilter, Bot,
 } from "lucide-react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import { StatCard, type StatAccent, type StatFormat } from "@/components/dashboard/StatCard";
 import { DashboardAIChat } from "@/components/crm/DashboardAIChat";
 import { Button } from "@/components/ui/button";
@@ -212,45 +212,45 @@ export default function Dashboard() {
     .filter((t): t is TileConfig => !!t);
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        icon={Gauge}
-        kicker="Operação"
-        title="Painel de SDR"
-        description="Entrada, abordagem, conversão e velocidade de atendimento"
-        meta={
-          lastRefresh ? (
-            <p className="text-[11px] text-muted-foreground">
-              {SDR_PERIOD_LABELS[period]} · atualizado{" "}
-              {lastRefresh.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-            </p>
-          ) : undefined
-        }
-        actions={
-          <>
-            <Select value={period} onValueChange={(v) => setPeriod(v as SdrPeriod)}>
-              <SelectTrigger className="h-8 w-40 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIODS.map((p) => (
-                  <SelectItem key={p} value={p}>{SDR_PERIOD_LABELS[p]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8"
-              onClick={refresh}
-              disabled={isFetching}
-              aria-label="Atualizar métricas"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-            </Button>
-          </>
-        }
-      />
+    <PageShell
+      icon={Gauge}
+      kicker="Operação"
+      title="Painel de SDR"
+      description="Entrada, abordagem, conversão e velocidade de atendimento"
+      meta={
+        lastRefresh ? (
+          <p className="text-[11px] text-muted-foreground">
+            {SDR_PERIOD_LABELS[period]} · atualizado{" "}
+            {lastRefresh.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        ) : undefined
+      }
+      actions={
+        <>
+          <Select value={period} onValueChange={(v) => setPeriod(v as SdrPeriod)}>
+            <SelectTrigger className="h-8 w-40 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODS.map((p) => (
+                <SelectItem key={p} value={p}>{SDR_PERIOD_LABELS[p]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={refresh}
+            disabled={isFetching}
+            aria-label="Atualizar métricas"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+          </Button>
+        </>
+      }
+    >
+
 
       {error && (
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
@@ -395,6 +395,6 @@ export default function Dashboard() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }

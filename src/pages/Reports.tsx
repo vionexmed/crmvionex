@@ -120,7 +120,6 @@ export default function Reports() {
         kicker="Análises"
         title="Relatórios"
         description="Análises completas de vendas, atividades e previsão"
-        pattern="diagonal"
         actions={
           <>
             <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>

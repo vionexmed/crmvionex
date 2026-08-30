@@ -240,7 +240,6 @@ export default function Tasks() {
         kicker="Produtividade"
         title="Tarefas"
         description={`${filtered.length} tarefas${counts.overdue > 0 ? ` · ${counts.overdue} vencidas` : ""}`}
-        pattern="ticks"
         actions={
           <Button onClick={openCreate} size="sm">
             <Plus className="mr-1.5 h-3.5 w-3.5" />Tarefa

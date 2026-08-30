@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import { Activity as ActivityIcon } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useOrg } from "@/hooks/useOrg";
@@ -291,29 +291,28 @@ export default function Activities() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        icon={ActivityIcon}
-        kicker="Interações"
-        title="Atividades"
-        description={`${filtered.length} atividades${counts.overdue > 0 ? ` · ${counts.overdue} atrasadas` : ""}`}
-        pattern="waves"
-        actions={
-          <>
-            <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
-              <button onClick={() => setViewMode("list")} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                <List className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={() => setViewMode("calendar")} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "calendar" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                <CalendarDays className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <Button onClick={() => setCreateOpen(true)} size="sm">
-              <Plus className="mr-1.5 h-3.5 w-3.5" />Atividade
-            </Button>
-          </>
-        }
-      />
+    <PageShell
+      icon={ActivityIcon}
+      kicker="Interações"
+      title="Atividades"
+      description={`${filtered.length} atividades${counts.overdue > 0 ? ` · ${counts.overdue} atrasadas` : ""}`}
+      actions={
+        <>
+          <div className="flex rounded-lg border border-border bg-muted/50 p-0.5">
+            <button onClick={() => setViewMode("list")} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              <List className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => setViewMode("calendar")} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "calendar" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              <CalendarDays className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <Button onClick={() => setCreateOpen(true)} size="sm">
+            <Plus className="mr-1.5 h-3.5 w-3.5" />Atividade
+          </Button>
+        </>
+      }
+    >
+
 
       {/* Filtros — tipo de atividade + busca + responsável */}
       <div className="flex items-center gap-1 pb-2 border-b border-border flex-wrap pt-1">
@@ -607,7 +606,7 @@ export default function Activities() {
         deals={deals}
         members={members as Profile[]}
       />
-    </div>
+    </PageShell>
   );
 }
 

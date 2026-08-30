@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { formatarData } from "@/lib/formato";
@@ -344,46 +344,46 @@ export default function Contacts() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        icon={UsersIcon}
-        kicker="Diretório"
-        title="Contatos"
-        description={`${totalCount} contatos cadastrados`}
-        actions={
-          <>
-            {/* Quatro telas tinham a própria cópia deste seletor, já divergentes
-                em raio e espaçamento, e nenhuma anunciava seleção. */}
-            <SegmentedControl<ViewMode>
-              rotuloGrupo="Visualização"
-              valor={viewMode}
-              onChange={setViewMode}
-              opcoes={[
-                { valor: "table" as const, rotulo: "Tabela", icone: List },
-                { valor: "cards" as const, rotulo: "Cartões", icone: LayoutGrid },
-                // Distribuição por vendedor é ação de gestor
-                ...(isAdmin
-                  ? [{ valor: "owner" as const, rotulo: "Vendedor", icone: Users }]
-                  : []),
-              ]}
-            />
-            <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
-              <Filter className="mr-1 h-3.5 w-3.5" /><span className="hidden sm:inline">Filtros</span>
+    <PageShell
+      icon={UsersIcon}
+      kicker="Diretório"
+      title="Contatos"
+      description={`${totalCount} contatos cadastrados`}
+      actions={
+        <>
+          {/* Quatro telas tinham a própria cópia deste seletor, já divergentes
+              em raio e espaçamento, e nenhuma anunciava seleção. */}
+          <SegmentedControl<ViewMode>
+            rotuloGrupo="Visualização"
+            valor={viewMode}
+            onChange={setViewMode}
+            opcoes={[
+              { valor: "table" as const, rotulo: "Tabela", icone: List },
+              { valor: "cards" as const, rotulo: "Cartões", icone: LayoutGrid },
+              // Distribuição por vendedor é ação de gestor
+              ...(isAdmin
+                ? [{ valor: "owner" as const, rotulo: "Vendedor", icone: Users }]
+                : []),
+            ]}
+          />
+          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="mr-1 h-3.5 w-3.5" /><span className="hidden sm:inline">Filtros</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setCsvOpen(true)} className="hidden sm:flex">
+            <Upload className="mr-1.5 h-3.5 w-3.5" />Importar
+          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={exportCSV} disabled={exporting} className="hidden sm:flex">
+              {exporting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}Exportar
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setCsvOpen(true)} className="hidden sm:flex">
-              <Upload className="mr-1.5 h-3.5 w-3.5" />Importar
-            </Button>
-            {isAdmin && (
-              <Button variant="outline" size="sm" onClick={exportCSV} disabled={exporting} className="hidden sm:flex">
-                {exporting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}Exportar
-              </Button>
-            )}
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Novo Contato</span><span className="sm:hidden">Novo</span>
-            </Button>
-          </>
-        }
-      />
+          )}
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Novo Contato</span><span className="sm:hidden">Novo</span>
+          </Button>
+        </>
+      }
+    >
+
 
       <div className="relative">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -733,6 +733,6 @@ export default function Contacts() {
         onImported={invalidate}
         entityType="contacts"
       />
-    </div>
+    </PageShell>
   );
 }

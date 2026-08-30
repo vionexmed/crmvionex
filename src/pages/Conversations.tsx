@@ -226,7 +226,6 @@ export default function Conversations() {
         kicker="Atendimento"
         title="Conversas WhatsApp"
         description="Mensagens via WhatsApp Business API (Meta Oficial)"
-        pattern="dots"
       />
 
       {hasConfig === false && (
