@@ -81,9 +81,15 @@ export function EmailSignatureTab({ orgId }: { orgId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Assinatura de E-mail</CardTitle>
+          <CardTitle className="text-sm">Assinatura padrão da empresa</CardTitle>
+          {/* A descrição dizia "usada automaticamente nos e-mails enviados",
+              como se sempre valesse. Não vale: `gmail-send` resolve na ordem
+              pessoal → empresa → legado, então quem montou a própria assinatura
+              em Meu e-mail nunca vê esta. Um admin configurava isto e não
+              entendia por que os próprios e-mails saíam diferentes. */}
           <CardDescription className="text-[10px]">
-            Configure a assinatura usada automaticamente nos e-mails enviados pelo CRM.
+            Vale para quem ainda não montou a própria em <strong>Meu e-mail</strong>.
+            A assinatura pessoal, quando existe, tem preferência sobre esta.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
