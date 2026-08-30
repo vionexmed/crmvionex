@@ -15,14 +15,7 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { LucideIcon } from "lucide-react";
-import {
-  UserPlus, MessageCircle, Instagram, Globe, Linkedin,
-  Send, CheckCheck, Reply, MessagesSquare,
-  CalendarCheck, Briefcase, Trophy, Sparkles,
-  Timer, Hourglass, UserCheck,
-  Gauge, RefreshCw, TriangleAlert,
-  LineChart, ListFilter, Bot,
-} from "lucide-react";
+import { UserPlus, MessageCircle, Instagram, Globe, Linkedin, Send, CheckCheck, Reply, MessagesSquare, CalendarCheck, Briefcase, Trophy, Sparkles, Timer, Hourglass, UserCheck, RefreshCw, TriangleAlert, LineChart, ListFilter, Bot } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { StatCard, type StatAccent, type StatFormat } from "@/components/dashboard/StatCard";
 import { DashboardAIChat } from "@/components/crm/DashboardAIChat";
@@ -216,8 +209,6 @@ export default function Dashboard() {
 
   return (
     <PageShell
-      icon={Gauge}
-      kicker="Operação"
       title="Painel de SDR"
       description="Entrada, abordagem, conversão e velocidade de atendimento"
       meta={
@@ -253,7 +244,6 @@ export default function Dashboard() {
         </>
       }
     >
-
 
       {error && (
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">

@@ -14,7 +14,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { MonitorSmartphone, ScrollText } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
-import { Shield as IconeDaPagina } from "lucide-react";
+
 import { formatarDataHora } from "@/lib/formato";
 
 export default function SecuritySettings() {
@@ -22,8 +22,6 @@ export default function SecuritySettings() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Administração"
       title="Segurança"
       description="Registro de auditoria, sessões ativas e políticas de acesso"
     >

@@ -30,8 +30,8 @@ import {
 } from "lucide-react";
 import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
-import { Workflow as IconeDaPagina } from "lucide-react";
-import { formatarDataHora, formatarDataHoraCurta } from "@/lib/formato";
+
+import { formatarDataHora, formatarDataHoraCurta, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 // ── Types ──────────────────────────────────────────────
@@ -194,6 +194,7 @@ export default function Automations() {
   // O registro de execução cresce sem parar -- uma linha por disparo. Varrer a
   // lista de automações para CADA linha era O(n×m) a cada render da tabela.
   const porAutomacao = useMemo(() => indexarPorId(automations), [automations]);
+  const ativas = automations.filter((a) => a.is_active).length;
   const [tab, setTab] = useState<"list" | "templates" | "history">("list");
 
   // Builder state
@@ -510,10 +511,13 @@ export default function Automations() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Fluxos"
       title="Automações"
-      description={`${automations.length} automações · ${automations.filter((a) => a.is_active).length} ativas`}
+      contagem={{ valor: automations.length, unidade: "automação", plural: "automações" }}
+      meta={
+        <span className="text-xs text-muted-foreground">
+          {ativas} {pluralizar(ativas, "ativa")}
+        </span>
+      }
       actions={
         <Button onClick={() => openBuilder()} size="sm">
           <Plus className="mr-1 h-4 w-4" />Nova automação

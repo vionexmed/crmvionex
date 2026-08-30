@@ -10,7 +10,6 @@ import { ImportExportTab } from "@/components/integrations/ImportExportTab";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { ArrowLeftRight, KeyRound, Magnet as MagnetIcon, Plug, Radar, Webhook } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
-import { Plug as IconeDaPagina } from "lucide-react";
 
 export default function Integrations() {
   const { user } = useAuth();
@@ -18,8 +17,6 @@ export default function Integrations() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Conexões"
       title="Integrações e API"
       description="Conecte ferramentas externas e gerencie suas chaves"
     >

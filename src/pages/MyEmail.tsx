@@ -234,8 +234,6 @@ export default function MyEmail() {
 
   return (
     <PageShell
-      icon={Mail}
-      kicker="Minha conta"
       title="Meu e-mail"
       description="Conecte sua conta para enviar e receber pelo seu próprio endereço"
     >

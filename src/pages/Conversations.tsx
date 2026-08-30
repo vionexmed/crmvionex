@@ -8,9 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  MessageSquare, Search, Send, Loader2, CheckCheck, Phone, AlertCircle,
-} from "lucide-react";
+import { Search, Send, Loader2, CheckCheck, Phone, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { formatarDataCurta, formatarHora } from "@/lib/formato";
@@ -223,8 +221,6 @@ export default function Conversations() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col">
       <PageHeader
-        icon={MessageSquare}
-        kicker="Atendimento"
         title="Conversas WhatsApp"
         description="Mensagens via WhatsApp Business API (Meta Oficial)"
       />

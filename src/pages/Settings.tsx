@@ -23,7 +23,6 @@ import { BillingTab } from "@/components/settings/BillingTab";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Bell, CreditCard, FormInput, GitBranch, Palette, SlidersHorizontal } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
-import { Settings as IconeDaPagina } from "lucide-react";
 
 export default function Settings() {
   const { user, profile, isAdmin } = useAuth();
@@ -31,8 +30,6 @@ export default function Settings() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Administração"
       title="Configurações"
       description={
         isAdmin

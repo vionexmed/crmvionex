@@ -22,7 +22,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
-import { Zap as IconeDaPagina } from "lucide-react";
+
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
@@ -170,10 +170,8 @@ export default function EmailSequences() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Atendimento"
       title="Sequências de e-mail"
-      description={`${sequences.length} ${sequences.length === 1 ? "sequência" : "sequências"}`}
+      contagem={{ valor: sequences.length, unidade: "sequência" }}
       actions={
         <Button onClick={() => { setFormName(""); setFormDesc(""); setCreateOpen(true); }} size="sm">
           <Plus className="mr-1 h-4 w-4" />Nova sequência

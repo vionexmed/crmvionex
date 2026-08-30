@@ -1,5 +1,4 @@
-import { LucideIcon } from "lucide-react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { Contagem, PageHeader } from "@/components/layout/PageHeader";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,12 +15,16 @@ import { cn } from "@/lib/utils";
  * Cinco páginas reescreviam à mão exatamente o contrato do `PageHeader`
  * (título + contagem + botão de ação). Este componente fecha isso e ainda dá
  * lugar fixo para a barra de ferramentas, que hoje cada tela posiciona sozinha.
+ *
+ * O `icon` saiu: o cabeçalho não desenha mais ladrilho de ícone, e a lateral já
+ * mostra o ícone da tela atual aceso. Mantê-lo como prop deixaria 19 telas
+ * passando um valor que ninguém lê.
  */
 export function PageShell({
-  icon,
   kicker,
   title,
   description,
+  contagem,
   actions,
   meta,
   /** Busca, filtros e seleção em lote. Fica entre o cabeçalho e o conteúdo. */
@@ -29,10 +32,10 @@ export function PageShell({
   children,
   className,
 }: {
-  icon: LucideIcon;
   kicker?: string;
   title: string;
   description?: string;
+  contagem?: Contagem;
   actions?: React.ReactNode;
   meta?: React.ReactNode;
   toolbar?: React.ReactNode;
@@ -45,10 +48,10 @@ export function PageShell({
     // se repete.
     <div className={cn("space-y-4", className)}>
       <PageHeader
-        icon={icon}
         kicker={kicker}
         title={title}
         description={description}
+        contagem={contagem}
         actions={actions}
         meta={meta}
       />

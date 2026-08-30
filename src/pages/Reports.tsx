@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { PageShell } from "@/components/layout/PageShell";
-import { BarChart3 as BarChart3Icon } from "lucide-react";
+
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageTabs } from "@/components/layout/PageTabs";
 import {
@@ -121,8 +121,6 @@ export default function Reports() {
 
   return (
     <PageShell
-      icon={BarChart3Icon}
-      kicker="Análises"
       title="Relatórios"
       description="Análises completas de vendas, atividades e previsão"
       actions={
@@ -156,7 +154,6 @@ export default function Reports() {
         </>
       }
     >
-
 
       {/* Carregando e falhou passam a ter tela própria.
           Zero num relatório é uma AFIRMAÇÃO, e quem lê "nenhuma venda no

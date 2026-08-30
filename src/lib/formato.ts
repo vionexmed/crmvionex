@@ -172,3 +172,19 @@ export function diasAte(d: string | Date | null | undefined): number | null {
   alvo.setHours(0, 0, 0, 0);
   return Math.round((alvo.getTime() - hoje.getTime()) / 86_400_000);
 }
+
+/**
+ * "1 contato" / "340 contatos" — só a palavra, sem o número.
+ *
+ * O plural sai do singular com "s", o que cobre contato, empresa, atividade,
+ * template e sequência. O parâmetro `plural` existe para o que não segue a
+ * regra: "negócio no funil" vira "negócios no funil", não "negócio no funils",
+ * e "automação" vira "automações".
+ *
+ * Estava escrito à mão em nove cabeçalhos de página, cada um com o seu ternário
+ * dentro de template string -- que é exatamente o que misturava contagem viva
+ * com texto fixo no mesmo campo.
+ */
+export function pluralizar(n: number, singular: string, plural?: string): string {
+  return n === 1 ? singular : plural ?? `${singular}s`;
+}

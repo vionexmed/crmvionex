@@ -250,10 +250,9 @@ export default function Leads() {
 
   return (
     <PageShell
-      icon={UserPlus}
-      kicker="Captação"
       title="Leads"
-      description={`${leads.length} lead${leads.length !== 1 ? "s" : ""} aguardando qualificação`}
+      description="Aguardando qualificação"
+      contagem={{ valor: leads.length, unidade: "lead" }}
       actions={
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />

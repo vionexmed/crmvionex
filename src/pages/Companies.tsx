@@ -169,10 +169,8 @@ export default function Companies() {
 
   return (
     <PageShell
-      icon={Building2Icon}
-      kicker="Organizações"
       title="Empresas"
-      description={`${filtered.length} empresas no diretório`}
+      contagem={{ valor: filtered.length, unidade: "empresa" }}
       actions={
         <>
           <SegmentedControl<ViewMode>

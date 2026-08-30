@@ -122,3 +122,34 @@ export function gruposDoMenuMais(isAdmin: boolean): GrupoNav[] {
     }))
     .filter((g) => g.items.length > 0);
 }
+
+/**
+ * O grupo a que uma rota pertence — a fonte do rótulo acima do título da página.
+ *
+ * Antes cada tela DIGITAVA esse rótulo (`kicker="Diretório"`), e o resultado foi
+ * medido: 14 valores distintos para 18 telas, dos quais **15 discordavam do
+ * grupo que a lateral mostrava acesa** ao mesmo tempo. Contatos dizia
+ * "Diretório" e a lateral dizia "Registros"; o Painel dizia "Operação" e a
+ * lateral dizia "Trabalho".
+ *
+ * Pior sintoma: Relatórios e Metas ficam no MESMO grupo e escreviam "Análises" e
+ * "Analytics" — a mesma palavra, uma traduzida e outra não. Ninguém mantinha
+ * aquilo como taxonomia porque não havia taxonomia a manter.
+ *
+ * Derivando daqui, o cabeçalho não tem como discordar: lê da mesma lista que
+ * desenha a lateral.
+ *
+ * O casamento é por PREFIXO e o mais longo vence — senão `/settings` capturaria
+ * `/settings/security`, e a tela de Segurança herdaria o grupo de Configurações.
+ */
+const TODOS_OS_DESTINOS: { url: string; grupo: string }[] = [
+  ...NAV_GRUPOS.flatMap((g) => g.items.map((i) => ({ url: i.url, grupo: g.label }))),
+  ...MENU_DA_CONTA.map((i) => ({ url: i.url, grupo: "Conta" })),
+].sort((a, b) => b.url.length - a.url.length);
+
+export function grupoDaRota(pathname: string): string | undefined {
+  const rota = pathname.replace(/\/+$/, "") || "/";
+  return TODOS_OS_DESTINOS.find(
+    (d) => rota === d.url || rota.startsWith(`${d.url}/`),
+  )?.grupo;
+}

@@ -28,7 +28,6 @@ import { mensagemErro } from "@/lib/erro-supabase";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { KeyRound, UserRound, UsersRound } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
-import { UsersRound as IconeDaPagina } from "lucide-react";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -296,8 +295,6 @@ export default function Team() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Administração"
       title="Equipe"
       description={
         isAdmin

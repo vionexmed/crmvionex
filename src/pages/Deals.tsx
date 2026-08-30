@@ -22,7 +22,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Loader2, ChevronLeft, ChevronRight, Handshake} from "lucide-react";
+import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { DealsKanban } from "@/components/crm/DealsKanban";
@@ -308,10 +308,8 @@ export default function Deals() {
 
   return (
     <PageShell
-      icon={Handshake}
-      kicker="Comercial"
       title="Negócios"
-      description={`${totalCount} ${totalCount === 1 ? "negócio no funil" : "negócios no funil"}`}
+      contagem={{ valor: totalCount, unidade: "negócio no funil", plural: "negócios no funil" }}
       meta={
         listFetching && viewMode === "list" ? (
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">

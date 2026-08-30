@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { PageShell } from "@/components/layout/PageShell";
-import { Activity as ActivityIcon } from "lucide-react";
+
 import { useSearchParams } from "react-router-dom";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,7 +38,7 @@ import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
 import { ATIVIDADE_ICONE, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_ROTULO } from "@/lib/atividade-tipos";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
-import { formatarDataCurta, formatarDataHora } from "@/lib/formato";
+import { formatarDataCurta, formatarDataHora, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 
@@ -71,7 +71,6 @@ const HISTORICO: DateFilter[] = ["feitas", "todas"];
 
 const dataCurta = (iso: string) =>
   formatarDataCurta(iso);
-
 
 /** Quando a atividade de fato aconteceu. due_date é previsão, não registro. */
 function aconteceuEm(a: Activity): number {
@@ -309,10 +308,17 @@ export default function Activities() {
 
   return (
     <PageShell
-      icon={ActivityIcon}
-      kicker="Interações"
       title="Atividades"
-      description={`${filtered.length} atividades${counts.overdue > 0 ? ` · ${counts.overdue} atrasadas` : ""}`}
+      contagem={{ valor: filtered.length, unidade: "atividade" }}
+      meta={
+        // Atrasada não é um segundo total: é um alerta, e por isso sai do campo
+        // da contagem e ganha a cor de alerta em vez de cinza.
+        counts.overdue > 0 ? (
+          <span className="text-xs font-semibold text-destructive">
+            {counts.overdue} {pluralizar(counts.overdue, "atrasada")}
+          </span>
+        ) : undefined
+      }
       actions={
         <>
           {/* Era a SEXTA cópia do grupo de pílulas -- consolidei cinco e passei
@@ -336,7 +342,6 @@ export default function Activities() {
         </>
       }
     >
-
 
       {/* Filtros — tipo de atividade + busca + responsável */}
       <div className="flex items-center gap-1 pb-2 border-b border-border flex-wrap pt-1">

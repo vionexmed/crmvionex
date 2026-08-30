@@ -29,7 +29,13 @@
        coluna cinza sobre página, era invisível. Está no CLAUDE.md como
        armadilha. Ao voltar o fundo para 97%, o muted teve de descer junto. */
     --muted: 220 13% 93%;
-    --muted-foreground: 218 11% 65%;   /* #9AA3B0 text-3 */
+    /* 43%, não 65%. O valor antigo dava #9CA3B0, que sobre o branco do cartão
+       rende 2,54:1 -- a WCAG AA exige 4,5:1 para texto normal. O subtítulo de
+       TODAS as telas falhava, e é o motivo de a linha embaixo do título parecer
+       apagada. 43% dá #626A7A: 5,44:1 sobre o cartão e 4,50:1 sobre --muted,
+       que é o fundo mais escuro em que este token é usado.
+       O tema escuro fica em 65% porque lá o mesmo cinza rende 7,1:1. */
+    --muted-foreground: 218 11% 43%;   /* #626A7A text-3 */
     --accent: 188 38% 94%;             /* #EAF5F7 teal-bg */
     --accent-foreground: 187 100% 27%;
     --destructive: 0 70% 41%;          /* #B02020 */

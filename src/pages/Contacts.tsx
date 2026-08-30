@@ -338,10 +338,8 @@ export default function Contacts() {
 
   return (
     <PageShell
-      icon={UsersIcon}
-      kicker="Diretório"
       title="Contatos"
-      description={`${totalCount} contatos cadastrados`}
+      contagem={{ valor: totalCount, unidade: "contato" }}
       actions={
         <>
           {/* Quatro telas tinham a própria cópia deste seletor, já divergentes

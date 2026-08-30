@@ -17,7 +17,7 @@ import {
 import { Plus, Edit2, Trash2, MoreHorizontal, Copy, Search, FileText} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageShell } from "@/components/layout/PageShell";
-import { FileText as IconeDaPagina } from "lucide-react";
+
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
@@ -112,10 +112,8 @@ export default function EmailTemplates() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Atendimento"
       title="Templates de e-mail"
-      description={`${templates.length} ${templates.length === 1 ? "template" : "templates"}`}
+      contagem={{ valor: templates.length, unidade: "template" }}
       actions={
         <Button onClick={openCreate} size="sm">
           <Plus className="mr-1 h-4 w-4" />Novo template

@@ -29,8 +29,8 @@ import { LeadScoreBadge } from "@/components/crm/DealQualification";
 import { indexarPorId } from "@/lib/utils";
 import { LIFECYCLE_COLORS, LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
 import { PageShell } from "@/components/layout/PageShell";
-import { TrendingUp as IconeDaPagina } from "lucide-react";
-import { formatarDataHoraCurta } from "@/lib/formato";
+
+import { formatarDataHoraCurta, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
 
@@ -332,10 +332,13 @@ export default function LeadScoring() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Qualificação"
       title="Lead Scoring e segmentação"
-      description={`${contacts.length} contatos · ${segments.length} segmentos`}
+      contagem={{ valor: contacts.length, unidade: "contato" }}
+      meta={
+        <span className="text-xs text-muted-foreground">
+          {segments.length} {pluralizar(segments.length, "segmento")}
+        </span>
+      }
       actions={
         <Button variant="outline" size="sm" onClick={() => { setAdjustContactId(""); setAdjustPoints(0); setAdjustReason(""); setAdjustOpen(true); }}>
           <TrendingUp className="mr-1.5 h-3.5 w-3.5" />Ajustar score

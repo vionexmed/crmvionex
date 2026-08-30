@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageShell } from "@/components/layout/PageShell";
-import { Target as IconeDaPagina } from "lucide-react";
+
 import { buscarEmBlocos } from "@/lib/paginar";
 import { formatarMoedaInteira } from "@/lib/formato";
 
@@ -271,8 +271,6 @@ export default function SalesGoals() {
 
   return (
     <PageShell
-      icon={IconeDaPagina}
-      kicker="Analytics"
       title="Metas de vendas"
       description="Gerencie metas por vendedor, time ou organização"
       actions={
