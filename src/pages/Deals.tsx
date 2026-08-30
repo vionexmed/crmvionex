@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
@@ -38,6 +38,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { LinhaDeEtapa, COR_PADRAO_DE_ETAPA } from "@/components/crm/LinhaDeEtapa";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
+import type { DealWithRelations } from "@/lib/api/deals";
 export type { DealWithRelations } from "@/lib/api/deals";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
@@ -98,6 +99,21 @@ export default function Deals() {
   // Painel da pessoa. O contato vem do embed do próprio negócio, então abrir o
   // painel não custa consulta nenhuma.
   const [contatoNoPainel, setContatoNoPainel] = useState<ContactRow | null>(null);
+
+  /**
+   * Estável, porque desce até o card de cada negócio.
+   *
+   * Era `onDealClick={(d) => navigate(...)}` -- identidade nova a cada render
+   * do pai. Com o dnd-kit, arrastar um card faz o quadro renderizar
+   * continuamente, e um callback instável obriga TODOS os cards a renderizar
+   * junto. `React.memo` no card não adiantaria nada enquanto esta prop mudasse:
+   * ele compararia, veria diferente, e renderizaria igual -- pagando a
+   * comparação sem pular nada.
+   */
+  const abrirNegocio = useCallback(
+    (d: DealWithRelations) => navigate(`/deals/${d.id}`),
+    [navigate],
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
   const [form, setForm] = useState<Partial<Deal>>({});
@@ -380,7 +396,7 @@ export default function Deals() {
           lostDeals={lostDeals}
           stages={pipelineStages}
           onDragEnd={handleDragEnd}
-          onDealClick={(d) => navigate(`/deals/${d.id}`)}
+          onDealClick={abrirNegocio}
           onContactClick={setContatoNoPainel}
           onAddDeal={openNew}
           onMarkWon={markAsWon}
@@ -395,7 +411,7 @@ export default function Deals() {
             stages={allStages}
             selectedDeals={selectedDeals}
             onSelectionChange={setSelectedDeals}
-            onDealClick={(d) => navigate(`/deals/${d.id}`)}
+            onDealClick={abrirNegocio}
             onBatchAction={handleBatchAction}
             canDelete={isAdmin}
           />

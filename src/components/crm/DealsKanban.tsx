@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_COR, aconteceuEm } from "@/lib/atividade-tipos";
@@ -19,15 +19,25 @@ type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 
 /* ── Deal Card (Pipedrive-style) ─────────────────────────── */
 
-function DealCard({
+/**
+ * `memo` porque o quadro renderiza CONTINUAMENTE durante o arraste -- o dnd-kit
+ * atualiza a posição a cada movimento do ponteiro. Sem isso, mover um card
+ * renderiza os duzentos.
+ *
+ * Só funciona com as props estáveis, e é por isso que o clique recebe
+ * `onDealClick` + `deal` em vez de `onClick={() => onDealClick(deal)}`: a arrow
+ * inline tem identidade nova a cada render, e `memo` compararia, veria
+ * diferente e renderizaria igual -- pagando a comparação sem pular nada.
+ */
+const DealCard = memo(function DealCard({
   deal,
   stageColor,
-  onClick,
+  onDealClick,
   onContactClick,
 }: {
   deal: DealWithRelations;
   stageColor?: string;
-  onClick: () => void;
+  onDealClick: (d: DealWithRelations) => void;
   /** Abre o painel da PESSOA, sem sair do quadro. */
   onContactClick?: (contact: Contact) => void;
 }) {
@@ -133,7 +143,7 @@ function DealCard({
           arrastou.current = false;
           return;
         }
-        onClick();
+        onDealClick(deal);
       }}
     >
       {/* Title */}
@@ -285,7 +295,7 @@ function DealCard({
       </div>
     </div>
   );
-}
+});
 
 /* ── Stage Column (Pipedrive-style) ──────────────────────── */
 
@@ -338,7 +348,7 @@ function StageColumn({
             key={deal.id}
             deal={deal}
             stageColor={stage.color || undefined}
-            onClick={() => onDealClick(deal)}
+            onDealClick={onDealClick}
             onContactClick={onContactClick}
           />
         ))}
