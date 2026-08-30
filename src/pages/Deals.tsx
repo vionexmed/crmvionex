@@ -22,7 +22,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Trash2, Loader2, ChevronLeft, ChevronRight, Handshake} from "lucide-react";
+import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Loader2, ChevronLeft, ChevronRight, Handshake} from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { DealsKanban } from "@/components/crm/DealsKanban";
@@ -36,6 +36,7 @@ import { mensagemErro } from "@/lib/erro-supabase";
 import { indexarPorId } from "@/lib/utils";
 import { PageShell } from "@/components/layout/PageShell";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
+import { LinhaDeEtapa } from "@/components/crm/LinhaDeEtapa";
 export type { DealWithRelations } from "@/lib/api/deals";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
@@ -549,37 +550,33 @@ export default function Deals() {
             <DialogDescription>Edite as etapas do seu funil de vendas</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {/* A linha é compartilhada com Configurações. Eram dois editores
+                e nenhum completo: aqui não dava para reordenar, lá não dava
+                para renomear nem recolorir. */}
             {editingStages.map((stage, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={stage.color}
-                  onChange={(e) => setEditingStages(editingStages.map((s, i) => i === idx ? { ...s, color: e.target.value } : s))}
-                  className="h-8 w-8 cursor-pointer rounded border-0 shrink-0"
-                  aria-label={`Cor da etapa ${idx + 1}`}
-                />
-                <Input
-                  value={stage.name}
-                  onChange={(e) => setEditingStages(editingStages.map((s, i) => i === idx ? { ...s, name: e.target.value } : s))}
-                  placeholder={`Etapa ${idx + 1}`}
-                  className="flex-1"
-                />
-                <div className="flex items-center gap-1 shrink-0">
-                  <Input
-                    type="number" min={0} max={100}
-                    value={stage.win_probability}
-                    onChange={(e) => setEditingStages(editingStages.map((s, i) => i === idx ? { ...s, win_probability: Number(e.target.value) } : s))}
-                    className="w-16 text-xs text-center"
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-                {editingStages.length > 1 && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                    onClick={() => setEditingStages(editingStages.filter((_, i) => i !== idx))}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
+              <LinhaDeEtapa
+                key={idx}
+                etapa={stage}
+                indice={idx}
+                total={editingStages.length}
+                onChange={(mudanca) =>
+                  setEditingStages(editingStages.map((s, i) => (i === idx ? { ...s, ...mudanca } : s)))
+                }
+                onRemover={
+                  editingStages.length > 1
+                    ? () => setEditingStages(editingStages.filter((_, i) => i !== idx))
+                    : undefined
+                }
+                onMover={(direcao) => {
+                  const destino = direcao === "cima" ? idx - 1 : idx + 1;
+                  if (destino < 0 || destino >= editingStages.length) return;
+                  const arr = [...editingStages];
+                  [arr[idx], arr[destino]] = [arr[destino], arr[idx]];
+                  // `order` acompanha a posição: é o campo que o banco lê, e a
+                  // etapa de entrada do funil é identificada pelo MENOR order.
+                  setEditingStages(arr.map((s, i) => ({ ...s, order: i })));
+                }}
+              />
             ))}
             <Button variant="outline" size="sm"
               onClick={() => setEditingStages([...editingStages, { name: "", color: "#94a3b8", win_probability: 50, order: editingStages.length }])}>

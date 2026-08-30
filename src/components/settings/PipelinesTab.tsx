@@ -10,6 +10,7 @@ import {
 import { Plus, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { LinhaDeEtapa } from "@/components/crm/LinhaDeEtapa";
 
 type PipelineStage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
@@ -76,6 +77,19 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
     toast({ title: "Etapa excluída" });
   };
 
+  /**
+   * Renomear, recolorir e mudar a probabilidade -- que esta tela NÃO permitia.
+   * Só mostrava o valor e um botão de apagar; para corrigir um nome, era
+   * preciso apagar a etapa e criar de novo, perdendo os negócios nela.
+   *
+   * Grava no `blur`, não a cada tecla: um `update` por caractere digitado é
+   * uma consulta por caractere.
+   */
+  const salvarEtapa = async (id: string, mudanca: Partial<{ name: string; color: string; win_probability: number }>) => {
+    await supabase.from("pipeline_stages").update(mudanca).eq("id", id);
+    fetchAll();
+  };
+
   const moveStage = async (stageId: string, direction: "up" | "down") => {
     const pStages = stages.filter((s) => s.pipeline_id === selectedPipeline).sort((a, b) => a.order - b.order);
     const idx = pStages.findIndex((s) => s.id === stageId);
@@ -100,6 +114,10 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
     await supabase.from("loss_reasons").delete().eq("id", id);
     fetchAll();
   };
+
+  // Edições ainda não gravadas, por id de etapa. Sem isto, cada tecla digitada
+  // no nome seria um UPDATE.
+  const [rascunho, setRascunho] = useState<Record<string, Partial<{ name: string; color: string; win_probability: number }>>>({});
 
   const pipelineStages = stages.filter((s) => s.pipeline_id === selectedPipeline).sort((a, b) => a.order - b.order);
 
@@ -137,7 +155,8 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Etapas</CardTitle>
-            <CardDescription className="text-[10px]">Configure as etapas do funil selecionado. Arraste para reordenar.</CardDescription>
+            {/* Dizia "Arraste para reordenar" e não havia arraste nenhum. */}
+            <CardDescription className="text-[10px]">Configure as etapas do funil selecionado. Use as setas para reordenar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
@@ -148,17 +167,33 @@ export function PipelinesTab({ orgId }: { orgId: string | null }) {
             </div>
             <div className="space-y-1">
               {pipelineStages.map((s, i) => (
-                <div key={s.id} className="flex items-center gap-2 rounded-md border border-border p-2">
-                  <div className="flex flex-col gap-0.5">
-                    <button onClick={() => moveStage(s.id, "up")} disabled={i === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-[10px]">▲</button>
-                    <button onClick={() => moveStage(s.id, "down")} disabled={i === pipelineStages.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-[10px]">▼</button>
-                  </div>
-                  <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: s.color || "#888" }} />
-                  <span className="text-xs font-medium flex-1">{s.name}</span>
-                  <Badge variant="outline" className="text-[8px]">{s.win_probability || 0}%</Badge>
-                  <span className="text-[9px] text-muted-foreground">#{s.order}</span>
-                  <button onClick={() => deleteStage(s.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
-                </div>
+                <LinhaDeEtapa
+                  key={s.id}
+                  etapa={{
+                    id: s.id,
+                    name: rascunho[s.id]?.name ?? s.name,
+                    color: rascunho[s.id]?.color ?? s.color ?? "#94a3b8",
+                    win_probability: rascunho[s.id]?.win_probability ?? (Number(s.win_probability) || 0),
+                  }}
+                  indice={i}
+                  total={pipelineStages.length}
+                  // O rascunho existe para que digitar não dispare um `update`
+                  // por caractere. A gravação acontece ao sair do campo.
+                  onChange={(mudanca) =>
+                    setRascunho((r) => ({ ...r, [s.id]: { ...r[s.id], ...mudanca } }))
+                  }
+                  onSalvar={() => {
+                    const pendente = rascunho[s.id];
+                    if (!pendente) return;
+                    setRascunho((r) => {
+                      const { [s.id]: _, ...resto } = r;
+                      return resto;
+                    });
+                    salvarEtapa(s.id, pendente);
+                  }}
+                  onRemover={() => deleteStage(s.id)}
+                  onMover={(direcao) => moveStage(s.id, direcao === "cima" ? "up" : "down")}
+                />
               ))}
             </div>
           </CardContent>
