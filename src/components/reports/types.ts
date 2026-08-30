@@ -13,7 +13,17 @@ export type ActivityRow = {
   id: string; type: string; title: string; due_date: string | null;
   completed_at: string | null; created_at: string | null; user_id: string | null;
 };
-export type Contact = { id: string; first_name: string; last_name: string | null; status: string | null; lead_score: number | null; created_at: string | null; owner_id: string | null; };
+/**
+ * `lifecycle_stage`, não `status`.
+ *
+ * A coluna `status` é LEGADO, tem 4 valores contra os 6 de `lifecycle_stage`, e
+ * o gatilho que sincroniza as duas mapeia com PERDA: `contacted` colapsa em
+ * `lead`, `opportunity` colapsa em `prospect`. Relatório lendo `status` conta
+ * quatro grupos onde a tela de Contatos mostra seis.
+ *
+ * Fora do tipo de propósito: enquanto `status` estiver aqui, alguém volta a ler.
+ */
+export type Contact = { id: string; first_name: string; last_name: string | null; lifecycle_stage: string | null; lead_score: number | null; created_at: string | null; owner_id: string | null; };
 export type Company = { id: string; name: string };
 
 export type PeriodFilter = "all" | "this_month" | "last_month" | "this_quarter" | "this_year";

@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from "recharts";
 import { Download } from "lucide-react";
+import { LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
 import {
   Contact, Profile,
   pct, CHART_COLORS, tooltipStyle, MONTHS_PT,
@@ -32,18 +33,44 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
     return data;
   }, [contacts]);
 
-  // By status
+  /**
+   * Por estágio do CICLO DE VIDA, não pela coluna legada `status`.
+   *
+   * `status` tem 4 valores e `lifecycle_stage` tem 6, e o gatilho que
+   * sincroniza as duas mapeia COM PERDA: `contacted` colapsa em `lead`, e
+   * `opportunity` colapsa em `prospect`. Este gráfico mostrava quatro fatias
+   * onde a tela de Contatos mostra seis -- "Contatado" e "Em negociação"
+   * simplesmente não existiam aqui.
+   *
+   * Os rótulos também eram três em inglês ("Lead", "Prospect", "Churned") numa
+   * interface em português.
+   */
   const byStatus = useMemo(() => {
-    const map: Record<string, number> = {};
-    const labels: Record<string, string> = { lead: "Lead", prospect: "Prospect", customer: "Cliente", churned: "Churned" };
-    contacts.forEach((c) => { const s = c.status || "lead"; map[s] = (map[s] || 0) + 1; });
-    return Object.entries(map).map(([k, v]) => ({ name: labels[k] || k, value: v }));
+    const map = new Map<LifecycleStage, number>();
+    for (const c of contacts) {
+      const estagio = (c.lifecycle_stage || "lead") as LifecycleStage;
+      map.set(estagio, (map.get(estagio) || 0) + 1);
+    }
+    // Ordem do avanço, não ordem de aparição: a fatia maior mudava de cor
+    // conforme o dado, porque a cor vem do índice.
+    return (Object.keys(LIFECYCLE_LABELS) as LifecycleStage[])
+      .filter((e) => map.has(e))
+      .map((e) => ({ name: LIFECYCLE_LABELS[e], value: map.get(e)! }));
   }, [contacts]);
 
-  // Conversion rate lead → customer
-  const totalLeads = contacts.filter((c) => c.status === "lead" || c.status === "prospect" || c.status === "customer").length;
-  const totalCustomers = contacts.filter((c) => c.status === "customer").length;
-  const conversionRate = pct(totalCustomers, totalLeads);
+  const totalCustomers = contacts.filter((c) => c.lifecycle_stage === "customer").length;
+
+  /**
+   * Conversão lead → cliente.
+   *
+   * O denominador era `lead + prospect + customer`, ou seja, TODOS menos os
+   * descartados -- e descartado é justamente quem entrou e não converteu.
+   * Tirá-lo da conta inflava a taxa: dez contatos, um cliente e cinco
+   * descartados davam 20% em vez de 10%.
+   *
+   * Todo contato entra como lead, então o denominador honesto é o total.
+   */
+  const conversionRate = pct(totalCustomers, contacts.length);
 
   // By owner
   const byOwner = useMemo(() =>
@@ -57,7 +84,7 @@ export function ContactsReport({ contacts, members }: { contacts: Contact[]; mem
   const exportCSV = () => {
     downloadCSV(contacts.map((c) => ({
       Nome: `${c.first_name} ${c.last_name || ""}`.trim(),
-      Status: c.status, Score: c.lead_score,
+      "Ciclo de vida": LIFECYCLE_LABELS[(c.lifecycle_stage || "lead") as LifecycleStage], Score: c.lead_score,
       Dono: members.find((m) => m.id === c.owner_id)?.name || "",
       Criado: c.created_at,
     })), "relatorio-contatos");

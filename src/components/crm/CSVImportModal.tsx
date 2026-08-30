@@ -28,7 +28,7 @@ const contactFields = [
   { key: "email", label: "Email" },
   { key: "phone", label: "Telefone" },
   { key: "title", label: "Cargo" },
-  { key: "status", label: "Status" },
+  { key: "lifecycle_stage", label: "Ciclo de vida" },
   { key: "linkedin_url", label: "LinkedIn" },
   { key: "__skip", label: "— Ignorar —" },
 ];
@@ -64,7 +64,34 @@ function parseCSV(text: string): string[][] {
   return rows.map((r) => r.map((c) => c.trim()));
 }
 
-const VALID_CONTACT_STATUS = ["lead", "prospect", "customer", "churned"];
+/**
+ * O que a planilha pode dizer no campo de estágio.
+ *
+ * Aceita os seis do ciclo de vida e os rótulos em português que a interface
+ * mostra -- quem exporta do CRM e reimporta traz o rótulo, não o valor do
+ * banco. E aceita os quatro valores da coluna LEGADA `status`, porque planilhas
+ * antigas existem: eles entram pelo estágio equivalente mais conservador.
+ */
+const ESTAGIO_DA_PLANILHA: Record<string, string> = {
+  lead: "lead",
+  "novo lead": "lead",
+  contacted: "contacted",
+  contatado: "contacted",
+  qualified: "qualified",
+  qualificado: "qualified",
+  opportunity: "opportunity",
+  "em negociação": "opportunity",
+  "em negociacao": "opportunity",
+  customer: "customer",
+  cliente: "customer",
+  disqualified: "disqualified",
+  descartado: "disqualified",
+  // Legado: `prospect` cobria qualificado E em negociação. Entra pelo primeiro
+  // dos dois -- afirmar "em negociação" a partir de um dado que não distingue
+  // seria inventar.
+  prospect: "qualified",
+  churned: "disqualified",
+};
 
 const companyFields = [
   { key: "name", label: "Nome" },
@@ -146,9 +173,18 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
           //
           // A causa foi removida na origem: Contatos não esconde mais ninguém.
           // Sem status na planilha, vale o default da coluna: 'lead'.
-          const status = String(record.status || "").toLowerCase();
-          if (VALID_CONTACT_STATUS.includes(status)) record.status = status;
-          else delete record.status;
+          // Escreve `lifecycle_stage`, NUNCA `status`.
+          //
+          // No INSERT o gatilho dá a vitória ao `status`: gravar
+          // `status = 'prospect'` faz o contato nascer com
+          // `lifecycle_stage = 'qualified'` -- qualificado sem ninguém ter
+          // olhado para ele. Gravando só o ciclo de vida, o gatilho vai pelo
+          // outro ramo e deriva o `status` a partir dele.
+          const bruto = String(record.lifecycle_stage || "").trim().toLowerCase();
+          const estagio = ESTAGIO_DA_PLANILHA[bruto];
+          if (estagio) record.lifecycle_stage = estagio;
+          else delete record.lifecycle_stage;
+          delete record.status;
           // Marca a origem para diferenciar na lista de Contatos
           record.metadata = { ...(record.metadata || {}), source: "csv_import" };
         }

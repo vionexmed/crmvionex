@@ -54,7 +54,7 @@ export default function Reports() {
       supabase.from("activities").select("*").eq("org_id", orgId).order("created_at", { ascending: false }).limit(1000),
       supabase
         .from("contacts")
-        .select("id,first_name,last_name,status,lead_score,created_at,owner_id")
+        .select("id,first_name,last_name,lifecycle_stage,lead_score,created_at,owner_id")
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
         .limit(5000),

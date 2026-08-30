@@ -27,10 +27,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { LeadScoreBadge } from "@/components/crm/DealQualification";
 import { indexarPorId } from "@/lib/utils";
+import { LIFECYCLE_COLORS, LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
 
 type Contact = {
   id: string; first_name: string; last_name: string | null; email: string | null;
-  status: string | null; lead_score: number; org_id: string; created_at: string | null;
+  lifecycle_stage: string | null; lead_score: number; org_id: string; created_at: string | null;
   owner_id: string | null;
 };
 type Segment = {
@@ -73,6 +74,32 @@ const EVENT_TYPES = [
   { value: "custom", label: "Personalizado" },
 ];
 
+/**
+ * Quais estágios um filtro de segmento seleciona.
+ *
+ * Segmento é gravado no banco como JSON, então a chave antiga sobrevive a
+ * qualquer refactor do código. Renomear `status` para `lifecycleStage` sem ler
+ * as duas faria todo segmento já salvo parar de filtrar EM SILÊNCIO -- sem erro
+ * de tipo, sem erro em tela, só um segmento que de repente inclui todo mundo.
+ *
+ * A chave antiga guardava um dos 4 valores de `contacts.status`, e o mapa para
+ * os 6 do ciclo de vida é UM PARA MUITOS: `status = 'lead'` correspondia a quem
+ * está em `lead` ou em `contacted`. Devolver os dois é o que preserva o
+ * significado que o segmento tinha quando foi salvo.
+ */
+const ESTAGIOS_DO_STATUS_LEGADO: Record<string, LifecycleStage[]> = {
+  lead: ["lead", "contacted"],
+  prospect: ["qualified", "opportunity"],
+  customer: ["customer"],
+  churned: ["disqualified"],
+};
+
+function estagioDoFiltro(f: { lifecycleStage?: string; status?: string }): string[] {
+  if (f.lifecycleStage) return [f.lifecycleStage];
+  if (f.status) return ESTAGIOS_DO_STATUS_LEGADO[f.status] ?? [];
+  return [];
+}
+
 export default function LeadScoring() {
   const { orgId } = useOrg();
   const { user } = useAuth();
@@ -93,7 +120,7 @@ export default function LeadScoring() {
   const [segFormOpen, setSegFormOpen] = useState(false);
   const [segName, setSegName] = useState("");
   const [segDesc, setSegDesc] = useState("");
-  const [segFilters, setSegFilters] = useState<{ minScore: string; maxScore: string; status: string }>({ minScore: "", maxScore: "", status: "all" });
+  const [segFilters, setSegFilters] = useState<{ minScore: string; maxScore: string; estagio: string }>({ minScore: "", maxScore: "", estagio: "all" });
   const [editSegId, setEditSegId] = useState<string | null>(null);
 
   // New rule form
@@ -128,7 +155,7 @@ export default function LeadScoring() {
       // importam.
       supabase
         .from("contacts")
-        .select("id,first_name,last_name,email,status,lead_score,org_id,created_at,owner_id")
+        .select("id,first_name,last_name,email,lifecycle_stage,lead_score,org_id,created_at,owner_id")
         .eq("org_id", orgId)
         .order("lead_score", { ascending: false })
         .limit(200),
@@ -237,7 +264,11 @@ export default function LeadScoring() {
     const filters = {
       minScore: segFilters.minScore ? Number(segFilters.minScore) : undefined,
       maxScore: segFilters.maxScore ? Number(segFilters.maxScore) : undefined,
-      status: segFilters.status !== "all" ? segFilters.status : undefined,
+      // Chave NOVA. A antiga (`status`) continua sendo LIDA em
+      // `estagioDoFiltro` -- renomear sem isso faria todo segmento já salvo
+      // parar de filtrar em silêncio, que é a armadilha que este projeto já
+      // levou uma vez.
+      lifecycleStage: segFilters.estagio !== "all" ? segFilters.estagio : undefined,
     };
     if (editSegId) {
       await supabase.from("segments").update({ name: segName, description: segDesc || null, filters } as any).eq("id", editSegId);
@@ -261,15 +292,16 @@ export default function LeadScoring() {
     return contacts.filter((c) => {
       if (f.minScore !== undefined && (c.lead_score || 0) < f.minScore) return false;
       if (f.maxScore !== undefined && (c.lead_score || 0) > f.maxScore) return false;
-      if (f.status && c.status !== f.status) return false;
+      const estagios = estagioDoFiltro(f);
+      if (estagios.length > 0 && !estagios.includes(c.lifecycle_stage || "lead")) return false;
       return true;
     });
   };
 
   const exportSegmentCSV = (seg: Segment) => {
     const rows = getSegmentContacts(seg);
-    const csv = ["Nome,Email,Status,Score",
-      ...rows.map((c) => `"${c.first_name} ${c.last_name || ""}","${c.email || ""}","${c.status || ""}",${c.lead_score || 0}`)
+    const csv = ["Nome,Email,Ciclo de vida,Score",
+      ...rows.map((c) => `"${c.first_name} ${c.last_name || ""}","${c.email || ""}","${LIFECYCLE_LABELS[(c.lifecycle_stage || "lead") as LifecycleStage]}",${c.lead_score || 0}`)
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -388,7 +420,13 @@ export default function LeadScoring() {
                       <TableCell className="font-medium text-sm">{c.first_name} {c.last_name}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{c.email}</TableCell>
                       <TableCell>
-                        {c.status && <Badge variant="secondary" className="text-[9px]">{c.status}</Badge>}
+                        <Badge variant="secondary" className="gap-1.5 text-[9px]">
+                          <span
+                            className="h-1.5 w-1.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: LIFECYCLE_COLORS[(c.lifecycle_stage || "lead") as LifecycleStage] }}
+                          />
+                          {LIFECYCLE_LABELS[(c.lifecycle_stage || "lead") as LifecycleStage]}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <LeadScoreBadge score={c.lead_score || 0} />
@@ -409,7 +447,7 @@ export default function LeadScoring() {
       {tab === "segments" && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <Button onClick={() => { setSegName(""); setSegDesc(""); setSegFilters({ minScore: "", maxScore: "", status: "all" }); setEditSegId(null); setSegFormOpen(true); }}>
+            <Button onClick={() => { setSegName(""); setSegDesc(""); setSegFilters({ minScore: "", maxScore: "", estagio: "all" }); setEditSegId(null); setSegFormOpen(true); }}>
               <Plus className="mr-2 h-4 w-4" />Novo Segmento
             </Button>
           </div>
@@ -435,7 +473,7 @@ export default function LeadScoring() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => {
                             setEditSegId(seg.id); setSegName(seg.name); setSegDesc(seg.description || "");
-                            setSegFilters({ minScore: f.minScore?.toString() || "", maxScore: f.maxScore?.toString() || "", status: f.status || "all" });
+                            setSegFilters({ minScore: f.minScore?.toString() || "", maxScore: f.maxScore?.toString() || "", estagio: estagioDoFiltro(f)[0] || "all" });
                             setSegFormOpen(true);
                           }}><Edit2 className="mr-2 h-3.5 w-3.5" />Editar</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => exportSegmentCSV(seg)}><Download className="mr-2 h-3.5 w-3.5" />Exportar CSV</DropdownMenuItem>
@@ -447,7 +485,11 @@ export default function LeadScoring() {
                       <Badge variant="secondary" className="text-[9px]">{segContacts.length} contatos</Badge>
                       {f.minScore !== undefined && <Badge variant="outline" className="text-[8px]">Score ≥ {f.minScore}</Badge>}
                       {f.maxScore !== undefined && <Badge variant="outline" className="text-[8px]">Score ≤ {f.maxScore}</Badge>}
-                      {f.status && <Badge variant="outline" className="text-[8px]">{f.status}</Badge>}
+                      {estagioDoFiltro(f).map((e) => (
+                        <Badge key={e} variant="outline" className="text-[8px]">
+                          {LIFECYCLE_LABELS[e as LifecycleStage]}
+                        </Badge>
+                      ))}
                     </div>
                     {/* Mini list */}
                     <div className="mt-2 space-y-0.5 max-h-24 overflow-hidden">
@@ -495,15 +537,17 @@ export default function LeadScoring() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Status</Label>
-                  <Select value={segFilters.status} onValueChange={(v) => setSegFilters({ ...segFilters, status: v })}>
+                  <Label className="text-xs">Ciclo de vida</Label>
+                  <Select value={segFilters.estagio} onValueChange={(v) => setSegFilters({ ...segFilters, estagio: v })}>
                     <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="lead">Lead</SelectItem>
-                      <SelectItem value="prospect">Prospect</SelectItem>
-                      <SelectItem value="customer">Cliente</SelectItem>
-                      <SelectItem value="churned">Churned</SelectItem>
+                      {/* Seis, não quatro. A lista antiga vinha da coluna legada
+                          `status` e não tinha "Contatado" nem "Em negociação" --
+                          e chamava dois deles em inglês. */}
+                      {(Object.keys(LIFECYCLE_LABELS) as LifecycleStage[]).map((e) => (
+                        <SelectItem key={e} value={e}>{LIFECYCLE_LABELS[e]}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

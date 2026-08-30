@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
+import { LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
 import {
   Deal, Contact, ActivityRow, Stage, Profile,
   fmt, downloadCSV,
@@ -34,7 +35,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
       { key: "created_at", label: "Criado em" },
     ],
     contacts: [
-      { key: "name", label: "Nome" }, { key: "status", label: "Status" }, { key: "lead_score", label: "Score" },
+      { key: "name", label: "Nome" }, { key: "estagio", label: "Ciclo de vida" }, { key: "lead_score", label: "Score" },
       { key: "owner", label: "Dono" }, { key: "created_at", label: "Criado em" },
     ],
     activities: [
@@ -81,7 +82,11 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
       }));
     } else if (entity === "contacts") {
       return contacts.map((c) => ({
-        name: `${c.first_name} ${c.last_name || ""}`.trim(), status: c.status || "—",
+        name: `${c.first_name} ${c.last_name || ""}`.trim(),
+        // Estágio do ciclo de vida, com o rótulo que a interface usa. Lia a
+        // coluna legada `status`, que mostra 4 grupos onde existem 6, e ainda
+        // imprimia o valor cru em inglês.
+        estagio: LIFECYCLE_LABELS[(c.lifecycle_stage || "lead") as LifecycleStage],
         lead_score: String(c.lead_score || 0),
         owner: members.find((m) => m.id === c.owner_id)?.name || "—",
         created_at: c.created_at?.slice(0, 10) || "—",

@@ -11,21 +11,22 @@ import {
 } from "@dnd-kit/core";
 import type { Database } from "@/integrations/supabase/types";
 import { indexarPorId } from "@/lib/utils";
+import { LIFECYCLE_COLORS, LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
-type ContactStatus = Database["public"]["Enums"]["contact_status"];
-
-const statusColors: Record<ContactStatus, string> = {
-  lead: "bg-primary/10 text-primary",
-  prospect: "bg-warning/10 text-warning",
-  customer: "bg-success/10 text-success",
-  churned: "bg-destructive/10 text-destructive",
-};
-const statusLabels: Record<ContactStatus, string> = {
-  lead: "Lead", prospect: "Prospect", customer: "Cliente", churned: "Churned",
-};
+/**
+ * O selo mostra o CICLO DE VIDA, não a coluna legada `status`.
+ *
+ * `status` tem 4 valores contra os 6 de `lifecycle_stage`, e o gatilho mapeia
+ * com PERDA: `contacted` colapsa em `lead` e `opportunity` colapsa em
+ * `prospect`. Este kanban mostrava "Lead" para quem já tinha sido contatado, e
+ * "Prospect" -- em inglês -- para quem estava em negociação.
+ *
+ * Cores e rótulos vêm de `contact-options`, a mesma fonte da tela de Contatos e
+ * da de Leads. Eram três listas separadas.
+ */
 
 /**
  * Só o visual do card. Serve a lista E o clone que segue o cursor durante o
@@ -41,6 +42,7 @@ function ContactCardVisual({
   company?: Company | null;
   arrastando?: boolean;
 }) {
+  const estagio = (contact.lifecycle_stage || "lead") as LifecycleStage;
   return (
     <Card
       className={
@@ -74,8 +76,12 @@ function ContactCardVisual({
             {contact.email && (
               <p className="truncate text-xs text-muted-foreground">{contact.email}</p>
             )}
-            <Badge variant="secondary" className={`text-[10px] ${statusColors[contact.status || "lead"]}`}>
-              {statusLabels[contact.status || "lead"]}
+            <Badge variant="secondary" className="gap-1.5 text-[10px]">
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: LIFECYCLE_COLORS[estagio] }}
+              />
+              {LIFECYCLE_LABELS[estagio]}
             </Badge>
           </div>
         </div>
