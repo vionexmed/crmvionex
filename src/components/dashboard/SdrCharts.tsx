@@ -40,7 +40,7 @@ export function GraficoEvolucao({ dados }: { dados: PontoSerie[] }) {
   const temDado = dados.some((d) => d.leads || d.abordagens || d.respostas);
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card>
       <CardHeader>
         <CardTitle>Evolução no período</CardTitle>
         <CardDescription>
@@ -71,7 +71,7 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
   const topo = dados[0]?.total ?? 0;
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card>
       <CardHeader>
         <CardTitle>Funil de conversão</CardTitle>
         {/* "no período" é a parte que faltava. O funil é de COORTE: conta os
@@ -141,7 +141,7 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
   const maioriaSemOrigem = total > 0 && naoInformado / total > 0.5;
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -198,7 +198,7 @@ export function GraficoPessoas({ dados }: { dados: LinhaPessoa[] }) {
   const max = Math.max(1, ...comMovimento.flatMap((d) => [d.leads, d.abordagens, d.reunioes, d.vendas]));
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>

@@ -46,6 +46,7 @@ import { MetricLeadsSheet } from "@/components/dashboard/MetricLeadsSheet";
 import SdrChartsPanel from "@/components/dashboard/SdrChartsPanel";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { formatarHora } from "@/lib/formato";
+import { Secao } from "@/components/layout/Secao";
 
 type TileConfig = {
   key: MetricKey;
@@ -276,14 +277,23 @@ export default function Dashboard() {
 
         {/* ── Ver o movimento ── */}
         <TabsContent value="visao" className="mt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {/* Uma faixa, não quatro cartões.
+              A moldura é uma só e a divisória entre os números é uma linha:
+              os quatro passam a ser uma leitura em vez de quatro objetos. */}
+          {/* A divisória é o FUNDO aparecendo pelo vão de 1px entre as células.
+              `divide-x` só divide numa direção, e com 2 colunas no celular e 4
+              no computador a conta de quais células levam borda muda a cada
+              quebra -- vira uma pilha de `nth-child` que erra em algum tamanho.
+              Aqui a grade não sabe quantas colunas tem, e funciona igual. */}
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius)] border border-border bg-border lg:grid-cols-4">
             {tilesDestaque.map((tile) =>
               isLoading ? (
-                <Skeleton key={tile.key} className="h-[150px] rounded-lg" />
+                <Skeleton key={tile.key} className="h-[132px]" />
               ) : (
                 <StatCard
                   key={tile.key}
                   emphasis
+                  emFaixa
                   label={tile.label}
                   value={metrics?.[tile.key]?.value ?? null}
                   previous={metrics?.[tile.key]?.previous ?? null}
@@ -333,15 +343,15 @@ export default function Dashboard() {
         {/* ── Consultar um número ── */}
         <TabsContent value="indicadores" className="mt-4 space-y-6">
           {GROUPS.map((group) => (
-            <section key={group.title} className="space-y-2">
-              <div className="flex items-baseline gap-2">
-                <h2 className="vx-titulo-secao">{group.title}</h2>
-                <p className="text-meta text-muted-foreground">{group.description}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
+            <Secao key={group.title} titulo={group.title} descricao={group.description}>
+              {/* Mesma faixa da aba anterior. Dezesseis métricas em cartões
+                  soltos eram dezesseis caixas -- e como estão em grupos de
+                  três a cinco, a moldura por grupo é o que faz o grupo se ler
+                  como grupo. */}
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius)] border border-border bg-border lg:grid-cols-3 xl:grid-cols-5">
                 {group.tiles.map((tile) =>
                   isLoading ? (
-                    <Skeleton key={tile.key} className="h-[116px] rounded-lg" />
+                    <Skeleton key={tile.key} className="h-[104px]" />
                   ) : (
                     <StatCard
                       key={tile.key}
@@ -355,11 +365,12 @@ export default function Dashboard() {
                       hint={tile.hint}
                       noSource={tile.noSource}
                       noComparison={tile.noComparison}
+                      emFaixa
                     />
                   ),
                 )}
               </div>
-            </section>
+            </Secao>
           ))}
 
           <p className="text-meta leading-relaxed text-muted-foreground">

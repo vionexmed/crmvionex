@@ -13,8 +13,6 @@
 import type { ReactNode } from "react";
 import { LucideIcon, TrendingUp, TrendingDown, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatarNumero } from "@/lib/formato";
@@ -23,11 +21,15 @@ export type StatFormat = "number" | "percent" | "duration";
 export type StatAccent = "primary" | "success" | "warning" | "destructive";
 
 // Classes precisam ser estáticas para o Tailwind detectar — nada de `bg-${accent}`.
-const ACCENT: Record<StatAccent, { bar: string; bubble: string; icon: string }> = {
-  primary: { bar: "bg-primary", bubble: "bg-primary/10 group-hover:bg-primary/20", icon: "text-primary" },
-  success: { bar: "bg-success", bubble: "bg-success/10 group-hover:bg-success/20", icon: "text-success" },
-  warning: { bar: "bg-warning", bubble: "bg-warning/10 group-hover:bg-warning/20", icon: "text-warning" },
-  destructive: { bar: "bg-destructive", bubble: "bg-destructive/10 group-hover:bg-destructive/20", icon: "text-destructive" },
+//
+// `bar` e `bubble` saíram junto com a barra colorida do topo e a bolha do
+// ícone. Sobrou a cor do ícone, que é a única que ainda diz algo: distingue
+// métrica de volume (primary) de métrica de qualidade (success/warning).
+const ACCENT: Record<StatAccent, { icon: string }> = {
+  primary: { icon: "text-primary" },
+  success: { icon: "text-success" },
+  warning: { icon: "text-warning" },
+  destructive: { icon: "text-destructive" },
 };
 
 export interface StatCardProps {
@@ -55,6 +57,14 @@ export interface StatCardProps {
   noSource?: boolean;
   /** Métrica de fila (valor "agora"), sem comparação com período anterior. */
   noComparison?: boolean;
+  /**
+   * Dentro de uma faixa: sem moldura própria.
+   *
+   * Quatro tiles com borda em fila são quatro CAIXAS, e o olho conta caixas
+   * antes de ler números. Numa faixa, a moldura é uma só e a divisória entre
+   * eles é uma linha -- os quatro números viram uma leitura, não quatro.
+   */
+  emFaixa?: boolean;
   /** Série do período para a linha de tendência. Vem pronta do painel. */
   trend?: number[];
   /** Destaque: usado na faixa das métricas principais. */
@@ -144,6 +154,7 @@ export function StatCard({
   noComparison = false,
   trend,
   emphasis = false,
+  emFaixa = false,
   drilldown,
   onCardClick,
 }: StatCardProps) {
@@ -158,18 +169,30 @@ export function StatCard({
   const positive = delta !== null && (lowerIsBetter ? delta < 0 : delta > 0);
 
   return (
-    <Card
+    // O NÚMERO é o elemento, não o cartão.
+    //
+    // Antes: barra colorida de 3px no topo, bolha de ícone circular, sombra,
+    // e o valor competindo com tudo isso. Quatro tiles lado a lado viravam
+    // quatro objetos decorados, e para ler os quatro números era preciso
+    // atravessar a decoração de cada um.
+    //
+    // Agora o cartão é uma superfície plana com uma linha, e a hierarquia é
+    // tipográfica: rótulo pequeno acima, número grande, variação pequena
+    // abaixo. O ícone some -- ele nomeava a métrica que o rótulo já nomeia.
+    <div
       className={cn(
-        "group overflow-hidden border-0 shadow-sm transition-all",
-        clickable && "cursor-pointer hover:shadow-md",
+        "group relative p-4 transition-colors",
+        // Fundo próprio: é ele que tapa a grade e deixa só o vão de 1px à
+        // mostra, formando a divisória.
+        emFaixa ? "min-w-0 bg-background" : "rounded-[var(--radius)] border border-border",
+        clickable && "cursor-pointer hover:bg-muted/60",
         noSource && "opacity-60",
       )}
       onClick={clickable ? () => (onCardClick ? onCardClick() : navigate(href!)) : undefined}
     >
-      <div className={cn("h-[3px] w-full", noSource ? "bg-muted" : theme.bar)} />
-      <CardContent>
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground">
+      <div className="contents">
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <span className="text-label font-medium text-muted-foreground">
             {label}
           </span>
           <div className="flex shrink-0 items-center gap-1">
@@ -190,14 +213,10 @@ export function StatCard({
                 </TooltipContent>
               </Tooltip>
             )}
-            <div
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full transition-colors",
-                noSource ? "bg-muted" : theme.bubble,
-              )}
-            >
-              <Icon className={cn("h-3.5 w-3.5", noSource ? "text-muted-foreground" : theme.icon)} />
-            </div>
+            {/* Sem bolha. O ícone vira uma marca discreta ao lado do rótulo --
+                a bolha circular colorida dava a ele o peso de um botão, e ele
+                não é clicável nem nomeia nada que o rótulo já não nomeie. */}
+            <Icon className={cn("h-3.5 w-3.5", noSource ? "text-muted-foreground/50" : theme.icon)} />
           </div>
         </div>
 
@@ -205,8 +224,11 @@ export function StatCard({
           const valor = (
             <span
               className={cn(
-                "block font-heading font-bold tracking-tight",
-                emphasis ? "text-3xl leading-none" : "text-[22px]",
+                // `font-bold` virou `font-semibold`: no tamanho de 30px o bold
+                // do Poppins fecha os contornos e o número fica pesado demais
+                // ao lado do rótulo de 11px.
+                "block font-heading font-semibold tracking-tight tabular-nums",
+                emphasis ? "text-3xl leading-none" : "text-[22px] leading-none",
                 value === null ? "text-muted-foreground" : "text-foreground",
               )}
             >
@@ -234,9 +256,11 @@ export function StatCard({
         )}
 
         {noSource ? (
-          <Badge variant="outline" className="mt-1.5 text-micro font-medium">
-            sem fonte
-          </Badge>
+          // Texto, não selo. O selo dava a "sem fonte" o mesmo peso visual de
+          // um estado do dado -- e um tile sem fonte já está apagado a 60%; o
+          // selo por cima disso chamava atenção para justamente o que não tem
+          // o que mostrar.
+          <p className="mt-1.5 text-label text-muted-foreground/70">sem fonte de dado</p>
         ) : delta !== null ? (
           <div
             className={cn(
@@ -254,7 +278,7 @@ export function StatCard({
             {noComparison ? "no momento" : value === null ? "sem dados no período" : "–"}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
