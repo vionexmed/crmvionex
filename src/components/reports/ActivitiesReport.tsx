@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
-} from "recharts";
+import { RoscaComLegenda } from "@/components/dashboard/svg/RoscaComLegenda";
+import { BarrasAgrupadas } from "@/components/dashboard/svg/BarrasAgrupadas";
+import { formatarNumero } from "@/lib/formato";
 import { Download } from "lucide-react";
 import {
   ActivityRow, Profile,
-  pct, CHART_COLORS, tooltipStyle,
+  pct, CHART_COLORS,
   downloadCSV,
 } from "@/components/reports/types";
 
@@ -65,38 +64,41 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
           <CardHeader><CardTitle>Atividades por Tipo</CardTitle></CardHeader>
           <CardContent>
             {byType.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={byType} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                    {byType.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : <div className="flex h-[220px] items-center justify-center text-xs text-muted-foreground">Sem dados</div>}
+              <RoscaComLegenda
+                formatar={formatarNumero}
+                fatias={byType.map((t, i) => ({
+                  nome: t.name,
+                  valor: t.value,
+                  cor: CHART_COLORS[i % CHART_COLORS.length],
+                }))}
+              />
+            ) : (
+              <div className="flex h-[220px] items-center justify-center text-xs text-muted-foreground">
+                Nenhuma atividade no período
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader><CardTitle>Atividades por Vendedor</CardTitle></CardHeader>
           <CardContent>
-            {userActivity.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={userActivity}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="call" name="Ligação" stackId="a" fill={CHART_COLORS[0]} />
-                  <Bar dataKey="email" name="Email" stackId="a" fill={CHART_COLORS[1]} />
-                  <Bar dataKey="meeting" name="Reunião" stackId="a" fill={CHART_COLORS[2]} />
-                  <Bar dataKey="note" name="Nota" stackId="a" fill={CHART_COLORS[3]} />
-                  <Bar dataKey="task" name="Tarefa" stackId="a" fill={CHART_COLORS[4]} radius={[4, 4, 0, 0]} />
-                  <Legend wrapperStyle={{ fontSize: 10 }} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <div className="flex h-[220px] items-center justify-center text-xs text-muted-foreground">Sem dados</div>}
+            {/* Barras horizontais em vez do gráfico vertical do recharts: o
+                nome de cada vendedor era rótulo do eixo X, e com mais de quatro
+                nomes o recharts os rotacionava ou cortava. */}
+            <BarrasAgrupadas
+              linhas={userActivity}
+              rotulo={(u) => u.name}
+              formatar={formatarNumero}
+              vazio="Nenhuma atividade registrada por vendedor"
+              series={[
+                { nome: "Ligação", cor: CHART_COLORS[0], valor: (u) => u.call },
+                { nome: "E-mail", cor: CHART_COLORS[1], valor: (u) => u.email },
+                { nome: "Reunião", cor: CHART_COLORS[2], valor: (u) => u.meeting },
+                { nome: "Nota", cor: CHART_COLORS[3], valor: (u) => u.note },
+                { nome: "Tarefa", cor: CHART_COLORS[4], valor: (u) => u.task },
+              ]}
+            />
           </CardContent>
         </Card>
       </div>
