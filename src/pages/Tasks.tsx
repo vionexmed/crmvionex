@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import { CheckSquare as CheckSquareIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -234,18 +234,18 @@ export default function Tasks() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        icon={CheckSquareIcon}
-        kicker="Produtividade"
-        title="Tarefas"
-        description={`${filtered.length} tarefas${counts.overdue > 0 ? ` · ${counts.overdue} vencidas` : ""}`}
-        actions={
-          <Button onClick={openCreate} size="sm">
-            <Plus className="mr-1.5 h-3.5 w-3.5" />Tarefa
-          </Button>
-        }
-      />
+    <PageShell
+      icon={CheckSquareIcon}
+      kicker="Produtividade"
+      title="Tarefas"
+      description={`${filtered.length} tarefas${counts.overdue > 0 ? ` · ${counts.overdue} vencidas` : ""}`}
+      actions={
+        <Button onClick={openCreate} size="sm">
+          <Plus className="mr-1.5 h-3.5 w-3.5" />Tarefa
+        </Button>
+      }
+    >
+
 
       {/* Owner filter + search bar */}
       <div className="flex items-center gap-1 pb-2 border-b border-border flex-wrap pt-1">
@@ -471,6 +471,6 @@ export default function Tasks() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

@@ -16,7 +16,7 @@ import { useOrg } from "@/hooks/useOrg";
 import { useToast } from "@/hooks/use-toast";
 import { emailsKeys } from "@/hooks/queries/useEmails";
 import { MinhaAssinatura } from "@/components/settings/MinhaAssinatura";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -232,13 +232,13 @@ export default function MyEmail() {
   const percentual = teto > 0 ? Math.min(100, Math.round((enviadosHoje / teto) * 100)) : 0;
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        icon={Mail}
-        kicker="Minha conta"
-        title="Meu e-mail"
-        description="Conecte sua conta para enviar e receber pelo seu próprio endereço"
-      />
+    <PageShell
+      icon={Mail}
+      kicker="Minha conta"
+      title="Meu e-mail"
+      description="Conecte sua conta para enviar e receber pelo seu próprio endereço"
+    >
+
 
       {carregando ? (
         <Skeleton className="h-[168px] rounded-lg" />
@@ -363,6 +363,6 @@ export default function MyEmail() {
           </span>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

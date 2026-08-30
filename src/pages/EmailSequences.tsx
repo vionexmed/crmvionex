@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { indexarPorId } from "@/lib/utils";
+import { PageShell } from "@/components/layout/PageShell";
+import { Zap as IconeDaPagina } from "lucide-react";
 
 type Sequence = {
   id: string; org_id: string; name: string; description: string | null;
@@ -147,16 +149,17 @@ export default function EmailSequences() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sequências de Email</h1>
-          <p className="text-sm text-muted-foreground">{sequences.length} sequências</p>
-        </div>
-        <Button onClick={() => { setFormName(""); setFormDesc(""); setCreateOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />Nova Sequência
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Atendimento"
+      title="Sequências de e-mail"
+      description={`${sequences.length} ${sequences.length === 1 ? "sequência" : "sequências"}`}
+      actions={
+        <Button onClick={() => { setFormName(""); setFormDesc(""); setCreateOpen(true); }} size="sm">
+          <Plus className="mr-1 h-4 w-4" />Nova sequência
         </Button>
-      </div>
+      }
+    >
 
       <div className="flex gap-4">
         {/* Sequences list */}
@@ -367,6 +370,6 @@ export default function EmailSequences() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

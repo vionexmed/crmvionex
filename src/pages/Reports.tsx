@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import { BarChart3 as BarChart3Icon } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageTabs } from "@/components/layout/PageTabs";
@@ -115,43 +115,43 @@ export default function Reports() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        icon={BarChart3Icon}
-        kicker="Análises"
-        title="Relatórios"
-        description="Análises completas de vendas, atividades e previsão"
-        actions={
-          <>
-            <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
-              <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todo período</SelectItem>
-                <SelectItem value="this_month">Este mês</SelectItem>
-                <SelectItem value="last_month">Mês anterior</SelectItem>
-                <SelectItem value="this_quarter">Trimestre</SelectItem>
-                <SelectItem value="this_year">Este ano</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+    <PageShell
+      icon={BarChart3Icon}
+      kicker="Análises"
+      title="Relatórios"
+      description="Análises completas de vendas, atividades e previsão"
+      actions={
+        <>
+          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
+            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo período</SelectItem>
+              <SelectItem value="this_month">Este mês</SelectItem>
+              <SelectItem value="last_month">Mês anterior</SelectItem>
+              <SelectItem value="this_quarter">Trimestre</SelectItem>
+              <SelectItem value="this_year">Este ano</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os donos</SelectItem>
+              {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {pipelines.length > 1 && (
+            <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
               <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os donos</SelectItem>
-                {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>)}
+                <SelectItem value="all">Todos pipelines</SelectItem>
+                {pipelines.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
               </SelectContent>
             </Select>
-            {pipelines.length > 1 && (
-              <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
-                <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos pipelines</SelectItem>
-                  {pipelines.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-          </>
-        }
-      />
+          )}
+        </>
+      }
+    >
+
 
       {/* Carregando e falhou passam a ter tela própria.
           Zero num relatório é uma AFIRMAÇÃO, e quem lê "nenhuma venda no
@@ -199,6 +199,6 @@ export default function Reports() {
         </TabsContent>
       </Tabs>
       )}
-    </div>
+    </PageShell>
   );
 }

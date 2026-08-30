@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Edit2, Trash2, MoreHorizontal, Copy, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageShell } from "@/components/layout/PageShell";
+import { FileText as IconeDaPagina } from "lucide-react";
 
 type Template = {
   id: string; org_id: string; name: string; subject: string; body_html: string;
@@ -88,14 +90,17 @@ export default function EmailTemplates() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Templates de Email</h1>
-          <p className="text-sm text-muted-foreground">{templates.length} templates</p>
-        </div>
-        <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" />Novo Template</Button>
-      </div>
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Atendimento"
+      title="Templates de e-mail"
+      description={`${templates.length} ${templates.length === 1 ? "template" : "templates"}`}
+      actions={
+        <Button onClick={openCreate} size="sm">
+          <Plus className="mr-1 h-4 w-4" />Novo template
+        </Button>
+      }
+    >
 
       <div className="relative max-w-sm">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -185,6 +190,6 @@ export default function EmailTemplates() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

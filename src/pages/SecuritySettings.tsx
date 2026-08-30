@@ -13,16 +13,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { MonitorSmartphone, ScrollText } from "lucide-react";
+import { PageShell } from "@/components/layout/PageShell";
+import { Shield as IconeDaPagina } from "lucide-react";
 
 export default function SecuritySettings() {
   const { orgId } = useOrg();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Segurança</h1>
-        <p className="text-sm text-muted-foreground">Audit log, sessões e configurações de segurança</p>
-      </div>
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Administração"
+      title="Segurança"
+      description="Registro de auditoria, sessões ativas e políticas de acesso"
+    >
       <Tabs defaultValue="audit">
         <PageTabs
           abas={[
@@ -34,7 +37,7 @@ export default function SecuritySettings() {
         <TabsContent value="audit" className="mt-4"><AuditLogTab orgId={orgId} /></TabsContent>
         <TabsContent value="sessions" className="mt-4"><SessionsTab /></TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }
 
@@ -183,4 +186,3 @@ function SessionsTab() {
     </div>
   );
 }
-

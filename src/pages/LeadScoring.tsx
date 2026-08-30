@@ -28,6 +28,8 @@ import { useToast } from "@/hooks/use-toast";
 import { LeadScoreBadge } from "@/components/crm/DealQualification";
 import { indexarPorId } from "@/lib/utils";
 import { LIFECYCLE_COLORS, LIFECYCLE_LABELS, type LifecycleStage } from "@/lib/contact-options";
+import { PageShell } from "@/components/layout/PageShell";
+import { TrendingUp as IconeDaPagina } from "lucide-react";
 
 type Contact = {
   id: string; first_name: string; last_name: string | null; email: string | null;
@@ -324,18 +326,17 @@ export default function LeadScoring() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Lead Scoring & Segmentação</h1>
-          <p className="text-sm text-muted-foreground">{contacts.length} contatos · {segments.length} segmentos</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => { setAdjustContactId(""); setAdjustPoints(0); setAdjustReason(""); setAdjustOpen(true); }}>
-            <TrendingUp className="mr-1.5 h-3.5 w-3.5" />Ajustar Score
-          </Button>
-        </div>
-      </div>
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Qualificação"
+      title="Lead Scoring e segmentação"
+      description={`${contacts.length} contatos · ${segments.length} segmentos`}
+      actions={
+        <Button variant="outline" size="sm" onClick={() => { setAdjustContactId(""); setAdjustPoints(0); setAdjustReason(""); setAdjustOpen(true); }}>
+          <TrendingUp className="mr-1.5 h-3.5 w-3.5" />Ajustar score
+        </Button>
+      }
+    >
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
@@ -684,6 +685,6 @@ export default function LeadScoring() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

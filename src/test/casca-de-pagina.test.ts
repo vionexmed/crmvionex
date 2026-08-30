@@ -12,25 +12,81 @@
  * é perceptível quando se repete.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 const semComentarios = (s: string) =>
   s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
 /**
- * As cinco telas do dia a dia. A replicação nas outras 22 é a onda seguinte, e
- * esta lista cresce junto -- é o que impede a casca de virar mais um primitivo
- * construído e não usado.
+ * Toda página INTERNA usa a casca. As exceções estão logo abaixo, cada uma com
+ * o motivo -- e é a lista de exceções que impede a regra de virar decoração.
  */
 const COM_CASCA = [
   "src/pages/Dashboard.tsx",
   "src/pages/Contacts.tsx",
+  "src/pages/Leads.tsx",
   "src/pages/Deals.tsx",
   "src/pages/Companies.tsx",
   "src/pages/Activities.tsx",
+  "src/pages/Tasks.tsx",
+  "src/pages/Reports.tsx",
+  "src/pages/SalesGoals.tsx",
+  "src/pages/LeadScoring.tsx",
+  "src/pages/Automations.tsx",
+  "src/pages/EmailSequences.tsx",
+  "src/pages/EmailTemplates.tsx",
+  "src/pages/MyEmail.tsx",
+  "src/pages/Team.tsx",
+  "src/pages/Settings.tsx",
+  "src/pages/SecuritySettings.tsx",
+  "src/pages/Integrations.tsx",
 ];
 
-describe("as telas do dia a dia usam a mesma casca", () => {
+/**
+ * As que NÃO usam, e por quê. Cada motivo é diferente, e nenhum é "não deu
+ * tempo" -- se fosse, estaria na lista de cima.
+ */
+const SEM_CASCA: Record<string, string> = {
+  // Fora do app: cartão centralizado em tela cheia, sem barra lateral. A casca
+  // pressupõe estar dentro do AppLayout.
+  "src/pages/Login.tsx": "fora do app",
+  "src/pages/ResetPassword.tsx": "fora do app",
+  "src/pages/AcceptInvite.tsx": "fora do app",
+  "src/pages/NotFound.tsx": "fora do app",
+  "src/pages/Setup.tsx": "fora do app",
+
+  // Altura cheia: `h-[calc(100vh-3.5rem)]` com rolagem interna. O `space-y-4`
+  // da casca quebraria o flex.
+  "src/pages/Inbox.tsx": "altura cheia",
+  "src/pages/Conversations.tsx": "altura cheia",
+
+  // Título editável no lugar: clicar no nome do negócio abre o campo. Não é
+  // cabeçalho de página, é um controle.
+  "src/pages/DealDetail.tsx": "título editável",
+
+  // Só redirecionamento e <Outlet/>. Não desenha nada.
+  "src/pages/Marketing.tsx": "casca de rota",
+};
+
+describe("as telas internas usam a mesma casca", () => {
+  /**
+   * Toda página está classificada: ou usa a casca, ou tem motivo declarado.
+   * Sem isto, uma página nova entra sem cabeçalho e ninguém percebe -- que é
+   * exatamente como as 16 divergências apareceram.
+   */
+  it("nenhuma página fica fora das duas listas", () => {
+    const todas = readdirSync("src/pages")
+      .filter((f) => f.endsWith(".tsx"))
+      .map((f) => `src/pages/${f}`);
+    const classificadas = new Set([...COM_CASCA, ...Object.keys(SEM_CASCA)]);
+    const orfas = todas.filter((f) => !classificadas.has(f));
+    expect(orfas, `sem classificação:\n${orfas.join("\n")}`).toEqual([]);
+  });
+
+  it.each(Object.entries(SEM_CASCA))("%s fica de fora: %s", (arquivo) => {
+    expect(readFileSync(arquivo, "utf8")).not.toContain("<PageShell");
+  });
+
   it.each(COM_CASCA)("%s monta PageShell", (arquivo) => {
     const src = semComentarios(readFileSync(arquivo, "utf8"));
     expect(src).toContain('from "@/components/layout/PageShell"');
@@ -46,12 +102,27 @@ describe("as telas do dia a dia usam a mesma casca", () => {
   });
 
   /**
-   * O wrapper raiz vinha com três valores diferentes. Agora quem decide é o
-   * PageShell, e a página não repete a decisão.
+   * O wrapper raiz vinha com três valores diferentes -- `space-y-3` em
+   * Negócios, `space-y-4` em Contatos, `space-y-5` no Painel e em Metas. Agora
+   * quem decide é o PageShell, e a página não repete a decisão.
+   *
+   * A verificação é sobre o COMPONENTE EXPORTADO, não sobre o arquivo: quase
+   * todos têm funções auxiliares que devolvem formulários com `space-y-2`, e
+   * essas decidem o próprio espaçamento com razão.
    */
-  it.each(COM_CASCA)("%s não decide o espaçamento raiz", (arquivo) => {
+  it.each(COM_CASCA)("%s abre direto na casca", (arquivo) => {
     const src = semComentarios(readFileSync(arquivo, "utf8"));
-    expect(src).not.toMatch(/return \(\n\s*<div className="space-y-\d/);
+    // Ancorado na indentação da raiz -- `  return (` com o elemento em quatro
+    // espaços. As auxiliares ficam mais fundas, ou devolvem JSX de dentro de um
+    // `if`, e não são confundidas com a raiz. (`Automations` tem uma
+    // `renderTriggerConfig` cujo `return` vem ANTES do da página.)
+    //
+    // Uma asserção só, e é a que basta: se a raiz é o PageShell, a página não
+    // está decidindo o próprio espaçamento. Proibir `<div className="space-y-"`
+    // no arquivo inteiro reprovaria `SecuritySettings`, que tem `AuditLogTab` e
+    // `SessionsTab` no escopo do módulo -- sub-componentes que decidem o
+    // próprio respiro com razão.
+    expect(src, "a raiz não abre em PageShell").toMatch(/\n {2}return \(\n {4}<PageShell/);
   });
 
   it("o PageShell é quem fixa o ritmo vertical", () => {

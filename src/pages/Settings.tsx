@@ -22,21 +22,24 @@ import { AppearanceTab } from "@/components/settings/AppearanceTab";
 import { BillingTab } from "@/components/settings/BillingTab";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Bell, CreditCard, FormInput, GitBranch, Palette, SlidersHorizontal } from "lucide-react";
+import { PageShell } from "@/components/layout/PageShell";
+import { Settings as IconeDaPagina } from "lucide-react";
 
 export default function Settings() {
   const { user, profile, isAdmin } = useAuth();
   const { orgId } = useOrg();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-muted-foreground">
-          {isAdmin
-            ? "Gerencie seu perfil, a organização e as preferências"
-            : "Suas preferências pessoais. A configuração da empresa é definida pelo administrador."}
-        </p>
-      </div>
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Administração"
+      title="Configurações"
+      description={
+        isAdmin
+          ? "Gerencie seu perfil, a organização e as preferências"
+          : "Suas preferências pessoais. A configuração da empresa é definida pelo administrador."
+      }
+    >
 
       <Tabs defaultValue={isAdmin ? "general" : "notifications"}>
         {/* Abas condicionais: quem não é admin vê três. Como o número de
@@ -85,6 +88,6 @@ export default function Settings() {
           <AppearanceTab />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }

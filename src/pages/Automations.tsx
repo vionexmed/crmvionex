@@ -29,6 +29,8 @@ import {
   Workflow, History, LayoutTemplate, Settings2, X,
 } from "lucide-react";
 import { indexarPorId } from "@/lib/utils";
+import { PageShell } from "@/components/layout/PageShell";
+import { Workflow as IconeDaPagina } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
 type TriggerType =
@@ -505,18 +507,17 @@ export default function Automations() {
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização primeiro.</div>;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Automações</h1>
-          <p className="text-sm text-muted-foreground">
-            {automations.length} automações · {automations.filter((a) => a.is_active).length} ativas
-          </p>
-        </div>
-        <Button onClick={() => openBuilder()}>
-          <Plus className="mr-2 h-4 w-4" />Nova Automação
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Fluxos"
+      title="Automações"
+      description={`${automations.length} automações · ${automations.filter((a) => a.is_active).length} ativas`}
+      actions={
+        <Button onClick={() => openBuilder()} size="sm">
+          <Plus className="mr-1 h-4 w-4" />Nova automação
         </Button>
-      </div>
+      }
+    >
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
@@ -871,6 +872,6 @@ export default function Automations() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

@@ -9,17 +9,20 @@ import { TrackingTab } from "@/components/integrations/TrackingTab";
 import { ImportExportTab } from "@/components/integrations/ImportExportTab";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { ArrowLeftRight, KeyRound, Magnet as MagnetIcon, Plug, Radar, Webhook } from "lucide-react";
+import { PageShell } from "@/components/layout/PageShell";
+import { Plug as IconeDaPagina } from "lucide-react";
 
 export default function Integrations() {
   const { user } = useAuth();
   const { orgId } = useOrg();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Integrações & API</h1>
-        <p className="text-muted-foreground">Conecte ferramentas externas e gerencie sua API</p>
-      </div>
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Conexões"
+      title="Integrações e API"
+      description="Conecte ferramentas externas e gerencie suas chaves"
+    >
 
       <Tabs defaultValue="integrations">
         <PageTabs
@@ -52,6 +55,6 @@ export default function Integrations() {
           <ImportExportTab orgId={orgId} />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }

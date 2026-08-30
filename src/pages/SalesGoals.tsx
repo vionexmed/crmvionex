@@ -22,6 +22,8 @@ import {
   ChevronLeft, ChevronRight, Trophy, Phone, Handshake, UserPlus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageShell } from "@/components/layout/PageShell";
+import { Target as IconeDaPagina } from "lucide-react";
 
 const GOAL_TYPES = [
   { value: "revenue", label: "Receita (R$)", icon: TrendingUp, color: "text-emerald-500" },
@@ -251,16 +253,17 @@ export default function SalesGoals() {
   }, [goals]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Metas de Vendas</h1>
-          <p className="text-muted-foreground text-sm">Gerencie metas por vendedor, time ou organização</p>
-        </div>
+    <PageShell
+      icon={IconeDaPagina}
+      kicker="Analytics"
+      title="Metas de vendas"
+      description="Gerencie metas por vendedor, time ou organização"
+      actions={
         <Button onClick={openCreate} size="sm">
-          <Plus className="mr-1 h-4 w-4" />Nova Meta
+          <Plus className="mr-1 h-4 w-4" />Nova meta
         </Button>
-      </div>
+      }
+    >
 
       {/* Month Navigator */}
       <div className="flex items-center justify-center gap-4">
@@ -459,6 +462,6 @@ export default function SalesGoals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

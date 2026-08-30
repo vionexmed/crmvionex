@@ -23,7 +23,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import {
   UserPlus, Phone, Building2, FileText, Zap, Trash2, CheckCircle2,
   Clock, Globe, RefreshCw, Eye, XCircle, MessageCircle, Calendar,
@@ -207,19 +207,19 @@ export default function Leads() {
   };
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        icon={UserPlus}
-        kicker="Captação"
-        title="Leads"
-        description={`${leads.length} lead${leads.length !== 1 ? "s" : ""} aguardando qualificação`}
-        actions={
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-            Atualizar
-          </Button>
-        }
-      />
+    <PageShell
+      icon={UserPlus}
+      kicker="Captação"
+      title="Leads"
+      description={`${leads.length} lead${leads.length !== 1 ? "s" : ""} aguardando qualificação`}
+      actions={
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+          Atualizar
+        </Button>
+      }
+    >
+
 
       {/* Barra de ações em lote */}
       {selected.size > 0 && (
@@ -515,6 +515,6 @@ export default function Leads() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }
