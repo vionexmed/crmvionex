@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Plus, Search, LayoutGrid, List, Filter, ArrowUpDown, Upload, Download,
+  Plus, Search, LayoutGrid, List, Filter, Upload, Download,
   Trash2, ChevronLeft, ChevronRight, X, Building2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -28,11 +28,11 @@ import type { Database } from "@/integrations/supabase/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanies, useDeleteCompany, companiesKeys } from "@/hooks/queries/useCompanies";
 import { useMembers } from "@/hooks/queries/useMembers";
+import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 
 type SortKey = "name" | "domain" | "industry" | "size" | "revenue" | "created_at";
-type SortDir = "asc" | "desc";
 type ViewMode = "table" | "cards";
 const PAGE_SIZE = 50;
 
@@ -53,8 +53,7 @@ export default function Companies() {
 
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [sortKey, setSortKey] = useState<SortKey>("created_at");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const { sortKey, sortDir, toggleSort } = useOrdenacao<SortKey>("created_at");
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<CompanyFilters>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -123,10 +122,6 @@ export default function Companies() {
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
   const paginated = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
-    else { setSortKey(key); setSortDir("asc"); }
-  };
 
   const allSelected = paginated.length > 0 && paginated.every((c) => selectedCompanies.has(c.id));
   const toggleAll = () => {
@@ -164,12 +159,6 @@ export default function Companies() {
     if (!v) return "—";
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
   };
-
-  const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
-    <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-foreground transition-colors">
-      {label}<ArrowUpDown className="h-3 w-3" />
-    </button>
-  );
 
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
@@ -272,12 +261,12 @@ export default function Companies() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todas" /></TableHead>
-                <TableHead><SortHeader label="Empresa" field="name" /></TableHead>
-                <TableHead className="hidden sm:table-cell"><SortHeader label="Domínio" field="domain" /></TableHead>
-                <TableHead className="hidden md:table-cell"><SortHeader label="Indústria" field="industry" /></TableHead>
-                <TableHead className="hidden lg:table-cell"><SortHeader label="Tamanho" field="size" /></TableHead>
-                <TableHead className="hidden lg:table-cell"><SortHeader label="Receita" field="revenue" /></TableHead>
-                <TableHead className="hidden md:table-cell"><SortHeader label="Criado em" field="created_at" /></TableHead>
+                <TableHead><SortHeader rotulo="Empresa" campo="name" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden sm:table-cell"><SortHeader rotulo="Domínio" campo="domain" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden md:table-cell"><SortHeader rotulo="Indústria" campo="industry" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden lg:table-cell"><SortHeader rotulo="Tamanho" campo="size" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden lg:table-cell"><SortHeader rotulo="Receita" campo="revenue" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden md:table-cell"><SortHeader rotulo="Criado em" campo="created_at" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

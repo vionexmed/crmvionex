@@ -28,6 +28,7 @@ import {
   ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU,
 } from "@/lib/atividade-tipos";
 import type { Database } from "@/integrations/supabase/types";
+import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -71,6 +72,36 @@ interface ContactDrawerProps {
   companies: Company[];
 }
 
+/**
+ * Placeholder das abas de relacionados: carregando, falhou, ou vazio de fato.
+ *
+ * Estava declarado DENTRO do render do drawer -- tipo novo a cada render, o que
+ * remonta o bloco a cada atualização de estado do componente inteiro. E
+ * reimplementava à mão o spinner e o bloco de erro que `LoadingState` e
+ * `ErrorState` já fazem, em formato levemente diferente dos dois.
+ *
+ * A ordem importa e é a mesma dos primitivos: erro ANTES de vazio. "Nenhum
+ * negócio vinculado" era exibido enquanto a consulta rodava E quando ela
+ * falhava -- nos dois casos a tela afirmava um fato que não conhecia, e um
+ * vendedor decidindo abordar alguém "que não tem negócio aberto" merece saber
+ * que a lista não carregou.
+ */
+function EstadoLista({
+  vazio,
+  carregando,
+  falhou,
+  onTentarNovamente,
+}: {
+  vazio: string;
+  carregando: boolean;
+  falhou: boolean;
+  onTentarNovamente: () => void;
+}) {
+  if (carregando) return <LoadingState linhas={2} />;
+  if (falhou) return <ErrorState descricao="" onTentarNovamente={onTentarNovamente} className="py-6" />;
+  return <p className="py-6 text-center text-sm text-muted-foreground">{vazio}</p>;
+}
+
 export function ContactDrawer({ contact, onClose, onUpdate, companies }: ContactDrawerProps) {
   const { orgId } = useOrg();
   const { user } = useAuth();
@@ -95,31 +126,6 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
    * "Nenhum negócio vinculado" era exibido enquanto a consulta rodava E quando
    * ela falhava. Nos dois casos a tela afirmava um fato que não conhecia.
    */
-  const EstadoLista = ({ vazio }: { vazio: string }) => {
-    if (carregando) {
-      return (
-        <div className="flex justify-center py-6">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        </div>
-      );
-    }
-    if (falhou) {
-      return (
-        <div className="py-6 text-center">
-          <p className="text-sm text-destructive">Não foi possível carregar</p>
-          <button
-            type="button"
-            onClick={() => fetchRelated()}
-            className="mt-1 text-xs text-muted-foreground underline"
-          >
-            Tentar novamente
-          </button>
-        </div>
-      );
-    }
-    return <p className="text-center text-sm text-muted-foreground py-6">{vazio}</p>;
-  };
-
   const fetchRelated = useCallback(async () => {
     if (!contact) return;
     setCarregando(true);
@@ -496,7 +502,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                   </div>
                 );
               })}
-              {activities.length === 0 && <EstadoLista vazio="Nenhuma atividade" />}
+              {activities.length === 0 && <EstadoLista vazio="Nenhuma atividade" carregando={carregando} falhou={falhou} onTentarNovamente={fetchRelated} />}
             </div>
           </TabsContent>
 
@@ -529,7 +535,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                 </Card>
               );
             })}
-            {deals.length === 0 && <EstadoLista vazio="Nenhum negócio vinculado" />}
+            {deals.length === 0 && <EstadoLista vazio="Nenhum negócio vinculado" carregando={carregando} falhou={falhou} onTentarNovamente={fetchRelated} />}
           </TabsContent>
 
           {/* Notes */}

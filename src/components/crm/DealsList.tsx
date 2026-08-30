@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -6,9 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowUpDown, Trophy, XCircle, Trash2, AlertTriangle } from "lucide-react";
+import { Trophy, XCircle, Trash2, AlertTriangle } from "lucide-react";
 import type { DealWithRelations } from "@/lib/api/deals";
 import type { Database } from "@/integrations/supabase/types";
+import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
@@ -17,7 +17,6 @@ function formatCurrency(value: number, currency: string = "BRL") {
 }
 
 type SortKey = "title" | "value" | "close_date" | "probability" | "status" | "created_at";
-type SortDir = "asc" | "desc";
 
 const statusLabels = { open: "Aberto", won: "Ganho", lost: "Perdido" };
 const statusColors = {
@@ -41,13 +40,8 @@ export function DealsList({
   deals, stages, selectedDeals, onSelectionChange, onDealClick, onBatchAction,
   canDelete = true,
 }: DealsListProps) {
-  const [sortKey, setSortKey] = useState<SortKey>("created_at");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const { sortKey, sortDir, toggleSort } = useOrdenacao<SortKey>("created_at");
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
-    else { setSortKey(key); setSortDir("asc"); }
-  };
 
   const sorted = [...deals].sort((a, b) => {
     let cmp = 0;
@@ -78,13 +72,6 @@ export function DealsList({
     return stages.find((s) => s.id === stageId)?.name || "—";
   };
 
-  const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
-    <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-foreground transition-colors">
-      {label}
-      <ArrowUpDown className="h-3 w-3" />
-    </button>
-  );
-
   return (
     <div className="space-y-3">
       {selectedDeals.size > 0 && (
@@ -111,12 +98,12 @@ export function DealsList({
               <TableHead className="w-10">
                 <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todos" />
               </TableHead>
-              <TableHead><SortHeader label="Título" field="title" /></TableHead>
-              <TableHead><SortHeader label="Valor" field="value" /></TableHead>
+              <TableHead><SortHeader rotulo="Título" campo="title" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+              <TableHead><SortHeader rotulo="Valor" campo="value" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
               <TableHead className="hidden md:table-cell">Etapa</TableHead>
-              <TableHead className="hidden lg:table-cell"><SortHeader label="Probabilidade" field="probability" /></TableHead>
-              <TableHead className="hidden sm:table-cell"><SortHeader label="Fechamento" field="close_date" /></TableHead>
-              <TableHead><SortHeader label="Status" field="status" /></TableHead>
+              <TableHead className="hidden lg:table-cell"><SortHeader rotulo="Probabilidade" campo="probability" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+              <TableHead className="hidden sm:table-cell"><SortHeader rotulo="Fechamento" campo="close_date" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+              <TableHead><SortHeader rotulo="Status" campo="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
               <TableHead className="hidden lg:table-cell">Responsável</TableHead>
             </TableRow>
           </TableHeader>

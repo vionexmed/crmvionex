@@ -38,7 +38,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Search, LayoutGrid, List, Filter, ArrowUpDown, Upload, Download,
+  Plus, Search, LayoutGrid, List, Filter, Upload, Download,
   Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Users, Loader2,
 } from "lucide-react";
 import { ContactsKanbanByOwner } from "@/components/crm/ContactsKanbanByOwner";
@@ -55,10 +55,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import type { Database } from "@/integrations/supabase/types";
+import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type SortKey = "name" | "email" | "status" | "created_at" | "title";
-type SortDir = "asc" | "desc";
 type ViewMode = "table" | "cards" | "owner";
 
 const cleanPhone = (p: string | null) => p || "";
@@ -124,8 +124,7 @@ export default function Contacts() {
   // UI state
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [sortKey, setSortKey] = useState<SortKey>("created_at");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const { sortKey, sortDir, toggleSort } = useOrdenacao<SortKey>("created_at");
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<ContactFilters>({});
   /** Exclusão aguardando confirmação, com o que será apagado junto. */
@@ -235,10 +234,6 @@ export default function Contacts() {
     }
   };
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
-    else { setSortKey(key); setSortDir("asc"); }
-  };
 
   const allSelected = contacts.length > 0 && contacts.every((c) => selectedContacts.has(c.id));
   const toggleAll = () => {
@@ -345,22 +340,6 @@ export default function Contacts() {
       setExporting(false);
     }
   };
-
-  /**
-   * Definido DENTRO do render, e isso custa caro.
-   *
-   * Um componente declarado no corpo de outro é um tipo novo a cada render: o
-   * React não compara, desmonta e remonta a subárvore. Aqui isso significa
-   * remontar todos os cabeçalhos da tabela a cada tecla digitada na busca.
-   *
-   * Fica como está por ora -- mover para fora exige passar `toggleSort` por
-   * prop, e o piloto já mudou bastante. Está anotado como dívida.
-   */
-  const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
-    <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-foreground transition-colors">
-      {label}<ArrowUpDown className="h-3 w-3" />
-    </button>
-  );
 
   if (!orgId) return <div className="py-20 text-center text-muted-foreground">Crie uma organização em Configurações primeiro.</div>;
 
@@ -518,14 +497,14 @@ export default function Contacts() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todos" /></TableHead>
-                <TableHead><SortHeader label="Nome" field="name" /></TableHead>
-                <TableHead><SortHeader label="Email" field="email" /></TableHead>
+                <TableHead><SortHeader rotulo="Nome" campo="name" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead><SortHeader rotulo="Email" campo="email" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
                 <TableHead className="hidden sm:table-cell">Empresa</TableHead>
-                <TableHead className="hidden md:table-cell"><SortHeader label="Especialidade" field="title" /></TableHead>
+                <TableHead className="hidden md:table-cell"><SortHeader rotulo="Especialidade" campo="title" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
                 <TableHead className="hidden md:table-cell">Telefone</TableHead>
-                <TableHead><SortHeader label="Status" field="status" /></TableHead>
+                <TableHead><SortHeader rotulo="Status" campo="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
                 <TableHead className="hidden lg:table-cell">Origem</TableHead>
-                <TableHead className="hidden lg:table-cell"><SortHeader label="Criado em" field="created_at" /></TableHead>
+                <TableHead className="hidden lg:table-cell"><SortHeader rotulo="Criado em" campo="created_at" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -48,6 +48,62 @@ const DEFAULT_RULES: Omit<RiskRule, "id" | "org_id" | "created_at">[] = [
   { name: "Fechamento atrasado", metric: "close_date_approaching", threshold_days: 0, risk_level: "high", applies_to: "deals", is_active: true },
 ];
 
+/**
+ * Cartão de item em risco, e o ícone da métrica que o disparou.
+ *
+ * Estavam declarados DENTRO do render do painel — tipo novo a cada render, o
+ * que faz o React desmontar e remontar a lista inteira em vez de atualizá-la.
+ * Nenhum dos dois lê estado do painel, então nada os prendia lá.
+ */
+function metricIcon(metric: string) {
+  switch (metric) {
+    case "inactivity": return <Clock className="h-2.5 w-2.5" />;
+    case "follow_up_overdue": return <TrendingDown className="h-2.5 w-2.5" />;
+    case "close_date_approaching": return <AlertTriangle className="h-2.5 w-2.5" />;
+    case "no_activity_since_creation": return <Activity className="h-2.5 w-2.5" />;
+    default: return <Clock className="h-2.5 w-2.5" />;
+  }
+}
+
+function RiskCard({ item }: { item: AtRiskItem }) {
+  return (
+    <Card className={`border-l-4 ${item.riskLevel === "high" ? "border-l-destructive" : "border-l-warning"}`}>
+      <CardContent className="p-3">
+        <div className="flex items-start justify-between mb-1.5">
+          <div className="flex items-center gap-1.5">
+            {item.type === "deal" ? (
+              <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+            <p className="text-sm font-medium leading-tight">{item.title}</p>
+          </div>
+          {item.value !== undefined && item.value > 0 && (
+            <span className="text-sm font-bold text-primary shrink-0 ml-2">
+              {formatCurrency(item.value, item.currency)}
+            </span>
+          )}
+        </div>
+        {item.subtitle && (
+          <p className="text-[10px] text-muted-foreground mb-1">{item.subtitle}</p>
+        )}
+        {item.stage && (
+          <Badge variant="secondary" className="text-[9px] mb-1.5">{item.stage.name}</Badge>
+        )}
+        <div className="space-y-0.5">
+          {item.violations.map((v, i) => (
+            <div key={i} className={`text-[10px] flex items-center gap-1 ${item.riskLevel === "high" ? "text-destructive" : "text-warning"}`}>
+              {metricIcon(v.metric)}
+              <span className="font-medium">{v.ruleName}:</span>
+              <span>{v.days}d</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AtRiskPanel({ open, onOpenChange }: AtRiskPanelProps) {
   const { orgId } = useOrg();
   const [items, setItems] = useState<AtRiskItem[]>([]);
@@ -290,53 +346,6 @@ export function AtRiskPanel({ open, onOpenChange }: AtRiskPanelProps) {
   const contactItems = items.filter((i) => i.type === "contact");
   const highRisk = items.filter((i) => i.riskLevel === "high");
   const totalDealValue = dealItems.reduce((s, d) => s + (d.value || 0), 0);
-
-  const metricIcon = (metric: string) => {
-    switch (metric) {
-      case "inactivity": return <Clock className="h-2.5 w-2.5" />;
-      case "follow_up_overdue": return <TrendingDown className="h-2.5 w-2.5" />;
-      case "close_date_approaching": return <AlertTriangle className="h-2.5 w-2.5" />;
-      case "no_activity_since_creation": return <Activity className="h-2.5 w-2.5" />;
-      default: return <Clock className="h-2.5 w-2.5" />;
-    }
-  };
-
-  const RiskCard = ({ item }: { item: AtRiskItem }) => (
-    <Card className={`border-l-4 ${item.riskLevel === "high" ? "border-l-destructive" : "border-l-warning"}`}>
-      <CardContent className="p-3">
-        <div className="flex items-start justify-between mb-1.5">
-          <div className="flex items-center gap-1.5">
-            {item.type === "deal" ? (
-              <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-            ) : (
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
-            )}
-            <p className="text-sm font-medium leading-tight">{item.title}</p>
-          </div>
-          {item.value !== undefined && item.value > 0 && (
-            <span className="text-sm font-bold text-primary shrink-0 ml-2">
-              {formatCurrency(item.value, item.currency)}
-            </span>
-          )}
-        </div>
-        {item.subtitle && (
-          <p className="text-[10px] text-muted-foreground mb-1">{item.subtitle}</p>
-        )}
-        {item.stage && (
-          <Badge variant="secondary" className="text-[9px] mb-1.5">{item.stage.name}</Badge>
-        )}
-        <div className="space-y-0.5">
-          {item.violations.map((v, i) => (
-            <div key={i} className={`text-[10px] flex items-center gap-1 ${item.riskLevel === "high" ? "text-destructive" : "text-warning"}`}>
-              {metricIcon(v.metric)}
-              <span className="font-medium">{v.ruleName}:</span>
-              <span>{v.days}d</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <>

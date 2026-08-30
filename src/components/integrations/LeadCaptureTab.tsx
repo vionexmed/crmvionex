@@ -14,6 +14,42 @@ type ApiKey = {
   created_at: string | null; last_used_at: string | null; is_active: boolean; request_count: number;
 };
 
+/**
+ * Bloco de código com botão de copiar.
+ *
+ * Estava dentro do render -- e como o `<pre>` tem `overflow-y-auto max-h-64`, a
+ * remontagem zerava a ROLAGEM do trecho: rolar o código, clicar em copiar, e o
+ * bloco voltava ao topo.
+ */
+function CodeBlock({
+  code,
+  id,
+  copiedId,
+  onCopy,
+}: {
+  code: string;
+  id: string;
+  copiedId: string | null;
+  onCopy: (code: string, id: string) => void;
+}) {
+  const copiado = copiedId === id;
+  return (
+    <div className="relative">
+      <pre className="rounded-md bg-muted p-4 text-[9px] font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
+        {code}
+      </pre>
+      <Button
+        variant="outline" size="sm"
+        className="absolute top-2 right-2 h-7 text-[9px]"
+        onClick={() => onCopy(code, id)}
+      >
+        {copiado ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
+        {copiado ? "Copiado!" : "Copiar"}
+      </Button>
+    </div>
+  );
+}
+
 export function LeadCaptureTab({ orgId }: { orgId: string | null }) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -180,22 +216,6 @@ fetch("${endpoint}", {
     { name: "custom_fields", type: "object", req: false, desc: "Campos customizados (armazenados em metadata)" },
   ];
 
-  const CodeBlock = ({ code, id }: { code: string; id: string }) => (
-    <div className="relative">
-      <pre className="rounded-md bg-muted p-4 text-[9px] font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
-        {code}
-      </pre>
-      <Button
-        variant="outline" size="sm"
-        className="absolute top-2 right-2 h-7 text-[9px]"
-        onClick={() => copy(code, id)}
-      >
-        {copiedId === id ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
-        {copiedId === id ? "Copiado!" : "Copiar"}
-      </Button>
-    </div>
-  );
-
   return (
     <div className="space-y-6">
       {/* Header info */}
@@ -239,11 +259,11 @@ fetch("${endpoint}", {
           <div className="grid md:grid-cols-2 gap-3">
             <div>
               <p className="text-[10px] font-medium text-green-600 mb-1">✓ Sucesso (201)</p>
-              <CodeBlock code={`{ "success": true, "contact_id": "uuid", "deal_id": "uuid ou null" }`} id="resp-ok" />
+              <CodeBlock code={`{ "success": true, "contact_id": "uuid", "deal_id": "uuid ou null" }`} id="resp-ok" copiedId={copiedId} onCopy={copy} />
             </div>
             <div>
               <p className="text-[10px] font-medium text-red-500 mb-1">✗ Erro (400/401)</p>
-              <CodeBlock code={`{ "error": "mensagem de erro" }`} id="resp-err" />
+              <CodeBlock code={`{ "error": "mensagem de erro" }`} id="resp-err" copiedId={copiedId} onCopy={copy} />
             </div>
           </div>
         </CardContent>
@@ -296,26 +316,26 @@ fetch("${endpoint}", {
         <CardContent className="space-y-4">
           <div>
             <p className="text-[10px] font-semibold mb-2">1. cURL (terminal / backend)</p>
-            <CodeBlock code={curlExample} id="curl" />
+            <CodeBlock code={curlExample} id="curl" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
             <p className="text-[10px] font-semibold mb-2">2. JavaScript (fetch) — direto no browser</p>
-            <CodeBlock code={fetchExample} id="fetch" />
+            <CodeBlock code={fetchExample} id="fetch" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
             <p className="text-[10px] font-semibold mb-2">3. Formulário HTML completo pronto para copiar</p>
-            <CodeBlock code={htmlFormExample} id="html" />
+            <CodeBlock code={htmlFormExample} id="html" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
             <p className="text-[10px] font-semibold mb-2">4. PHP</p>
-            <CodeBlock code={phpExample} id="php" />
+            <CodeBlock code={phpExample} id="php" copiedId={copiedId} onCopy={copy} />
           </div>
           <div>
             <p className="text-[10px] font-semibold mb-2">5. Criar lead + negócio em um único request</p>
             {pipelines.length === 0 && (
               <p className="text-[9px] text-yellow-600 mb-1">⚠ Crie um pipeline primeiro para usar pipeline_id</p>
             )}
-            <CodeBlock code={withPipelineExample} id="pipeline" />
+            <CodeBlock code={withPipelineExample} id="pipeline" copiedId={copiedId} onCopy={copy} />
           </div>
         </CardContent>
       </Card>

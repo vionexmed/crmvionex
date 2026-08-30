@@ -9,6 +9,39 @@ import {
 } from "@/components/ui/select";
 import { Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useId } from "react";
+
+/**
+ * Linha de preferência: rótulo à esquerda, interruptor à direita.
+ *
+ * Estava declarado dentro do render -- tipo novo a cada render, então o
+ * `Switch` do Radix era DESMONTADO e remontado a cada mudança de preferência.
+ * Na prática: a animação do interruptor não completava e o foco do teclado se
+ * perdia ao alternar.
+ *
+ * O rótulo também não estava associado ao controle. `<span>` solto não é
+ * clicável e o leitor de tela anunciava o interruptor sem nome; `useId` +
+ * `htmlFor` resolve os dois.
+ */
+function Toggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <Label htmlFor={id} className="text-xs font-normal cursor-pointer">
+        {label}
+      </Label>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
 
 export function NotificationsTab({ orgId, userId }: { orgId: string | null; userId?: string }) {
   const { toast } = useToast();
@@ -36,13 +69,6 @@ export function NotificationsTab({ orgId, userId }: { orgId: string | null; user
     } as any, { onConflict: "user_id,org_id" });
     toast(error ? { title: "Erro", variant: "destructive" } : { title: "Preferências salvas" });
   };
-
-  const Toggle = ({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) => (
-    <div className="flex items-center justify-between py-1.5">
-      <span className="text-xs">{label}</span>
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
-  );
 
   return (
     <div className="space-y-4">
