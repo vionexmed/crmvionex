@@ -58,7 +58,12 @@ export function OnboardingModal() {
     const p = profile as any;
     if (profile.org_id) setOrgId(profile.org_id);
 
-    if (p.onboarding_completed) {
+    // `?configurar=1` reabre por escolha. É o destino de `/setup`, que era uma
+    // segunda implementação do MESMO wizard -- mesmas edge functions, sem ler o
+    // que já está configurado e sem gravar progresso.
+    const pedido = new URLSearchParams(window.location.search).get("configurar") === "1";
+
+    if (p.onboarding_completed && !pedido) {
       setIsOpen(false);
       return;
     }

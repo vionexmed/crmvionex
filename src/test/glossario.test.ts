@@ -71,8 +71,6 @@ describe("'Pipeline' não aparece na interface", () => {
    */
   const arquivos = [
     "src/pages/Deals.tsx",
-    "src/components/setup/StepPipeline.tsx",
-    "src/components/setup/StepComplete.tsx",
     "src/components/onboarding/PipelineStep.tsx",
     "src/components/onboarding/CompleteStep.tsx",
     "src/components/onboarding/OnboardingModal.tsx",
@@ -107,7 +105,6 @@ describe("etapa do funil se chama Etapa, não Estágio", () => {
     "src/pages/Deals.tsx",
     "src/components/crm/DealsList.tsx",
     "src/components/settings/PipelinesTab.tsx",
-    "src/components/setup/StepPipeline.tsx",
     "src/components/reports/SalesReport.tsx",
     "src/components/reports/CustomReportBuilder.tsx",
   ];

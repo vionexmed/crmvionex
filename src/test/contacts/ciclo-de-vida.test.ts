@@ -48,7 +48,6 @@ describe("a coluna legada `status` não é mais escrita", () => {
   const arquivos = [
     "src/components/crm/ContactCreateModal.tsx",
     "src/components/crm/CSVImportModal.tsx",
-    "src/components/setup/StepContacts.tsx",
     "src/components/crm/ContactDrawer.tsx",
     "src/pages/Contacts.tsx",
   ];

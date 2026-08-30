@@ -102,7 +102,6 @@ const Integrations     = lazyChunk(() => import("./pages/Integrations"));
 const SecuritySettings = lazyChunk(() => import("./pages/SecuritySettings"));
 const SalesGoals       = lazyChunk(() => import("./pages/SalesGoals"));
 const Team             = lazyChunk(() => import("./pages/Team"));
-const Setup            = lazyChunk(() => import("./pages/Setup"));
 const Leads            = lazyChunk(() => import("./pages/Leads"));
 const Marketing        = lazyChunk(() => import("./pages/Marketing"));
 const MarketingOverview = lazyChunk(() => import("./pages/marketing/Overview"));
@@ -158,11 +157,15 @@ const App = () => (
               <Route path="/" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
-              {/* /setup configura a EMPRESA inteira (pipeline, integrações,
-                  chaves de API). Antes ficava aberto por URL para qualquer papel. */}
-              <Route element={<RequireAdmin />}>
-                <Route path="/setup" element={<SuspenseRoute><Setup /></SuspenseRoute>} />
-              </Route>
+              {/* `/setup` era uma SEGUNDA implementação do wizard de
+                  onboarding: os mesmos passos, chamando as mesmas edge
+                  functions, mas sem ler o que já está configurado e sem gravar
+                  progresso -- estritamente mais fraca. E nada no produto
+                  apontava para ela: só se chegava digitando a URL.
+
+                  Vira redirecionamento para o wizard de verdade. O caminho
+                  continua atendendo quem o tenha salvo. */}
+              <Route path="/setup" element={<Navigate to="/dashboard?configurar=1" replace />} />
               
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<SuspenseRoute><Dashboard /></SuspenseRoute>} />

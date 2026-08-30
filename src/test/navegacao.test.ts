@@ -124,8 +124,23 @@ describe("as rotas que mandam para a raiz querem mesmo o login", () => {
     expect(src).toContain('navigate("/dashboard")');
   });
 
-  it("o fim da configuração manda para o painel", () => {
-    const src = readFileSync("src/pages/Setup.tsx", "utf8");
-    expect(src).toMatch(/onFinish=\{\(\) => navigate\("\/dashboard"\)\}/);
+  /**
+   * `/setup` era uma SEGUNDA implementação do wizard de onboarding -- mesmos
+   * passos, mesmas edge functions, mas sem ler o que já está configurado e sem
+   * gravar progresso. E nada no produto apontava para ela: só se chegava
+   * digitando a URL.
+   *
+   * A rota continua atendendo quem a tenha salvo, agora abrindo o wizard de
+   * verdade.
+   */
+  it("o caminho antigo de configuração abre o wizard real", () => {
+    expect(APP).toMatch(/path="\/setup" element=\{<Navigate to="\/dashboard\?configurar=1" replace \/>\}/);
+  });
+
+  it("o wizard reabre quando pedido pela URL", () => {
+    const modal = readFileSync("src/components/onboarding/OnboardingModal.tsx", "utf8");
+    expect(modal).toMatch(/get\("configurar"\) === "1"/);
+    // Sem o `&& !pedido`, quem já concluiu o onboarding não conseguiria reabrir.
+    expect(modal).toMatch(/onboarding_completed && !pedido/);
   });
 });

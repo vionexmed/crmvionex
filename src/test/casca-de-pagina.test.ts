@@ -52,7 +52,6 @@ const SEM_CASCA: Record<string, string> = {
   "src/pages/ResetPassword.tsx": "fora do app",
   "src/pages/AcceptInvite.tsx": "fora do app",
   "src/pages/NotFound.tsx": "fora do app",
-  "src/pages/Setup.tsx": "fora do app",
 
   // Altura cheia: `h-[calc(100vh-3.5rem)]` com rolagem interna. O `space-y-4`
   // da casca quebraria o flex.
