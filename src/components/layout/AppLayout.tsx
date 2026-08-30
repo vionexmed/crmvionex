@@ -1,12 +1,32 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
-import { CommandPalette } from "@/components/CommandPalette";
-import { AICopilot } from "@/components/crm/AICopilot";
-import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+/**
+ * Os três pesam no PRIMEIRO acesso e quase nunca são usados nele.
+ *
+ * Montados estaticamente aqui, entravam no pacote inicial mesmo na tela de
+ * login -- e traziam junto o que cada um importa:
+ *
+ *   CommandPalette   cmdk, 44 KB   abre só no ⌘K
+ *   AICopilot        react-markdown, 117 KB   é um botão flutuante
+ *   OnboardingModal  canvas-confetti, 11 KB   roda uma vez na vida da conta
+ *
+ * `lazy` adia o download até a primeira renderização de verdade. O
+ * CommandPalette e o OnboardingModal só renderizam quando abertos, então nem
+ * baixam antes disso.
+ */
+const CommandPalette = lazy(() =>
+  import("@/components/CommandPalette").then((m) => ({ default: m.CommandPalette })),
+);
+const AICopilot = lazy(() =>
+  import("@/components/crm/AICopilot").then((m) => ({ default: m.AICopilot })),
+);
+const OnboardingModal = lazy(() =>
+  import("@/components/onboarding/OnboardingModal").then((m) => ({ default: m.OnboardingModal })),
+);
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -72,10 +92,16 @@ export function AppLayout() {
         </div>
       </div>
       {isMobile && <MobileBottomNav />}
-      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
-      <AICopilot />
-      {/* Configuração de empresa é do dono. Funcionário herda e nunca configura. */}
-      {isAdmin && <OnboardingModal />}
+      {/* Sem `fallback` visível: são sobreposições, e um esqueleto piscando no
+          canto da tela seria pior que o atraso de alguns milissegundos. */}
+      <Suspense fallback={null}>
+        {/* Só monta depois de aberto -- assim o cmdk nem é baixado antes do
+            primeiro ⌘K. */}
+        {searchOpen && <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />}
+        <AICopilot />
+        {/* Configuração de empresa é do dono. Funcionário herda e nunca configura. */}
+        {isAdmin && <OnboardingModal />}
+      </Suspense>
     </SidebarProvider>
   );
 }

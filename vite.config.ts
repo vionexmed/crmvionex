@@ -125,6 +125,51 @@ export default defineConfig(({ mode }) => {
             if (id.includes("@dnd-kit")) return "dnd";
             if (id.includes("@tanstack")) return "query";
 
+            // Bibliotecas PESADAS de consumidor único, cada uma no próprio
+            // chunk.
+            //
+            // Todas caíam no `vendor`, e o `vendor` é pré-carregado inteiro na
+            // entrada -- então a tela de LOGIN baixava validação de telefone,
+            // renderizador de markdown, paleta de comandos, sanitizador de HTML
+            // e confete. Nenhum deles é usado ali.
+            //
+            // Separadas, o navegador só as busca quando o módulo que as importa
+            // é carregado. Medido: libphonenumber 156 KB, react-markdown 117 KB,
+            // cmdk 44 KB, dompurify 26 KB, canvas-confetti 11 KB -- 87% do
+            // vendor em cinco pacotes com um ou dois importadores cada.
+            if (id.includes("libphonenumber")) return "telefone";
+            if (
+              id.includes("react-markdown") ||
+              id.includes("/micromark") ||
+              id.includes("/mdast") ||
+              id.includes("/hast") ||
+              id.includes("/unist") ||
+              id.includes("/remark") ||
+              id.includes("/unified") ||
+              id.includes("/vfile") ||
+              id.includes("/bail") ||
+              id.includes("/trough") ||
+              id.includes("/decode-named-character-reference") ||
+              id.includes("/character-entities") ||
+              id.includes("/property-information") ||
+              id.includes("/space-separated-tokens") ||
+              id.includes("/comma-separated-tokens") ||
+              id.includes("/html-url-attributes") ||
+              id.includes("/devlop") ||
+              id.includes("/zwitch") ||
+              id.includes("/longest-streak") ||
+              id.includes("/ccount") ||
+              id.includes("/escape-string-regexp") ||
+              id.includes("/markdown-table") ||
+              id.includes("/estree")
+            ) {
+              return "markdown";
+            }
+            if (id.includes("/cmdk")) return "paleta";
+            if (id.includes("dompurify")) return "sanitizador";
+            if (id.includes("canvas-confetti")) return "confete";
+            if (id.includes("date-fns")) return "datas";
+
             // Resto do node_modules num chunk só. Sem esta linha eu devolvia
             // `undefined` e o Rollup decidia sozinho onde pôr cada módulo
             // compartilhado — e às vezes decidia pelo chunk do recharts, o que
