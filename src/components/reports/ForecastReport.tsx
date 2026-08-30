@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { formatarMesAno } from "@/lib/formato";
+import { FAIXAS_PREVISAO, calcularPrevisao, totaisDaPrevisao } from "@/lib/previsao";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -30,40 +30,18 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
     return list;
   }, [deals, ownerFilter, pipelineFilter, stages]);
 
-  // Next 3 months buckets
-  const buckets = useMemo(() => {
-    const now = new Date();
-    const result: { key: string; label: string; pessimist: number; realist: number; optimist: number; pipeline: number; deals: Deal[] }[] = [];
-    for (let i = 0; i < 3; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = formatarMesAno(d);
-      result.push({ key, label, pessimist: 0, realist: 0, optimist: 0, pipeline: 0, deals: [] });
-    }
-    openDeals.forEach((deal) => {
-      const cd = deal.close_date ? new Date(deal.close_date) : new Date();
-      const key = `${cd.getFullYear()}-${String(cd.getMonth() + 1).padStart(2, "0")}`;
-      const bucket = result.find((b) => b.key === key);
-      if (!bucket) return;
-      const val = Number(deal.value) || 0;
-      const prob = Number(deal.probability) || 0;
-      bucket.pipeline += val;
-      if (prob >= 80) bucket.pessimist += val;
-      if (prob >= 50) bucket.realist += val;
-      if (prob >= 30) bucket.optimist += val;
-      bucket.deals.push(deal);
-    });
-    return result;
-  }, [openDeals]);
-
-  const totals = buckets.reduce((a, b) => ({
-    pessimist: a.pessimist + b.pessimist, realist: a.realist + b.realist,
-    optimist: a.optimist + b.optimist, pipeline: a.pipeline + b.pipeline,
-  }), { pessimist: 0, realist: 0, optimist: 0, pipeline: 0 });
+  // O cálculo mora em `lib/previsao`. Era duplicado aqui e em
+  // `crm/DealsForecast`, com os mesmos limiares e nomes diferentes: a faixa
+  // ≥80% se chamava "Pessimista" aqui e "Comprometido" lá, e -- pior -- era
+  // pintada de VERMELHO aqui e de VERDE lá. O mesmo número, lido como problema
+  // numa tela e como conquista na outra.
+  const buckets = useMemo(() => calcularPrevisao(openDeals, { meses: 3 }), [openDeals]);
+  const totals = useMemo(() => totaisDaPrevisao(buckets), [buckets]);
 
   // Chart data
   const chartData = buckets.map((b) => ({
-    month: b.label, Pessimista: b.pessimist, Realista: b.realist, Otimista: b.optimist,
+    month: b.rotulo,
+    ...Object.fromEntries(FAIXAS_PREVISAO.map((f) => [f.rotulo, b[f.chave]])),
   }));
 
   // Inline probability edit
@@ -80,9 +58,16 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
     <div className="space-y-4 mt-4">
       {/* Summary */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Pessimista (≥80%)</p><p className="text-xl font-bold text-destructive">{fmt(totals.pessimist)}</p></CardContent></Card>
-        <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Realista (≥50%)</p><p className="text-xl font-bold text-primary">{fmt(totals.realist)}</p></CardContent></Card>
-        <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Otimista (≥30%)</p><p className="text-xl font-bold text-success">{fmt(totals.optimist)}</p></CardContent></Card>
+        {FAIXAS_PREVISAO.map((faixa) => (
+          <Card key={faixa.chave}>
+            <CardContent className="p-3">
+              <p className="text-label uppercase text-muted-foreground">
+                {faixa.rotulo} (≥{faixa.minimo}%)
+              </p>
+              <p className={`text-xl font-bold ${faixa.cor}`}>{fmt(totals[faixa.chave])}</p>
+            </CardContent>
+          </Card>
+        ))}
         <Card><CardContent className="p-3"><p className="text-[9px] text-muted-foreground uppercase">Valor em aberto</p><p className="text-xl font-bold">{fmt(totals.pipeline)}</p></CardContent></Card>
       </div>
 
@@ -96,9 +81,11 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
               <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
               <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-              <Bar dataKey="Pessimista" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Realista" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Otimista" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+              {/* A cor acompanha a faixa, e a faixa mais confiável é a
+                  verde. Antes ≥80% era vermelha aqui e verde em Negócios. */}
+              <Bar dataKey="Comprometido" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Provável" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Possível" fill="hsl(var(--warning))" radius={[4, 4, 0, 0]} />
               <Legend wrapperStyle={{ fontSize: 10 }} />
             </BarChart>
           </ResponsiveContainer>
@@ -107,36 +94,43 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
 
       {/* Monthly deal breakdown */}
       {buckets.map((bucket) => (
-        <Card key={bucket.key}>
+        <Card key={bucket.chave}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm capitalize">{bucket.label}</CardTitle>
+              <CardTitle className="text-sm capitalize">{bucket.rotulo}</CardTitle>
               <div className="flex items-center gap-3 text-[10px]">
-                <span><span className="inline-block h-2 w-2 rounded-full bg-destructive mr-1" />Pess: {fmt(bucket.pessimist)}</span>
-                <span><span className="inline-block h-2 w-2 rounded-full bg-primary mr-1" />Real: {fmt(bucket.realist)}</span>
-                <span><span className="inline-block h-2 w-2 rounded-full bg-success mr-1" />Otim: {fmt(bucket.optimist)}</span>
+                {FAIXAS_PREVISAO.map((faixa) => (
+                  <span key={faixa.chave}>
+                    <span className={`mr-1 inline-block h-2 w-2 rounded-full ${faixa.cor.replace("text-", "bg-")}`} />
+                    {faixa.rotulo}: {fmt(bucket[faixa.chave])}
+                  </span>
+                ))}
               </div>
             </div>
             {/* Stacked bar */}
             {bucket.pipeline > 0 && (
               <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-muted flex">
-                <div className="h-full bg-destructive" style={{ width: `${(bucket.pessimist / bucket.pipeline) * 100}%` }} />
-                <div className="h-full bg-primary" style={{ width: `${((bucket.realist - bucket.pessimist) / bucket.pipeline) * 100}%` }} />
-                <div className="h-full bg-success" style={{ width: `${((bucket.optimist - bucket.realist) / bucket.pipeline) * 100}%` }} />
+                <div className="h-full bg-success" style={{ width: `${(bucket.comprometido / bucket.pipeline) * 100}%` }} />
+                <div className="h-full bg-primary" style={{ width: `${((bucket.provavel - bucket.comprometido) / bucket.pipeline) * 100}%` }} />
+                <div className="h-full bg-warning" style={{ width: `${((bucket.possivel - bucket.provavel) / bucket.pipeline) * 100}%` }} />
               </div>
             )}
           </CardHeader>
-          {bucket.deals.length > 0 && (
+          {bucket.negocios.length > 0 && (
             <CardContent>
               <div className="space-y-1">
-                {/* Cópia antes de ordenar: `.sort()` é in place, e `bucket.deals`
+                {/* Cópia antes de ordenar: `.sort()` é in place, e `bucket.negocios`
                     vem de um useMemo -- ordenar aqui muta o resultado
                     memoizado durante o render. */}
-                {[...bucket.deals].sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0)).map((deal) => {
+                {[...bucket.negocios].sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0)).map((deal) => {
                   const prob = Number(deal.probability) || 0;
                   const stageName = stages.find((s) => s.id === deal.stage_id)?.name || "—";
-                  const scenario = prob >= 80 ? "Pessimista" : prob >= 50 ? "Realista" : prob >= 30 ? "Otimista" : "Fora";
-                  const scenarioColor = prob >= 80 ? "text-destructive" : prob >= 50 ? "text-primary" : prob >= 30 ? "text-success" : "text-muted-foreground";
+                  // A faixa do negócio sai da MESMA lista dos cartões e das
+                  // barras. Antes era um terceiro encadeamento de ternários com
+                  // os limiares repetidos e as cores invertidas.
+                  const faixa = FAIXAS_PREVISAO.find((f) => prob >= f.minimo);
+                  const scenario = faixa?.rotulo ?? "Fora da previsão";
+                  const scenarioColor = faixa?.cor ?? "text-muted-foreground";
                   return (
                     <div key={deal.id} className="flex items-center justify-between rounded-md border p-2 text-xs">
                       <div className="flex items-center gap-2 min-w-0">

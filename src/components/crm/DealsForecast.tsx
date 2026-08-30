@@ -3,7 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { DealWithRelations } from "@/lib/api/deals";
 import type { Database } from "@/integrations/supabase/types";
-import { formatarMesAno, formatarMoeda } from "@/lib/formato";
+import { formatarMoeda } from "@/lib/formato";
+import { indexarPorId } from "@/lib/utils";
+import {
+  FAIXAS_PREVISAO, calcularPrevisao, totaisDaPrevisao,
+} from "@/lib/previsao";
 
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
@@ -13,47 +17,17 @@ interface DealsForecastProps {
   stages: Stage[];
 }
 
-interface MonthBucket {
-  month: string;
-  label: string;
-  committed: number; // probability >= 80
-  bestCase: number;  // probability >= 50
-  pipeline: number;  // all open
-  deals: DealWithRelations[];
-}
-
 export function DealsForecast({ deals, stages }: DealsForecastProps) {
-  const buckets = useMemo(() => {
-    const map: Record<string, MonthBucket> = {};
+  // O cálculo mora em `lib/previsao`. Era duplicado aqui e em
+  // `reports/ForecastReport`, com os mesmos limiares e nomes diferentes para a
+  // mesma coisa -- "Comprometido" aqui, "Pessimista" lá.
+  //
+  // Sem `meses`: esta aba mostra todos os meses em que há negócio. O relatório
+  // pede uma janela de 3.
+  const buckets = useMemo(() => calcularPrevisao(deals), [deals]);
+  const totals = useMemo(() => totaisDaPrevisao(buckets), [buckets]);
 
-    deals.forEach((d) => {
-      const date = d.close_date ? new Date(d.close_date) : new Date();
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = formatarMesAno(date);
-
-      if (!map[key]) {
-        map[key] = { month: key, label, committed: 0, bestCase: 0, pipeline: 0, deals: [] };
-      }
-
-      const value = Number(d.value) || 0;
-      const prob = Number(d.probability) || 0;
-      map[key].pipeline += value;
-      if (prob >= 80) map[key].committed += value;
-      if (prob >= 50) map[key].bestCase += value;
-      map[key].deals.push(d);
-    });
-
-    return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
-  }, [deals]);
-
-  const totals = buckets.reduce(
-    (acc, b) => ({
-      committed: acc.committed + b.committed,
-      bestCase: acc.bestCase + b.bestCase,
-      pipeline: acc.pipeline + b.pipeline,
-    }),
-    { committed: 0, bestCase: 0, pipeline: 0 }
-  );
+  const porEtapa = useMemo(() => indexarPorId(stages), [stages]);
 
   if (deals.length === 0) {
     return (
@@ -65,24 +39,24 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
 
   return (
     <div className="space-y-4">
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Comprometido (≥80%)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-2xl font-bold text-success">{formatarMoeda(totals.committed)}</span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Melhor Caso (≥50%)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <span className="text-2xl font-bold text-primary">{formatarMoeda(totals.bestCase)}</span>
-          </CardContent>
-        </Card>
+      {/* Os rótulos e limiares vêm de FAIXAS_PREVISAO, a mesma lista que o
+          relatório usa -- é o que impede as duas telas de voltarem a chamar o
+          mesmo número por nomes diferentes. */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {FAIXAS_PREVISAO.map((faixa) => (
+          <Card key={faixa.chave}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {faixa.rotulo} <span className="text-xs">(≥{faixa.minimo}%)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <span className={`text-2xl font-bold ${faixa.cor}`}>
+                {formatarMoeda(totals[faixa.chave])}
+              </span>
+            </CardContent>
+          </Card>
+        ))}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Valor em aberto</CardTitle>
@@ -96,20 +70,20 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
       {/* Monthly breakdown */}
       <div className="space-y-3">
         {buckets.map((bucket) => (
-          <Card key={bucket.month}>
+          <Card key={bucket.chave}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base capitalize">{bucket.label}</CardTitle>
+                <CardTitle className="text-base capitalize">{bucket.rotulo}</CardTitle>
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-success" />
                     <span className="text-muted-foreground">Comprometido:</span>
-                    <span className="font-semibold text-success">{formatarMoeda(bucket.committed)}</span>
+                    <span className="font-semibold text-success">{formatarMoeda(bucket.comprometido)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-primary" />
-                    <span className="text-muted-foreground">Melhor caso:</span>
-                    <span className="font-semibold text-primary">{formatarMoeda(bucket.bestCase)}</span>
+                    <span className="text-muted-foreground">Provável:</span>
+                    <span className="font-semibold text-primary">{formatarMoeda(bucket.provavel)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-muted-foreground" />
@@ -125,11 +99,11 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
                   <>
                     <div
                       className="h-full bg-success float-left rounded-l-full"
-                      style={{ width: `${(bucket.committed / bucket.pipeline) * 100}%` }}
+                      style={{ width: `${(bucket.comprometido / bucket.pipeline) * 100}%` }}
                     />
                     <div
                       className="h-full bg-primary float-left"
-                      style={{ width: `${((bucket.bestCase - bucket.committed) / bucket.pipeline) * 100}%` }}
+                      style={{ width: `${((bucket.provavel - bucket.comprometido) / bucket.pipeline) * 100}%` }}
                     />
                   </>
                 )}
@@ -137,8 +111,8 @@ export function DealsForecast({ deals, stages }: DealsForecastProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-1.5">
-                {bucket.deals.map((deal) => {
-                  const stageName = stages.find((s) => s.id === deal.stage_id)?.name || "—";
+                {bucket.negocios.map((deal) => {
+                  const stageName = (deal.stage_id && porEtapa.get(deal.stage_id)?.name) || "—";
                   return (
                     <div key={deal.id} className="flex items-center justify-between rounded-md border border-border p-2 text-sm">
                       <div className="flex items-center gap-3">
