@@ -59,6 +59,7 @@ import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
 import { PREFIXO_ORIGEM_EXATA } from "@/lib/api/contacts";
+import { invalidarPainel } from "@/lib/invalidar-painel";
 import { formatarEmail, formatarTelefone, nomeDoContato } from "@/lib/contato-formato";
 import { BarraDeFiltros, BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 import { Paginacao } from "@/components/layout/Paginacao";
@@ -258,7 +259,12 @@ export default function Contacts() {
   }, [orgId, qc]);
 
   const invalidate = () => {
-    if (orgId) qc.invalidateQueries({ queryKey: contactsKeys.all(orgId) });
+    if (!orgId) return;
+    qc.invalidateQueries({ queryKey: contactsKeys.all(orgId) });
+    // O PAINEL também. Importar 93 contatos não mexia em "Leads recebidos",
+    // porque as consultas dele vivem em chaves outras -- e o número velho na
+    // tela fazia parecer que a importação não funcionou.
+    invalidarPainel(qc, orgId);
   };
 
   const getInactivityDays = (contactId: string, createdAt: string | null) => {

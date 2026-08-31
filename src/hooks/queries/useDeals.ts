@@ -3,6 +3,7 @@ import { dealsApi } from "@/lib/api/deals";
 import { useOrg } from "@/hooks/useOrg";
 import type { DealInsert, DealUpdate, DealListParams, DealWithRelations } from "@/lib/api/deals";
 import type { Database } from "@/integrations/supabase/types";
+import { invalidarPainel } from "@/lib/invalidar-painel";
 
 type DealStatus = Database["public"]["Enums"]["deal_status"];
 
@@ -124,6 +125,9 @@ export function useDeleteDeal() {
       // A exclusão em cascata apaga atividades: sem invalidar, a tela de
       // Atividades continuaria listando registro de negócio que não existe mais.
       qc.invalidateQueries({ queryKey: ["activities"] });
+      // O painel conta contatos, negócios e atividades: qualquer um deles
+      // mudando torna os números dele velhos.
+      invalidarPainel(qc, orgId);
     },
   });
 }

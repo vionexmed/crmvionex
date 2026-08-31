@@ -218,7 +218,7 @@ describe("empresas: quais criar e quais reusar", () => {
 });
 
 describe("o que atualizar quando o contato já existe", () => {
-  const atual = {
+  const atual: Record<string, unknown> = {
     first_name: "Guilherme", last_name: "RCL",
     email: "g@exemplo.com", phone: null, title: null,
     metadata: { source: "APROXIMA MED", importado_em: "2026-08-31", cidade: "Campinas" },

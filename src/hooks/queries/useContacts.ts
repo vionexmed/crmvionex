@@ -4,6 +4,7 @@ import { activitiesApi } from "@/lib/api/activities";
 import { useOrg } from "@/hooks/useOrg";
 import type { ContactListParams } from "@/lib/api/contacts";
 import type { LifecycleStage } from "@/lib/contact-options";
+import { invalidarPainel } from "@/lib/invalidar-painel";
 
 
 export const contactsKeys = {
@@ -65,6 +66,9 @@ export function useDeleteContacts() {
       // funil continuaria mostrando negócio de contato que não existe mais.
       qc.invalidateQueries({ queryKey: ["deals"] });
       qc.invalidateQueries({ queryKey: ["activities"] });
+      // O painel conta contatos, negócios e atividades: qualquer um deles
+      // mudando torna os números dele velhos.
+      invalidarPainel(qc, orgId);
     },
   });
 }

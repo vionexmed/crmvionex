@@ -182,6 +182,19 @@ export function useSdrMetrics(period: SdrPeriod) {
   return useQuery<SdrMetrics>({
     queryKey: sdrMetricsKeys.period(orgId ?? "", period),
     enabled: !!orgId,
+    /**
+     * SEMPRE revalida ao abrir o painel.
+     *
+     * O `staleTime` global é de 5 minutos, então importar 93 contatos e navegar
+     * para o painel mostrava o número de ANTES -- e o sintoma engana: parece que
+     * a importação não funcionou. A pessoa reimporta, e aí produz duplicata ou
+     * "já estavam cadastrados", dois caminhos ruins a partir de um número velho.
+     *
+     * O custo é uma ida ao banco por visita ao painel. Aceito: número de painel
+     * desatualizado é pior que uma consulta a mais, porque decisão se toma
+     * olhando ele.
+     */
+    refetchOnMount: "always",
     queryFn: async () => {
       const { current, previous } = getSdrRanges(period);
 
