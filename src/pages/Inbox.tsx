@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEmails, useInboxContacts, useUpdateEmail, useDeleteEmail, useBatchUpdateEmails, useEmailConnections, emailsKeys } from "@/hooks/queries/useEmails";
+import { useEmails, useInboxContacts, useUpdateEmail, useDeleteEmail, useEmailConnections, emailsKeys } from "@/hooks/queries/useEmails";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { EmailComposeModal } from "@/components/crm/EmailComposeModal";
+import { mensagemErro } from "@/lib/erro-supabase";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+// `Folder as FolderIcon` porque `Folder` já é o TIPO das sete abas locais desta
+// tela -- o nome colidiria e o erro seria "only refers to a type".
+import { FolderInput, Folder as FolderIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
 import type { Email, InboxContact as Contact } from "@/lib/api/emails";
@@ -79,10 +84,18 @@ export default function Inbox() {
   }, [allEmails, account]);
   const updateEmailMutation = useUpdateEmail();
   const deleteEmailMutation = useDeleteEmail();
-  const batchUpdateMutation = useBatchUpdateEmails();
 
   const [search, setSearch] = useState("");
   const [folder, setFolder] = useState<Folder>("inbox");
+  /**
+   * As pastas REAIS da conta de Gmail. Vazio até a primeira busca, e vazio
+   * também quando a conta não tem pasta nenhuma — os dois casos mostram a mesma
+   * coisa na tela, e é o certo: não há para onde mover.
+   */
+  const [pastas, setPastas] = useState<{ id: string; nome: string }[]>([]);
+  const [pastaAberta, setPastaAberta] = useState(false);
+  const [novaPasta, setNovaPasta] = useState("");
+  const [pastasCarregando, setPastasCarregando] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [replyBody, setReplyBody] = useState("");
@@ -153,6 +166,94 @@ export default function Inbox() {
     return c;
   }, [emails]);
 
+  /**
+   * Busca as pastas da conta. Só quando o seletor abre — a lista raramente muda,
+   * e buscar no carregamento da tela custaria uma chamada ao Google em toda
+   * visita a E-mail, para uma informação que quase ninguém usa em cada visita.
+   */
+  const carregarPastas = async () => {
+    if (pastas.length > 0) return;
+    setPastasCarregando(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-labels", {
+        body: { acao: "listar" },
+      });
+      if (error || !data?.ok) {
+        toast({
+          title: "Não consegui listar suas pastas",
+          description: data?.error ?? mensagemErro(error),
+          variant: "destructive",
+        });
+        return;
+      }
+      setPastas(data.pastas ?? []);
+    } finally {
+      setPastasCarregando(false);
+    }
+  };
+
+  const criarPasta = async () => {
+    const nome = novaPasta.trim();
+    if (!nome) return;
+    const { data, error } = await supabase.functions.invoke("gmail-labels", {
+      body: { acao: "criar", nome },
+    });
+    if (error || !data?.ok) {
+      toast({ title: "Não deu para criar a pasta", description: data?.error ?? mensagemErro(error), variant: "destructive" });
+      return;
+    }
+    setPastas((p) => [...p, data.pasta].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")));
+    setNovaPasta("");
+    toast({ title: `Pasta "${data.pasta.nome}" criada` });
+  };
+
+  /**
+   * A ação vai ao GMAIL, e só então ao banco.
+   *
+   * Antes cada ação era só um `update` local: arquivar aqui deixava o e-mail na
+   * caixa de entrada do Google, e marcar como lido aqui deixava não lido lá. As
+   * ações PARECIAM funcionar, e a divergência crescia a cada clique.
+   *
+   * A edge function grava o reflexo local DEPOIS de o Gmail confirmar. Se o
+   * Google recusar, nada é gravado -- é o que impede a divergência de voltar
+   * por outro caminho.
+   */
+  const noGmail = async (
+    ids: string[],
+    acao: string,
+    labelId?: string,
+  ): Promise<boolean> => {
+    const { data, error } = await supabase.functions.invoke("gmail-modify", {
+      body: { ids, acao, label_id: labelId },
+    });
+    if (error || !data?.ok) {
+      toast({
+        title: "A ação não chegou ao Gmail",
+        description: data?.error ?? data?.falhas?.[0]?.erro ?? mensagemErro(error),
+        variant: "destructive",
+      });
+      return false;
+    }
+    // Falha parcial merece aviso: "3 de 5" calado faria parecer que tudo passou.
+    if (data.falhas?.length > 0) {
+      toast({
+        title: `${data.aplicados} de ${ids.length} aplicados`,
+        description: data.falhas[0].erro,
+      });
+    }
+    await qc.invalidateQueries({ queryKey: ["emails"] });
+    return true;
+  };
+
+  const moverParaPasta = async (ids: string[], labelId: string, nome: string) => {
+    if (await noGmail(ids, "mover_para_pasta", labelId)) {
+      setPastaAberta(false);
+      setSelectedIds(new Set());
+      if (ids.includes(selectedEmail?.id ?? "")) setSelectedEmail(null);
+      toast({ title: `Movido para "${nome}"` });
+    }
+  };
+
   const updateEmail = async (id: string, patch: Partial<Email>) => {
     if (selectedEmail?.id === id) setSelectedEmail((prev) => prev ? { ...prev, ...patch } : prev);
     try {
@@ -164,11 +265,29 @@ export default function Inbox() {
 
   const markRead = (id: string) => updateEmail(id, { is_read: true });
   const toggleStar = (e: Email) => updateEmail(e.id, { is_starred: !e.is_starred });
-  const archiveEmail = async (id: string) => { await updateEmail(id, { is_archived: true }); toast({ title: "Arquivado" }); if (selectedEmail?.id === id) setSelectedEmail(null); };
-  const markSpam = async (id: string) => { await updateEmail(id, { is_spam: true, is_read: true }); toast({ title: "Marcado como spam" }); if (selectedEmail?.id === id) setSelectedEmail(null); };
-  const notSpam = async (id: string) => { await updateEmail(id, { is_spam: false }); toast({ title: "Removido do spam" }); };
-  const trashEmail = async (id: string) => { await updateEmail(id, { is_trashed: true }); toast({ title: "Movido para lixeira" }); if (selectedEmail?.id === id) setSelectedEmail(null); };
-  const restoreEmail = async (id: string) => { await updateEmail(id, { is_trashed: false, is_archived: false, is_spam: false }); toast({ title: "Restaurado" }); };
+  /**
+   * As cinco ações agora vão ao GMAIL, não só ao banco.
+   *
+   * `updateEmail` (local) ficou para o que é SÓ do CRM -- importância, adiar --
+   * porque esses conceitos não existem no Gmail e não há o que sincronizar.
+   */
+  const fechaSe = (id: string) => { if (selectedEmail?.id === id) setSelectedEmail(null); };
+
+  const archiveEmail = async (id: string) => {
+    if (await noGmail([id], "arquivar")) { toast({ title: "Arquivado no Gmail" }); fechaSe(id); }
+  };
+  const markSpam = async (id: string) => {
+    if (await noGmail([id], "spam")) { toast({ title: "Marcado como spam no Gmail" }); fechaSe(id); }
+  };
+  const notSpam = async (id: string) => {
+    if (await noGmail([id], "nao_spam")) toast({ title: "Removido do spam" });
+  };
+  const trashEmail = async (id: string) => {
+    if (await noGmail([id], "lixeira")) { toast({ title: "Movido para a lixeira do Gmail" }); fechaSe(id); }
+  };
+  const restoreEmail = async (id: string) => {
+    if (await noGmail([id], "restaurar")) toast({ title: "Restaurado" });
+  };
   const toggleImportance = async (e: Email) => updateEmail(e.id, { importance: e.importance === "high" ? null : "high" });
 
   const snoozeEmail = async (id: string, hours: number) => {
@@ -234,15 +353,16 @@ export default function Inbox() {
 
   const batchAction = async (action: "archive" | "trash" | "spam" | "read") => {
     const ids = Array.from(selectedIds);
-    const patch: Partial<Email> =
-      action === "archive" ? { is_archived: true } :
-      action === "trash" ? { is_trashed: true } :
-      action === "spam" ? { is_spam: true, is_read: true } :
-      { is_read: true };
+    // Traduz a ação da tela para o vocabulário da edge function, que fala em
+    // termos de label do Gmail.
+    const acao =
+      action === "archive" ? "arquivar" :
+      action === "trash" ? "lixeira" :
+      action === "spam" ? "spam" : "ler";
     try {
-      await batchUpdateMutation.mutateAsync({ ids, patch });
+      if (!(await noGmail(ids, acao))) return;
       setSelectedIds(new Set());
-      toast({ title: `${ids.length} emails atualizados` });
+      toast({ title: `${ids.length} mensagens atualizadas no Gmail` });
     } catch (e: any) {
       toast({ title: "Erro ao atualizar emails", description: e.message, variant: "destructive" });
     }
@@ -353,6 +473,62 @@ export default function Inbox() {
                 <Button variant="ghost" size="sm" onClick={() => batchAction("spam")} title="Marcar como spam"><AlertOctagon className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="sm" onClick={() => batchAction("trash")} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="sm" onClick={() => batchAction("read")} title="Marcar como lido"><Mail className="h-4 w-4" /></Button>
+                {/* MOVER PARA PASTA — pasta no Gmail é label, e mover aplica a
+                  label removendo INBOX, igual ao que o Gmail faz quando você
+                  arrasta. Sem remover INBOX, a mensagem apareceria nos dois
+                  lugares e "mover" não teria movido nada. */}
+                <Popover
+                open={pastaAberta}
+                onOpenChange={(v) => { setPastaAberta(v); if (v) void carregarPastas(); }}
+            >
+                    <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" title="Mover para pasta">
+                    <FolderInput className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                    <PopoverContent align="end" className="w-64 p-0">
+                  <div className="border-b border-border px-3 py-2">
+                    <p className="text-xs font-semibold">Mover para pasta</p>
+                    <p className="text-label text-muted-foreground">
+                      Move no Gmail também, e aparece no seu celular.
+                    </p>
+                  </div>
+                  <div className="max-h-56 overflow-y-auto py-1">
+                    {pastasCarregando && (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">Buscando suas pastas…</p>
+                    )}
+                    {!pastasCarregando && pastas.length === 0 && (
+                      <p className="px-3 py-3 text-xs text-muted-foreground">
+                        Você ainda não tem pastas no Gmail. Crie uma abaixo.
+                      </p>
+                    )}
+                    {pastas.map((pasta) => (
+                      <button
+                        key={pasta.id}
+                        onClick={() => void moverParaPasta(Array.from(selectedIds), pasta.id, pasta.nome)}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+                      >
+                        <FolderIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{pasta.nome}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5 border-t border-border p-2">
+                    <Input
+                      value={novaPasta}
+                      onChange={(e) => setNovaPasta(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") void criarPasta(); }}
+                      placeholder="Nova pasta"
+                      className="h-8 text-xs"
+                    />
+                    <Button size="sm" variant="outline" className="h-8 shrink-0 text-label"
+                      onClick={() => void criarPasta()} disabled={!novaPasta.trim()}>
+                      Criar
+                    </Button>
+                  </div>
+                </PopoverContent>
+                </Popover>
+
                 <span className="ml-2 text-xs text-muted-foreground">{selectedIds.size} selecionado(s)</span>
               </>
             ) : (
@@ -494,6 +670,61 @@ export default function Inbox() {
             {!selectedEmail.is_archived && folder !== "trash" && folder !== "spam" && (
               <Button variant="ghost" size="sm" onClick={() => archiveEmail(selectedEmail.id)} title="Arquivar"><Archive className="h-4 w-4" /></Button>
             )}
+            {/* MOVER PARA PASTA — pasta no Gmail é label, e mover aplica a
+                label removendo INBOX, igual ao que o Gmail faz quando você
+                arrasta. Sem remover INBOX, a mensagem apareceria nos dois
+                lugares e "mover" não teria movido nada. */}
+            <Popover
+              open={pastaAberta}
+              onOpenChange={(v) => { setPastaAberta(v); if (v) void carregarPastas(); }}
+            >
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" title="Mover para pasta">
+                  <FolderInput className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-0">
+                <div className="border-b border-border px-3 py-2">
+                  <p className="text-xs font-semibold">Mover para pasta</p>
+                  <p className="text-label text-muted-foreground">
+                    Move no Gmail também, e aparece no seu celular.
+                  </p>
+                </div>
+                <div className="max-h-56 overflow-y-auto py-1">
+                  {pastasCarregando && (
+                    <p className="px-3 py-2 text-xs text-muted-foreground">Buscando suas pastas…</p>
+                  )}
+                  {!pastasCarregando && pastas.length === 0 && (
+                    <p className="px-3 py-3 text-xs text-muted-foreground">
+                      Você ainda não tem pastas no Gmail. Crie uma abaixo.
+                    </p>
+                  )}
+                  {pastas.map((pasta) => (
+                    <button
+                      key={pasta.id}
+                      onClick={() => void moverParaPasta([selectedEmail.id], pasta.id, pasta.nome)}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+                    >
+                      <FolderIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate">{pasta.nome}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 border-t border-border p-2">
+                  <Input
+                    value={novaPasta}
+                    onChange={(e) => setNovaPasta(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") void criarPasta(); }}
+                    placeholder="Nova pasta"
+                    className="h-8 text-xs"
+                  />
+                  <Button size="sm" variant="outline" className="h-8 shrink-0 text-label"
+                    onClick={() => void criarPasta()} disabled={!novaPasta.trim()}>
+                    Criar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
             {!selectedEmail.is_spam ? (
               <Button variant="ghost" size="sm" onClick={() => markSpam(selectedEmail.id)} title="Marcar como spam"><AlertOctagon className="h-4 w-4" /></Button>
             ) : (

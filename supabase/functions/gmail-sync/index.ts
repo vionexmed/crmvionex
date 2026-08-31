@@ -158,6 +158,15 @@ async function syncMessages(opts: {
       const { html, text } = extractBody(msg.payload);
       const attachments = extractAttachments(msg.payload);
       const isUnread = (msg.labelIds ?? []).includes("UNREAD");
+      // As LABELS da mensagem, como o Gmail as informa.
+      //
+      // Antes só `UNREAD` era lido e o resto era jogado fora -- então o CRM não
+      // sabia em que pasta a mensagem está, e as sete "pastas" da tela eram
+      // flags locais inventadas aqui, sem relação com o Gmail.
+      //
+      // Guardamos os IDs, não os nomes: o nome é editável pela pessoa a qualquer
+      // momento, e uma pasta renomeada tornaria toda mensagem dela órfã.
+      const labels: string[] = msg.labelIds ?? [];
 
       // Try to match contact by from_email
       let contactId: string | null = null;
@@ -172,6 +181,7 @@ async function syncMessages(opts: {
       }
 
       await supabaseAdmin.from("emails").insert({
+        labels,
         org_id: orgId,
         user_id: ownerId ?? null,
         connection_id: connectionId ?? null,
