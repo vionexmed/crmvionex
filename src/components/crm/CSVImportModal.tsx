@@ -17,6 +17,7 @@ import {
 import { Upload, Table2, Loader2 } from "lucide-react";
 import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
+import { chaveDeTelefone } from "@/lib/contato-formato";
 import { buscarEmBlocos } from "@/lib/paginar";
 import { detectarSeparador, lerTexto, parseCSV } from "@/lib/csv";
 import {
@@ -88,19 +89,6 @@ function textoDaCelula(c: unknown): string {
   if (typeof c === "boolean") return c ? "Sim" : "Não";
   if (typeof c === "number") return Number.isInteger(c) ? String(c) : String(c);
   return String(c).trim();
-}
-
-/**
- * A chave de comparação de um telefone: os ÚLTIMOS 8 DÍGITOS.
- *
- * O mesmo número aparece com e sem o 9, com e sem +55, com e sem parênteses --
- * "(11) 99999-8888", "+5511999998888" e "11 9999-8888" são a mesma pessoa. Oito
- * dígitos é o que sobra estável em todas as formas, e é o mesmo critério que o
- * webhook do WhatsApp já usa para casar contato.
- */
-function chaveTelefone(v: string | null | undefined): string | null {
-  const so = String(v ?? "").replace(/\D/g, "");
-  return so.length >= 8 ? so.slice(-8) : null;
 }
 
 /** E-mail comparado sem caixa e sem espaço em volta. */
@@ -398,7 +386,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         for (const c of jaExistem) {
           const e = chaveEmail(c.email);
           if (e) emails.add(e);
-          const t = chaveTelefone(c.phone);
+          const t = chaveDeTelefone(c.phone);
           if (t) telefones.add(t);
         }
 
@@ -408,7 +396,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         // aba só.
         valid = comNome.filter((r) => {
           const e = chaveEmail(r.email as string | null);
-          const t = chaveTelefone(r.phone as string | null);
+          const t = chaveDeTelefone(r.phone as string | null);
           if ((e && emails.has(e)) || (t && telefones.has(t))) {
             repetidos++;
             return false;

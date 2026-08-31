@@ -14,6 +14,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  chaveDeTelefone,
   formatarEmail,
   formatarTelefone,
   nomeDoContato,
@@ -133,5 +134,53 @@ describe("e-mail", () => {
 
   it("sem e-mail mostra travessão", () => {
     expect(formatarEmail(null)).toBe("—");
+  });
+});
+
+describe("chave de comparação de telefone", () => {
+  /**
+   * DEFEITO QUE ISTO CORRIGE: a chave era os ÚLTIMOS 8 DÍGITOS, o que descarta
+   * o DDD. `5511985427007` (São Paulo) e `5521985427007` (Rio) — pessoas
+   * diferentes — produziam a mesma chave, e a deduplicação da importação jogava
+   * a segunda fora.
+   *
+   * O custo era o pior possível: um contato que nunca entra, sem erro em tela.
+   */
+  it("estados diferentes NÃO colidem", () => {
+    const sp = chaveDeTelefone("5511985427007");
+    const rj = chaveDeTelefone("5521985427007");
+    expect(sp).not.toBe(rj);
+    expect(sp).toBe("1185427007");
+    expect(rj).toBe("2185427007");
+  });
+
+  /**
+   * O nono dígito dos celulares foi acrescentado em 2013, e a mesma pessoa
+   * aparece com e sem ele em bases antigas. Cortar em 8 faz as duas casarem.
+   */
+  it("com e sem código de país são a mesma pessoa", () => {
+    expect(chaveDeTelefone("5511985427007")).toBe(chaveDeTelefone("11985427007"));
+    expect(chaveDeTelefone("(11) 98542-7007")).toBe(chaveDeTelefone("5511985427007"));
+  });
+
+  /**
+   * DDD 55 existe (Santa Maria/RS). Descartar "55" sempre faria esse número
+   * perder o próprio DDD e virar outro telefone.
+   */
+  it("DDD 55 não é confundido com código de país", () => {
+    // 11 dígitos: DDD 55 + celular de 9. Não tem código de país para tirar.
+    expect(chaveDeTelefone("55999887766")).toBe("5599887766");
+  });
+
+  it("sem DDD, usa o que há", () => {
+    expect(chaveDeTelefone("98542-7007")).toBe("85427007");
+  });
+
+  it("vazio e curto demais não geram chave", () => {
+    // Chave nula faz a deduplicação IGNORAR o campo, em vez de casar tudo com
+    // tudo -- que é o que uma chave vazia compartilhada provocaria.
+    expect(chaveDeTelefone(null)).toBeNull();
+    expect(chaveDeTelefone("")).toBeNull();
+    expect(chaveDeTelefone("123")).toBeNull();
   });
 });

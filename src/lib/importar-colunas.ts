@@ -70,6 +70,9 @@ export const SINONIMOS: [string, string[]][] = [
   ["linkedin_url", ["linkedin", "linkedinurl", "perfillinkedin"]],
   ["lifecycle_stage", ["ciclodevida", "estagio", "etapa", "situacao", "lifecycle"]],
   [EMPRESA, ["empresa", "clinica", "hospital", "instituicao", "consultorio", "company"]],
+  // "Atendimento" numa lista de congresso é QUEM atendeu — o vendedor no
+  // estande. Casa aqui e não em `title`, que é a especialidade do médico.
+  [`${PREFIXO_META}atendido_por`, ["atendimento", "atendidopor", "atendente", "quematendeu", "vendedor", "consultor"]],
   [NOTA, ["observacao", "observacoes", "obs", "anotacao", "anotacoes", "comentario", "comentarios", "nota", "notas"]],
 ];
 

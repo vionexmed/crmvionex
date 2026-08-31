@@ -31,23 +31,36 @@ describe("o arquivo real que expôs o defeito", () => {
   /** Os cabeçalhos EXATOS, com acento e hífen, como vieram do Excel. */
   const CABECALHO = ["Nome", "Especialidade", "Cidade", "WhatsApp", "E-mail", "Atendimento", "Observações"];
 
-  it("acerta as seis que têm destino", () => {
+  it("acerta as SETE colunas", () => {
     const r = mapear(CABECALHO);
     expect(r[0]).toBe("first_name");
     expect(r[1]).toBe("title");                       // era Ignorar
     expect(r[2]).toBe(`${PREFIXO_META}cidade`);
     expect(r[3]).toBe("phone");                       // era Ignorar
     expect(r[4]).toBe("email");                       // era Ignorar
+    expect(r[5]).toBe(`${PREFIXO_META}atendido_por`);  // era Ignorar
     expect(r[6]).toBe(NOTA);                          // era Ignorar
   });
 
   /**
-   * "Atendimento" NÃO tem destino, e ficar em "Ignorar" é o certo. Inventar um
-   * campo para ela gravaria o dado no lugar errado, o que é pior que não gravar
-   * — a pessoa pode mapear à mão em três segundos.
+   * "Atendimento" ficava em Ignorar até o usuário explicar o que era: QUEM
+   * atendeu o médico no estande do congresso. Ganhou campo próprio
+   * (`atendido_por`), separado de "Responsável pelo cadastro" — aquele é quem
+   * digitou a ficha, este é quem conversou, e num congresso quase nunca são a
+   * mesma pessoa.
    */
-  it("e deixa em Ignorar a que não tem destino", () => {
-    expect(mapear(CABECALHO)[5]).toBe(IGNORAR);
+  it("Atendimento é quem atendeu, não a especialidade", () => {
+    expect(mapear(["Atendimento"])[0]).toBe(`${PREFIXO_META}atendido_por`);
+    expect(mapear(["Atendente"])[0]).toBe(`${PREFIXO_META}atendido_por`);
+    // E não rouba a coluna de especialidade.
+    expect(mapear(["Especialidade", "Atendimento"]))
+      .toEqual(["title", `${PREFIXO_META}atendido_por`]);
+  });
+
+  it("coluna sem destino nenhum continua em Ignorar", () => {
+    // Inventar um campo gravaria o dado no lugar errado, o que é pior que não
+    // gravar -- a pessoa mapeia à mão em três segundos.
+    expect(mapear(["Coluna Que Ninguém Conhece"])[0]).toBe(IGNORAR);
   });
 });
 

@@ -187,15 +187,22 @@ describe("a importação não cria duplicado", () => {
 
   it("compara por e-mail e por telefone", () => {
     expect(src).toContain("chaveEmail");
-    expect(src).toContain("chaveTelefone");
+    expect(src).toContain("chaveDeTelefone");
   });
 
   /**
-   * Os últimos 8 dígitos: o mesmo número aparece com e sem o 9, com e sem +55,
-   * com e sem parênteses. É o mesmo critério que o webhook do WhatsApp usa.
+   * A chave de telefone saiu deste arquivo para `lib/contato-formato`, e junto
+   * saiu um DEFEITO: ela usava os últimos 8 dígitos e descartava o DDD, então
+   * `5511985427007` (SP) e `5521985427007` (RJ) casavam como a mesma pessoa e a
+   * segunda era jogada fora como duplicada.
+   *
+   * O comportamento agora tem teste próprio em `lib/contato-formato.test.ts`,
+   * com os dois estados. Aqui só se garante que o modal usa a compartilhada em
+   * vez de reintroduzir uma cópia.
    */
-  it("o telefone casa pelos últimos 8 dígitos", () => {
-    expect(src).toMatch(/so\.slice\(-8\)/);
+  it("a chave de telefone vem da lib, não é reescrita aqui", () => {
+    expect(src).toMatch(/import \{ chaveDeTelefone \} from "@\/lib\/contato-formato"/);
+    expect(src).not.toMatch(/function chaveTelefone/);
   });
 
   /**

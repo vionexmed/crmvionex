@@ -112,4 +112,13 @@ export const CADASTRO_FIELDS: { key: string; label: string }[] = [
   { key: "autorizacao", label: "Autorização de contato" },
   { key: "classificacao_lead", label: "Classificação (uso interno)" },
   { key: "responsavel_cadastro", label: "Responsável pelo cadastro" },
+  /**
+   * QUEM ATENDEU a pessoa, no dia do evento.
+   *
+   * Diferente de "Responsável pelo cadastro": aquele é quem digitou a ficha,
+   * este é quem conversou com o médico no estande. Numa lista de congresso os
+   * dois quase nunca são a mesma pessoa, e juntá-los perderia a informação que
+   * permite voltar ao vendedor certo para pedir contexto.
+   */
+  { key: "atendido_por", label: "Atendido por" },
 ];

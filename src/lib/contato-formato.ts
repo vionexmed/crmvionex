@@ -121,3 +121,42 @@ export function formatarEmail(valor: string | null | undefined): string {
   const e = String(valor ?? "").trim();
   return e ? e.toLowerCase() : "—";
 }
+
+/**
+ * A chave para COMPARAR dois telefones — não para exibir.
+ *
+ * DEFEITO QUE ISTO CORRIGE: a versão anterior usava os últimos 8 dígitos, o que
+ * DESCARTA O DDD. `5511985427007` (São Paulo) e `5521985427007` (Rio) — pessoas
+ * diferentes — produziam a mesma chave `85427007`, e a deduplicação da
+ * importação tratava a segunda como repetida e a jogava fora.
+ *
+ * Com 835 contatos num espaço de 10^8 a colisão é improvável mas real; com
+ * importações sucessivas ela deixa de ser improvável. E o custo é o pior
+ * possível: um contato que nunca entra, sem erro em tela.
+ *
+ * A chave agora é DDD + os 8 últimos dígitos:
+ *
+ *   5511985427007  → 55 fora → 11 + 85427007 → "1185427007"
+ *   11985427007    →           11 + 85427007 → "1185427007"   mesma pessoa
+ *   (11) 9854-7007 →           11 + 98547007 → "1198547007"   fixo, outra
+ *   5521985427007  →           21 + 85427007 → "2185427007"   outro estado
+ *
+ * Os 8 últimos e não os 9: o nono dígito dos celulares foi acrescentado em 2013
+ * e a mesma pessoa aparece com e sem ele em bases antigas. Cortar em 8 faz as
+ * duas formas casarem, e o DDD é o que impede a colisão entre estados.
+ */
+export function chaveDeTelefone(valor: string | null | undefined): string | null {
+  let d = String(valor ?? "").replace(/\D/g, "");
+  if (!d) return null;
+
+  // Código do país fora, quando presente. `55` só é descartado se o que sobra
+  // tiver tamanho de DDD + número -- senão um telefone que COMEÇA com 55 por
+  // coincidência (DDD 55, Santa Maria/RS) perderia o próprio DDD.
+  if (d.length >= 12 && d.startsWith("55")) d = d.slice(2);
+
+  // Com DDD: dois dígitos de DDD e o resto do número.
+  if (d.length >= 10) return d.slice(0, 2) + d.slice(-8);
+
+  // Sem DDD não há como saber a região; o número sozinho é o melhor disponível.
+  return d.length >= 8 ? d.slice(-8) : null;
+}
