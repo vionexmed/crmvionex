@@ -22,6 +22,15 @@ import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
+
+/**
+ * Quantas pessoas a ficha lista antes de dizer "e mais N".
+ *
+ * Existe como constante e não como número solto no `slice` porque o valor
+ * aparece em DOIS lugares -- o corte e o aviso -- e divergir faria a tela dizer
+ * "+ 3 não mostradas" mostrando 20 de 25.
+ */
+const LIMITE_CONTATOS = 20;
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 
@@ -200,7 +209,15 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
             {contacts.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-6">Nenhum contato vinculado</p>
             ) : (
-              contacts.slice(0, 20).map((c) => (
+              <>
+              {/* QUANTAS pessoas, antes da lista.
+                  A lista era cortada em 20 EM SILÊNCIO -- e com uma planilha de
+                  centenas de leads da mesma instituição, o resto ficava
+                  invisível sem nada na tela sugerindo que havia mais. */}
+              <p className="pb-1 text-label font-semibold uppercase tracking-wider text-muted-foreground">
+                {contacts.length} {contacts.length === 1 ? "pessoa vinculada" : "pessoas vinculadas"}
+              </p>
+              {contacts.slice(0, LIMITE_CONTATOS).map((c) => (
                 <div key={c.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -213,7 +230,16 @@ export function CompanyDrawer({ company, onClose, onUpdate }: CompanyDrawerProps
                   </div>
                   {c.title && <span className="text-xs text-muted-foreground">{c.title}</span>}
                 </div>
-              ))
+              ))}
+              {contacts.length > LIMITE_CONTATOS && (
+                /* Dizer quantas sobraram, e onde vê-las. Um corte calado lê-se
+                   como "a empresa tem 20 pessoas". */
+                <p className="pt-1 text-center text-label text-muted-foreground">
+                  + {contacts.length - LIMITE_CONTATOS} não mostradas aqui — veja todas em
+                  Contatos, filtrando por esta empresa.
+                </p>
+              )}
+              </>
             )}
           </TabsContent>
 

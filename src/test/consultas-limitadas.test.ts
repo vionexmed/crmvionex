@@ -165,6 +165,18 @@ describe("nenhuma consulta a tabela que cresce fica solta", () => {
         if (!CRESCEM.includes(m[1])) continue;
         const trecho = src.slice(m.index!, m.index! + 500);
         if (!/\.select\(/.test(trecho.slice(0, 200))) continue;
+        /*
+         * ESCRITA não tem teto de linhas.
+         *
+         * `.insert(...).select("id")` devolve o que ACABOU de ser escrito -- o
+         * corte de 1000 do PostgREST não se aplica, e exigir `.limit()` ali
+         * pediria para limitar a própria escrita.
+         *
+         * Sem esta linha o varredor reprovava a criação de empresas na
+         * importação, que é um insert com `.select()` para amarrar os ids.
+         */
+        const antesDoSelect = trecho.slice(0, trecho.indexOf(".select("));
+        if (/\.(insert|upsert|update|delete)\(/.test(antesDoSelect)) continue;
         // `count: "exact", head: true` não traz LINHA nenhuma -- devolve só o
         // número, e o corte de 1000 não se aplica.
         if (/count: "exact", head: true/.test(trecho.slice(0, 200))) continue;

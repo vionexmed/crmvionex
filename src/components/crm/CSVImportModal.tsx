@@ -41,6 +41,9 @@ const PREFIXO_META = "meta:";
 /** Destino especial: a coluna vira uma atividade do tipo `note`. */
 const NOTA = "__nota";
 
+/** Destino especial: procura a empresa pelo nome, cria se não existir. */
+const EMPRESA = "__empresa";
+
 /** O tipo GERADO da tabela, em vez de cast: o compilador cobra org_id, title e
  *  type, que são exatamente os três que um insert de atividade não pode
  *  esquecer. */
@@ -71,6 +74,15 @@ const contactFields = [
    * importar observação NÃO faz a base inteira parecer já abordada.
    */
   { key: NOTA, label: "Observação (vira nota na ficha)" },
+  /**
+   * Empresa por NOME, não por id.
+   *
+   * A planilha traz "Hospital Santa Casa", não um uuid. A importação procura a
+   * empresa pelo nome e cria se não existir -- é o que faz a ficha da empresa
+   * passar a listar as pessoas vinculadas, que já é uma aba lá e vivia vazia
+   * para todo mundo que entrou por planilha.
+   */
+  { key: EMPRESA, label: "Empresa (vincula ou cria)" },
   { key: "__skip", label: "— Ignorar —" },
 ];
 
@@ -253,7 +265,10 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
           (f.key === "last_name" && (lower.includes("sobrenome") || lower.includes("last"))) ||
           (f.key === "email" && lower.includes("email")) ||
           (f.key === "phone" && (lower.includes("telefone") || lower.includes("phone"))) ||
-          (f.key === "name" && lower.includes("empresa"))
+          (f.key === "name" && lower.includes("empresa")) ||
+          // Em contatos, "empresa"/"clínica"/"hospital" vira o VÍNCULO, não a
+          // coluna `name` (que é da entidade Empresa e não existe em contato).
+          (f.key === EMPRESA && /empresa|clinica|clínica|hospital|instituic|instituiç/.test(norm))
         )
       );
       autoMap[i] = match?.key || "__skip";
@@ -324,15 +339,22 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
        * PostgREST recusar a planilha completa.
        */
       const notasPorLinha: (string | null)[] = [];
+      /** Nome da empresa por linha, na mesma ordem. */
+      const empresaPorLinha: (string | null)[] = [];
 
       const records = csvRows.map((row) => {
         const record: Record<string, any> = { org_id: orgId, owner_id: user?.id };
         const perguntas: Record<string, string> = {};
         let nota: string | null = null;
+        let empresa: string | null = null;
 
         Object.entries(mapping).forEach(([colIdx, fieldKey]) => {
           if (fieldKey === "__skip") return;
           const valor = row[Number(colIdx)] || null;
+          if (fieldKey === EMPRESA) {
+            empresa = valor?.trim() || null;
+            return;
+          }
           if (fieldKey === NOTA) {
             // Duas colunas mapeadas para nota entram na MESMA nota, separadas
             // por quebra. Criar duas atividades faria a ficha repetir carimbo
@@ -351,6 +373,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         });
 
         notasPorLinha.push(nota);
+        empresaPorLinha.push(empresa);
         if (entityType === "contacts") {
           // Status vindo da PLANILHA continua valendo. O que saiu foi o
           // fallback.
@@ -407,6 +430,68 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         setImporting(false);
         return;
       }
+
+      // ---------- empresas: procura ou cria, ANTES de inserir os contatos ----------
+      //
+      // Antes porque `company_id` é coluna do contato: resolver depois exigiria
+      // um segundo UPDATE por linha, e uma falha no meio deixaria metade
+      // vinculada.
+      //
+      // Casa por nome em MINÚSCULA: "Hospital Santa Casa" e "HOSPITAL SANTA
+      // CASA" são a mesma instituição, e criar as duas encheria a tela de
+      // Empresas de duplicata na primeira planilha.
+      const nomesDeEmpresa = [...new Set(
+        empresaPorLinha.filter((n): n is string => !!n?.trim()).map((n) => n.trim()),
+      )];
+      const empresaIdPorNome = new Map<string, string>();
+
+      if (entityType === "contacts" && nomesDeEmpresa.length > 0) {
+        // Em blocos: o PostgREST corta em 1000 EM SILÊNCIO, e uma lista
+        // truncada aqui faria a importação CRIAR empresa que já existe.
+        const jaExistem = await buscarEmBlocos<{ id: string; name: string }>(
+          (inicio, fim) =>
+            supabase.from("companies").select("id, name").eq("org_id", orgId).range(inicio, fim),
+        );
+        for (const e of jaExistem) {
+          const chave = e.name?.trim().toLowerCase();
+          if (chave && !empresaIdPorNome.has(chave)) empresaIdPorNome.set(chave, e.id);
+        }
+
+        const faltando = nomesDeEmpresa.filter((n) => !empresaIdPorNome.has(n.toLowerCase()));
+        if (faltando.length > 0) {
+          const { data: criadas, error: erroEmp } = await supabase
+            .from("companies")
+            .insert(faltando.map((name) => ({ org_id: orgId, name })))
+            .select("id, name");
+          if (erroEmp) {
+            toast({ title: "Erro ao criar as empresas", description: mensagemErro(erroEmp), variant: "destructive" });
+            setImporting(false);
+            return;
+          }
+          for (const e of criadas ?? []) {
+            const chave = (e.name as string)?.trim().toLowerCase();
+            if (chave) empresaIdPorNome.set(chave, e.id as string);
+          }
+        }
+
+        // O vínculo, percorrendo `records` pelo ÍNDICE.
+        //
+        // `records.indexOf(r)` dentro de um laço seria busca por referência a
+        // cada volta -- quadrático, e com 835 contatos são ~700 mil comparações
+        // para resolver o que o índice paralelo já responde de graça.
+        records.forEach((r, i) => {
+          const nome = empresaPorLinha[i];
+          const id = nome ? empresaIdPorNome.get(nome.trim().toLowerCase()) : undefined;
+          if (id) r.company_id = id;
+        });
+      }
+
+      // Quantas empresas os contatos importados de fato usam. `empresaIdPorNome`
+      // contém a base inteira -- anunciar o tamanho dela diria "300 empresas
+      // vinculadas" numa planilha de duas.
+      const empresasVinculadas = new Set(
+        comNome.map((r) => r.company_id as string | undefined).filter(Boolean),
+      ).size;
 
       let valid = comNome;
       let repetidos = 0;
@@ -522,6 +607,9 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
             : null,
           notasGravadas > 0
             ? `${notasGravadas} ${notasGravadas === 1 ? "observação virou nota" : "observações viraram notas"}`
+            : null,
+          empresasVinculadas > 0
+            ? `${empresasVinculadas} ${empresasVinculadas === 1 ? "empresa vinculada" : "empresas vinculadas"}`
             : null,
         ].filter(Boolean).join(" · ") || undefined,
       });
