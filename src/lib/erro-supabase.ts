@@ -75,3 +75,48 @@ export function mensagemErro(e: unknown): string {
 export function ehViolacaoDeVinculo(e: unknown): boolean {
   return ehObjeto(e) && e.code === "23503";
 }
+
+/**
+ * A mensagem REAL de uma edge function que falhou.
+ *
+ * `supabase.functions.invoke` não lê o corpo da resposta quando o status não é
+ * 2xx: ele devolve um `FunctionsHttpError` cuja `message` é sempre a mesma frase
+ * -- "Edge Function returned a non-2xx status code". O corpo, com a mensagem que
+ * a função escreveu, fica pendurado em `error.context`, que é a `Response` crua.
+ *
+ * O efeito é o mesmo defeito do `[object Object]` que o CLAUDE.md registra: a
+ * função responde `{ error: "Falta configurar INSTAGRAM_APP_ID..." }` com 503, e
+ * a tela mostra "non-2xx status code" -- uma frase que não diz o que fazer e faz
+ * a pessoa clicar de novo.
+ *
+ * O projeto tinha 29 chamadas de `invoke` e UMA lia o corpo (`Team.sendInvite`).
+ * As outras 28 mostravam a frase genérica.
+ *
+ * Devolve `null` quando não houve erro -- inclusive o caso de a função responder
+ * 200 com `{ error }` no corpo, que é como várias delas sinalizam falha de
+ * negócio.
+ */
+export async function erroDaFuncao(
+  res: { data: unknown; error: unknown },
+): Promise<string | null> {
+  // 200 com erro no corpo: algumas funções sinalizam falha assim.
+  const noCorpo = (res.data as { error?: unknown } | null)?.error;
+  if (typeof noCorpo === "string" && noCorpo.trim()) return noCorpo;
+  if (noCorpo) return mensagemErro(noCorpo);
+
+  if (!res.error) return null;
+
+  // Status não-2xx: o corpo está em `context`, e é uma Response que só pode ser
+  // lida UMA vez -- por isso o try/catch em volta, e não uma checagem antes.
+  const ctx = (res.error as { context?: { json?: () => Promise<unknown> } }).context;
+  try {
+    const corpo = await ctx?.json?.();
+    const msg = (corpo as { error?: unknown } | null)?.error;
+    if (typeof msg === "string" && msg.trim()) return msg;
+    if (msg) return mensagemErro(msg);
+  } catch {
+    /* corpo não era JSON, ou já foi consumido: cai na mensagem genérica */
+  }
+
+  return mensagemErro(res.error);
+}

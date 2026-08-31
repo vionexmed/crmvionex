@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Instagram, ExternalLink, AlertTriangle, Copy, Check } from "lucide-react";
 import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrations/CartaoDeIntegracao";
 import { useToast } from "@/hooks/use-toast";
-import { mensagemErro } from "@/lib/erro-supabase";
+import { mensagemErro, erroDaFuncao } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -146,9 +146,17 @@ export function InstagramCard() {
   const conectar = async () => {
     setConectando(true);
     try {
-      const { data, error } = await supabase.functions.invoke("instagram-oauth-start");
-      if (error) throw error;
-      if (!data?.url) throw new Error(data?.error || "O servidor não devolveu a URL de autorização");
+      const res = await supabase.functions.invoke("instagram-oauth-start");
+      /*
+       * `erroDaFuncao` e não `res.error` direto: o `invoke` não lê o corpo em
+       * status não-2xx, então "Falta configurar INSTAGRAM_APP_ID" chegaria aqui
+       * como "Edge Function returned a non-2xx status code" -- uma frase que não
+       * diz o que fazer e faz a pessoa clicar de novo.
+       */
+      const motivo = await erroDaFuncao(res);
+      if (motivo) throw new Error(motivo);
+      const data = res.data as { url?: string } | null;
+      if (!data?.url) throw new Error("O servidor não devolveu a URL de autorização");
       // `assign` e não `open`: bloqueador de pop-up mataria a janela nova, e o
       // fluxo volta para cá pelo redirecionamento do callback.
       window.location.assign(data.url as string);
