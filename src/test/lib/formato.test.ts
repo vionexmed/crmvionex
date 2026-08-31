@@ -23,6 +23,7 @@ import {
   formatarMoedaInteira,
   formatarNumero,
   diasAte,
+  textoDeHtml,
 } from "@/lib/formato";
 
 // O Intl em pt-BR separa símbolo e número com espaço NÃO SEPARÁVEL (U+00A0),
@@ -215,6 +216,66 @@ describe("mês e ano", () => {
   });
 });
 
+describe("HTML de e-mail virando prévia", () => {
+  it("tira as tags", () => {
+    expect(textoDeHtml("<p>Bom dia, <b>doutor</b></p>")).toBe("Bom dia, doutor");
+  });
+
+  /**
+   * O DEFEITO QUE MOTIVOU A FUNÇÃO.
+   *
+   * Havia três cópias de `body_html.replace(/<[^>]*>/g, "")`, e nas três a
+   * entidade sobrevivia -- e-mail de cliente quase sempre vem de editor web,
+   * onde o espaço é `&nbsp;` e o "&" do nome da empresa é `&amp;`.
+   */
+  it("decodifica as entidades, não só as tags", () => {
+    expect(textoDeHtml("<p>Silva&nbsp;&amp;&nbsp;Souza</p>")).toBe("Silva & Souza");
+  });
+
+  /**
+   * `&amp;` é decodificado por ÚLTIMO. Aqui o remetente escapou um `<` de
+   * propósito: o texto literal que ele digitou é "&lt;". Decodificar `&amp;`
+   * primeiro daria "&lt;", e a passada seguinte o transformaria em "<" --
+   * ressuscitando a tag que ele havia neutralizado.
+   */
+  it("não ressuscita tag escapada de propósito", () => {
+    expect(textoDeHtml("<p>escreva &amp;lt;b&amp;gt; para negrito</p>"))
+      .toBe("escreva &lt;b&gt; para negrito");
+  });
+
+  it("assinatura com CSS embutido não vaza a folha de estilo", () => {
+    const html = "<style>.x{color:red;font-size:12px}</style><p>Atenciosamente</p>";
+    const texto = textoDeHtml(html);
+    expect(texto).toBe("Atenciosamente");
+    expect(texto).not.toContain("color");
+  });
+
+  /**
+   * Sem isto, `<p>Linha 1</p><p>Linha 2</p>` vira "Linha 1Linha 2" -- as tags
+   * saem e não sobra nada no lugar da quebra que elas representavam.
+   */
+  it("fim de bloco vira espaço, não emenda de palavras", () => {
+    expect(textoDeHtml("<p>Linha 1</p><p>Linha 2</p>")).toBe("Linha 1 Linha 2");
+    expect(textoDeHtml("Linha 1<br>Linha 2")).toBe("Linha 1 Linha 2");
+  });
+
+  it("corta no limite e sinaliza com reticência", () => {
+    const texto = textoDeHtml("<p>" + "a".repeat(200) + "</p>", 20);
+    expect(texto).toHaveLength(21);
+    expect(texto.endsWith("…")).toBe(true);
+  });
+
+  it("não corta o que já cabe", () => {
+    expect(textoDeHtml("<p>curto</p>", 20)).toBe("curto");
+  });
+
+  it("ausência é string vazia, para o chamador poder esconder a linha", () => {
+    for (const v of [null, undefined, ""]) expect(textoDeHtml(v)).toBe("");
+    // HTML que só tem marcação também não tem prévia.
+    expect(textoDeHtml("<div><br></div>")).toBe("");
+  });
+});
+
 /**
  * Ninguém formata moeda ou data à mão.
  *
@@ -279,6 +340,20 @@ describe("ninguém formata à mão", () => {
 
   it("nenhum toLocaleTimeString inline", () => {
     const infratores = arquivos.filter((f) => codigo(f).includes("toLocaleTimeString"));
+    expect(infratores, infratores.join("\n")).toEqual([]);
+  });
+
+  /**
+   * `textoDeHtml` também, e por um motivo diferente dos outros quatro: aqui a
+   * cópia à mão não era só repetição, era ERRADA. As três eram
+   * `body_html.replace(/<[^>]*>/g, "")`, que tira a tag e deixa a entidade --
+   * `&nbsp;` e `&amp;` chegavam crus na tela.
+   *
+   * Casa a regex por FORMA (`<` … `>` dentro de `replace`), não pelo texto
+   * exato, porque as três variavam: `[^>]*` numa, `[^>]+` na outra.
+   */
+  it("ninguém tira tag de HTML à mão", () => {
+    const infratores = arquivos.filter((f) => /replace\(\s*\/<\[\^>\]/.test(codigo(f)));
     expect(infratores, infratores.join("\n")).toEqual([]);
   });
 });

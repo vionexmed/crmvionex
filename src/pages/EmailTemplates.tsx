@@ -20,6 +20,7 @@ import { PageShell } from "@/components/layout/PageShell";
 
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
+import { textoDeHtml } from "@/lib/formato";
 
 type Template = {
   id: string; org_id: string; name: string; subject: string; body_html: string;
@@ -186,7 +187,7 @@ export default function EmailTemplates() {
                 </DropdownMenu>
               </div>
               <div className="mt-2 rounded-md bg-muted/50 p-2 text-label text-muted-foreground line-clamp-3 max-h-16 overflow-hidden">
-                {t.body_html?.replace(/<[^>]*>/g, "").slice(0, 150) || "(vazio)"}
+                {textoDeHtml(t.body_html, 150) || "(vazio)"}
               </div>
             </CardContent>
           </Card>

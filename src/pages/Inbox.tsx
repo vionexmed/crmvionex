@@ -16,7 +16,7 @@ import {
   Reply, ReplyAll, Forward, ChevronLeft, Inbox as InboxIcon,
   Eye, MousePointerClick, RefreshCw, Trash2, AlertOctagon,
   FileText, SendHorizonal, Pencil, Printer, MoreVertical, Tag,
-  Paperclip, Download, Image as ImageIcon, Loader2, Maximize2, Minimize2,
+  Paperclip, Download, Image as ImageIcon, Loader2, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -31,7 +31,7 @@ import { FolderInput, Folder as FolderIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
 import type { Email, InboxContact as Contact } from "@/lib/api/emails";
-import { formatarData, formatarDataCurta } from "@/lib/formato";
+import { formatarData, formatarDataCurta, textoDeHtml } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Folder =
@@ -95,6 +95,28 @@ export default function Inbox() {
   const [pastas, setPastas] = useState<{ id: string; nome: string }[]>([]);
   const [pastaAberta, setPastaAberta] = useState(false);
   const [novaPasta, setNovaPasta] = useState("");
+
+  /*
+   * Pastas recolhidas: 224px de volta para a leitura.
+   *
+   * A tela divide a largura em QUATRO -- navegação do app, pastas, lista,
+   * mensagem. Num monitor de 1440px sobravam ~470px para o corpo do e-mail, e
+   * era daí que vinha a sensação de aperto: nenhuma coluna estava apertada por
+   * dentro, eram colunas demais.
+   *
+   * Recolher é MANUAL e lembrado, não automático ao abrir a mensagem: mexer no
+   * layout sozinho faz a lista pular embaixo do cursor -- a pessoa clica num
+   * e-mail e a linha seguinte já está em outro lugar.
+   */
+  const [pastasRecolhidas, setPastasRecolhidas] = useState(
+    () => localStorage.getItem("vx-inbox-pastas-recolhidas") === "1",
+  );
+  const alternarPastas = () => {
+    setPastasRecolhidas((v) => {
+      localStorage.setItem("vx-inbox-pastas-recolhidas", v ? "0" : "1");
+      return !v;
+    });
+  };
   const [pastasCarregando, setPastasCarregando] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -418,11 +440,25 @@ export default function Inbox() {
   return (
     <div className="flex h-[calc(100vh-80px)] -m-6 bg-background">
       {/* ============== Sidebar (Gmail-style) ============== */}
-      <aside className="w-56 shrink-0 border-r border-border flex flex-col">
-        <div className="p-3">
-          <Button onClick={() => setComposeOpen(true)} className="w-full justify-start gap-2 rounded-lg shadow-sm h-11" size="lg">
+      <aside className={cn("shrink-0 border-r border-border flex flex-col transition-[width] duration-200", pastasRecolhidas ? "w-14" : "w-56")}>
+        <div className={cn("flex items-center gap-1", pastasRecolhidas ? "flex-col p-2" : "p-3")}>
+          <Button
+            onClick={() => setComposeOpen(true)}
+            className={cn("rounded-lg shadow-sm h-11", pastasRecolhidas ? "w-10 px-0 justify-center" : "flex-1 justify-start gap-2")}
+            size="lg"
+            title="Escrever"
+          >
             <Pencil className="h-4 w-4" />
-            Escrever
+            {!pastasRecolhidas && "Escrever"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={alternarPastas}
+            className="h-8 w-8 shrink-0 p-0 text-muted-foreground"
+            title={pastasRecolhidas ? "Mostrar nomes das pastas" : "Recolher pastas e alargar a leitura"}
+          >
+            {pastasRecolhidas ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
         </div>
         <ScrollArea className="flex-1 px-1">
@@ -435,17 +471,32 @@ export default function Inbox() {
                 <button
                   key={f.id}
                   onClick={() => { setFolder(f.id); setSelectedEmail(null); setSelectedIds(new Set()); }}
+                  title={pastasRecolhidas ? (count > 0 ? `${f.label} (${count})` : f.label) : undefined}
                   className={cn(
-                    "w-full flex items-center gap-3 rounded-r-full pl-5 pr-3 py-1.5 text-sm transition-colors",
+                    "w-full flex items-center text-sm transition-colors",
+                    pastasRecolhidas
+                      ? "relative justify-center rounded-lg py-2"
+                      : "gap-3 rounded-r-full pl-5 pr-3 py-1.5",
                     active
                       ? "bg-primary/10 text-primary font-semibold"
                       : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                   )}
                 >
                   <Icon className={cn("h-4 w-4 shrink-0", active && "text-primary")} />
-                  <span className="flex-1 text-left truncate">{f.label}</span>
-                  {count > 0 && (
-                    <span className="text-label font-medium tabular-nums">{count}</span>
+                  {pastasRecolhidas ? (
+                    /* Recolhido, a contagem vira um ponto: o número não cabe em
+                       56px, mas "tem coisa aqui" é a metade da informação que
+                       importa -- o total exato está no `title`. */
+                    count > 0 && (
+                      <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                    )
+                  ) : (
+                    <>
+                      <span className="flex-1 text-left truncate">{f.label}</span>
+                      {count > 0 && (
+                        <span className="text-label font-medium tabular-nums">{count}</span>
+                      )}
+                    </>
                   )}
                 </button>
               );
@@ -455,7 +506,7 @@ export default function Inbox() {
       </aside>
 
       {/* ============== Email list ============== */}
-      <div className={cn("flex flex-col border-r border-border", selectedEmail ? "w-[400px] shrink-0" : "flex-1 min-w-0")}>
+      <div className={cn("flex flex-col border-r border-border", selectedEmail ? "w-[440px] shrink-0" : "flex-1 min-w-0")}>
         {/* Toolbar */}
         <div className="border-b border-border">
           <div className="flex items-center gap-2 px-3 h-12">
@@ -478,55 +529,55 @@ export default function Inbox() {
                   arrasta. Sem remover INBOX, a mensagem apareceria nos dois
                   lugares e "mover" não teria movido nada. */}
                 <Popover
-                open={pastaAberta}
-                onOpenChange={(v) => { setPastaAberta(v); if (v) void carregarPastas(); }}
-            >
-                    <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" title="Mover para pasta">
-                    <FolderInput className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                    <PopoverContent align="end" className="w-64 p-0">
-                  <div className="border-b border-border px-3 py-2">
-                    <p className="text-xs font-semibold">Mover para pasta</p>
-                    <p className="text-label text-muted-foreground">
-                      Move no Gmail também, e aparece no seu celular.
-                    </p>
-                  </div>
-                  <div className="max-h-56 overflow-y-auto py-1">
-                    {pastasCarregando && (
-                      <p className="px-3 py-2 text-xs text-muted-foreground">Buscando suas pastas…</p>
-                    )}
-                    {!pastasCarregando && pastas.length === 0 && (
-                      <p className="px-3 py-3 text-xs text-muted-foreground">
-                        Você ainda não tem pastas no Gmail. Crie uma abaixo.
-                      </p>
-                    )}
-                    {pastas.map((pasta) => (
-                      <button
-                        key={pasta.id}
-                        onClick={() => void moverParaPasta(Array.from(selectedIds), pasta.id, pasta.nome)}
-                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
-                      >
-                        <FolderIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{pasta.nome}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-1.5 border-t border-border p-2">
-                    <Input
-                      value={novaPasta}
-                      onChange={(e) => setNovaPasta(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") void criarPasta(); }}
-                      placeholder="Nova pasta"
-                      className="h-8 text-xs"
-                    />
-                    <Button size="sm" variant="outline" className="h-8 shrink-0 text-label"
-                      onClick={() => void criarPasta()} disabled={!novaPasta.trim()}>
-                      Criar
+                  open={pastaAberta}
+                  onOpenChange={(v) => { setPastaAberta(v); if (v) void carregarPastas(); }}
+                >
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" title="Mover para pasta">
+                      <FolderInput className="h-4 w-4" />
                     </Button>
-                  </div>
-                </PopoverContent>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-64 p-0">
+                    <div className="border-b border-border px-3 py-2">
+                      <p className="text-xs font-semibold">Mover para pasta</p>
+                      <p className="text-label text-muted-foreground">
+                        Move no Gmail também, e aparece no seu celular.
+                      </p>
+                    </div>
+                    <div className="max-h-56 overflow-y-auto py-1">
+                      {pastasCarregando && (
+                        <p className="px-3 py-2 text-xs text-muted-foreground">Buscando suas pastas…</p>
+                      )}
+                      {!pastasCarregando && pastas.length === 0 && (
+                        <p className="px-3 py-3 text-xs text-muted-foreground">
+                          Você ainda não tem pastas no Gmail. Crie uma abaixo.
+                        </p>
+                      )}
+                      {pastas.map((pasta) => (
+                        <button
+                          key={pasta.id}
+                          onClick={() => void moverParaPasta(Array.from(selectedIds), pasta.id, pasta.nome)}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+                        >
+                          <FolderIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{pasta.nome}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 border-t border-border p-2">
+                      <Input
+                        value={novaPasta}
+                        onChange={(e) => setNovaPasta(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") void criarPasta(); }}
+                        placeholder="Nova pasta"
+                        className="h-8 text-xs"
+                      />
+                      <Button size="sm" variant="outline" className="h-8 shrink-0 text-label"
+                        onClick={() => void criarPasta()} disabled={!novaPasta.trim()}>
+                        Criar
+                      </Button>
+                    </div>
+                  </PopoverContent>
                 </Popover>
 
                 <span className="ml-2 text-xs text-muted-foreground">{selectedIds.size} selecionado(s)</span>
@@ -565,17 +616,24 @@ export default function Inbox() {
                 const senderName = folder === "sent"
                   ? `Para: ${(email.to_emails as string[])?.[0] || "?"}`
                   : contact ? `${contact.first_name} ${contact.last_name || ""}`.trim() : (email.from_email || "Desconhecido");
-                const initials = getInitials(senderName);
+                // 110 e não 80: com o assunto fora da linha, a prévia herdou a
+                // largura toda e 80 caracteres paravam antes da borda.
+                const previa = textoDeHtml(email.body_html, 110);
 
                 return (
                   <div
                     key={email.id}
                     onClick={() => { setSelectedEmail(email); markRead(email.id); setReplyMode(null); }}
                     className={cn(
-                      "group flex items-start gap-2 px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent/40 hover:border-primary/40",
+                      // py-3 e não py-2.5: a linha tem três linhas de texto e
+                      // 10px em cima e embaixo as encostava na vizinha.
+                      "group relative flex items-start gap-2.5 border-l-[3px] pl-2.5 pr-3 py-3 cursor-pointer transition-colors hover:bg-accent/40",
                       isOpen && "bg-accent/60",
                       !email.is_read && !isOpen && "bg-primary/[0.04]"
                     )}
+                    // A cor do remetente, que era o avatar, virou a barra da
+                    // esquerda: mesma pista visual em 3px em vez de 36.
+                    style={{ borderLeftColor: senderColor(senderName) }}
                   >
                     <Checkbox
                       checked={selectedIds.has(email.id)}
@@ -586,7 +644,22 @@ export default function Inbox() {
                         setSelectedIds(next);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="mt-1.5"
+                      /*
+                       * Só aparece ao passar o mouse, ou quando já há algo
+                       * selecionado.
+                       *
+                       * Ela ocupava 24px de TODA linha para uma ação que a
+                       * pessoa usa raramente -- e num painel de 440px cada 24px
+                       * é uma palavra do assunto que se perde. `opacity` e não
+                       * `hidden`: some sem mudar o layout, então a linha não
+                       * "salta" quando o mouse entra.
+                       */
+                      className={cn(
+                        "mt-1 shrink-0 transition-opacity",
+                        selectedIds.size > 0 || selectedIds.has(email.id)
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100",
+                      )}
                     />
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleStar(email); }}
@@ -595,12 +668,12 @@ export default function Inbox() {
                     >
                       <Star className={cn("h-4 w-4", email.is_starred && "fill-amber-400 text-amber-500")} />
                     </button>
-                    <div
-                      className="h-7 w-7 rounded-full flex items-center justify-center text-label font-semibold text-white shrink-0 mt-0.5"
-                      style={{ background: senderColor(senderName) }}
-                    >
-                      {initials}
-                    </div>
+                    {/* O AVATAR SAIU DA LISTA.
+                        Eram 36px por linha (28 do círculo + 8 do respiro) para
+                        desenhar as INICIAIS de um remetente -- decorativo, e num
+                        painel de 440px eram quatro ou cinco palavras do assunto.
+                        A cor por remetente virou uma barra de 3px na borda: mesma
+                        pista visual, um oitavo da largura. */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className={cn("text-sm truncate", !email.is_read ? "font-bold text-foreground" : "font-medium text-foreground/90")}>
@@ -610,31 +683,48 @@ export default function Inbox() {
                           {timeAgo(email.sent_at || email.created_at)}
                         </span>
                       </div>
-                      <p className={cn("text-xs truncate", !email.is_read ? "text-foreground" : "text-muted-foreground")}>
-                        <span className={!email.is_read ? "font-semibold" : ""}>{email.subject || "(sem assunto)"}</span>
-                        {email.body_html && (
-                          <span className="text-muted-foreground"> — {email.body_html.replace(/<[^>]+>/g, " ").slice(0, 80)}</span>
-                        )}
+                      {/* O ASSUNTO GANHOU A LINHA INTEIRA.
+                          Antes assunto e prévia dividiam UMA linha com
+                          `truncate`, e nos 440px do painel isso significava ver o
+                          assunto e nada da prévia -- ou, com assunto longo, meio
+                          assunto. São duas informações diferentes; cada uma tem
+                          sua linha. */}
+                      <p className={cn("text-xs truncate mt-0.5", !email.is_read ? "font-semibold text-foreground" : "text-foreground/80")}>
+                        {email.subject || "(sem assunto)"}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {email.importance === "high" && (
-                          <Badge variant="outline" className="h-4 text-micro border-amber-500/40 text-amber-600">Importante</Badge>
+                      {/*
+                       * Prévia e selos na MESMA linha, mas a prévia é que encolhe:
+                       * os selos são raros (importante, aberto, clicado, adiado) e
+                       * ficam à direita com `shrink-0`. Na maioria das linhas não
+                       * há selo nenhum e a prévia usa a largura toda -- em vez de
+                       * uma quarta linha vazia cobrando altura de toda a lista,
+                       * que era o que a antiga `<div>` de selos fazia: ela existia
+                       * sempre, com ou sem selo dentro.
+                       */}
+                      <div className="flex items-baseline gap-2 mt-0.5">
+                        {previa && (
+                          <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">{previa}</p>
                         )}
-                        {email.open_count > 0 && (
-                          <span className="text-micro text-muted-foreground flex items-center gap-0.5">
-                            <Eye className="h-2.5 w-2.5" />{email.open_count}
-                          </span>
-                        )}
-                        {email.click_count > 0 && (
-                          <span className="text-micro text-muted-foreground flex items-center gap-0.5">
-                            <MousePointerClick className="h-2.5 w-2.5" />{email.click_count}
-                          </span>
-                        )}
-                        {email.snoozed_until && new Date(email.snoozed_until) > new Date() && (
-                          <span className="text-micro text-amber-600 flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />{formatarData(email.snoozed_until)}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                          {email.importance === "high" && (
+                            <Badge variant="outline" className="h-4 text-meta border-amber-500/40 text-amber-600">Importante</Badge>
+                          )}
+                          {email.open_count > 0 && (
+                            <span className="text-meta text-muted-foreground flex items-center gap-0.5 tabular-nums" title={`Aberto ${email.open_count}x`}>
+                              <Eye className="h-3 w-3" />{email.open_count}
+                            </span>
+                          )}
+                          {email.click_count > 0 && (
+                            <span className="text-meta text-muted-foreground flex items-center gap-0.5 tabular-nums" title={`${email.click_count} clique(s)`}>
+                              <MousePointerClick className="h-3 w-3" />{email.click_count}
+                            </span>
+                          )}
+                          {email.snoozed_until && new Date(email.snoozed_until) > new Date() && (
+                            <span className="text-meta text-amber-600 flex items-center gap-0.5" title="Adiado">
+                              <Clock className="h-3 w-3" />{formatarData(email.snoozed_until)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

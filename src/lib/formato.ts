@@ -188,3 +188,41 @@ export function diasAte(d: string | Date | null | undefined): number | null {
 export function pluralizar(n: number, singular: string, plural?: string): string {
   return n === 1 ? singular : plural ?? `${singular}s`;
 }
+
+/**
+ * Corpo HTML de e-mail virando texto de prévia.
+ *
+ * Existia em TRÊS lugares (`Inbox`, `EmailTemplates`, `EmailSequences`) como
+ * `body_html.replace(/<[^>]*>/g, "")`, e nos três com o mesmo defeito: tirar as
+ * tags **não** decodifica as entidades. Um e-mail de cliente, que quase sempre
+ * vem de editor web, tem `&nbsp;` entre as palavras e `&amp;` no nome da
+ * empresa -- e a prévia na tela lia
+ * `Prezado&nbsp;doutor,&nbsp;a&nbsp;Silva&nbsp;&amp;&nbsp;Souza`.
+ *
+ * Ordem importa e é o motivo de `&amp;` ser o ÚLTIMO: decodificado primeiro, um
+ * `&amp;lt;` (que é o texto literal "&lt;") viraria `&lt;` e depois `<`,
+ * ressuscitando uma tag que o remetente havia escapado de propósito.
+ *
+ * `<style>` e `<script>` inteiros saem antes das tags: sem isso, um e-mail com
+ * CSS embutido -- assinatura corporativa, boletim -- entrega as regras de folha
+ * de estilo como se fossem a primeira frase da mensagem.
+ */
+export function textoDeHtml(html: string | null | undefined, limite = 140): string {
+  if (!html) return "";
+  const texto = html
+    .replace(/<(style|script)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<br\s*\/?>|<\/(p|div|tr|li|h[1-6])>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;|&#160;|&#xa0;/gi, " ")
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;|&#60;/gi, "<")
+    .replace(/&gt;|&#62;/gi, ">")
+    .replace(/&amp;|&#38;/gi, "&")
+    // O espaço não separável (U+00A0) chega também literal, não só como
+    // entidade -- e `\s` do JavaScript o considera espaço, então esta linha
+    // pega os dois casos junto com a quebra de linha do HTML original.
+    .replace(/\s+/g, " ")
+    .trim();
+  return texto.length > limite ? `${texto.slice(0, limite).trimEnd()}…` : texto;
+}

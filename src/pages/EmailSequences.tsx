@@ -25,6 +25,7 @@ import { PageShell } from "@/components/layout/PageShell";
 
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
+import { textoDeHtml } from "@/lib/formato";
 
 type Sequence = {
   id: string; org_id: string; name: string; description: string | null;
@@ -289,7 +290,7 @@ export default function EmailSequences() {
                         )}
                         {step.body_html && (
                           <p className="text-label text-muted-foreground mt-1 line-clamp-2">
-                            {step.body_html.replace(/<[^>]*>/g, "").slice(0, 100)}
+                            {textoDeHtml(step.body_html, 100)}
                           </p>
                         )}
                       </div>
