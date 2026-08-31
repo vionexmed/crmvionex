@@ -3,11 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { Button } from "@/components/ui/button";
-import { Instagram, ExternalLink, AlertTriangle } from "lucide-react";
+import { Instagram, ExternalLink, AlertTriangle, Copy, Check } from "lucide-react";
 import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrations/CartaoDeIntegracao";
 import { useToast } from "@/hooks/use-toast";
 import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 /**
  * Cartão do Instagram Direct.
@@ -50,6 +51,7 @@ type Conexao = {
   display_name: string | null;
   is_active: boolean;
   connected_at: string;
+  webhook_verify_token: string;
 };
 
 export function InstagramCard() {
@@ -60,6 +62,7 @@ export function InstagramCard() {
   const [vencimento, setVencimento] = useState<string | null>(null);
   const [conectando, setConectando] = useState(false);
   const [carregando, setCarregando] = useState(true);
+  const [copiado, setCopiado] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     if (!orgId) return;
@@ -67,7 +70,7 @@ export function InstagramCard() {
     try {
       const { data } = await supabase
         .from("instagram_connections")
-        .select("id, username, display_name, is_active, connected_at")
+        .select("id, username, display_name, is_active, connected_at, webhook_verify_token")
         .eq("org_id", orgId)
         .eq("is_active", true)
         .order("connected_at", { ascending: true })
@@ -182,6 +185,20 @@ export function InstagramCard() {
     }
   };
 
+  const copiar = async (rotulo: string, valor: string) => {
+    try {
+      await navigator.clipboard.writeText(valor);
+      setCopiado(rotulo);
+      setTimeout(() => setCopiado(null), 1800);
+    } catch {
+      // Área de transferência bloqueada (acontece em http, e em iframe sem
+      // permissão). O valor está selecionável na tela, então não é impasse.
+      toast({ title: "Não consegui copiar", description: "Selecione e copie à mão.", variant: "destructive" });
+    }
+  };
+
+  const urlDoWebhook = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-webhook`;
+
   const ligado = !!conexao;
   const estado: EstadoIntegracao = ligado ? "ativo" : "disponivel";
 
@@ -207,6 +224,58 @@ export function InstagramCard() {
       acoes={
         ligado ? (
           <div className="flex items-center gap-1.5">
+            {/*
+              A ÚLTIMA ETAPA, e sem ela nada chega.
+              Autorizar por OAuth assina a CONTA no app (`subscribed_apps`), mas
+              a URL do webhook e o token de verificação são configuração do APP,
+              no painel da Meta -- e o token é gerado aqui, por conexão. Sem
+              entregá-lo na tela, a integração fica pela metade e o sintoma é o
+              pior possível: envio funciona, recebimento não.
+            */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 text-label">
+                  Webhook
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Configurar o webhook no painel da Meta</DialogTitle>
+                  <DialogDescription>
+                    Em <strong>developers.facebook.com</strong> → seu app → Instagram →
+                    Configuração de webhooks. Cole os dois valores abaixo e assine o
+                    campo <strong>messages</strong>.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  {[
+                    { rotulo: "URL de callback", valor: urlDoWebhook },
+                    { rotulo: "Token de verificação", valor: conexao?.webhook_verify_token ?? "" },
+                  ].map((campo) => (
+                    <div key={campo.rotulo} className="space-y-1">
+                      <p className="text-label font-medium text-muted-foreground">{campo.rotulo}</p>
+                      <div className="flex items-center gap-1.5">
+                        <code className="flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5 text-xs">
+                          {campo.valor}
+                        </code>
+                        <Button variant="outline" size="sm" className="h-8 w-8 shrink-0 p-0"
+                          onClick={() => void copiar(campo.rotulo, campo.valor)}
+                          title={`Copiar ${campo.rotulo}`}>
+                          {copiado === campo.rotulo
+                            ? <Check className="h-3.5 w-3.5 text-success" />
+                            : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-meta leading-relaxed text-muted-foreground">
+                    O token de verificação só serve para o aperto de mão inicial. Cada mensagem
+                    que chega é conferida por assinatura, com um segredo que não sai do servidor —
+                    então este valor não é credencial de acesso.
+                  </p>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" size="sm" className="h-8 text-label" onClick={conectar}
               disabled={conectando}>
               Reconectar

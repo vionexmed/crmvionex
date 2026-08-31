@@ -74,8 +74,14 @@ CREATE INDEX IF NOT EXISTS idx_instagram_connections_org
 
 ALTER TABLE public.instagram_connections ENABLE ROW LEVEL SECURITY;
 
--- O token do webhook NÃO sai por aqui: ver a view da parte 6, que é o que a
--- interface lê. Esta policy existe para o restante das colunas.
+-- O `webhook_verify_token` SAI por aqui, para admin, e é de propósito: é ele que
+-- a pessoa copia para o painel da Meta ao configurar o webhook, e sem essa
+-- leitura a integração não tem como ser concluída.
+--
+-- Ele é de baixo valor, ao contrário do access_token: passar no handshake GET não
+-- permite injetar mensagem. Todo POST é conferido por HMAC com
+-- INSTAGRAM_APP_SECRET, que vive só nos secrets do projeto. Diferente do `?token=`
+-- da Evolution no WhatsApp, onde o token na URL É a credencial do POST.
 CREATE POLICY "instagram_connections_select" ON public.instagram_connections FOR SELECT
   USING (
     public.user_belongs_to_org(auth.uid(), org_id)
