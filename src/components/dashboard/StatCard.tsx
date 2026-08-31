@@ -182,8 +182,26 @@ export function StatCard({
     <div
       className={cn(
         "group relative rounded-lg bg-card p-4 transition-shadow",
-        // Na faixa a elevação é do contêiner, não de cada célula.
-        emFaixa ? "min-w-0" : "vx-elevado",
+        /*
+         * Na faixa a elevação é do contêiner, não de cada célula.
+         *
+         * `rounded-none` e a divisória NA CÉLULA corrigem dois defeitos que
+         * apareciam juntos na aba Indicadores:
+         *
+         * 1. o cartão mantinha `rounded-lg` dentro de uma grade de fio de
+         *    cabelo, e o canto arredondado deixava a cor da grade vazar --
+         *    quatro pequenas mordidas cinzas em cada célula;
+         * 2. a grade separava as células com `gap-px` sobre `bg-border`, e a cor
+         *    da linha aparecia inteira em toda célula SEM cartão. Os grupos têm
+         *    5, 4, 4 e 3 métricas numa grade de 5, 3 ou 2 colunas: em quase todo
+         *    tamanho de tela sobrava célula, e cada uma virava um retângulo
+         *    cinza sólido do tamanho de um cartão.
+         *
+         * Com a linha desenhada pela célula, célula que não existe não desenha
+         * nada -- e o fundo do contêiner passou a ser `bg-card`, então o que
+         * sobra é fundo de cartão, não cor de borda.
+         */
+        emFaixa ? "min-w-0 rounded-none border-b border-r border-border" : "vx-elevado",
         clickable && "cursor-pointer hover:shadow-[0_2px_4px_hsl(217_72%_14%/0.08),0_8px_20px_hsl(217_72%_14%/0.08)]",
         noSource && "opacity-60",
       )}

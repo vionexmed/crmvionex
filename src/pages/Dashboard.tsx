@@ -338,7 +338,13 @@ export default function Dashboard() {
                   e a elevação deixaria de significar "isto importa" para
                   significar "isto é um cartão". A moldura por grupo é o que faz
                   o grupo se ler como grupo. */}
-              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-3 xl:grid-cols-5">
+              {/* `bg-card` e não `bg-border`: as divisórias agora são borda de
+                  cada célula (ver `emFaixa` no StatCard), então o fundo é o que
+                  aparece onde NÃO há métrica. A margem negativa puxa a última
+                  linha e a última coluna 1px para fora, escondendo a borda delas
+                  sob a borda do contêiner -- sem isso a moldura ficaria dupla. */}
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                <div className="-mb-px -mr-px grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {group.tiles.map((tile) =>
                   isLoading ? (
                     <Skeleton key={tile.key} className="h-[104px]" />
@@ -359,6 +365,7 @@ export default function Dashboard() {
                     />
                   ),
                 )}
+                </div>
               </div>
             </Secao>
           ))}

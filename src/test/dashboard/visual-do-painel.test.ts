@@ -78,7 +78,53 @@ describe("cartão solto no destaque, faixa no detalhe", () => {
 
   it("os indicadores usam a faixa", () => {
     const i = PAINEL.indexOf('value="indicadores"');
-    expect(PAINEL.slice(i, i + 900)).toMatch(/gap-px[^"]*bg-border/);
+    const bloco = PAINEL.slice(i, i + 900);
+    // Uma moldura só por grupo, e as células dentro dela.
+    expect(bloco).toMatch(/overflow-hidden rounded-lg border border-border/);
+    expect(bloco).toMatch(/grid grid-cols-2[^"]*xl:grid-cols-5/);
+  });
+
+  /**
+   * A DIVISÓRIA É DA CÉLULA, NÃO DO ESPAÇO ENTRE ELAS.
+   *
+   * A faixa era `gap-px` sobre um contêiner `bg-border`: a cor da linha aparecia
+   * pelos vãos de 1px. Funciona enquanto TODA célula tem cartão -- e nunca teve.
+   * Os grupos têm 5, 4, 4 e 3 métricas numa grade de 5, 3 ou 2 colunas, então em
+   * quase todo tamanho de tela sobra célula, e cada célula vazia mostrava o
+   * fundo do contêiner inteiro: um retângulo cinza sólido do tamanho de um
+   * cartão. Em `xl` o grupo "Operação", de três métricas, desenhava DOIS.
+   *
+   * Este teste trava as duas metades da correção, porque uma sem a outra
+   * reintroduz o defeito: se a linha volta a ser o vão, ela precisa de
+   * `bg-border`, e o vazio volta a ser cinza.
+   */
+  it("célula vazia não vira bloco cinza", () => {
+    const i = PAINEL.indexOf('value="indicadores"');
+    const bloco = PAINEL.slice(i, i + 900);
+    // O fundo do contêiner é o do cartão: é ele que aparece onde não há métrica.
+    expect(bloco).toContain("bg-card");
+    expect(bloco).not.toMatch(/bg-border/);
+    expect(bloco).not.toContain("gap-px");
+
+    // E a linha é desenhada pela célula, que só existe quando há métrica.
+    const cartao = semComentarios(
+      readFileSync("src/components/dashboard/StatCard.tsx", "utf8"),
+    );
+    const j = cartao.indexOf("emFaixa ?");
+    expect(cartao.slice(j, j + 160)).toMatch(/border-b border-r border-border/);
+  });
+
+  /**
+   * Canto arredondado dentro de grade de fio de cabelo deixa o fundo vazar --
+   * quatro mordidas cinzas por célula. O arredondamento é do contêiner, que
+   * recorta as células dos cantos com `overflow-hidden`.
+   */
+  it("na faixa a célula é quadrada", () => {
+    const cartao = semComentarios(
+      readFileSync("src/components/dashboard/StatCard.tsx", "utf8"),
+    );
+    const j = cartao.indexOf("emFaixa ?");
+    expect(cartao.slice(j, j + 160)).toContain("rounded-none");
   });
 
   it("a faixa não depende de nth-child", () => {
