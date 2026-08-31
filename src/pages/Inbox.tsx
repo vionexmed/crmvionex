@@ -230,6 +230,33 @@ export default function Inbox() {
   };
 
   /**
+   * O EFEITO LOCAL DE CADA AÇÃO, espelhando `LOCAL` de `gmail-modify`.
+   *
+   * Existe para a tela mudar NO CLIQUE, e não depois da ida ao Gmail. Sem isto o
+   * caminho era: função de borda (cold start), chamada ao Gmail, gravação, e só
+   * então a lista inteira recarregando -- segundos com a tela parada, e a
+   * sensação de que o clique não pegou. Foi o que aconteceu.
+   *
+   * Duplicar o mapa é dívida assumida: o servidor roda no Deno e não dá para
+   * importar de `supabase/functions` para dentro do `src` sem puxar o mundo do
+   * Deno para o build do Vite. Um teste compara os dois e reprova se divergirem.
+   */
+  const EFEITO_LOCAL: Record<string, Partial<Email>> = {
+    arquivar: { is_archived: true },
+    desarquivar: { is_archived: false },
+    ler: { is_read: true },
+    nao_ler: { is_read: false },
+    spam: { is_spam: true, is_read: true },
+    nao_spam: { is_spam: false },
+    lixeira: { is_trashed: true },
+    restaurar: { is_trashed: false, is_archived: false, is_spam: false },
+    favoritar: { is_starred: true },
+    desfavoritar: { is_starred: false },
+    mover_para_pasta: { is_archived: true },
+    tirar_da_pasta: { is_archived: false },
+  };
+
+  /**
    * A ação vai ao GMAIL, e só então ao banco.
    *
    * Antes cada ação era só um `update` local: arquivar aqui deixava o e-mail na
@@ -245,6 +272,22 @@ export default function Inbox() {
     acao: string,
     labelId?: string,
   ): Promise<boolean> => {
+    const chave = emailsKeys.all(orgId ?? "");
+    const anterior = qc.getQueryData<Email[]>(chave);
+    const efeito = EFEITO_LOCAL[acao];
+
+    /*
+     * Aplica JÁ, e desfaz se o Gmail recusar. Mesmo padrão do `useUpdateEmail`,
+     * que é por isso que estrela e adiar sempre responderam na hora enquanto
+     * apagar e mover pareciam travados.
+     */
+    if (efeito && orgId) {
+      const alvo = new Set(ids);
+      qc.setQueryData<Email[]>(chave, (old) =>
+        old?.map((e) => (alvo.has(e.id) ? { ...e, ...efeito } : e)),
+      );
+    }
+
     const res = await supabase.functions.invoke("gmail-modify", {
       body: { ids, acao, label_id: labelId },
     });
@@ -256,6 +299,8 @@ export default function Inbox() {
      * e a pessoa via a ação falhar sem saber por quê.
      */
     if (res.error || !data?.ok) {
+      // Desfaz o otimismo: a mensagem volta para onde estava, na hora.
+      if (anterior) qc.setQueryData(chave, anterior);
       toast({
         title: "A ação não chegou ao Gmail",
         description: data?.falhas?.[0]?.erro ?? (await erroDaFuncao(res)) ?? "Motivo não informado.",
@@ -270,7 +315,13 @@ export default function Inbox() {
         description: data.falhas[0].erro,
       });
     }
-    await qc.invalidateQueries({ queryKey: ["emails"] });
+    /*
+     * SEM `await`. A tela já mostra o resultado pelo efeito otimista; a
+     * revalidação é reconciliação em segundo plano -- é dela que vinham as
+     * `labels` que o Gmail devolveu. Esperar aqui era esperar a lista inteira
+     * recarregar para só então fechar a mensagem aberta e mostrar o aviso.
+     */
+    void qc.invalidateQueries({ queryKey: emailsKeys.all(orgId ?? "") });
     return true;
   };
 

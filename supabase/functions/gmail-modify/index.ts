@@ -62,6 +62,16 @@ const LOCAL: Record<string, Record<string, unknown>> = {
   restaurar:     { is_trashed: false, is_archived: false, is_spam: false },
   favoritar:     { is_starred: true },
   desfavoritar:  { is_starred: false },
+  /*
+   * MOVER PARA PASTA sai da caixa de entrada, e faltava dizer isso.
+   *
+   * A chamada ao Gmail remove `INBOX` -- é o que "mover" significa lá -- mas
+   * este mapa não gravava nada, e o filtro da caixa de entrada do CRM é
+   * `!is_archived`. Resultado: a mensagem saía da caixa no Gmail e continuava
+   * na caixa aqui. Mover não movia, do lado que a pessoa está olhando.
+   */
+  mover_para_pasta: { is_archived: true },
+  tirar_da_pasta:   { is_archived: false },
 };
 
 Deno.serve(async (req) => {

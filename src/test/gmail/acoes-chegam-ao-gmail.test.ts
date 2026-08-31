@@ -162,6 +162,112 @@ describe("a ação encontra a caixa da mensagem", () => {
   });
 });
 
+/**
+ * O CLIQUE RESPONDE NA HORA.
+ *
+ * Sem efeito otimista o caminho era: função de borda com cold start, chamada ao
+ * Gmail (às vezes mais de uma, quando a caixa não é conhecida), gravação, e só
+ * então a lista INTEIRA recarregando -- com `await`. Segundos de tela parada, e a
+ * sensação de que o clique não pegou.
+ *
+ * `useUpdateEmail` já tinha o padrão, e é por isso que estrela e adiar sempre
+ * responderam na hora enquanto apagar e mover pareciam travados. Estes testes
+ * travam a paridade.
+ */
+describe("a tela muda no clique, não depois do Gmail", () => {
+  const INBOX = semComentarios(readFileSync("src/pages/Inbox.tsx", "utf8"));
+
+  it("aplica o efeito local antes de chamar a função", () => {
+    const iEfeito = INBOX.indexOf("qc.setQueryData<Email[]>(chave");
+    const iChamada = INBOX.indexOf('invoke("gmail-modify"');
+    expect(iEfeito).toBeGreaterThan(-1);
+    expect(iEfeito, "o efeito otimista tem de vir ANTES da chamada").toBeLessThan(iChamada);
+  });
+
+  it("desfaz quando o Gmail recusa", () => {
+    // Sem isto a mensagem sairia da lista e não voltaria: a tela mostraria um
+    // resultado que não aconteceu.
+    expect(INBOX).toMatch(/if \(anterior\) qc\.setQueryData\(chave, anterior\)/);
+  });
+
+  it("não espera a revalidação para mostrar o resultado", () => {
+    // `void`, não `await`. A revalidação é reconciliação em segundo plano.
+    expect(INBOX).toMatch(/void qc\.invalidateQueries\(\{ queryKey: emailsKeys\.all/);
+    const i = INBOX.indexOf("const noGmail");
+    const fim = INBOX.indexOf("const moverParaPasta");
+    expect(INBOX.slice(i, fim), "await na revalidação devolve a lentidão")
+      .not.toMatch(/await qc\.invalidateQueries/);
+  });
+
+  /**
+   * OS DOIS MAPAS TÊM DE CONCORDAR.
+   *
+   * O do servidor (`LOCAL` em gmail-modify) é a verdade que fica no banco; o do
+   * cliente (`EFEITO_LOCAL` no Inbox) é o que a tela mostra antes da resposta.
+   * Divergirem significa a tela mostrar uma coisa e o banco gravar outra -- e a
+   * diferença só apareceria no próximo F5, quando ninguém mais liga a causa ao
+   * efeito.
+   *
+   * Estão duplicados porque o servidor roda no Deno, e importar de
+   * `supabase/functions` para dentro do `src` puxaria o mundo do Deno para o
+   * build do Vite. Dívida assumida, com este teste como juro.
+   */
+  it("o mapa do cliente concorda com o do servidor", () => {
+    const extrair = (src: string, nome: string) => {
+      const i = src.indexOf(nome);
+      expect(i, `não achei ${nome}`).toBeGreaterThan(-1);
+      const abre = src.indexOf("{", i);
+      /*
+       * Fim por CONTAGEM DE CHAVES, não pelo recuo do `};`.
+       * A primeira versão procurava `"\n  };"` -- o recuo do cliente. No
+       * servidor o mapa é declarado no topo e fecha na coluna 0, então a busca
+       * seguia arquivo adiante e capturava objetos de outras funções: apareceu
+       * uma "ação" chamada `global`. Recuo não delimita escopo.
+       */
+      let nivel = 0;
+      let fecha = abre;
+      for (let k = abre; k < src.length; k++) {
+        if (src[k] === "{") nivel++;
+        else if (src[k] === "}") {
+          nivel--;
+          if (nivel === 0) { fecha = k; break; }
+        }
+      }
+      const corpo = src.slice(abre, fecha);
+      const mapa: Record<string, string> = {};
+      for (const m of corpo.matchAll(/(\w+):\s*\{([^}]*)\}/g)) {
+        // Normaliza: ordem das chaves e espaços não são diferença de semântica.
+        mapa[m[1]] = m[2].split(",").map((x) => x.trim()).filter(Boolean).sort().join("|");
+      }
+      return mapa;
+    };
+
+    const servidor = extrair(MODIFY, "const LOCAL");
+    const cliente = extrair(INBOX, "const EFEITO_LOCAL");
+
+    expect(Object.keys(servidor).length).toBeGreaterThanOrEqual(10);
+    for (const [acao, efeito] of Object.entries(servidor)) {
+      expect(cliente[acao], `a ação "${acao}" existe no servidor e não no cliente`).toBeDefined();
+      expect(cliente[acao], `"${acao}" grava diferente no cliente e no servidor`).toBe(efeito);
+    }
+    for (const acao of Object.keys(cliente)) {
+      expect(servidor[acao], `a ação "${acao}" existe no cliente e não no servidor`).toBeDefined();
+    }
+  });
+
+  /**
+   * Mover para pasta SAI da caixa de entrada.
+   *
+   * A chamada remove `INBOX` -- é o que "mover" significa no Gmail -- e o mapa
+   * não gravava nada. O filtro da caixa de entrada do CRM é `!is_archived`, então
+   * a mensagem saía da caixa no Gmail e continuava na caixa aqui: mover não
+   * movia, do lado que a pessoa está olhando.
+   */
+  it("mover para pasta marca como arquivada", () => {
+    expect(MODIFY).toMatch(/mover_para_pasta: \{ is_archived: true \}/);
+  });
+});
+
 describe("pastas são labels, e o escopo já existe", () => {
   it("listar e criar, na mesma função", () => {
     expect(LABELS).toMatch(/acao === "criar"/);
