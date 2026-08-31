@@ -229,6 +229,7 @@ export function InstagramCard() {
   };
 
   const urlDoWebhook = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-webhook`;
+  const urlDoCallback = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-oauth-callback`;
 
   const ligado = !!conexao;
   const faltaCredencial = appConfigurado === false;
@@ -323,7 +324,76 @@ export function InstagramCard() {
               Desconectar
             </Button>
           </div>
-        ) : faltaCredencial ? null : (
+        ) : faltaCredencial ? (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-label">
+                Como configurar
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Ligar o Instagram Direct</DialogTitle>
+                <DialogDescription>
+                  Cinco passos no painel da Meta, uma vez só. Depois disso qualquer
+                  administrador conecta a conta por aqui.
+                </DialogDescription>
+              </DialogHeader>
+              <ol className="space-y-2.5 text-xs leading-relaxed">
+                <li>
+                  <strong>1.</strong> Em{" "}
+                  <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer"
+                    className="text-primary underline">developers.facebook.com/apps</a>, crie um app:
+                  caso de uso <strong>Outro</strong>, tipo <strong>Empresa</strong>.
+                </li>
+                <li>
+                  <strong>2.</strong> Adicione o produto <strong>Instagram</strong> e escolha{" "}
+                  <strong>API com login do Instagram</strong> — é a rota que dispensa Página do
+                  Facebook.
+                </li>
+                <li>
+                  <strong>3.</strong> Em <strong>Instagram → Configuração básica da API</strong>,
+                  copie o ID e a chave secreta.
+                  <span className="mt-1 flex items-start gap-1.5 text-meta text-warning">
+                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                    Não são as de Configurações → Básico, que são do app do Facebook. São
+                    credenciais diferentes, e as erradas falham na troca de token sem explicar.
+                  </span>
+                </li>
+                <li>
+                  <strong>4.</strong> Ainda ali, em URIs de redirecionamento OAuth, cole:
+                  <span className="mt-1 flex items-center gap-1.5">
+                    <code className="flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5">
+                      {urlDoCallback}
+                    </code>
+                    <Button variant="outline" size="sm" className="h-8 w-8 shrink-0 p-0"
+                      onClick={() => void copiar("Redirect URI", urlDoCallback)}
+                      title="Copiar">
+                      {copiado === "Redirect URI"
+                        ? <Check className="h-3.5 w-3.5 text-success" />
+                        : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                  </span>
+                </li>
+                <li>
+                  <strong>5.</strong> No Supabase, em Project Settings → Edge Functions → Secrets,
+                  grave os dois com estes nomes:
+                  <span className="mt-1 flex flex-wrap gap-1.5">
+                    {["INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET"].map((nome) => (
+                      <code key={nome} className="rounded-md border border-border bg-muted px-2 py-1">
+                        {nome}
+                      </code>
+                    ))}
+                  </span>
+                </li>
+              </ol>
+              <p className="text-meta leading-relaxed text-muted-foreground">
+                Enquanto a Análise do App não sair, o fluxo funciona só para contas adicionadas
+                como testadoras no app — o bastante para validar antes de submeter.
+              </p>
+            </DialogContent>
+          </Dialog>
+        ) : (
           <Button size="sm" className="h-8 text-label" onClick={conectar}
             disabled={conectando || appConfigurado === null}>
             {conectando ? "Abrindo…" : "Conectar"}
@@ -349,23 +419,10 @@ export function InstagramCard() {
             </p>
           </div>
         ) : faltaCredencial ? (
-          <div className="space-y-1">
-            <p className="flex items-start gap-1.5 text-warning">
-              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-              <span>
-                Um administrador precisa criar o app no{" "}
-                <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer"
-                  className="underline">painel da Meta</a>{" "}
-                e gravar <code className="text-meta">INSTAGRAM_APP_ID</code> e{" "}
-                <code className="text-meta">INSTAGRAM_APP_SECRET</code> nos secrets do projeto.
-              </span>
-            </p>
-            <p>
-              No app, use <strong>API com login do Instagram</strong> — é a rota que dispensa
-              Página do Facebook. As credenciais ficam em Instagram → Configuração básica da API,
-              e <strong>não</strong> são as do app do Facebook.
-            </p>
-          </div>
+          /* UMA linha. O passo a passo está no diálogo do botão "Como configurar":
+             quatro linhas de instrução aqui faziam este cartão ocupar o dobro dos
+             vizinhos, que é o problema que o cartão do Google já teve. */
+          <p>Um administrador cria o app na Meta uma vez, e a equipe conecta depois.</p>
         ) : (
           <p>
             Precisa de conta profissional do Instagram. <strong>Não</strong> precisa de Página do
