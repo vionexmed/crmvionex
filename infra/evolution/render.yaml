@@ -1,0 +1,96 @@
+# Subir a Evolution pelo navegador, sem instalar nada.
+#
+# O Render lê este arquivo do repositório e provisiona tudo sozinho: o serviço,
+# o Postgres e o disco. O caminho inteiro é web — não há CLI para instalar, nem
+# Docker na sua máquina.
+#
+# COMO USAR
+#
+#   1. render.com → New → Blueprint
+#   2. conecte o repositório vionexmed/crmvionex
+#   3. o Render acha este arquivo e mostra o que vai criar
+#   4. ele vai pedir AUTHENTICATION_API_KEY — gere uma longa e GUARDE, é a que
+#      você cola no CRM
+#   5. depois do primeiro deploy, copie a URL que o Render deu
+#      (algo como https://vionex-evolution.onrender.com), cole em SERVER_URL nas
+#      variáveis do serviço e mande redeployar
+#
+# O passo 5 existe porque a Evolution precisa saber o próprio endereço para
+# montar o QR, e esse endereço só nasce no primeiro deploy. É a única volta.
+#
+# SOBRE O PLANO
+#
+# `starter` e não `free`, e isso NÃO é upsell: o plano gratuito do Render
+# hiberna o serviço depois de 15 minutos sem tráfego. A Evolution mantém uma
+# sessão viva do WhatsApp Web — hibernar derruba a sessão, e cada queda obriga
+# todo mundo a ler o QR de novo. Um servidor de WhatsApp que dorme não serve.
+
+services:
+  - type: web
+    name: vionex-evolution
+    runtime: image
+    plan: starter
+    image:
+      # Versão fixa. `latest` que pula de major sozinho num redeploy aparece
+      # como "parou de enviar" sem ninguém ter tocado em nada.
+      url: docker.io/atendai/evolution-api:v2.1.1
+    healthCheckPath: /
+    disk:
+      # A sessão do WhatsApp — o que o QR cria — vive aqui. Sem disco, todo
+      # redeploy despareia os aparelhos.
+      name: evolution-instances
+      mountPath: /evolution/instances
+      sizeGB: 1
+    envVars:
+      # Preenchido À MÃO depois do primeiro deploy: a URL só existe a partir dele.
+      - key: SERVER_URL
+        sync: false
+      # O Render pergunta no momento de criar. É a chave que você cola no CRM.
+      - key: AUTHENTICATION_API_KEY
+        sync: false
+
+      - key: DATABASE_ENABLED
+        value: "true"
+      - key: DATABASE_PROVIDER
+        value: postgresql
+      - key: DATABASE_CONNECTION_URI
+        fromDatabase:
+          name: vionex-evolution-db
+          property: connectionString
+      - key: DATABASE_CONNECTION_CLIENT_NAME
+        value: vionex
+      # Guardar a instância é o que faz o pareamento sobreviver a redeploy.
+      - key: DATABASE_SAVE_DATA_INSTANCE
+        value: "true"
+      # As mensagens o CRM já guarda em whatsapp_messages. Duplicar aqui só faz
+      # o banco crescer sem ninguém ler — e no Render disco custa.
+      - key: DATABASE_SAVE_DATA_NEW_MESSAGE
+        value: "false"
+      - key: DATABASE_SAVE_MESSAGE_UPDATE
+        value: "false"
+      - key: DATABASE_SAVE_DATA_CONTACTS
+        value: "false"
+      - key: DATABASE_SAVE_DATA_CHATS
+        value: "false"
+
+      # Sem Redis. Ele economiza reconexão em operação grande, e no Render seria
+      # um serviço pago a mais — o cache local dá conta de dezenas de instâncias.
+      - key: CACHE_REDIS_ENABLED
+        value: "false"
+      - key: CACHE_LOCAL_ENABLED
+        value: "true"
+
+      # O CRM aponta o webhook por instância, quando a pessoa parea. Global faria
+      # os eventos chegarem duplicados.
+      - key: WEBHOOK_GLOBAL_ENABLED
+        value: "false"
+
+      - key: LOG_LEVEL
+        value: ERROR,WARN,INFO
+      - key: DEL_INSTANCE
+        value: "false"
+
+databases:
+  - name: vionex-evolution-db
+    databaseName: evolution
+    user: evolution

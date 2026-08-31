@@ -4,7 +4,23 @@ Servidor de WhatsApp por QR code. O CRM fala com ele pelas edge functions do
 Supabase, então ele precisa de **endereço público com HTTPS** — não funciona em
 `localhost` nem por IP sem certificado.
 
-## O caminho curto
+## Sem instalar nada na sua máquina
+
+`render.yaml` faz o Render provisionar tudo pelo navegador — serviço, banco e
+disco. Não há CLI para instalar nem Docker local.
+
+    render.com → New → Blueprint → conecte o repositório
+
+Ele pede a `AUTHENTICATION_API_KEY` (gere uma longa e guarde: é a que você cola
+no CRM). Depois do primeiro deploy, copie a URL que o Render deu, cole em
+`SERVER_URL` e redeploye — a Evolution precisa saber o próprio endereço para
+montar o QR, e esse endereço só nasce no primeiro deploy.
+
+**Não use o plano gratuito.** Ele hiberna após 15 minutos sem tráfego, e
+hibernar derrubaria a sessão do WhatsApp: cada queda obriga todo mundo a ler o
+QR de novo.
+
+## O caminho curto (VPS, com Docker)
 
 Numa máquina Linux com Docker, com um domínio já apontado para o IP dela:
 
