@@ -87,8 +87,26 @@ describe("todas as perguntas do cadastro são mapeáveis", () => {
 describe("a origem é o nome do documento", () => {
   const src = semComentarios(ler(MODAL));
 
-  it("grava o nome do arquivo em source", () => {
-    expect(src).toMatch(/source: origem/);
+  it("grava a origem escolhida em source", () => {
+    expect(src).toMatch(/source: origemFinal/);
+  });
+
+  /**
+   * Editável, e não cravada no nome do arquivo.
+   *
+   * Planilha encaminhada chega com nome que não descreve nada ("Pasta1.xlsx",
+   * "leads (3).xlsx"), e quem importa sabe de onde veio. Sem poder trocar, a
+   * origem viraria lixo exatamente nas listas de terceiros -- que são as que
+   * mais precisam de rastro.
+   */
+  it("a origem é um campo editável, com o nome do arquivo como sugestão", () => {
+    expect(src).toMatch(/id="origem-import"/);
+    expect(src).toMatch(/setOrigem\(nomeArquivo\.replace/);
+  });
+
+  it("origem em branco nunca chega ao banco", () => {
+    // Selo sem texto parece defeito da tela.
+    expect(src).toMatch(/origem\.trim\(\) \|\|[\s\S]{0,120}"Importação"/);
   });
 
   it("tira a extensão", () => {

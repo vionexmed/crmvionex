@@ -50,7 +50,15 @@ type Pareamento = {
 /** De quanto em quanto se pergunta ao servidor enquanto o QR está na tela. */
 const INTERVALO_MS = 3000;
 
-export function WhatsAppEvolutionCard() {
+/**
+ * `embutido` renderiza SEM a moldura de Card e sem o cabeçalho.
+ *
+ * Existe porque este cartão passou a viver dentro do diálogo de WhatsApp, ao
+ * lado da opção oficial da Meta -- e Card dentro de Card fica com duas bordas e
+ * dois títulos dizendo a mesma coisa. A lógica é a mesma nos dois modos; o que
+ * muda é só quem desenha a caixa.
+ */
+export function WhatsAppEvolutionCard({ embutido = false }: { embutido?: boolean } = {}) {
   const { orgId } = useOrg();
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -200,13 +208,12 @@ export function WhatsAppEvolutionCard() {
   };
 
   if (carregando) {
-    return (
-      <Card>
-        <CardContent className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
-        </CardContent>
-      </Card>
+    const espera = (
+      <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+      </p>
     );
+    return embutido ? espera : <Card><CardContent>{espera}</CardContent></Card>;
   }
 
   // A empresa está na Meta: quem manda nessa tela é o outro cartão.
@@ -214,24 +221,7 @@ export function WhatsAppEvolutionCard() {
 
   const configurado = !!conta?.is_active && conta.provider === "evolution";
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-4 w-4 text-primary" />
-              WhatsApp por QR code
-            </CardTitle>
-            <CardDescription>
-              Evolution API — conecta o seu WhatsApp lendo um código, sem passar pela Meta.
-            </CardDescription>
-          </div>
-          {conexao && <Badge variant="secondary">Conectado</Badge>}
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
+  const corpo = <div className="space-y-4">
         {/* ---------- 1. servidor da empresa ---------- */}
         {!configurado && (
           isAdmin ? (
@@ -346,7 +336,28 @@ export function WhatsAppEvolutionCard() {
             {erro}
           </p>
         )}
-      </CardContent>
+  </div>;
+
+  if (embutido) return corpo;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-4 w-4 text-primary" />
+              WhatsApp por QR code
+            </CardTitle>
+            <CardDescription>
+              Evolution API — conecta o seu WhatsApp lendo um código, sem passar pela Meta.
+            </CardDescription>
+          </div>
+          {conexao && <Badge variant="secondary">Conectado</Badge>}
+        </div>
+      </CardHeader>
+
+      <CardContent>{corpo}</CardContent>
     </Card>
   );
 }

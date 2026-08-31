@@ -6,6 +6,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -174,8 +176,17 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
   const [mapping, setMapping] = useState<Record<number, string>>({});
   const [importing, setImporting] = useState(false);
   const [lendo, setLendo] = useState(false);
-  /** Nome do arquivo. Vira a ORIGEM de cada contato importado. */
+  /** Nome do arquivo, como veio. Só para exibir. */
   const [arquivo, setArquivo] = useState("");
+  /**
+   * A ORIGEM que será gravada, EDITÁVEL.
+   *
+   * Nasce do nome do arquivo, que é o caso comum — mas planilha encaminhada
+   * chega com nome que não descreve nada ("Pasta1.xlsx", "leads (3).xlsx"), e
+   * quem importa sabe de onde veio. Sem poder trocar, a origem viraria lixo
+   * exatamente nas listas de terceiros, que são as que mais precisam de rastro.
+   */
+  const [origem, setOrigem] = useState("");
 
   const fields = entityType === "contacts" ? contactFields : companyFields;
 
@@ -201,6 +212,9 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
     setCsvHeaders(cabecalho);
     setCsvRows(naoVazias.slice(1));
     setArquivo(nomeArquivo);
+    // Sugestão, não imposição: sem extensão, porque "Leads Congresso 2026" lê
+    // melhor que o mesmo nome com ".xlsx" num selo de 11px.
+    setOrigem(nomeArquivo.replace(/\.[^.]+$/, "").trim());
 
     const autoMap: Record<number, string> = {};
     cabecalho.forEach((header, i) => {
@@ -271,10 +285,11 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
     if (!orgId) return;
     setImporting(true);
     try {
-      // O nome do arquivo, sem extensão, é o que aparece no selo de Origem.
-      // "Leads Congresso 2026" lê melhor que "Leads Congresso 2026.xlsx" num
-      // selo de 11px, e a extensão não distingue nada que importe.
-      const origem = arquivo.replace(/\.[^.]+$/, "").trim() || "Importação";
+      // O que a pessoa escreveu no campo de origem. Vazio cai no nome do
+      // arquivo, e nome vazio cai em "Importação" -- nunca fica em branco,
+      // senão o selo aparece sem texto.
+      const origemFinal =
+        origem.trim() || arquivo.replace(/\.[^.]+$/, "").trim() || "Importação";
       const importadoEm = new Date().toISOString();
 
       const records = csvRows.map((row) => {
@@ -331,7 +346,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
           record.metadata = {
             ...(record.metadata || {}),
             ...perguntas,
-            source: origem,
+            source: origemFinal,
             importado_em: importadoEm,
           };
         }
@@ -469,6 +484,25 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
 
         {step === "mapping" && (
           <div className="space-y-4">
+            {entityType === "contacts" && (
+              <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
+                <Label htmlFor="origem-import" className="text-xs font-semibold">
+                  Origem destes contatos
+                </Label>
+                <Input
+                  id="origem-import"
+                  value={origem}
+                  onChange={(e) => setOrigem(e.target.value)}
+                  placeholder="Ex.: APROXIMA MED"
+                  maxLength={60}
+                />
+                <p className="text-label text-muted-foreground">
+                  Aparece no selo de <strong>Origem</strong> de cada contato, e serve para
+                  você filtrar depois. Sugerimos o nome do arquivo — troque se a lista
+                  vier de outro lugar.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               {csvHeaders.map((header, i) => (
                 <div key={i} className="flex items-center gap-3">
