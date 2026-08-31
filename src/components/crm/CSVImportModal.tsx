@@ -21,7 +21,8 @@ import { chaveDeTelefone } from "@/lib/contato-formato";
 import { buscarEmBlocos } from "@/lib/paginar";
 import { detectarSeparador, lerTexto, parseCSV } from "@/lib/csv";
 import {
-  CAMPOS_DE_CONTATO, CAMPOS_DE_EMPRESA, EMPRESA, NOTA, PREFIXO_META, mapearColunas,
+  CAMPOS_DE_CONTATO, CAMPOS_DE_EMPRESA, EMPRESA, NOTA, PREFIXO_META,
+  chaveDeEmpresa, mapearColunas, planejarEmpresas,
 } from "@/lib/importar-colunas";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
@@ -314,28 +315,28 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
       // Casa por nome em MINÚSCULA: "Hospital Santa Casa" e "HOSPITAL SANTA
       // CASA" são a mesma instituição, e criar as duas encheria a tela de
       // Empresas de duplicata na primeira planilha.
-      const nomesDeEmpresa = [...new Set(
-        empresaPorLinha.filter((n): n is string => !!n?.trim()).map((n) => n.trim()),
-      )];
-      const empresaIdPorNome = new Map<string, string>();
+      const temEmpresa = empresaPorLinha.some((n) => n?.trim());
+      let empresaIdPorNome = new Map<string, string>();
 
-      if (entityType === "contacts" && nomesDeEmpresa.length > 0) {
+      if (entityType === "contacts" && temEmpresa) {
         // Em blocos: o PostgREST corta em 1000 EM SILÊNCIO, e uma lista
         // truncada aqui faria a importação CRIAR empresa que já existe.
         const jaExistem = await buscarEmBlocos<{ id: string; name: string }>(
           (inicio, fim) =>
             supabase.from("companies").select("id, name").eq("org_id", orgId).range(inicio, fim),
         );
-        for (const e of jaExistem) {
-          const chave = e.name?.trim().toLowerCase();
-          if (chave && !empresaIdPorNome.has(chave)) empresaIdPorNome.set(chave, e.id);
-        }
+        // O PLANO vem de uma função pura, testada: quais criar e quais reusar.
+        //
+        // A versão anterior fazia `new Set` das grafias EXATAS, então
+        // "Hospital X" e "hospital x" eram duas entradas e criavam DUAS
+        // empresas para a mesma instituição.
+        const plano = planejarEmpresas(empresaPorLinha, jaExistem);
+        empresaIdPorNome = plano.porChave;
 
-        const faltando = nomesDeEmpresa.filter((n) => !empresaIdPorNome.has(n.toLowerCase()));
-        if (faltando.length > 0) {
+        if (plano.aCriar.length > 0) {
           const { data: criadas, error: erroEmp } = await supabase
             .from("companies")
-            .insert(faltando.map((name) => ({ org_id: orgId, name })))
+            .insert(plano.aCriar.map((name) => ({ org_id: orgId, name })))
             .select("id, name");
           if (erroEmp) {
             toast({ title: "Erro ao criar as empresas", description: mensagemErro(erroEmp), variant: "destructive" });
@@ -343,8 +344,8 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
             return;
           }
           for (const e of criadas ?? []) {
-            const chave = (e.name as string)?.trim().toLowerCase();
-            if (chave) empresaIdPorNome.set(chave, e.id as string);
+            const nome = (e.name as string)?.trim();
+            if (nome) empresaIdPorNome.set(chaveDeEmpresa(nome), e.id as string);
           }
         }
 
@@ -355,7 +356,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         // para resolver o que o índice paralelo já responde de graça.
         records.forEach((r, i) => {
           const nome = empresaPorLinha[i];
-          const id = nome ? empresaIdPorNome.get(nome.trim().toLowerCase()) : undefined;
+          const id = nome?.trim() ? empresaIdPorNome.get(chaveDeEmpresa(nome)) : undefined;
           if (id) r.company_id = id;
         });
       }

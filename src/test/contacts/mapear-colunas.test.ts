@@ -19,7 +19,7 @@
 import { describe, it, expect } from "vitest";
 import {
   CAMPOS_DE_CONTATO, CAMPOS_DE_EMPRESA, EMPRESA, IGNORAR, NOTA, PREFIXO_META,
-  mapearColunas,
+  mapearColunas, planejarEmpresas,
 } from "@/lib/importar-colunas";
 
 const mapear = (cabecalho: string[]) => {
@@ -150,5 +150,69 @@ describe("toda opção do seletor tem tratamento", () => {
   it("e há pelo menos as 13 perguntas do cadastro", () => {
     expect(CAMPOS_DE_CONTATO.filter((f) => f.key.startsWith(PREFIXO_META)).length)
       .toBeGreaterThanOrEqual(13);
+  });
+});
+
+describe("empresas: quais criar e quais reusar", () => {
+  /**
+   * DEFEITO QUE ISTO CORRIGE: a versão anterior fazia `new Set` das grafias
+   * EXATAS. "Hospital X" e "hospital x" eram duas entradas, as duas caíam na
+   * lista de criar, e nasciam DUAS empresas para a mesma instituição — a
+   * duplicata que o código dizia evitar.
+   */
+  it("grafias diferentes da mesma empresa criam UMA", () => {
+    const plano = planejarEmpresas(
+      ["Hospital Santa Casa", "HOSPITAL SANTA CASA", "hospital santa casa"],
+      [],
+    );
+    expect(plano.aCriar).toHaveLength(1);
+    // A grafia da PRIMEIRA aparição: é a que a pessoa reconhece na tela, e
+    // escolher a "melhor" seria inventar critério.
+    expect(plano.aCriar[0]).toBe("Hospital Santa Casa");
+  });
+
+  it("espaço a mais e acento não criam empresa nova", () => {
+    const plano = planejarEmpresas(
+      ["Clínica  São  José", "Clinica Sao Jose", " CLÍNICA SÃO JOSÉ "],
+      [],
+    );
+    expect(plano.aCriar).toHaveLength(1);
+  });
+
+  it("reusa a que já existe, em qualquer caixa", () => {
+    const plano = planejarEmpresas(
+      ["hospital x", "Hospital Y"],
+      [{ id: "id-x", name: "HOSPITAL X" }],
+    );
+    expect(plano.aCriar).toEqual(["Hospital Y"]);
+    expect(plano.porChave.get("hospital x")).toBe("id-x");
+  });
+
+  /**
+   * Fundir DEMAIS é pior que fundir de menos: empresa duplicada é chateação
+   * visível e reversível; contato ligado à empresa ERRADA é dado falso que
+   * ninguém percebe.
+   */
+  it("nomes parecidos mas distintos NÃO são fundidos", () => {
+    const plano = planejarEmpresas(
+      ["Santa Casa", "Santa Casa de Misericórdia"],
+      [],
+    );
+    expect(plano.aCriar).toHaveLength(2);
+  });
+
+  it("vazio, nulo e só espaço são ignorados", () => {
+    expect(planejarEmpresas([null, undefined, "", "   "], []).aCriar).toEqual([]);
+  });
+
+  /**
+   * Se o banco já tem duplicata (criada antes desta correção), escolher sempre
+   * a MESMA evita que a importação alterne entre elas entre execuções — o que
+   * espalharia os contatos da mesma instituição por duas fichas.
+   */
+  it("com duplicata no banco, escolhe sempre a primeira", () => {
+    const existentes = [{ id: "a", name: "Hospital X" }, { id: "b", name: "HOSPITAL X" }];
+    expect(planejarEmpresas(["hospital x"], existentes).porChave.get("hospital x")).toBe("a");
+    expect(planejarEmpresas(["hospital x"], existentes).porChave.get("hospital x")).toBe("a");
   });
 });

@@ -119,3 +119,70 @@ export function mapearColunas(
 
   return mapa;
 }
+
+/**
+ * A chave para reconhecer que duas grafias são a MESMA empresa.
+ *
+ * Minúscula, sem acento, com espaços internos colapsados. "Hospital  Santa
+ * Casa", "HOSPITAL SANTA CASA" e "Hospital Santa Casa" viram a mesma chave.
+ *
+ * O que ela NÃO faz, de propósito: não remove pontuação. Fundir demais é pior
+ * que fundir de menos — uma empresa duplicada é chateação visível e reversível;
+ * um contato ligado à empresa ERRADA é dado falso que ninguém percebe. E remover
+ * pontuação não resolveria o caso difícil ("Santa Casa" vs "Santa Casa de
+ * Misericórdia"), que exige julgamento humano.
+ */
+export function chaveDeEmpresa(nome: string): string {
+  return nome
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .trim().replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+export type PlanoDeEmpresas = {
+  /** Nomes a criar, na grafia da PRIMEIRA aparição na planilha. */
+  aCriar: string[];
+  /** chave → id, para as que já existem no banco. */
+  porChave: Map<string, string>;
+};
+
+/**
+ * Decide quais empresas criar e quais reusar, ANTES de qualquer escrita.
+ *
+ * DEFEITO QUE ISTO CORRIGE: a versão anterior fazia `new Set` das grafias
+ * EXATAS. "Hospital X" e "hospital x" eram entradas distintas, as duas caíam na
+ * lista de criar, e o resultado era DUAS empresas para a mesma instituição — a
+ * duplicata que o código dizia evitar.
+ *
+ * Função pura, e é o ponto: dentro do modal isso não dava para testar, e é
+ * justamente a lógica onde o erro passa sem aparecer na tela.
+ */
+export function planejarEmpresas(
+  nomesDaPlanilha: (string | null | undefined)[],
+  existentes: { id: string; name: string | null }[],
+): PlanoDeEmpresas {
+  const porChave = new Map<string, string>();
+  for (const e of existentes) {
+    const nome = e.name?.trim();
+    if (!nome) continue;
+    const k = chaveDeEmpresa(nome);
+    // A primeira vence: se o banco já tem duplicata, escolher sempre a mesma
+    // evita que a importação alterne entre elas entre execuções.
+    if (!porChave.has(k)) porChave.set(k, e.id);
+  }
+
+  const aCriar: string[] = [];
+  const vistos = new Set<string>();
+  for (const bruto of nomesDaPlanilha) {
+    const nome = bruto?.trim();
+    if (!nome) continue;
+    const k = chaveDeEmpresa(nome);
+    if (porChave.has(k) || vistos.has(k)) continue;
+    vistos.add(k);
+    // Grafia da primeira aparição: é a que a pessoa vai reconhecer na tela de
+    // Empresas, e escolher a "melhor" seria inventar critério.
+    aCriar.push(nome);
+  }
+
+  return { aCriar, porChave };
+}
