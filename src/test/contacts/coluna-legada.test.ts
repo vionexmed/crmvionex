@@ -150,25 +150,16 @@ describe("a aplicação não escreve mais na coluna legada", () => {
     expect(src).not.toContain("useUpdateContactsStatus");
   });
 
-  /**
-   * Aprovar CRIA um negócio, e negócio precisa de funil. Antes o lote não
-   * criava nada, então a falta de funil não aparecia.
+  /*
+   * OS DOIS TESTES DO LOTE DE LEADS SAÍRAM, com a tela.
+   *
+   * Eles guardavam que "Aprovar" em lote chamasse `qualify_lead` -- a mesma do
+   * botão individual -- e o fizesse em sequência. A tela de Leads era uma fila
+   * de triagem e foi removida: a qualificação passou a ser arrastar o card no
+   * kanban, e quem a executa é o gatilho `negocio_move_ciclo`.
+   *
+   * O que aqueles testes protegiam de verdade -- ninguém escrevendo na coluna
+   * legada `status` -- continua coberto pelas varreduras acima, e o gatilho novo
+   * tem os próprios testes em kanban-manda-no-ciclo.test.ts.
    */
-  it("o lote de Leads chama qualify_lead, a mesma do botão individual", () => {
-    const src = semComentarios(readFileSync("src/pages/Leads.tsx", "utf8"));
-    const lote = src.slice(src.indexOf("const batchUpdate"), src.indexOf("const fullName"));
-    expect(lote).toContain('supabase.rpc("qualify_lead"');
-    expect(lote).toContain("selectedPipeline");
-  });
-
-  /**
-   * `qualify_lead` cria negócio e resolve a etapa de entrada por consulta. Em
-   * paralelo, dez leads disputariam a mesma leitura.
-   */
-  it("o lote é sequencial, não paralelo", () => {
-    const src = semComentarios(readFileSync("src/pages/Leads.tsx", "utf8"));
-    const lote = src.slice(src.indexOf("const batchUpdate"), src.indexOf("const fullName"));
-    expect(lote).toMatch(/for \(const id of ids\)/);
-    expect(lote).not.toMatch(/Promise\.all\(ids/);
-  });
 });

@@ -126,22 +126,3 @@ describe("quem já foi abordado sai da fila", () => {
   });
 });
 
-describe("a lista de leads não tem teto silencioso", () => {
-  const api = readFileSync("src/lib/api/contacts.ts", "utf8");
-
-  it("listLeads pagina em blocos", () => {
-    const bloco = api.slice(api.indexOf("listLeads:"), api.indexOf("updateLifecycleStage:"));
-    expect(bloco).toContain(".range(");
-    // Verifica o COMPORTAMENTO -- que a busca é em blocos -- e não a palavra
-    // `CHUNK`, que era o nome de uma variável local. O laço saiu daqui para
-    // `lib/paginar`, onde vive uma vez em vez de três, e o teste antigo
-    // reprovou a consolidação por causa do nome.
-    expect(bloco).toContain("buscarEmBlocos");
-  });
-
-  it("o selo do menu usa a mesma fonte da tela", () => {
-    const barra = readFileSync("src/components/layout/AppSidebar.tsx", "utf8");
-    expect(barra).toContain('.in("lifecycle_stage", LEAD_STAGES)');
-    expect(barra).not.toMatch(/\.eq\("status",\s*"lead"\)/);
-  });
-});

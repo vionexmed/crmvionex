@@ -98,7 +98,7 @@ describe("contagem e texto fixo não dividem o mesmo campo", () => {
 
   /** As nove que contavam precisam ter migrado, não simplesmente perdido o número. */
   const QUE_CONTAM = [
-    "Contacts", "Companies", "Deals", "Leads", "Activities",
+    "Contacts", "Companies", "Deals", "Activities",
     "Automations", "LeadScoring", "EmailTemplates", "EmailSequences",
   ];
   it.each(QUE_CONTAM)("%s passa contagem", (nome) => {

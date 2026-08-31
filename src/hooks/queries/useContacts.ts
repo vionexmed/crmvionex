@@ -90,15 +90,6 @@ export function useUpdateContactsLifecycle() {
   });
 }
 
-export function useLeads() {
-  const { orgId } = useOrg();
-  return useQuery({
-    queryKey: [...contactsKeys.all(orgId ?? ""), "leads"],
-    queryFn: () => contactsApi.listLeads(orgId!),
-    enabled: !!orgId,
-  });
-}
-
 export function useUpdateContactOwner() {
   const qc = useQueryClient();
   const { orgId } = useOrg();

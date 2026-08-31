@@ -24,7 +24,6 @@ const semComentarios = (s: string) =>
 const COM_CASCA = [
   "src/pages/Dashboard.tsx",
   "src/pages/Contacts.tsx",
-  "src/pages/Leads.tsx",
   "src/pages/Deals.tsx",
   "src/pages/Companies.tsx",
   "src/pages/Activities.tsx",

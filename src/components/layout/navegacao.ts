@@ -1,7 +1,7 @@
 import {
   Activity, AlertTriangle, BarChart3, Building2, FileText, Handshake,
   Inbox, LayoutDashboard, Mail, Megaphone, MessageSquare, Plug, Settings, Shield,
-  Target, TrendingUp, UserPlus, Users, UsersRound, Zap,
+  Target, TrendingUp, Users, UsersRound, Zap,
 } from "lucide-react";
 
 /**
@@ -29,12 +29,21 @@ export type GrupoNav = { label: string; items: ItemNav[] };
 
 export const NAV_GRUPOS: GrupoNav[] = [
   {
-    // O que se faz. Painel para ver, Leads para atender, Atividades para
-    // registrar -- os três destinos de quem abre o CRM para trabalhar.
+    // O que se faz. Painel para ver, Atividades para registrar.
+    //
+    // "Leads" saiu. Era uma FILA DE TRIAGEM: cada lead precisava ser aprovado à
+    // mão, um por um, e só ali o ciclo de vida passava de "contatado" para
+    // "oportunidade". Triar lead por lead não escala, e o lead novo já cai no
+    // kanban desde 20260826170000 -- a tela cobrava um trabalho que o quadro já
+    // fazia melhor.
+    //
+    // Quem quer ver só os leads filtra por estágio em Contatos, e é para lá que
+    // /leads redireciona. O que substituiu a aprovação foi o gatilho
+    // `negocio_move_ciclo` (20260831120000): arrastar o card para a segunda
+    // coluna É a qualificação.
     label: "Trabalho",
     items: [
       { title: "Painel", url: "/dashboard", icon: LayoutDashboard, noCelular: true },
-      { title: "Leads", url: "/leads", icon: UserPlus },
       { title: "Atividades", url: "/activities", icon: Activity, noCelular: true },
     ],
   },

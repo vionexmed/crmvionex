@@ -16,6 +16,7 @@ import { Upload, Table2, Loader2 } from "lucide-react";
 import { CADASTRO_FIELDS } from "@/lib/contact-options";
 import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
+import { buscarEmBlocos } from "@/lib/paginar";
 import { useToast } from "@/hooks/use-toast";
 
 interface CSVImportModalProps {
@@ -129,6 +130,25 @@ function textoDaCelula(c: unknown): string {
   if (typeof c === "boolean") return c ? "Sim" : "Não";
   if (typeof c === "number") return Number.isInteger(c) ? String(c) : String(c);
   return String(c).trim();
+}
+
+/**
+ * A chave de comparação de um telefone: os ÚLTIMOS 8 DÍGITOS.
+ *
+ * O mesmo número aparece com e sem o 9, com e sem +55, com e sem parênteses --
+ * "(11) 99999-8888", "+5511999998888" e "11 9999-8888" são a mesma pessoa. Oito
+ * dígitos é o que sobra estável em todas as formas, e é o mesmo critério que o
+ * webhook do WhatsApp já usa para casar contato.
+ */
+function chaveTelefone(v: string | null | undefined): string | null {
+  const so = String(v ?? "").replace(/\D/g, "");
+  return so.length >= 8 ? so.slice(-8) : null;
+}
+
+/** E-mail comparado sem caixa e sem espaço em volta. */
+function chaveEmail(v: string | null | undefined): string | null {
+  const e = String(v ?? "").trim().toLowerCase();
+  return e || null;
 }
 
 const companyFields = [
@@ -318,21 +338,78 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         return record;
       });
 
-      // Filter out records without required fields
-      const valid = entityType === "contacts"
+      // Sem o campo obrigatório não há registro; linha em branco no fim da
+      // planilha é o caso comum.
+      const comNome = entityType === "contacts"
         ? records.filter((r) => r.first_name)
         : records.filter((r) => r.name);
 
-      if (valid.length === 0) {
+      if (comNome.length === 0) {
         toast({ title: "Nenhum registro válido", variant: "destructive" });
         setImporting(false);
         return;
       }
 
-      const { error } = await supabase.from(entityType).insert(valid as any);
-      if (error) { toast({ title: "Erro na importação", description: error.message, variant: "destructive" }); setImporting(false); return; }
+      let valid = comNome;
+      let repetidos = 0;
 
-      toast({ title: `${valid.length} registros importados` });
+      if (entityType === "contacts") {
+        // A base JÁ cadastrada, para comparar. Paginada em blocos porque o
+        // PostgREST corta em 1000 linhas EM SILÊNCIO -- e um teto silencioso
+        // aqui seria pior que não deduplicar: a partir do contato 1001, a
+        // comparação passaria a dizer "não existe" para gente que existe, e a
+        // importação criaria duplicata parecendo ter conferido.
+        const jaExistem = await buscarEmBlocos<{ email: string | null; phone: string | null }>(
+          (inicio, fim) =>
+            supabase.from("contacts").select("email, phone").eq("org_id", orgId).range(inicio, fim),
+        );
+
+        const emails = new Set<string>();
+        const telefones = new Set<string>();
+        for (const c of jaExistem) {
+          const e = chaveEmail(c.email);
+          if (e) emails.add(e);
+          const t = chaveTelefone(c.phone);
+          if (t) telefones.add(t);
+        }
+
+        // O mesmo conjunto cresce com o que a própria planilha vai inserindo:
+        // sem isso, uma pessoa repetida DENTRO do arquivo entraria duas vezes --
+        // e é o caso mais comum quando duas listas encaminhadas são coladas numa
+        // aba só.
+        valid = comNome.filter((r) => {
+          const e = chaveEmail(r.email as string | null);
+          const t = chaveTelefone(r.phone as string | null);
+          if ((e && emails.has(e)) || (t && telefones.has(t))) {
+            repetidos++;
+            return false;
+          }
+          if (e) emails.add(e);
+          if (t) telefones.add(t);
+          return true;
+        });
+
+        if (valid.length === 0) {
+          toast({
+            title: "Nada novo nesta planilha",
+            description: `${repetidos} ${repetidos === 1 ? "contato já estava" : "contatos já estavam"} cadastrados.`,
+          });
+          setImporting(false);
+          return;
+        }
+      }
+
+      const { error } = await supabase.from(entityType).insert(valid as any);
+      if (error) { toast({ title: "Erro na importação", description: mensagemErro(error), variant: "destructive" }); setImporting(false); return; }
+
+      toast({
+        title: `${valid.length} ${valid.length === 1 ? "registro importado" : "registros importados"}`,
+        // Dizer quantos foram ignorados, e não só quantos entraram: sem essa
+        // linha, importar 200 e ver "50 importados" parece falha do sistema.
+        description: repetidos > 0
+          ? `${repetidos} ${repetidos === 1 ? "já estava cadastrado e foi ignorado" : "já estavam cadastrados e foram ignorados"}.`
+          : undefined,
+      });
       onOpenChange(false);
       onImported();
       resetState();

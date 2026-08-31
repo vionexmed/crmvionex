@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TABLES, DEFAULT_PAGE_SIZE } from "@/lib/constants";
-import { LEAD_STAGES, type LifecycleStage } from "@/lib/contact-options";
+import { type LifecycleStage } from "@/lib/contact-options";
 import type { Database } from "@/integrations/supabase/types";
 import { buscarEmBlocos } from "@/lib/paginar";
 
@@ -220,28 +220,6 @@ export const contactsApi = {
     if (error) throw error;
   },
 
-  /**
-   * Leads = ciclo de vida ainda antes da qualificação. Filtra por
-   * lifecycle_stage, não por status: 'status' é legado e faz papel duplo.
-   */
-  listLeads: async (orgId: string): Promise<Contact[]> => {
-    // Paginado em blocos porque o PostgREST corta em 1000 linhas EM SILÊNCIO.
-    //
-    // Sem isto o cabeçalho "N leads aguardando qualificação" mentiria a partir
-    // do lead 1001 -- diria exatamente 1000, para sempre, e os leads seguintes
-    // simplesmente não existiriam na tela. Antes da correção do ciclo de vida
-    // quase nada chegava aqui, então o teto nunca aparecia; agora toda pessoa
-    // nova entra na fila.
-    return buscarEmBlocos<Contact>((inicio, fim) =>
-      supabase
-        .from(TABLES.CONTACTS)
-        .select("*, companies:companies(name)")
-        .eq("org_id", orgId)
-        .in("lifecycle_stage", LEAD_STAGES)
-        .order("created_at", { ascending: false })
-        .range(inicio, fim),
-    );
-  },
 
   /** Move o contato no ciclo de vida. O trigger no banco cuida da auditoria. */
   updateLifecycleStage: async (ids: string[], stage: LifecycleStage): Promise<void> => {

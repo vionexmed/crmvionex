@@ -80,7 +80,6 @@ describe("'Pipeline' não aparece na interface", () => {
     "src/components/reports/SalesReport.tsx",
     "src/components/crm/AICopilot.tsx",
     "src/components/crm/DashboardAIChat.tsx",
-    "src/pages/Leads.tsx",
   ];
 
   // "Pipeline" com maiúscula em literal ou entre tags é sempre rótulo: o
@@ -127,23 +126,3 @@ describe("'stages' em inglês não vaza para a tela", () => {
   });
 });
 
-describe("Leads descreve o que a qualificação faz de verdade", () => {
-  const tela = semComentarios(ler("src/pages/Leads.tsx"));
-
-  /**
-   * A tela prometia "O lead vira Prospect em Contatos". A RPC `qualify_lead`
-   * grava `lifecycle_stage = 'opportunity'`, que a interface chama
-   * "Em negociação" -- nunca 'prospect' nem 'qualified'.
-   *
-   * Descrição de efeito que não acontece é pior que nenhuma: ensina o time a
-   * esperar o estado errado, e quem for conferir vai achar que a qualificação
-   * está quebrada.
-   */
-  it("não promete que o lead vira Prospect", () => {
-    expect(tela).not.toMatch(/vira <strong>Prospect<\/strong>/);
-  });
-
-  it("diz o estágio que a RPC realmente grava", () => {
-    expect(tela).toContain("Em negociação");
-  });
-});

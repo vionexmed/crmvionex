@@ -128,15 +128,3 @@ describe("lead-capture não duplica o negócio do gatilho", () => {
   });
 });
 
-describe("a tela descreve o que a qualificação faz agora", () => {
-  const tela = readFileSync("src/pages/Leads.tsx", "utf8");
-
-  it("não promete que um negócio é criado na primeira etapa", () => {
-    // Deixou de ser verdade: o negócio já existe e é movido.
-    expect(tela).not.toContain("um negócio é criado na primeira etapa");
-  });
-
-  it("diz que o negócio avança", () => {
-    expect(tela).toContain("avança para a etapa seguinte");
-  });
-});

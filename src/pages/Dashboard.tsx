@@ -63,11 +63,11 @@ const GROUPS: Group[] = [
     description: "De onde e quanto lead está chegando",
     tiles: [
       {
-        key: "leadsRecebidos", label: "Leads recebidos", icon: UserPlus, accent: "primary", href: "/leads", drilldown: "leadsRecebidos",
+        key: "leadsRecebidos", label: "Leads recebidos", icon: UserPlus, accent: "primary", href: "/contacts?estagio=lead", drilldown: "leadsRecebidos",
         hint: "Contatos criados no período. Conta por data de criação, não por status — a qualificação sobrescreve lead → prospect e apagaria o histórico.",
       },
       {
-        key: "leadsWhatsapp", label: "Leads WhatsApp", icon: MessageCircle, accent: "success", href: "/leads",
+        key: "leadsWhatsapp", label: "Leads WhatsApp", icon: MessageCircle, accent: "success", href: "/contacts?estagio=lead",
         hint: "Leads criados no período que nos escreveram por WhatsApp. Derivado das mensagens recebidas — o webhook não grava a origem no contato.",
       },
       {
@@ -137,7 +137,7 @@ const GROUPS: Group[] = [
         hint: "Do momento em que o lead escreve até a nossa primeira resposta, por WhatsApp. É a única fonte com direção e horário de servidor confiáveis. Cair é bom.",
       },
       {
-        key: "aguardandoHumano", label: "Aguardando atendimento", icon: Hourglass, accent: "destructive", href: "/leads", noComparison: true,
+        key: "aguardandoHumano", label: "Aguardando atendimento", icon: Hourglass, accent: "destructive", href: "/contacts?estagio=lead", noComparison: true,
         hint: "Leads sem nenhuma abordagem registrada: nenhuma atividade, nenhum e-mail, nenhuma mensagem. É a fila do momento, por isso não compara com o período anterior.",
       },
       {

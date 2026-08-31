@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { LogOut } from "lucide-react";
 import vionexLogo from "@/assets/vionex-logo-sidebar.png";
 import { NavLink } from "@/components/NavLink";
@@ -10,9 +10,6 @@ import {
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
 import { AtRiskPanel } from "@/components/crm/AtRiskPanel";
-import { supabase } from "@/integrations/supabase/client";
-import { useOrg } from "@/hooks/useOrg";
-import { LEAD_STAGES } from "@/lib/contact-options";
 import { NAV_GRUPOS, ICONE_RISCO, MENU_DA_CONTA } from "./navegacao";
 import { MoreHorizontal } from "lucide-react";
 import {
@@ -27,7 +24,6 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut, isAdmin } = useAuth();
-  const { orgId } = useOrg();
 
   // Comercial (member) só vê os itens não-admin
   const visibleGroups = NAV_GRUPOS
@@ -38,28 +34,12 @@ export function AppSidebar() {
     .filter((group) => group.items.length > 0);
 
   const [atRiskOpen, setAtRiskOpen] = useState(false);
-  const [leadCount, setLeadCount] = useState(0);
-
-  useEffect(() => {
-    if (!orgId) return;
-    const fetchCount = async () => {
-      const { count } = await supabase
-        .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("org_id", orgId)
-        // Mesma fonte da página de Leads. Lia `status` (legado), que por
-        // coincidência mapeia para os mesmos contatos -- mas se LEAD_STAGES
-        // mudar, a coincidência acaba e o selo divergiria da tela em silêncio.
-        .in("lifecycle_stage", LEAD_STAGES) as { count: number };
-      setLeadCount(count || 0);
-    };
-    fetchCount();
-    const channel = supabase
-      .channel("leads-count")
-      .on("postgres_changes", { event: "*", schema: "public", table: "contacts", filter: `org_id=eq.${orgId}` }, fetchCount)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [orgId]);
+  // A CONTAGEM DE LEADS SAIU, junto com a tela.
+  //
+  // Ela abria uma assinatura de realtime em `contacts` para a organização
+  // inteira, só para desenhar um número ao lado de um item de menu -- e o item
+  // não existe mais. Quem quer o número vê o cartão "Leads recebidos" no painel,
+  // que já conta a mesma coisa pela função SQL.
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
@@ -116,19 +96,7 @@ export function AppSidebar() {
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
                           {!collapsed && <span className="flex-1">{item.title}</span>}
-                          {/* A contagem só faz sentido em Leads, e só quando há
-                              o que atender.
-
-                              Era um selo VERMELHO. Vermelho num menu significa
-                              erro, e a cada carregamento a tela dizia "alerta"
-                              sobre uma fila de trabalho perfeitamente normal.
-                              Agora é só o número. */}
-                          {item.url === "/leads" && leadCount > 0 && !collapsed && (
-                            <span className="text-label font-semibold tabular-nums text-sidebar-foreground/60">
-                              {leadCount > 99 ? "99+" : leadCount}
-                            </span>
-                          )}
-                        </NavLink>
+                                                  </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}

@@ -158,6 +158,24 @@ export default function Contacts() {
     }
   }, [searchParams, setSearchParams]);
 
+  /**
+   * `?estagio=lead` — é para cá que /leads redireciona.
+   *
+   * A tela de Leads era uma FILA DE TRIAGEM e foi removida; o que ela mostrava
+   * é esta lista com o filtro aplicado. O parâmetro é consumido e o painel de
+   * filtros abre, senão a pessoa vê uma lista curta sem entender por quê -- uma
+   * lista filtrada em silêncio lê-se como base vazia.
+   *
+   * Diferente do `action=new`, o parâmetro NÃO é apagado da URL: apagá-lo faria
+   * um F5 perder o filtro, e o link salvo deixaria de significar o que dizia.
+   */
+  useEffect(() => {
+    const estagio = searchParams.get("estagio");
+    if (!estagio) return;
+    setFilters((f) => (f.lifecycleStage === estagio ? f : { ...f, lifecycleStage: estagio }));
+    setShowFilters(true);
+  }, [searchParams]);
+
   // Server-side query — all filtering, sorting and pagination on Postgres
   const queryParams = {
     page,

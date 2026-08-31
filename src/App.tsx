@@ -102,7 +102,6 @@ const Integrations     = lazyChunk(() => import("./pages/Integrations"));
 const SecuritySettings = lazyChunk(() => import("./pages/SecuritySettings"));
 const SalesGoals       = lazyChunk(() => import("./pages/SalesGoals"));
 const Team             = lazyChunk(() => import("./pages/Team"));
-const Leads            = lazyChunk(() => import("./pages/Leads"));
 const Marketing        = lazyChunk(() => import("./pages/Marketing"));
 const MarketingOverview = lazyChunk(() => import("./pages/marketing/Overview"));
 
@@ -169,7 +168,9 @@ const App = () => (
               
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<SuspenseRoute><Dashboard /></SuspenseRoute>} />
-                <Route path="/leads" element={<SuspenseRoute><Leads /></SuspenseRoute>} />
+                {/* A tela saiu; o link salvo não quebra. Vira o filtro por
+                    estágio em Contatos, que é o que ela mostrava. */}
+                <Route path="/leads" element={<Navigate to="/contacts?estagio=lead" replace />} />
                 <Route path="/contacts" element={<SuspenseRoute><Contacts /></SuspenseRoute>} />
                 <Route path="/companies" element={<SuspenseRoute><Companies /></SuspenseRoute>} />
                 <Route path="/deals" element={<SuspenseRoute><Deals /></SuspenseRoute>} />

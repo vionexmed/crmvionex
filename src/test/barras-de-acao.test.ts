@@ -19,7 +19,6 @@ const COM_FILTRO = [
 const COM_SELECAO = [
   "src/pages/Contacts.tsx",
   "src/pages/Companies.tsx",
-  "src/pages/Leads.tsx",
   "src/components/crm/DealsList.tsx",
 ];
 
