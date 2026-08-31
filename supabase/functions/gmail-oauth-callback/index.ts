@@ -177,6 +177,35 @@ serve(async (req) => {
     const email = prof.email;
     if (!email) return falhar(finalReturn, "sem_email");
 
+    // ---------- Google Ads: guarda o refresh token e sai ----------
+    //
+    // Sai ANTES de tocar em `gmail_oauth_tokens` e `email_connections`: esta
+    // autorização não é de caixa de e-mail, e criar conexão de e-mail a partir
+    // dela faria aparecer uma caixa que ninguém conectou -- com o escopo errado,
+    // então toda leitura falharia depois.
+    //
+    // O refresh token vai para `google_oauth_secrets`, que tem RLS ligada SEM
+    // policy: só service_role lê. Ele dá acesso a gastar dinheiro em campanha.
+    if (state.finalidade === "ads") {
+      if (!tok.refresh_token) {
+        // Acontece quando o Google já concedeu antes e não repete o refresh.
+        // `prompt=consent` deveria evitar, mas vale dizer o que fazer.
+        return falhar(finalReturn, "sem_refresh_token");
+      }
+      const { error: erroAds } = await supabaseAdmin
+        .from("google_oauth_secrets")
+        .update({
+          ads_refresh_token: tok.refresh_token,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("org_id", state.org_id);
+      if (erroAds) {
+        console.error("google ads refresh token:", erroAds);
+        return falhar(finalReturn, "falha_ao_salvar");
+      }
+      return redirecionar(finalReturn, { google_ads: "ok" });
+    }
+
     const expiresAt = new Date(Date.now() + (tok.expires_in ?? 3600) * 1000).toISOString();
 
     // supabaseAdmin already created above

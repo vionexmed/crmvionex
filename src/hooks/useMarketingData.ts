@@ -22,10 +22,20 @@ export type MarketingSource =
   | "nao-integrado";
 
 export interface DailyPoint {
-  day: string;       // rótulo dd/MM
-  spend: number;     // investimento Meta no dia
-  leads: number;     // leads (contatos) criados no dia
-  conversions: number; // conversões Meta no dia
+  day: string;         // rótulo dd/MM
+  /** Investimento TOTAL do dia (Meta + Google), em reais. */
+  spend: number;
+  /**
+   * Por plataforma, e é o que o gráfico usa.
+   *
+   * `spend` sozinho não bastava: o gráfico de evolução desenha uma linha por
+   * plataforma, e colapsar as duas somas daria a impressão de um orçamento só
+   * -- perdendo justamente a comparação que a tela existe para fazer.
+   */
+  spendMeta: number;
+  spendGoogle: number;
+  leads: number;       // leads (contatos) criados no dia
+  conversions: number; // conversões do dia, somando as plataformas
 }
 
 export interface MarketingPayload {
@@ -78,10 +88,33 @@ export function useMarketingData(period: PeriodKey, customDays = 30): MarketingP
     const sinceStr = since.toISOString().slice(0, 10);
     const sinceIso = since.toISOString();
 
+    /**
+     * Cliente com forma SOLTA, para as tabelas do Google Ads.
+     *
+     * `types.ts` é um retrato do banco no momento da geração, e essas tabelas
+     * nascem numa migração que ainda não foi aplicada — então o nome não existe
+     * na união de literais que o `from()` aceita.
+     *
+     * O cast é na FORMA da chamada, e a leitura do dado adiante é explícita:
+     * não há `any` no caminho do valor, e o `unknown[]` obriga a checagem.
+     */
+    const solto = supabase as unknown as {
+      from(tabela: string): {
+        select(colunas: string): {
+          eq(coluna: string, valor: string): {
+            gte(coluna: string, valor: string): PromiseLike<{ data: unknown[] | null; error: unknown }>;
+          } & PromiseLike<{ data: unknown[] | null; error: unknown }>;
+        };
+      };
+    };
+
     setState((s) => ({ ...s, loading: true }));
     (async () => {
       try {
-        const [campRes, insightsRes, contactsRes, dealsCreatedRes, dealsWonRes, visitorsRes] = await Promise.all([
+        const [
+          campRes, insightsRes, contactsRes, dealsCreatedRes, dealsWonRes, visitorsRes,
+          gCampRes, gInsightsRes,
+        ] = await Promise.all([
           supabase
             .from("meta_campaigns")
             .select("id, meta_campaign_id, name, status, daily_budget")
@@ -114,6 +147,20 @@ export function useMarketingData(period: PeriodKey, customDays = 30): MarketingP
             .select("id", { count: "exact", head: true })
             .eq("org_id", orgId)
             .gte("created_at", sinceIso),
+
+          // ── Google Ads ──
+          // As tabelas podem não existir ainda (migração não aplicada) ou vir
+          // vazias (sem sync). Os dois casos são tratados como "não integrado"
+          // adiante, e nenhum derruba o painel do Meta.
+          solto
+            .from("google_ads_campaigns")
+            .select("id, google_campaign_id, name, status, channel_type, daily_budget")
+            .eq("org_id", orgId),
+          solto
+            .from("google_ads_insights")
+            .select("campaign_id, dia, spend, impressions, clicks, conversions, conversion_value")
+            .eq("org_id", orgId)
+            .gte("dia", sinceStr),
         ]);
 
         if (cancelled) return;
@@ -170,26 +217,115 @@ export function useMarketingData(period: PeriodKey, customDays = 30): MarketingP
           };
         });
 
+        // ── Google Ads ──
+        //
+        // Espelha o mapeamento do Meta de propósito: o painel soma os dois lado
+        // a lado, e formas diferentes obrigariam a tela a saber de qual
+        // plataforma cada número veio para poder lê-lo.
+        //
+        // Os valores JÁ vêm em reais: a divisão por 1.000.000 (micros) acontece
+        // na edge function, não aqui. Fazer duas vezes dividiria de novo.
+        type LinhaGCamp = {
+          id: string; google_campaign_id: string; name: string;
+          status: string | null; channel_type: string | null; daily_budget: number | null;
+        };
+        type LinhaGIns = {
+          campaign_id: string; dia: string; spend: number | null;
+          impressions: number | null; clicks: number | null;
+          conversions: number | null; conversion_value: number | null;
+        };
+
+        const gCamps = (gCampRes.data ?? []) as LinhaGCamp[];
+        const gIns = (gInsightsRes.data ?? []) as LinhaGIns[];
+
+        const gAgg = new Map<string, { spend: number; imp: number; clicks: number; conv: number; receita: number }>();
+        for (const r of gIns) {
+          const a = gAgg.get(r.campaign_id) ?? { spend: 0, imp: 0, clicks: 0, conv: 0, receita: 0 };
+          a.spend += Number(r.spend ?? 0);
+          a.imp += Number(r.impressions ?? 0);
+          a.clicks += Number(r.clicks ?? 0);
+          a.conv += Number(r.conversions ?? 0);
+          a.receita += Number(r.conversion_value ?? 0);
+          gAgg.set(r.campaign_id, a);
+        }
+
+        const googleCampaigns: Campaign[] = gCamps.map((c) => {
+          const a = gAgg.get(c.google_campaign_id) ?? { spend: 0, imp: 0, clicks: 0, conv: 0, receita: 0 };
+          const ctr = a.imp ? (a.clicks / a.imp) * 100 : 0;
+          const cpc = a.clicks ? a.spend / a.clicks : 0;
+          return {
+            id: c.id,
+            nome: c.name || c.google_campaign_id,
+            plataforma: "google" as const,
+            // O tipo de canal é a informação que o Google dá e o Meta não:
+            // Search, Display e YouTube têm comportamentos diferentes, e
+            // chamar tudo de "Google Ads" jogaria isso fora.
+            tipo: c.channel_type
+              ? c.channel_type.replace(/_/g, " ").toLowerCase().replace(/^./, (m) => m.toUpperCase())
+              : "Google Ads",
+            status: (c.status?.toUpperCase() === "ENABLED"
+              ? "ativo"
+              : c.status?.toUpperCase() === "PAUSED"
+              ? "pausado"
+              : "pausado") as Campaign["status"],
+            formato: "Google",
+            investido: Math.round(a.spend),
+            impressoes: a.imp,
+            // O Google Ads NÃO reporta alcance por campanha na consulta básica.
+            // Zero aqui significa "não medido", e é por isso que a tela mostra
+            // frequência zero em vez de inventar uma divisão.
+            alcance: 0,
+            frequencia: 0,
+            cpm: a.imp ? (a.spend / a.imp) * 1000 : 0,
+            cliques: a.clicks,
+            cpc,
+            ctr,
+            conversoes: a.conv,
+            cvr: a.clicks ? (a.conv / a.clicks) * 100 : 0,
+            cpl: a.conv ? a.spend / a.conv : 0,
+            // Aqui o Google É melhor que o Meta: `conversions_value` vem da
+            // própria plataforma, então há receita atribuída de verdade.
+            receita_atrib: Math.round(a.receita),
+            roas: a.spend ? a.receita / a.spend : 0,
+          };
+        });
+
         // ── Série diária real: investimento/conversões (Meta) + leads (CRM) ──
-        const spendByDay = new Map<string, { spend: number; conv: number }>();
+        const vazio = () => ({ meta: 0, google: 0, conv: 0 });
+        const spendByDay = new Map<string, ReturnType<typeof vazio>>();
         insights.forEach((r: any) => {
           const d = String(r.date_start).slice(0, 10);
-          const cur = spendByDay.get(d) || { spend: 0, conv: 0 };
-          cur.spend += Number(r.spend || 0);
+          const cur = spendByDay.get(d) ?? vazio();
+          cur.meta += Number(r.spend || 0);
           cur.conv += Number(r.conversions || 0);
           spendByDay.set(d, cur);
         });
+        // O Google acumula SEPARADO, na mesma chave de dia: o gráfico desenha
+        // uma linha por plataforma, e somar aqui perderia a comparação.
+        for (const r of gIns) {
+          const d = String(r.dia).slice(0, 10);
+          const cur = spendByDay.get(d) ?? vazio();
+          cur.google += Number(r.spend ?? 0);
+          cur.conv += Number(r.conversions ?? 0);
+          spendByDay.set(d, cur);
+        }
         const leadsByDay = new Map<string, number>();
         contacts.forEach((c: any) => {
           const d = String(c.created_at).slice(0, 10);
           leadsByDay.set(d, (leadsByDay.get(d) || 0) + 1);
         });
-        const daily: DailyPoint[] = lastDaysISO(days).map((iso) => ({
-          day: dayLabel(iso),
-          spend: Math.round((spendByDay.get(iso)?.spend || 0) * 100) / 100,
-          conversions: spendByDay.get(iso)?.conv || 0,
-          leads: leadsByDay.get(iso) || 0,
-        }));
+        const centavos = (v: number) => Math.round(v * 100) / 100;
+        const daily: DailyPoint[] = lastDaysISO(days).map((iso) => {
+          const d = spendByDay.get(iso) ?? { meta: 0, google: 0, conv: 0 };
+          return {
+            day: dayLabel(iso),
+            spend: centavos(d.meta + d.google),
+            spendMeta: centavos(d.meta),
+            spendGoogle: centavos(d.google),
+            conversions: d.conv,
+            leads: leadsByDay.get(iso) || 0,
+          };
+        });
 
         // ── Origem dos leads real (metadata.source) ──
         const counts = new Map<string, number>();
@@ -220,7 +356,12 @@ export function useMarketingData(period: PeriodKey, customDays = 30): MarketingP
 
         setState({
           meta: { campaigns: mapped, source: "real" },
-          google: { campaigns: [], source: "nao-integrado" },
+          // `real` só quando há campanha sincronizada. Sem isso o painel
+          // anunciaria "integrado" com tudo zerado, que foi exatamente o
+          // defeito anterior: `campaigns: []` com `source: "real"`.
+          google: googleCampaigns.length > 0
+            ? { campaigns: googleCampaigns, source: "real" as const }
+            : { campaigns: [], source: "nao-integrado" as const },
           daily,
           sources,
           funnel,

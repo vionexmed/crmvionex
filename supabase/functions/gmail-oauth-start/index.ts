@@ -17,6 +17,22 @@ const SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
 ].join(" ");
 
+/**
+ * Google Ads pede escopo PRÓPRIO, e ele é pedido SOZINHO.
+ *
+ * Juntar `adwords` com os de Gmail faria a tela de consentimento pedir acesso a
+ * e-mail de quem só quer autorizar anúncio — e vice-versa. São autorizações de
+ * naturezas diferentes, dadas por pessoas diferentes em momentos diferentes: o
+ * Gmail é de cada vendedor, o Ads é da empresa.
+ *
+ * `userinfo.email` acompanha porque o callback usa o e-mail para saber QUEM
+ * autorizou, e sem ele não haveria o que registrar.
+ */
+const SCOPES_ADS = [
+  "https://www.googleapis.com/auth/adwords",
+  "https://www.googleapis.com/auth/userinfo.email",
+].join(" ");
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -44,7 +60,9 @@ serve(async (req) => {
     }
     const userId = claims.claims.sub;
 
-    const { return_to, label, purpose, scope_type } = await req.json().catch(() => ({}));
+    const { return_to, label, purpose, scope_type, finalidade } = await req.json().catch(() => ({}));
+    /** "ads" autoriza Google Ads; qualquer outra coisa é o fluxo de Gmail. */
+    const paraAds = finalidade === "ads";
 
     // 'user' = caixa pessoal de quem chamou; 'org' = caixa compartilhada.
     const scopeType = scope_type === "org" ? "org" : "user";
@@ -119,17 +137,18 @@ serve(async (req) => {
     const state = await signState({
       user_id: userId,
       org_id,
-      return_to: return_to || (scopeType === "user" ? "/settings/email" : "/settings/integrations"),
+      return_to: return_to || (paraAds ? "/settings/integrations" : scopeType === "user" ? "/settings/email" : "/settings/integrations"),
       label: label || "Principal",
       purpose: purpose || "sales",
       scope_type: scopeType,
+      finalidade: paraAds ? "ads" : "gmail",
     });
 
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: SCOPES,
+      scope: paraAds ? SCOPES_ADS : SCOPES,
       access_type: "offline",
       prompt: "consent",
       state,

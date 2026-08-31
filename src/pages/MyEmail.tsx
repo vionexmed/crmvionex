@@ -89,6 +89,16 @@ const MOTIVO_CALLBACK: Record<string, string> = {
   troca_de_token:
     "O Google recusou a troca do código de autorização. Se persistir, a credencial da empresa pode estar desatualizada.",
   sem_email: "Não foi possível ler o endereço da conta Google autorizada.",
+  /**
+   * Só acontece no fluxo do Google Ads, e a saída é específica: o Google só
+   * devolve refresh token na PRIMEIRA autorização de um escopo. Reautorizar sem
+   * revogar antes traz só o access_token, que expira em uma hora e não serve
+   * para sincronizar depois.
+   */
+  sem_refresh_token:
+    "O Google não devolveu a autorização de longo prazo. Isso acontece quando o acesso "
+    + "já havia sido concedido antes: remova o CRM em myaccount.google.com/permissions e "
+    + "autorize de novo.",
   falha_ao_salvar: "A autorização funcionou, mas não conseguimos guardar o acesso. Tente de novo.",
   erro_inesperado: "Algo deu errado ao concluir a conexão.",
 };

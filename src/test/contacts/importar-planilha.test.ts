@@ -99,9 +99,21 @@ describe("a origem é o nome do documento", () => {
    * origem viraria lixo exatamente nas listas de terceiros -- que são as que
    * mais precisam de rastro.
    */
-  it("a origem é um campo editável, com o nome do arquivo como sugestão", () => {
+  it("a origem é um campo editável, nos DOIS passos", () => {
+    // No passo de envio, porque quem sabe de onde a lista veio sabe disso ANTES
+    // de escolher o arquivo -- pedir só depois obriga a lembrar no meio de
+    // outra tarefa. E no mapeamento, para conferir.
+    expect(src).toMatch(/id="origem-antes"/);
     expect(src).toMatch(/id="origem-import"/);
-    expect(src).toMatch(/setOrigem\(nomeArquivo\.replace/);
+  });
+
+  /**
+   * A sugestão do nome do arquivo NÃO pode sobrescrever o que a pessoa digitou
+   * antes de escolher o arquivo -- seria perder o trabalho dela no momento
+   * exato em que ela avança.
+   */
+  it("escolher o arquivo não apaga a origem já digitada", () => {
+    expect(src).toMatch(/setOrigem\(\(atual\) => atual\.trim\(\) \|\| nomeArquivo/);
   });
 
   it("origem em branco nunca chega ao banco", () => {

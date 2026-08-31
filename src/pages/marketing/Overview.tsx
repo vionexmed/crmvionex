@@ -278,8 +278,15 @@ function PanelVisao({ data, days }: PanelProps) {
     return <MarketingEmptyState platform="Meta Ads ou Google Ads" />;
   }
 
-  // Série diária REAL do período (Meta = insights sincronizados; Google sem integração)
-  const series = data.daily.map((d) => ({ day: d.day, Meta: d.spend, Google: 0 }));
+  /**
+   * Série diária REAL do período.
+   *
+   * A linha do Google era `Google: 0` CRAVADO — o gráfico desenhava uma reta no
+   * zero e a tela dizia, sem dizer, que o Google não gastou nada. Agora vem do
+   * hook, por plataforma. Os valores já estão em reais: a divisão dos micros do
+   * Google acontece na edge function.
+   */
+  const series = data.daily.map((d) => ({ day: d.day, Meta: d.spendMeta, Google: d.spendGoogle }));
   const leadSources = data.sources;
 
   return (

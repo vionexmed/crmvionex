@@ -234,9 +234,11 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
     setCsvHeaders(cabecalho);
     setCsvRows(naoVazias.slice(1));
     setArquivo(nomeArquivo);
-    // Sugestão, não imposição: sem extensão, porque "Leads Congresso 2026" lê
-    // melhor que o mesmo nome com ".xlsx" num selo de 11px.
-    setOrigem(nomeArquivo.replace(/\.[^.]+$/, "").trim());
+    // Sugestão, e só quando o campo está VAZIO: a pessoa pode ter digitado a
+    // origem antes de escolher o arquivo, e sobrescrever perderia o que ela
+    // acabou de escrever. Sem extensão, porque "Leads Congresso 2026" lê melhor
+    // que o mesmo nome com ".xlsx" num selo de 11px.
+    setOrigem((atual) => atual.trim() || nomeArquivo.replace(/\.[^.]+$/, "").trim());
 
     const autoMap: Record<number, string> = {};
     cabecalho.forEach((header, i) => {
@@ -559,10 +561,30 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
               Planilha do Excel (.xlsx) ou arquivo .csv
             </p>
             {entityType === "contacts" && (
-              <p className="max-w-sm text-center text-xs text-muted-foreground">
-                O nome do arquivo vira a <strong>origem</strong> de cada contato, e as
-                colunas podem ser mapeadas para qualquer pergunta do cadastro.
-              </p>
+              /* A ORIGEM É PEDIDA AQUI, antes do arquivo.
+                 Ela estava só no passo de mapeamento, e quem sabe de onde a
+                 lista veio sabe disso ANTES de escolher o arquivo -- pedir
+                 depois obriga a pessoa a lembrar no meio de outra tarefa. Fica
+                 nos dois passos: aqui para escrever, lá para conferir.
+                 Escolher o arquivo SUGERE o nome dele, mas só se este campo
+                 ainda estiver vazio: sobrescrever o que a pessoa acabou de
+                 digitar seria perder o trabalho dela. */
+              <div className="w-full max-w-sm space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
+                <Label htmlFor="origem-antes" className="text-xs font-semibold">
+                  De onde vem esta lista?
+                </Label>
+                <Input
+                  id="origem-antes"
+                  value={origem}
+                  onChange={(e) => setOrigem(e.target.value)}
+                  placeholder="Ex.: APROXIMA MED"
+                  maxLength={60}
+                />
+                <p className="text-label text-muted-foreground">
+                  Vira o selo de <strong>Origem</strong> de cada contato, e serve para
+                  filtrar depois. Em branco, usamos o nome do arquivo.
+                </p>
+              </div>
             )}
             <input
               ref={fileRef}
