@@ -58,6 +58,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
+import { PREFIXO_ORIGEM_EXATA } from "@/lib/api/contacts";
 import { formatarEmail, formatarTelefone, nomeDoContato } from "@/lib/contato-formato";
 import { BarraDeFiltros, BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 import { Paginacao } from "@/components/layout/Paginacao";
@@ -139,6 +140,15 @@ export default function Contacts() {
   const [createOpen, setCreateOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  /**
+   * As origens que EXISTEM na base, para o filtro deixar de ser lista fixa.
+   *
+   * Eram quatro buckets cravados. Desde que a importação grava o nome escolhido
+   * ("NEXMED 2026", "APROXIMA MED"), o selo da lista mostrava um valor que o
+   * filtro não oferecia -- dava para ver a origem e não dava para filtrar por
+   * ela, o pior dos dois mundos.
+   */
+  const [origensReais, setOrigensReais] = useState<{ origem: string; contatos: number }[]>([]);
 
   // Debounce search to avoid a query on every keystroke
   const debouncedSearch = useDebounce(search, 300);
@@ -170,6 +180,17 @@ export default function Contacts() {
    * Diferente do `action=new`, o parâmetro NÃO é apagado da URL: apagá-lo faria
    * um F5 perder o filtro, e o link salvo deixaria de significar o que dizia.
    */
+  useEffect(() => {
+    if (!orgId) return;
+    let vivo = true;
+    contactsApi.listarOrigens(orgId)
+      .then((r) => { if (vivo) setOrigensReais(r); })
+      // Falhar aqui não pode derrubar a tela: sem a lista dinâmica o filtro
+      // volta a ter só os quatro grupos, que é o comportamento anterior.
+      .catch(() => { if (vivo) setOrigensReais([]); });
+    return () => { vivo = false; };
+  }, [orgId]);
+
   useEffect(() => {
     const estagio = searchParams.get("estagio");
     if (!estagio) return;
@@ -405,6 +426,30 @@ export default function Contacts() {
 
       {showFilters && (
         <BarraDeFiltros>
+          {/* ORDENAÇÃO EM SELETOR, e não só nos cabeçalhos.
+              Ao juntar nove colunas em seis, "Email" e "Especialidade"
+              perderam o cabeçalho clicável -- e com ele a única forma de
+              ordenar por eles. A API continuava sabendo; faltava como pedir.
+              Uma célula compartilhada só consegue ordenar por um campo, então
+              o seletor cobre os cinco. Os cabeçalhos que sobraram continuam
+              clicáveis: quem já sabia não perde o atalho. */}
+          <div className="space-y-1">
+            <Label className="text-xs">Ordenar por</Label>
+            <Select value={sortKey} onValueChange={(v) => toggleSort(v as SortKey)}>
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {([
+                  ["name", "Nome"],
+                  ["email", "E-mail"],
+                  ["title", "Especialidade"],
+                  ["status", "Situação"],
+                  ["created_at", "Criado em"],
+                ] as [SortKey, string][]).map(([campo, rotulo]) => (
+                  <SelectItem key={campo} value={campo}>{rotulo}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1">
             <Label className="text-xs">Ciclo de vida</Label>
             {/* Os seis estágios, na ordem do avanço. O seletor antigo era por
@@ -453,6 +498,20 @@ export default function Contacts() {
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 {ORIGIN_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {/* As origens de verdade, depois dos grupos.
+                    Os quatro de cima agrupam por padrão de texto; estas são
+                    valores literais, e por isso levam prefixo -- uma planilha
+                    chamada "manual" cairia no bucket errado sem ele.
+                    A contagem ao lado responde "vale filtrar por esta?" antes
+                    do clique. */}
+                {origensReais.length > 0 && (
+                  <div className="my-1 border-t border-border" role="presentation" />
+                )}
+                {origensReais.map((o) => (
+                  <SelectItem key={o.origem} value={`${PREFIXO_ORIGEM_EXATA}${o.origem}`}>
+                    {o.origem} ({o.contatos})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -512,19 +571,21 @@ export default function Contacts() {
           <Table>
             <TableHeader>
               <TableRow>
-                {/* SEIS colunas, não nove.
-                    Eram nove, e duas -- Empresa e Especialidade -- vinham
-                    vazias em toda a página quando a lista é de leads
-                    importados: largura morta forçando rolagem lateral para ver
-                    o resto.
-                    Campos parentes passaram a dividir célula (nome com e-mail,
-                    empresa com especialidade, situação com origem). É o padrão
-                    de CRM, e cabe numa tela de notebook sem arrastar. */}
+                {/* OITO colunas, não nove -- e o espaço vem de outro lugar.
+                    A rolagem lateral foi resolvida tirando o AVATAR (44px por
+                    linha, decorativo: iniciais de quem não tem foto não
+                    informam nada) e movendo o e-mail para baixo do nome, o que
+                    eliminou uma coluna inteira.
+                    Empresa, Especialidade e Origem voltaram a ser colunas
+                    próprias: são três perguntas diferentes, e juntá-las obrigava
+                    a ler a célula inteira para achar uma. */}
                 <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todos" /></TableHead>
                 <TableHead><SortHeader rotulo="Contato" campo="name" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
-                <TableHead className="hidden sm:table-cell">Empresa · Especialidade</TableHead>
-                <TableHead className="hidden md:table-cell w-[150px]">Telefone</TableHead>
-                <TableHead className="w-[190px]"><SortHeader rotulo="Situação" campo="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden sm:table-cell">Empresa</TableHead>
+                <TableHead className="hidden md:table-cell"><SortHeader rotulo="Especialidade" campo="title" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden md:table-cell w-[140px]">Telefone</TableHead>
+                <TableHead className="w-[130px]"><SortHeader rotulo="Situação" campo="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden lg:table-cell w-[150px]">Origem</TableHead>
                 <TableHead className="hidden lg:table-cell w-[110px]"><SortHeader rotulo="Criado em" campo="created_at" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
               </TableRow>
             </TableHeader>
@@ -536,11 +597,6 @@ export default function Contacts() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {initials(nomeDoContato(c.first_name, c.last_name))}
-                        </AvatarFallback>
-                      </Avatar>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium truncate">{nomeDoContato(c.first_name, c.last_name)}</span>
@@ -569,30 +625,16 @@ export default function Contacts() {
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
                     {(() => {
                       const comp = empresaPorId.get((c as Record<string, unknown>).company_id as string);
+                      if (comp) return comp.name;
                       const meta = (c as Record<string, unknown>).metadata as Record<string, string> | null;
-                      const empresa = comp?.name || meta?.empresa_manual || null;
-                      // Nenhum dos dois: UM travessão, não dois em colunas
-                      // separadas. Lead importado quase nunca traz os dois, e
-                      // duas colunas de travessão foi o que empurrou o resto
-                      // para fora da tela.
-                      if (!empresa && !c.title) return "—";
-                      return (
-                        <div className="min-w-0">
-                          {empresa && <span className="block truncate text-foreground">{empresa}</span>}
-                          {c.title && <span className="block truncate">{c.title}</span>}
-                        </div>
-                      );
+                      return meta?.empresa_manual || "—";
                     })()}
                   </TableCell>
+                  <TableCell className="hidden md:table-cell text-xs text-muted-foreground">{c.title || "—"}</TableCell>
                   <TableCell className="hidden md:table-cell text-xs text-muted-foreground tabular-nums">{formatarTelefone(c.phone)}</TableCell>
-                  <TableCell>
-                    {/* Situação e origem na mesma célula: as duas respondem
-                        "em que ponto está e de onde veio", e ninguém lê uma sem
-                        a outra. */}
-                    <div className="flex flex-col items-start gap-1">
-                      <LifecycleBadge stage={c.lifecycle_stage} />
-                      <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
-                    </div>
+                  <TableCell><LifecycleBadge stage={c.lifecycle_stage} /></TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs hidden lg:table-cell">
                     {formatarData(c.created_at)}

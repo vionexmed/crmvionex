@@ -10,8 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { MessageSquare, Webhook, Mail, Plus, Loader2, Eye, EyeOff, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
-
+import { AlertCircle, CheckCircle2, Chrome, Eye, EyeOff, Loader2, Mail, MessageSquare, Plus, RefreshCw, Webhook } from "lucide-react";
 function MetaIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -22,8 +21,8 @@ function MetaIcon({ className }: { className?: string }) {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogoUploadField } from "@/components/crm/LogoUploadField";
-import { WhatsAppOfficialCard } from "@/components/crm/WhatsAppOfficialCard";
-import { WhatsAppEvolutionCard } from "@/components/crm/WhatsAppEvolutionCard";
+import { WhatsAppCard } from "@/components/crm/WhatsAppCard";
+import { CartaoDeIntegracao, GrupoDeIntegracoes } from "@/components/integrations/CartaoDeIntegracao";
 import { formatarData } from "@/lib/formato";
 
 type IntegrationConfig = {
@@ -230,7 +229,10 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   const handleMetaConnect = async () => {
     if (!orgId) return;
     const cfg = getConfig("meta");
-    if (!cfg?.config?.access_token && !cfg?.config?.waba_token) {
+    // `waba_token` saiu junto com a seção de WhatsApp: aquele campo nunca teve
+    // relação com o sync de anúncios, e mantê-lo aqui faria uma empresa com
+    // WhatsApp configurado e Ads não parecer pronta para sincronizar.
+    if (!cfg?.config?.access_token) {
       setEditProvider("meta");
       setEditConfig(cfg?.config || {});
       return;
@@ -285,8 +287,8 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
 
   const integrations: Integracao[] = [
     {
-      provider: "meta", name: "Meta Business", icon: MetaIcon,
-      description: "Meta Ads (campanhas) + WhatsApp Business (mensagens)",
+      provider: "meta", name: "Meta Ads", icon: MetaIcon,
+      description: "Campanhas, conjuntos e métricas de anúncio",
       connectAction: handleMetaConnect,
       connectLoading: metaConnecting,
       fields: [
@@ -301,15 +303,13 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           key: "ad_account_id", label: "ID da conta de anúncio", placeholder: "act_123456789",
           helpText: "Business Manager → Contas de Anúncio → copie o ID (ex: act_123…)",
         },
-        { key: "_sec_waba", label: "WhatsApp Business", type: "section" as const },
-        {
-          key: "phone_number_id", label: "Phone Number ID", placeholder: "987654321098765",
-          helpText: "Business Manager → Contas do WhatsApp → selecione o número",
-        },
-        {
-          key: "waba_token", label: "Token do WhatsApp", placeholder: "EAAxxxxxx...", type: "secret" as const,
-          helpText: "Mesmo token de acesso acima, ou gere um token de sistema permanente",
-        },
+        // A SEÇÃO DE WHATSAPP SAIU DAQUI.
+        //
+        // Era o terceiro lugar para configurar o mesmo canal, e gravava em
+        // `integration_configs` -- tabela que o navegador LÊ, com policy
+        // `FOR ALL USING (user_belongs_to_org)`. Qualquer membro da organização
+        // lia o token. Agora o WhatsApp tem um cartão só, e a credencial vai
+        // para `whatsapp_secrets`, que não tem policy de leitura.
       ],
     },
     {
@@ -352,16 +352,92 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   // de credencial quando ela estava corretamente configurada no servidor.
   const hasGmailCredentials = !!(servidor?.client_id && servidor?.client_secret_configured);
 
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <WhatsAppOfficialCard />
+  /**
+   * Os cartões genéricos (Meta Ads, Slack, Zapier), agora reusáveis por grupo.
+   *
+   * Era um `.map` inline sobre a lista inteira, o que obrigava todos a
+   * aparecerem juntos, na mesma pilha. Virou função para que cada grupo peça os
+   * seus.
+   */
+  const cartoesGenericos = (lista: Integracao[]) => lista.map((intg) => {
+          const cfg = getConfig(intg.provider);
+          const Icon = intg.icon;
+          return (
+            <Card key={intg.provider}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle>{intg.name}</CardTitle>
+                      <CardDescription>{intg.description}</CardDescription>
+                    </div>
+                  </div>
+                  {cfg && <Switch checked={cfg.is_active} onCheckedChange={(v) => toggleActive(cfg.id, v)} />}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {cfg ? (
+                    <>
+                      <Badge variant={cfg.is_active ? "default" : "secondary"} className="text-micro">
+                        {cfg.is_active ? "Conectado" : "Inativo"}
+                      </Badge>
+                      {intg.provider === "meta" && cfg.is_active && (
+                        <Button variant="outline" size="sm" className="h-8 text-label"
+                          disabled={metaConnecting}
+                          onClick={handleMetaConnect}>
+                          {metaConnecting ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Sincronizando...</> : <><RefreshCw className="mr-1 h-3 w-3" />Sincronizar</>}
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" className="ml-auto h-8 text-label"
+                        onClick={() => {
+                          setEditProvider(intg.provider);
+                          setEditConfig(cfg.config || {});
+                        }}>
+                        Configurar
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" className="h-8 text-label"
+                      disabled={intg.connectLoading}
+                      onClick={() => {
+                        if (intg.connectAction) return intg.connectAction();
+                        setEditProvider(intg.provider);
+                        setEditConfig({});
+                      }}>
+                      {intg.connectLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Conectando...</> : <><Plus className="mr-1 h-3 w-3" />Conectar</>}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+  });
 
-        {/* As duas saídas de WhatsApp, lado a lado. Cada cartão se esconde
-            sozinho quando a empresa já escolheu o outro provedor — não há
-            seletor, porque escolher provedor é consequência de configurar um
-            dos dois, não uma decisão separada. */}
-        <WhatsAppEvolutionCard />
+  /** Onde cada integração genérica aparece. */
+  const grupoDo: Record<string, "atendimento" | "anuncios" | "automacao"> = {
+    meta: "anuncios",
+    slack: "automacao",
+    zapier: "automacao",
+  };
+  const doGrupo = (g: string) =>
+    integrations.filter((i) => !i.hidden && grupoDo[i.provider] === g);
+
+  return (
+    <div className="space-y-7">
+      {/* AGRUPADO POR FINALIDADE, e não por fornecedor.
+          Eram seis cartões em pilha plana -- plataforma de anúncio, canal de
+          atendimento e ferramenta de automação lado a lado, sem hierarquia --
+          e TRÊS deles eram WhatsApp. Achar um exigia ler todos. */}
+
+      <GrupoDeIntegracoes titulo="Canais de atendimento">
+        {/* UM cartão de WhatsApp. A escolha entre a API oficial da Meta e o QR
+            code da Evolution vive dentro dele: é consequência de configurar um
+            dos dois, não uma decisão separada tomada antes. */}
+        <WhatsAppCard />
 
         {/* ── Google: só as credenciais ──────────────────
             Aqui NÃO se conecta conta de e-mail. Antes este cartão oferecia duas
@@ -541,64 +617,25 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           </CardContent>
         </Card>
 
-        {integrations.filter((intg) => !intg.hidden).map((intg) => {
-          const cfg = getConfig(intg.provider);
-          const Icon = intg.icon;
-          return (
-            <Card key={intg.provider}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle>{intg.name}</CardTitle>
-                      <CardDescription>{intg.description}</CardDescription>
-                    </div>
-                  </div>
-                  {cfg && <Switch checked={cfg.is_active} onCheckedChange={(v) => toggleActive(cfg.id, v)} />}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {cfg ? (
-                    <>
-                      <Badge variant={cfg.is_active ? "default" : "secondary"} className="text-micro">
-                        {cfg.is_active ? "Conectado" : "Inativo"}
-                      </Badge>
-                      {intg.provider === "meta" && cfg.is_active && (
-                        <Button variant="outline" size="sm" className="h-8 text-label"
-                          disabled={metaConnecting}
-                          onClick={handleMetaConnect}>
-                          {metaConnecting ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Sincronizando...</> : <><RefreshCw className="mr-1 h-3 w-3" />Sincronizar</>}
-                        </Button>
-                      )}
-                      <Button variant="outline" size="sm" className="ml-auto h-8 text-label"
-                        onClick={() => {
-                          setEditProvider(intg.provider);
-                          setEditConfig(cfg.config || {});
-                        }}>
-                        Configurar
-                      </Button>
-                    </>
-                  ) : (
-                    <Button size="sm" className="h-8 text-label"
-                      disabled={intg.connectLoading}
-                      onClick={() => {
-                        if (intg.connectAction) return intg.connectAction();
-                        setEditProvider(intg.provider);
-                        setEditConfig({});
-                      }}>
-                      {intg.connectLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Conectando...</> : <><Plus className="mr-1 h-3 w-3" />Conectar</>}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      </GrupoDeIntegracoes>
+
+      <GrupoDeIntegracoes titulo="Anúncios">
+        {cartoesGenericos(doGrupo("anuncios"))}
+        {/* Google Ads NÃO tem cartão de conectar, de propósito.
+            Não existem tabelas nem função de sync no CRM -- oferecer um botão
+            faria alguém procurar credencial para nada. O estado diz isso. */}
+        <CartaoDeIntegracao
+          icone={Chrome}
+          nome="Google Ads"
+          descricao="Ainda não construído no CRM"
+          estado="nao-integrado"
+          nota="Requer developer token do Google, tabelas e função de sincronização. Nada a configurar por enquanto."
+        />
+      </GrupoDeIntegracoes>
+
+      <GrupoDeIntegracoes titulo="Avisos e automação">
+        {cartoesGenericos(doGrupo("automacao"))}
+      </GrupoDeIntegracoes>
 
       {/* Config Dialog */}
       <Dialog open={!!editProvider} onOpenChange={() => setEditProvider(null)}>

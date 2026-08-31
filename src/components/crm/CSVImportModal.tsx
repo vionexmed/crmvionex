@@ -19,6 +19,7 @@ import { CADASTRO_FIELDS } from "@/lib/contact-options";
 import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
 import { buscarEmBlocos } from "@/lib/paginar";
+import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 
 interface CSVImportModalProps {
@@ -37,6 +38,14 @@ interface CSVImportModalProps {
  */
 const PREFIXO_META = "meta:";
 
+/** Destino especial: a coluna vira uma atividade do tipo `note`. */
+const NOTA = "__nota";
+
+/** O tipo GERADO da tabela, em vez de cast: o compilador cobra org_id, title e
+ *  type, que são exatamente os três que um insert de atividade não pode
+ *  esquecer. */
+type NotaNova = Database["public"]["Tables"]["activities"]["Insert"];
+
 const contactFields = [
   { key: "first_name", label: "Nome" },
   { key: "last_name", label: "Sobrenome" },
@@ -49,6 +58,19 @@ const contactFields = [
   // de captação; agora uma planilha também as preenche, e a ficha não sabe a
   // diferença — é o mesmo `metadata`.
   ...CADASTRO_FIELDS.map((f) => ({ key: `${PREFIXO_META}${f.key}`, label: f.label })),
+  /**
+   * Observação livre vira NOTA na ficha, não campo.
+   *
+   * Coluna de "obs" traz texto de tamanho imprevisível e sem estrutura --
+   * gravá-la em `metadata` a esconderia atrás de um rótulo fixo, e em `title`
+   * (Especialidade) a colocaria no lugar errado. Nota é o que a ficha já sabe
+   * exibir em ordem cronológica.
+   *
+   * É seguro para o funil: `tg_atividade_contatou` só promove lead para
+   * contatado em `type IN ('call','email','meeting')` -- nota fica fora, então
+   * importar observação NÃO faz a base inteira parecer já abordada.
+   */
+  { key: NOTA, label: "Observação (vira nota na ficha)" },
   { key: "__skip", label: "— Ignorar —" },
 ];
 
@@ -292,13 +314,30 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         origem.trim() || arquivo.replace(/\.[^.]+$/, "").trim() || "Importação";
       const importadoEm = new Date().toISOString();
 
+      /**
+       * As notas, na MESMA ordem de `records`.
+       *
+       * Índice paralelo em vez de campo dentro do registro: `records` vai
+       * inteiro para o `insert`, e uma chave a mais que não é coluna faria o
+       * PostgREST recusar a planilha completa.
+       */
+      const notasPorLinha: (string | null)[] = [];
+
       const records = csvRows.map((row) => {
         const record: Record<string, any> = { org_id: orgId, owner_id: user?.id };
         const perguntas: Record<string, string> = {};
+        let nota: string | null = null;
 
         Object.entries(mapping).forEach(([colIdx, fieldKey]) => {
           if (fieldKey === "__skip") return;
           const valor = row[Number(colIdx)] || null;
+          if (fieldKey === NOTA) {
+            // Duas colunas mapeadas para nota entram na MESMA nota, separadas
+            // por quebra. Criar duas atividades faria a ficha repetir carimbo
+            // de data para o que é um só comentário.
+            nota = nota ? `${nota}\n${valor ?? ""}`.trim() : valor;
+            return;
+          }
           if (fieldKey.startsWith(PREFIXO_META)) {
             // Resposta de formulário: vai para `metadata`, não para coluna.
             // Vazia é omitida — a ficha do contato só mostra o que tem valor, e
@@ -308,6 +347,8 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
             record[fieldKey] = valor;
           }
         });
+
+        notasPorLinha.push(nota);
         if (entityType === "contacts") {
           // Status vindo da PLANILHA continua valendo. O que saiu foi o
           // fallback.
@@ -414,16 +455,73 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         }
       }
 
-      const { error } = await supabase.from(entityType).insert(valid as any);
+      // `.select("id")` para poder amarrar as notas aos contatos criados. Sem
+      // ele o insert não devolve nada e a nota não teria a quem pertencer.
+      const { data: criados, error } = await supabase
+        .from(entityType)
+        .insert(valid as any)
+        .select("id");
       if (error) { toast({ title: "Erro na importação", description: mensagemErro(error), variant: "destructive" }); setImporting(false); return; }
+
+      // ---------- as observações, como notas na ficha ----------
+      let notasGravadas = 0;
+      if (entityType === "contacts" && criados?.length) {
+        // `valid` foi filtrado a partir de `comNome`, que preserva a ordem de
+        // `csvRows` -- então a i-ésima linha VÁLIDA corresponde ao i-ésimo id
+        // devolvido. Amarrar por índice só funciona por causa dessa ordem, e é
+        // por isso que o filtro de duplicados devolve array em vez de Set.
+        const indiceValido = comNome
+          .map((r, i) => ({ r, i }))
+          .filter(({ r }) => valid.includes(r))
+          .map(({ i }) => i);
+
+        const notas: NotaNova[] = criados
+          .flatMap<NotaNova>((c, k) => {
+            const texto = notasPorLinha[indiceValido[k]];
+            if (!texto?.trim()) return [];
+            return [{
+              org_id: orgId,
+              contact_id: (c as { id: string }).id,
+              user_id: user?.id,
+              type: "note",
+              title: "Observação da importação",
+              body: texto.trim().slice(0, 4000),
+              // CONCLUÍDA, com a data de agora: nota é registro do que já
+              // existe, não tarefa a fazer. Sem `completed_at` ela cairia na
+              // lista de pendências de quem importou.
+              completed_at: new Date().toISOString(),
+            }];
+          });
+
+        if (notas.length) {
+          const { error: erroNota } = await supabase.from("activities").insert(notas);
+          if (erroNota) {
+            // Não desfaz a importação: os contatos entraram, e perder a
+            // observação é recuperável reimportando só ela. Avisar é o certo.
+            console.error("notas da importação", erroNota);
+            toast({
+              title: "Contatos importados, observações não",
+              description: mensagemErro(erroNota),
+              variant: "destructive",
+            });
+          } else {
+            notasGravadas = notas.length;
+          }
+        }
+      }
 
       toast({
         title: `${valid.length} ${valid.length === 1 ? "registro importado" : "registros importados"}`,
         // Dizer quantos foram ignorados, e não só quantos entraram: sem essa
         // linha, importar 200 e ver "50 importados" parece falha do sistema.
-        description: repetidos > 0
-          ? `${repetidos} ${repetidos === 1 ? "já estava cadastrado e foi ignorado" : "já estavam cadastrados e foram ignorados"}.`
-          : undefined,
+        description: [
+          repetidos > 0
+            ? `${repetidos} ${repetidos === 1 ? "já estava cadastrado e foi ignorado" : "já estavam cadastrados e foram ignorados"}`
+            : null,
+          notasGravadas > 0
+            ? `${notasGravadas} ${notasGravadas === 1 ? "observação virou nota" : "observações viraram notas"}`
+            : null,
+        ].filter(Boolean).join(" · ") || undefined,
       });
       onOpenChange(false);
       onImported();

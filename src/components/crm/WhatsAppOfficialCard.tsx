@@ -29,7 +29,14 @@ function randomToken(len = 32) {
   return Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-export function WhatsAppOfficialCard() {
+/**
+ * `embutido` tira a moldura de Card e o cabeçalho.
+ *
+ * O cartão único de WhatsApp mostra as duas opções lado a lado, e Card dentro de
+ * Card ficaria com duas bordas e dois títulos dizendo o mesmo. O diálogo próprio
+ * continua nos dois modos: é onde o formulário vive.
+ */
+export function WhatsAppOfficialCard({ embutido = false }: { embutido?: boolean } = {}) {
   const { orgId } = useOrg();
   const { toast } = useToast();
   const [config, setConfig] = useState<WAConfig | null>(null);
@@ -144,48 +151,52 @@ export function WhatsAppOfficialCard() {
   // A empresa está na Evolution: quem manda é o cartão de QR code.
   if (outroProvedor) return null;
 
+  const status = (
+    <div className="flex items-center gap-2">
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : config ? (
+        <>
+          <Badge variant={config.is_active ? "default" : "secondary"} className="text-micro">
+            {config.is_active ? "Conectado" : "Inativo"}
+          </Badge>
+          {config.display_phone_number && (
+            <span className="text-meta text-muted-foreground">{config.display_phone_number}</span>
+          )}
+          <Button variant="outline" size="sm" className="ml-auto h-8 text-label" onClick={openDialog}>
+            Configurar
+          </Button>
+        </>
+      ) : (
+        <Button size="sm" className="h-8 text-label" onClick={openDialog}>
+          <Plus className="mr-1 h-3 w-3" />Conectar
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10">
-                <MessageCircle className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <CardTitle>WhatsApp Business (Meta Oficial)</CardTitle>
-                <CardDescription>
-                  Cloud API oficial — envio e recebimento de mensagens
-                </CardDescription>
+      {embutido ? status : (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10">
+                  <MessageCircle className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <CardTitle>WhatsApp Business (Meta Oficial)</CardTitle>
+                  <CardDescription>
+                    Cloud API oficial — envio e recebimento de mensagens
+                  </CardDescription>
+                </div>
               </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : config ? (
-              <>
-                <Badge variant={config.is_active ? "default" : "secondary"} className="text-micro">
-                  {config.is_active ? "Conectado" : "Inativo"}
-                </Badge>
-                {config.display_phone_number && (
-                  <span className="text-meta text-muted-foreground">{config.display_phone_number}</span>
-                )}
-                <Button variant="outline" size="sm" className="ml-auto h-8 text-label" onClick={openDialog}>
-                  Configurar
-                </Button>
-              </>
-            ) : (
-              <Button size="sm" className="h-8 text-label" onClick={openDialog}>
-                <Plus className="mr-1 h-3 w-3" />Conectar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>{status}</CardContent>
+        </Card>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

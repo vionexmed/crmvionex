@@ -94,6 +94,11 @@ const buildListQuery = (orgId: string, params: ContactListParams) => {
     } else if (origin === "manual") {
       // manual = sem origem gravada (contatos antigos/manuais/CSV legados) ou explicitamente "manual"
       query = query.or("metadata->>source.is.null,metadata->>source.eq.manual,metadata->>source.eq.");
+    } else if (origin.startsWith(PREFIXO_ORIGEM_EXATA)) {
+      // Uma origem ESPECÍFICA, escolhida na lista dinâmica: "NEXMED 2026",
+      // "APROXIMA MED". O prefixo existe para não colidir com os buckets --
+      // uma planilha chamada "manual" cairia no bucket errado sem ele.
+      query = query.eq("metadata->>source", origin.slice(PREFIXO_ORIGEM_EXATA.length));
     }
   }
   if (search) {
@@ -115,7 +120,34 @@ const buildListQuery = (orgId: string, params: ContactListParams) => {
   return query;
 };
 
+/**
+ * Marca uma origem LITERAL, para distingui-la dos buckets.
+ *
+ * Sem ele, uma planilha chamada "manual" ou "import" cairia no bucket de mesmo
+ * nome e filtraria a coisa errada -- e o usuário não teria como saber por quê.
+ */
+export const PREFIXO_ORIGEM_EXATA = "src:";
+
 export const contactsApi = {
+  /**
+   * As origens que existem na base, com contagem.
+   *
+   * Função SQL e não consulta direta: precisa de DISTINCT com contagem, que o
+   * PostgREST não expressa -- e agrupar no navegador esbarraria no teto
+   * silencioso de 1000 linhas, deixando a lista de origens incompleta sem avisar.
+   */
+  listarOrigens: async (orgId: string): Promise<{ origem: string; contatos: number }[]> => {
+    // `as any` no nome: os tipos gerados são um retrato do banco NO MOMENTO da
+    // geração, e esta função nasce numa migração que ainda não foi aplicada.
+    // Mesmo padrão de `create_organization_for_user` em CompanyStep.
+    const { data, error } = await (supabase.rpc as unknown as (
+      nome: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: unknown }>)("origens_de_contato", { _org_id: orgId });
+    if (error) throw error;
+    return (data ?? []) as { origem: string; contatos: number }[];
+  },
+
   list: async (orgId: string, params: ContactListParams = {}): Promise<ContactListResult> => {
     const { page = 0, pageSize = PAGE_SIZE } = params;
     const from = page * pageSize;

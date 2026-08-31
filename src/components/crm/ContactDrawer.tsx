@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
-  AREAS_ATUACAO, PAISES, CADASTRO_FIELDS,
+  AREAS_ATUACAO, PAISES, CADASTRO_FIELDS, getContactOrigin,
   LIFECYCLE_LABELS, type LifecycleStage,
 } from "@/lib/contact-options";
 import {
@@ -252,10 +252,26 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
             <div className="flex-1">
               <h2 className="vx-titulo-painel">{contact.first_name} {contact.last_name}</h2>
               {contact.title && <p className="text-sm text-muted-foreground">{contact.title}</p>}
-              <div className="mt-1.5 flex items-center gap-2">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className={LIFECYCLE_BADGE[contact.lifecycle_stage ?? "lead"]}>
                   {LIFECYCLE_LABELS[contact.lifecycle_stage ?? "lead"]}
                 </Badge>
+                {/* DE ONDE VEIO, ao lado de em que ponto está.
+                    A lista mostrava a origem e a ficha não -- então abrir o
+                    contato PERDIA a informação, e era preciso voltar e procurar
+                    a linha para saber de qual planilha ou campanha ele saiu. */}
+                {(() => {
+                  const o = getContactOrigin((contact as Record<string, unknown>).metadata as Record<string, unknown> | null);
+                  return (
+                    <span
+                      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-2 py-0.5 text-label font-medium text-muted-foreground"
+                      title={`Origem: ${o.label}`}
+                    >
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: o.color }} />
+                      {o.label}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
             {/* mr-8 afasta do X de fechar do Sheet (que fica em right-4 top-4) */}
@@ -462,9 +478,30 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                   );
                 })()}
 
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <span>Criado em</span>
-                  <span>{contact.created_at ? formatarData(contact.created_at) : "—"}</span>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Criado em</span>
+                    <span>{contact.created_at ? formatarData(contact.created_at) : "—"}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="shrink-0">Origem</span>
+                    <span className="text-right font-medium text-foreground">
+                      {getContactOrigin((contact as Record<string, unknown>).metadata as Record<string, unknown> | null).label}
+                    </span>
+                  </div>
+                  {/* Só quando veio de planilha. Saber a DATA da importação é o
+                      que separa "entrou hoje pelo formulário" de "estava numa
+                      lista de dois meses atrás" -- e o selo sozinho não conta. */}
+                  {(() => {
+                    const em = ((contact as Record<string, unknown>).metadata as Record<string, string> | null)?.importado_em;
+                    if (!em) return null;
+                    return (
+                      <div className="flex items-center justify-between gap-3">
+                        <span>Importado em</span>
+                        <span>{formatarData(em)}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
