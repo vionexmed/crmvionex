@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Search, LayoutGrid, List, Filter, Upload, Download,
-  Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Users, Loader2,
+  Trash2, X, AlertTriangle, Users, Loader2,
 } from "lucide-react";
 import { ContactsKanbanByOwner } from "@/components/crm/ContactsKanbanByOwner";
 import {
@@ -59,6 +59,7 @@ import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
 import { BarraDeFiltros, BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
+import { Paginacao } from "@/components/layout/Paginacao";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type SortKey = "name" | "email" | "status" | "created_at" | "title";
@@ -664,20 +665,14 @@ export default function Contacts() {
         />
       )}
 
-      {viewMode !== "owner" && totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            Página {page + 1} de {totalPages} · {totalCount} contatos
-          </span>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+      {viewMode !== "owner" && (
+        <Paginacao
+          pagina={page}
+          totalPaginas={totalPages}
+          total={totalCount}
+          unidade="contato"
+          onMudar={setPage}
+        />
       )}
 
       {/* Confirmação nomeando o que será apagado.

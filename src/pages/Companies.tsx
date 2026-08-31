@@ -18,12 +18,13 @@ import {
 } from "@/components/ui/select";
 import {
   Plus, Search, LayoutGrid, List, Filter, Upload, Download,
-  Trash2, ChevronLeft, ChevronRight, X, Building2,
+  Trash2, X, Building2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CompanyDrawer } from "@/components/crm/CompanyDrawer";
 import { CompanyCreateModal } from "@/components/crm/CompanyCreateModal";
 import { CSVImportModal } from "@/components/crm/CSVImportModal";
+import { Paginacao } from "@/components/layout/Paginacao";
 import type { Database } from "@/integrations/supabase/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanies, useDeleteCompany, companiesKeys } from "@/hooks/queries/useCompanies";
@@ -369,15 +370,13 @@ export default function Companies() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Página {page + 1} de {totalPages} · {sorted.length} empresas</span>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}><ChevronRight className="h-4 w-4" /></Button>
-          </div>
-        </div>
-      )}
+      <Paginacao
+        pagina={page}
+        totalPaginas={totalPages}
+        total={sorted.length}
+        unidade="empresa"
+        onMudar={setPage}
+      />
 
       <CompanyDrawer company={drawerCompany} onClose={() => setDrawerCompany(null)} onUpdate={invalidate} />
       <CompanyCreateModal open={createOpen} onOpenChange={setCreateOpen} onCreated={invalidate} />
