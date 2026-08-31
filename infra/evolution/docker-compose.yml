@@ -1,0 +1,114 @@
+# Evolution API para o Vionex CRM.
+#
+# Três serviços: a API, um Postgres só dela e um Redis. A Evolution guarda a
+# SESSÃO do WhatsApp — a credencial que o QR code cria — e é por isso que ela
+# precisa de banco e de volume: sem persistência, todo restart do contêiner
+# desparea os aparelhos e cada pessoa tem de ler o QR de novo.
+#
+# Subir:   docker compose up -d
+# Ver log: docker compose logs -f evolution
+# Parar:   docker compose down          (os dados ficam nos volumes)
+#
+# Antes de subir, copie .env.example para .env e rode ./gerar-chave.sh.
+
+services:
+  evolution:
+    # Versão FIXA, não `latest`. A v1 e a v2 mudaram o corpo do envio e do
+    # webhook; o CRM aceita as duas formas, mas um `latest` que pula de major
+    # sozinho num restart é o tipo de surpresa que aparece como "parou de
+    # enviar" sem ninguém ter tocado em nada.
+    image: atendai/evolution-api:v2.1.1
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file: .env
+    environment:
+      # A Evolution usa este endereço para montar o QR e para se anunciar. Se
+      # ficar em localhost, o QR gerado não serve e o CRM não alcança nada.
+      SERVER_URL: ${SERVER_URL}
+      AUTHENTICATION_API_KEY: ${AUTHENTICATION_API_KEY}
+
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${POSTGRES_PASSWORD}@postgres:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: vionex
+      # Guardar a instância é o que faz o pareamento sobreviver a restart.
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      # As mensagens o CRM já guarda em whatsapp_messages. Duplicar aqui só faz
+      # o disco crescer para sempre sem ninguém ler.
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "false"
+      DATABASE_SAVE_MESSAGE_UPDATE: "false"
+      DATABASE_SAVE_DATA_CONTACTS: "false"
+      DATABASE_SAVE_DATA_CHATS: "false"
+
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+
+      # O CRM aponta o webhook por API, uma instância de cada vez, quando a
+      # pessoa parea. Webhook global aqui faria eventos chegarem duplicados.
+      WEBHOOK_GLOBAL_ENABLED: "false"
+
+      LOG_LEVEL: ERROR,WARN,INFO
+      DEL_INSTANCE: "false"
+      QRCODE_LIMIT: "10"
+    volumes:
+      - evolution_instances:/evolution/instances
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: evolution
+    volumes:
+      - evolution_pgdata:/var/lib/postgresql/data
+    # Sem porta publicada: só a Evolution fala com ele, pela rede interna do
+    # compose. Publicar seria expor o banco à internet sem motivo.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - evolution_redis:/data
+
+  # HTTPS. Sob `profile`, então quem já tem um proxy na frente sobe sem ele:
+  #   docker compose up -d                      só a API, porta 8080
+  #   docker compose --profile https up -d      com certificado automático
+  #
+  # O Caddy pede e renova o certificado do Let's Encrypt sozinho. É a parte que
+  # mais trava a subida, e sem ela o CRM não alcança o servidor: as edge
+  # functions do Supabase não chamam HTTP nem IP sem certificado.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    profiles: ["https"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - evolution
+
+volumes:
+  evolution_instances:
+  evolution_pgdata:
+  evolution_redis:
+  caddy_data:
+  caddy_config:

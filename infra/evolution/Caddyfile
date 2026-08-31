@@ -1,0 +1,12 @@
+# HTTPS automático na frente da Evolution.
+#
+# É a parte que costuma travar a subida, e por isso vem pronta: o Caddy pede e
+# renova o certificado do Let's Encrypt sozinho, sem certbot e sem cron. Só
+# troque o domínio abaixo.
+#
+# As edge functions do Supabase rodam na nuvem e NÃO chamam HTTP nem endereço
+# de IP sem certificado — sem esta camada, o CRM não alcança o servidor.
+
+evolution.suaempresa.com.br {
+	reverse_proxy evolution:8080
+}

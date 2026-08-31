@@ -1,0 +1,2 @@
+# Contém a chave da API e a senha do banco. Gerado por ./gerar-chave.sh.
+.env
