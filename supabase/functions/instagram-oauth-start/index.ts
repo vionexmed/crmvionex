@@ -55,6 +55,26 @@ Deno.serve(async (req) => {
     if (cErr || !claims?.claims?.sub) return json({ error: "Unauthorized" }, 401);
     const userId = claims.claims.sub as string;
 
+    /*
+     * MODO VERIFICAÇÃO, antes de qualquer outra checagem.
+     *
+     * O cartão de Integrações precisa saber se o servidor TEM as credenciais do
+     * app, para não oferecer um botão "Conectar" que só pode falhar. Sem isto o
+     * cartão dizia "Disponível", a pessoa clicava, e recebia um erro de
+     * configuração -- o que faz parecer defeito da integração quando é etapa que
+     * ninguém fez ainda.
+     *
+     * Devolve BOOLEANO, nunca os valores. E responde 200 mesmo quando falta
+     * credencial: aqui "não configurado" é a resposta, não um erro.
+     */
+    const corpo = await req.json().catch(() => ({}));
+    if (corpo?.verificar === true) {
+      return json({
+        configurado: !!Deno.env.get("INSTAGRAM_APP_ID")
+          && !!Deno.env.get("INSTAGRAM_APP_SECRET"),
+      });
+    }
+
     const { data: prof } = await admin
       .from("profiles").select("org_id").eq("id", userId).maybeSingle();
     const orgId = prof?.org_id;

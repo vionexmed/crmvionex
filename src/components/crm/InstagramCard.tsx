@@ -63,6 +63,18 @@ export function InstagramCard() {
   const [conectando, setConectando] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [copiado, setCopiado] = useState<string | null>(null);
+  /*
+   * O SERVIDOR TEM AS CREDENCIAIS DO APP?
+   *
+   * `null` = ainda perguntando. Sem esta pergunta o cartão dizia "Disponível" e
+   * oferecia "Conectar" mesmo quando o fluxo não tinha como terminar -- e o erro
+   * de configuração aparecia só depois do clique, parecendo defeito da
+   * integração quando é etapa que ninguém fez ainda.
+   *
+   * Vem do servidor porque é lá que os secrets moram. O navegador não tem como
+   * saber, e não deve: a resposta é um BOOLEANO, nunca os valores.
+   */
+  const [appConfigurado, setAppConfigurado] = useState<boolean | null>(null);
 
   const carregar = useCallback(async () => {
     if (!orgId) return;
@@ -100,6 +112,17 @@ export function InstagramCard() {
   }, [orgId]);
 
   useEffect(() => { void carregar(); }, [carregar]);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await supabase.functions.invoke("instagram-oauth-start", {
+        body: { verificar: true },
+      });
+      // Falha na pergunta não vira alarme: cai em "não sei" e o cartão continua
+      // oferecendo o botão, que aí explica o motivo real se falhar.
+      setAppConfigurado((res.data as { configurado?: boolean } | null)?.configurado ?? null);
+    })();
+  }, []);
 
   /**
    * Lê o resultado do OAuth da URL e o limpa.
@@ -208,7 +231,12 @@ export function InstagramCard() {
   const urlDoWebhook = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-webhook`;
 
   const ligado = !!conexao;
-  const estado: EstadoIntegracao = ligado ? "ativo" : "disponivel";
+  const faltaCredencial = appConfigurado === false;
+  const estado: EstadoIntegracao = ligado
+    ? "ativo"
+    // "não integrado" e não "disponível": é âmbar, e diz que falta uma etapa em
+    // vez de convidar a clicar. Mesmo tratamento do cartão do Google Ads.
+    : faltaCredencial ? "nao-integrado" : "disponivel";
 
   // Vencimento em menos de sete dias merece aviso: o token é renovável, mas se
   // ninguém renovar a integração morre sem sintoma até alguém tentar responder.
@@ -226,7 +254,9 @@ export function InstagramCard() {
           ? "Verificando…"
           : ligado
             ? `@${conexao?.username ?? "conta conectada"} · responde Direct pelo CRM`
-            : "Receba e responda Direct do perfil da empresa"
+            : faltaCredencial
+              ? "Faltam as credenciais do app da Meta"
+              : "Receba e responda Direct do perfil da empresa"
       }
       estado={estado}
       acoes={
@@ -293,8 +323,9 @@ export function InstagramCard() {
               Desconectar
             </Button>
           </div>
-        ) : (
-          <Button size="sm" className="h-8 text-label" onClick={conectar} disabled={conectando}>
+        ) : faltaCredencial ? null : (
+          <Button size="sm" className="h-8 text-label" onClick={conectar}
+            disabled={conectando || appConfigurado === null}>
             {conectando ? "Abrindo…" : "Conectar"}
             <ExternalLink className="ml-1.5 h-3 w-3" />
           </Button>
@@ -315,6 +346,24 @@ export function InstagramCard() {
             <p>
               O Instagram não permite <strong>iniciar</strong> conversa: o CRM responde quem
               escreveu, em até 24h livremente e até 7 dias com atendimento humano.
+            </p>
+          </div>
+        ) : faltaCredencial ? (
+          <div className="space-y-1">
+            <p className="flex items-start gap-1.5 text-warning">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>
+                Um administrador precisa criar o app no{" "}
+                <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer"
+                  className="underline">painel da Meta</a>{" "}
+                e gravar <code className="text-meta">INSTAGRAM_APP_ID</code> e{" "}
+                <code className="text-meta">INSTAGRAM_APP_SECRET</code> nos secrets do projeto.
+              </span>
+            </p>
+            <p>
+              No app, use <strong>API com login do Instagram</strong> — é a rota que dispensa
+              Página do Facebook. As credenciais ficam em Instagram → Configuração básica da API,
+              e <strong>não</strong> são as do app do Facebook.
             </p>
           </div>
         ) : (
