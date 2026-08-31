@@ -205,3 +205,55 @@ describe("os dois cartões não aparecem juntos", () => {
     expect(src).toMatch(/useEffect\(\(\) => pararRelogio, \[pararRelogio\]\)/);
   });
 });
+
+describe("o erro de envio diz o que fazer", () => {
+  const src = semComentarios(ler(`${FN}/_shared/whatsapp/evolution.ts`));
+
+  /**
+   * MEDIDO contra a v2.3.7 rodando em Docker: enviar por uma instância sem
+   * sessão pareada devolve HTTP 500 com
+   * `{"response":{"message":"Cannot read properties of undefined (reading
+   * 'find')"}}` -- um crash interno do Baileys. Quem visse isso na tela não
+   * teria como saber que só precisa reler o QR code.
+   */
+  it("consulta o estado quando o envio falha", () => {
+    expect(src).toContain("explicarFalhaDeEnvio");
+    expect(src).toMatch(/instance\/connectionState/);
+  });
+
+  it("a consulta extra roda SÓ na falha", () => {
+    // Checar antes de cada envio custaria uma ida ao servidor por mensagem.
+    const iFalha = src.indexOf("if (!r.ok)");
+    const iChamada = src.indexOf("explicarFalhaDeEnvio(cred");
+    expect(iFalha).toBeGreaterThan(-1);
+    expect(iChamada).toBeGreaterThan(iFalha);
+  });
+
+  it("404 e desconectado têm mensagens diferentes", () => {
+    expect(src).toMatch(/não está mais pareado/);
+    expect(src).toMatch(/Leia o QR code de novo/);
+  });
+});
+
+describe("existe como provar o provedor contra um servidor real", () => {
+  /**
+   * `evolution.ts` foi escrito contra a documentação. Teste de unidade não
+   * cobre o que pode estar errado -- nome de rota, forma do corpo, onde o QR vem
+   * embrulhado -- e um mock só confirmaria as minhas próprias suposições.
+   *
+   * O script fica FORA de `npm test` de propósito: a suíte não pode depender de
+   * Docker.
+   */
+  it("o script existe e não entra na suíte", () => {
+    const script = readFileSync("scripts/provar-evolution.mjs", "utf8");
+    expect(script).toContain("provedorEvolution");
+    expect(script).toContain("iniciarPareamento");
+    expect(script).toContain("encerrarInstancia");
+  });
+
+  it("aponta para outro servidor por variável de ambiente", () => {
+    const script = readFileSync("scripts/provar-evolution.mjs", "utf8");
+    expect(script).toMatch(/process\.env\.EVO_URL/);
+    expect(script).toMatch(/process\.env\.EVO_KEY/);
+  });
+});

@@ -147,6 +147,35 @@ const CONECTADO = new Set(["open", "connected", "online"]);
 /** Eventos que interessam. Pedir todos faria o webhook receber presença e digitação. */
 const EVENTOS = ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "CONNECTION_UPDATE"];
 
+/**
+ * Traduz falha de envio em algo que a pessoa possa agir.
+ *
+ * MEDIDO contra a v2.3.7: enviar por uma instância sem sessão pareada devolve
+ * HTTP 500 com `{"response":{"message":"Cannot read properties of undefined
+ * (reading 'find')"}}` -- um crash interno do Baileys, não uma explicação. Quem
+ * visse isso na tela não teria como saber que só precisa reler o QR code.
+ *
+ * A consulta extra roda SÓ quando o envio já falhou. No caminho normal não
+ * custa nada, e é por isso que não checo o estado antes de cada envio.
+ */
+async function explicarFalhaDeEnvio(
+  cred: Credencial,
+  instancia: string,
+  falha: Resposta,
+): Promise<string> {
+  const estado = await chamar(cred, `/instance/connectionState/${encodeURIComponent(instancia)}`);
+  const atual = lerEstado(estado.json);
+
+  if (estado.status === 404) {
+    return "Este WhatsApp não está mais pareado no servidor. Conecte de novo em Integrações.";
+  }
+  if (atual && !CONECTADO.has(atual)) {
+    return "O WhatsApp desta conexão não está conectado. Leia o QR code de novo em Integrações.";
+  }
+  // Conectado e falhou de todo jeito: o motivo do servidor é o melhor que há.
+  return falha.erro ?? "Falha no envio.";
+}
+
 export const provedorEvolution: ProvedorWhatsApp = {
   nome: "evolution",
   formaDePareamento: "qrcode",
@@ -159,7 +188,14 @@ export const provedorEvolution: ProvedorWhatsApp = {
       body: { number: rota.para, text: texto, textMessage: { text: texto } },
     });
 
-    if (!r.ok) return { ok: false, idMensagem: null, bruto: r.json, erro: r.erro };
+    if (!r.ok) {
+      return {
+        ok: false,
+        idMensagem: null,
+        bruto: r.json,
+        erro: await explicarFalhaDeEnvio(cred, rota.origem, r),
+      };
+    }
 
     const id = (r.json as { key?: { id?: string } })?.key?.id ?? null;
     return { ok: true, idMensagem: id, bruto: r.json, erro: null };

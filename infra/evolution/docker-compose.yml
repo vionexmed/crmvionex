@@ -13,11 +13,15 @@
 
 services:
   evolution:
+    # `evoapicloud` e NÃO `atendai`: o projeto trocou de organização no Docker
+    # Hub. A antiga ainda existe e parou na v2.2.3 (fev/2025); a mantida é esta,
+    # e o release estável mais recente é o v2.3.7.
+    #
     # Versão FIXA, não `latest`. A v1 e a v2 mudaram o corpo do envio e do
     # webhook; o CRM aceita as duas formas, mas um `latest` que pula de major
     # sozinho num restart é o tipo de surpresa que aparece como "parou de
     # enviar" sem ninguém ter tocado em nada.
-    image: atendai/evolution-api:v2.1.1
+    image: evoapicloud/evolution-api:v2.3.7
     restart: unless-stopped
     ports:
       - "8080:8080"

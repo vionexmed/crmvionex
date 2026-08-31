@@ -31,9 +31,12 @@ services:
     runtime: image
     plan: starter
     image:
+      # `evoapicloud`, não `atendai`: o projeto trocou de organização no Docker
+      # Hub, e a antiga parou na v2.2.3.
+      #
       # Versão fixa. `latest` que pula de major sozinho num redeploy aparece
       # como "parou de enviar" sem ninguém ter tocado em nada.
-      url: docker.io/atendai/evolution-api:v2.1.1
+      url: docker.io/evoapicloud/evolution-api:v2.3.7
     healthCheckPath: /
     disk:
       # A sessão do WhatsApp — o que o QR cria — vive aqui. Sem disco, todo
