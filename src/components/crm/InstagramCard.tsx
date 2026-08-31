@@ -54,6 +54,50 @@ type Conexao = {
   webhook_verify_token: string;
 };
 
+/**
+ * Valor para copiar: a URL, o token, o nome do secret.
+ *
+ * DUAS COISAS QUE PARECEM DETALHE E NÃO SÃO:
+ *
+ * 1. `min-w-0` NO ITEM DE GRID. O `DialogContent` deste projeto é
+ *    `grid w-full max-w-lg`, e item de grid nasce com `min-width: auto` -- então
+ *    a trilha cresce até a largura do conteúdo, e o conteúdo escapa dos 512px do
+ *    diálogo. Foi o que fez a URL e o botão de copiar aparecerem FORA da caixa
+ *    branca. `min-w-0` no que está dentro do flex não resolve: o estouro
+ *    acontece um nível acima, na trilha do grid.
+ *
+ * 2. QUEBRA, e não `truncate`. Cortar com "…" uma URL que a pessoa precisa
+ *    CONFERIR antes de colar no painel da Meta é hostil -- ela vê metade e não
+ *    tem como saber se é a certa. `break-all` deixa a URL inteira legível em
+ *    duas linhas, e como nada mais exige largura, nada estoura.
+ */
+function ValorParaCopiar({
+  rotulo,
+  valor,
+  copiado,
+  onCopiar,
+}: {
+  rotulo: string;
+  valor: string;
+  copiado: string | null;
+  onCopiar: (rotulo: string, valor: string) => void;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-1.5">
+      <code className="min-w-0 flex-1 break-all rounded-md border border-border bg-muted px-2 py-1.5 text-xs leading-snug">
+        {valor}
+      </code>
+      <Button variant="outline" size="sm" className="h-8 w-8 shrink-0 p-0"
+        onClick={() => onCopiar(rotulo, valor)}
+        title={`Copiar ${rotulo}`}>
+        {copiado === rotulo
+          ? <Check className="h-3.5 w-3.5 text-success" />
+          : <Copy className="h-3.5 w-3.5" />}
+      </Button>
+    </div>
+  );
+}
+
 export function InstagramCard() {
   const { orgId } = useOrg();
   const { toast } = useToast();
@@ -277,7 +321,7 @@ export function InstagramCard() {
                   Webhook
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Configurar o webhook no painel da Meta</DialogTitle>
                   <DialogDescription>
@@ -286,25 +330,15 @@ export function InstagramCard() {
                     campo <strong>messages</strong>.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3">
                   {[
                     { rotulo: "URL de callback", valor: urlDoWebhook },
                     { rotulo: "Token de verificação", valor: conexao?.webhook_verify_token ?? "" },
                   ].map((campo) => (
-                    <div key={campo.rotulo} className="space-y-1">
+                    <div key={campo.rotulo} className="min-w-0 space-y-1">
                       <p className="text-label font-medium text-muted-foreground">{campo.rotulo}</p>
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5 text-xs">
-                          {campo.valor}
-                        </code>
-                        <Button variant="outline" size="sm" className="h-8 w-8 shrink-0 p-0"
-                          onClick={() => void copiar(campo.rotulo, campo.valor)}
-                          title={`Copiar ${campo.rotulo}`}>
-                          {copiado === campo.rotulo
-                            ? <Check className="h-3.5 w-3.5 text-success" />
-                            : <Copy className="h-3.5 w-3.5" />}
-                        </Button>
-                      </div>
+                      <ValorParaCopiar rotulo={campo.rotulo} valor={campo.valor}
+                        copiado={copiado} onCopiar={copiar} />
                     </div>
                   ))}
                   <p className="text-meta leading-relaxed text-muted-foreground">
@@ -331,7 +365,7 @@ export function InstagramCard() {
                 Como configurar
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Ligar o Instagram Direct</DialogTitle>
                 <DialogDescription>
@@ -339,7 +373,7 @@ export function InstagramCard() {
                   administrador conecta a conta por aqui.
                 </DialogDescription>
               </DialogHeader>
-              <ol className="space-y-2.5 text-xs leading-relaxed">
+              <ol className="min-w-0 space-y-2.5 text-xs leading-relaxed">
                 <li>
                   <strong>1.</strong> Em{" "}
                   <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer"
@@ -355,6 +389,7 @@ export function InstagramCard() {
                   <strong>3.</strong> Em <strong>Instagram → Configuração básica da API</strong>,
                   copie o ID e a chave secreta.
                   <span className="mt-1 flex items-start gap-1.5 text-meta text-warning">
+                    {/* `<span>` aqui é correto: só há texto e ícone dentro. */}
                     <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                     Não são as de Configurações → Básico, que são do app do Facebook. São
                     credenciais diferentes, e as erradas falham na troca de token sem explicar.
@@ -362,29 +397,21 @@ export function InstagramCard() {
                 </li>
                 <li>
                   <strong>4.</strong> Ainda ali, em URIs de redirecionamento OAuth, cole:
-                  <span className="mt-1 flex min-w-0 items-center gap-1.5">
-                    <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5">
-                      {urlDoCallback}
-                    </code>
-                    <Button variant="outline" size="sm" className="h-8 w-8 shrink-0 p-0"
-                      onClick={() => void copiar("Redirect URI", urlDoCallback)}
-                      title="Copiar">
-                      {copiado === "Redirect URI"
-                        ? <Check className="h-3.5 w-3.5 text-success" />
-                        : <Copy className="h-3.5 w-3.5" />}
-                    </Button>
-                  </span>
+                  <div className="mt-1">
+                    <ValorParaCopiar rotulo="Redirect URI" valor={urlDoCallback}
+                      copiado={copiado} onCopiar={copiar} />
+                  </div>
                 </li>
                 <li>
                   <strong>5.</strong> No Supabase, em Project Settings → Edge Functions → Secrets,
                   grave os dois com estes nomes:
-                  <span className="mt-1 flex flex-wrap gap-1.5">
+                  <div className="mt-1 flex flex-wrap gap-1.5">
                     {["INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET"].map((nome) => (
                       <code key={nome} className="rounded-md border border-border bg-muted px-2 py-1">
                         {nome}
                       </code>
                     ))}
-                  </span>
+                  </div>
                 </li>
               </ol>
               <p className="text-meta leading-relaxed text-muted-foreground">
