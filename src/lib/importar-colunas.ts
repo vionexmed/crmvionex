@@ -186,3 +186,94 @@ export function planejarEmpresas(
 
   return { aCriar, porChave };
 }
+
+/**
+ * O que fazer quando o contato JÁ EXISTE.
+ *
+ * Antes havia um comportamento só, silencioso: ignorar. E ele tem um custo que
+ * só apareceu no uso real — importar uma lista com mapeamento errado, corrigir o
+ * mapeamento e reimportar NÃO conserta ninguém. O aviso dizia "90 já estavam
+ * cadastrados e foram ignorados", e os 90 continuavam sem telefone.
+ */
+export type QuandoExiste = "ignorar" | "completar" | "substituir";
+
+export const OPCOES_QUANDO_EXISTE: { valor: QuandoExiste; rotulo: string; ajuda: string }[] = [
+  {
+    valor: "ignorar",
+    rotulo: "Ignorar (não mexer)",
+    ajuda: "O que já está no CRM fica intacto. Reimportar a mesma lista não muda nada.",
+  },
+  {
+    valor: "completar",
+    rotulo: "Completar o que está em branco",
+    ajuda:
+      "Preenche só os campos vazios no CRM. Nada que alguém já escreveu é sobrescrito — "
+      + "é a opção para consertar um lote importado com colunas faltando.",
+  },
+  {
+    valor: "substituir",
+    rotulo: "Substituir pelo que vier na planilha",
+    ajuda:
+      "A planilha vence nos campos que ela traz. Célula VAZIA continua não apagando nada — "
+      + "vazio quer dizer \u0022não informado\u0022, não \u0022apague\u0022.",
+  },
+];
+
+/**
+ * Os campos que uma atualização pode tocar, e o valor a gravar.
+ *
+ * A REGRA QUE NÃO NEGOCIA: célula vazia nunca apaga valor existente. Vazio numa
+ * planilha quer dizer "não informado" -- interpretar como "apague" faria
+ * reimportar uma lista sem e-mail limpar todos os e-mails da base, em silêncio.
+ *
+ * Devolve `null` quando não há nada a fazer, para o chamador poder pular o
+ * UPDATE em vez de gastar uma escrita que não muda nada.
+ */
+export function camposParaAtualizar(
+  novo: Record<string, unknown>,
+  atual: Record<string, unknown>,
+  modo: QuandoExiste,
+): Record<string, unknown> | null {
+  if (modo === "ignorar") return null;
+
+  /** Colunas que a importação escreve. `metadata` é tratado à parte, por mesclagem. */
+  const COLUNAS = ["first_name", "last_name", "email", "phone", "title", "linkedin_url", "company_id"];
+
+  const mudancas: Record<string, unknown> = {};
+
+  for (const col of COLUNAS) {
+    const vindo = novo[col];
+    // Vazio não participa. Nem como "completar", nem como "substituir".
+    if (vindo === null || vindo === undefined || String(vindo).trim() === "") continue;
+
+    const tem = atual[col];
+    const estaVazio = tem === null || tem === undefined || String(tem).trim() === "";
+
+    if (modo === "completar" && !estaVazio) continue;
+    if (String(tem ?? "") === String(vindo)) continue;   // já igual, não gasta escrita
+
+    mudancas[col] = vindo;
+  }
+
+  // `metadata` MESCLA, sempre -- nunca substitui o objeto.
+  //
+  // Substituir apagaria as respostas do formulário, a marca `importado_em` (que
+  // o filtro "Importação" usa) e a origem de um lote anterior. Mesmo em
+  // "substituir", o que não vem na planilha permanece.
+  const metaNovo = (novo.metadata ?? {}) as Record<string, unknown>;
+  const metaAtual = (atual.metadata ?? {}) as Record<string, unknown>;
+  const metaFinal: Record<string, unknown> = { ...metaAtual };
+  let mudouMeta = false;
+  for (const [k, v] of Object.entries(metaNovo)) {
+    if (v === null || v === undefined || String(v).trim() === "") continue;
+    const tem = metaFinal[k];
+    const estaVazio = tem === null || tem === undefined || String(tem).trim() === "";
+    if (modo === "completar" && !estaVazio) continue;
+    if (String(tem ?? "") === String(v)) continue;
+    metaFinal[k] = v;
+    mudouMeta = true;
+  }
+  if (mudouMeta) mudancas.metadata = metaFinal;
+
+  return Object.keys(mudancas).length > 0 ? mudancas : null;
+}

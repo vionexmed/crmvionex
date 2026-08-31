@@ -17,12 +17,13 @@ import {
 import { Upload, Table2, Loader2 } from "lucide-react";
 import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
-import { chaveDeTelefone } from "@/lib/contato-formato";
+import { chaveDeNome, chaveDeTelefone } from "@/lib/contato-formato";
 import { buscarEmBlocos } from "@/lib/paginar";
 import { detectarSeparador, lerTexto, parseCSV } from "@/lib/csv";
 import {
-  CAMPOS_DE_CONTATO, CAMPOS_DE_EMPRESA, EMPRESA, NOTA, PREFIXO_META,
-  chaveDeEmpresa, mapearColunas, planejarEmpresas,
+  CAMPOS_DE_CONTATO, CAMPOS_DE_EMPRESA, EMPRESA, NOTA, OPCOES_QUANDO_EXISTE,
+  PREFIXO_META, type QuandoExiste,
+  camposParaAtualizar, chaveDeEmpresa, mapearColunas, planejarEmpresas,
 } from "@/lib/importar-colunas";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
@@ -122,6 +123,12 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
    * exatamente nas listas de terceiros, que são as que mais precisam de rastro.
    */
   const [origem, setOrigem] = useState("");
+  /**
+   * O que fazer com quem já existe. Padrão "ignorar" para não mudar o
+   * comportamento de quem já usava; "completar" é o que conserta um lote
+   * importado com colunas faltando.
+   */
+  const [quandoExiste, setQuandoExiste] = useState<QuandoExiste>("ignorar");
 
   const fields = entityType === "contacts" ? CAMPOS_DE_CONTATO : CAMPOS_DE_EMPRESA;
 
@@ -370,6 +377,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
 
       let valid = comNome;
       let repetidos = 0;
+      let atualizados = 0;
 
       if (entityType === "contacts") {
         // A base JÁ cadastrada, para comparar. Paginada em blocos porque o
@@ -377,35 +385,86 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         // aqui seria pior que não deduplicar: a partir do contato 1001, a
         // comparação passaria a dizer "não existe" para gente que existe, e a
         // importação criaria duplicata parecendo ter conferido.
-        const jaExistem = await buscarEmBlocos<{ email: string | null; phone: string | null }>(
+        // A lista de colunas é LITERAL, não montada por variável: os tipos
+        // gerados do Supabase analisam a string do `select()` em tempo de
+        // compilação, e uma string dinâmica não passa. A tentativa de trazer
+        // menos colunas no modo "ignorar" custava isso e economizava pouco.
+        const jaExistem = await buscarEmBlocos<Record<string, unknown>>(
           (inicio, fim) =>
-            supabase.from("contacts").select("email, phone").eq("org_id", orgId).range(inicio, fim),
+            supabase.from("contacts")
+              .select("id, email, phone, first_name, last_name, title, linkedin_url, company_id, metadata")
+              .eq("org_id", orgId).range(inicio, fim),
         );
 
-        const emails = new Set<string>();
-        const telefones = new Set<string>();
+        // Mapa e não Set: para ATUALIZAR é preciso a linha existente, não só
+        // saber que ela existe.
+        const porEmail = new Map<string, Record<string, unknown>>();
+        const porTelefone = new Map<string, Record<string, unknown>>();
+        /** Só para quem não tem e-mail nem telefone. Ver `chaveDeNome`. */
+        const porNomeSemContato = new Map<string, Record<string, unknown>>();
         for (const c of jaExistem) {
-          const e = chaveEmail(c.email);
-          if (e) emails.add(e);
-          const t = chaveDeTelefone(c.phone);
-          if (t) telefones.add(t);
+          const e = chaveEmail(c.email as string | null);
+          const t = chaveDeTelefone(c.phone as string | null);
+          if (e && !porEmail.has(e)) porEmail.set(e, c);
+          if (t && !porTelefone.has(t)) porTelefone.set(t, c);
+          if (!e && !t) {
+            const n = chaveDeNome(`${c.first_name ?? ""} ${c.last_name ?? ""}`);
+            if (n && !porNomeSemContato.has(n)) porNomeSemContato.set(n, c);
+          }
         }
 
         // O mesmo conjunto cresce com o que a própria planilha vai inserindo:
         // sem isso, uma pessoa repetida DENTRO do arquivo entraria duas vezes --
         // e é o caso mais comum quando duas listas encaminhadas são coladas numa
         // aba só.
+        /** Duplicados que vão receber UPDATE, quando o modo não é "ignorar". */
+        const atualizacoes: { id: string; campos: Record<string, unknown> }[] = [];
+
         valid = comNome.filter((r) => {
           const e = chaveEmail(r.email as string | null);
           const t = chaveDeTelefone(r.phone as string | null);
-          if ((e && emails.has(e)) || (t && telefones.has(t))) {
+          // Último recurso, e SÓ sem e-mail e sem telefone: nesse caso os dois
+          // registros são indistinguíveis para o sistema e para quem lê a tela.
+          // Com e-mail ou telefone presente, casar por nome descartaria homônimo
+          // -- comum em lista médica.
+          const n = !e && !t
+            ? chaveDeNome(`${r.first_name ?? ""} ${r.last_name ?? ""}`)
+            : null;
+
+          const existente =
+            (e ? porEmail.get(e) : undefined)
+            ?? (t ? porTelefone.get(t) : undefined)
+            ?? (n ? porNomeSemContato.get(n) : undefined);
+
+          if (existente) {
             repetidos++;
+            const campos = camposParaAtualizar(r, existente, quandoExiste);
+            if (campos) atualizacoes.push({ id: existente.id as string, campos });
             return false;
           }
-          if (e) emails.add(e);
-          if (t) telefones.add(t);
+
+          // Registra as chaves DESTA linha, para uma repetida dentro do próprio
+          // arquivo também ser pega.
+          if (e) porEmail.set(e, r);
+          if (t) porTelefone.set(t, r);
+          if (n) porNomeSemContato.set(n, r);
           return true;
         });
+
+        // ---------- os UPDATEs ----------
+        //
+        // Um por contato, e em série. `upsert` em lote exigiria a linha completa
+        // e sobrescreveria campo que a planilha não traz -- exatamente o que
+        // `camposParaAtualizar` existe para impedir.
+        for (const a of atualizacoes) {
+          const { error: erroUp } = await supabase
+            .from("contacts").update(a.campos).eq("id", a.id);
+          if (erroUp) {
+            console.error("atualizar duplicado", a.id, erroUp);
+            continue;   // um que falha não derruba os outros
+          }
+          atualizados++;
+        }
 
         if (valid.length === 0) {
           toast({
@@ -477,9 +536,11 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         // Dizer quantos foram ignorados, e não só quantos entraram: sem essa
         // linha, importar 200 e ver "50 importados" parece falha do sistema.
         description: [
-          repetidos > 0
-            ? `${repetidos} ${repetidos === 1 ? "já estava cadastrado e foi ignorado" : "já estavam cadastrados e foram ignorados"}`
-            : null,
+          atualizados > 0
+            ? `${atualizados} ${atualizados === 1 ? "já existia e foi atualizado" : "já existiam e foram atualizados"}`
+            : repetidos > 0
+              ? `${repetidos} ${repetidos === 1 ? "já estava cadastrado e foi ignorado" : "já estavam cadastrados e foram ignorados"}`
+              : null,
           notasGravadas > 0
             ? `${notasGravadas} ${notasGravadas === 1 ? "observação virou nota" : "observações viraram notas"}`
             : null,
@@ -584,6 +645,29 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
                   você filtrar depois. Sugerimos o nome do arquivo — troque se a lista
                   vier de outro lugar.
                 </p>
+
+                {/* O QUE FAZER COM QUEM JÁ EXISTE.
+                    Antes havia um comportamento só, silencioso: ignorar. E ele
+                    tem um custo que só apareceu no uso real — importar com o
+                    mapeamento errado, corrigir e reimportar NÃO conserta
+                    ninguém. O aviso dizia "90 já estavam cadastrados e foram
+                    ignorados", e os 90 seguiam sem telefone. */}
+                <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+                  <Label htmlFor="quando-existe" className="text-xs font-semibold">
+                    Se o contato já existir
+                  </Label>
+                  <Select value={quandoExiste} onValueChange={(v) => setQuandoExiste(v as QuandoExiste)}>
+                    <SelectTrigger id="quando-existe"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {OPCOES_QUANDO_EXISTE.map((o) => (
+                        <SelectItem key={o.valor} value={o.valor}>{o.rotulo}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-label text-muted-foreground">
+                    {OPCOES_QUANDO_EXISTE.find((o) => o.valor === quandoExiste)?.ajuda}
+                  </p>
+                </div>
               </div>
             )}
             <div className="space-y-2">

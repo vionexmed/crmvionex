@@ -160,3 +160,27 @@ export function chaveDeTelefone(valor: string | null | undefined): string | null
   // Sem DDD não há como saber a região; o número sozinho é o melhor disponível.
   return d.length >= 8 ? d.slice(-8) : null;
 }
+
+/**
+ * A chave de último recurso: o NOME.
+ *
+ * Usada SÓ quando o contato não tem e-mail NEM telefone. Sem nenhuma das duas, a
+ * deduplicação não tinha o que comparar e o mesmo registro entrava de novo a cada
+ * importação — foi o que duplicou "Dr Guilherme - RCL" e "Dra Eloisa Gineco -
+ * Campinas" entre dois lotes da mesma lista.
+ *
+ * Por que só nesse caso: homônimo é comum em lista médica, e casar por nome
+ * quando existe e-mail ou telefone descartaria pessoa distinta. Mas quando não
+ * há contato NENHUM, dois registros de mesmo nome são indistinguíveis para o
+ * sistema E para quem lê a tela — manter os dois não informa nada e polui.
+ *
+ * Sem acento e sem pontuação: "Dr. Guilherme – RCL" e "Dr Guilherme - RCL" são a
+ * mesma linha digitada duas vezes.
+ */
+export function chaveDeNome(valor: string | null | undefined): string | null {
+  const k = String(valor ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Nome curtíssimo casaria coisas diferentes. Quatro caracteres é o piso.
+  return k.length >= 4 ? k : null;
+}

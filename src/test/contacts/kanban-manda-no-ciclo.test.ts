@@ -201,7 +201,7 @@ describe("a importação não cria duplicado", () => {
    * vez de reintroduzir uma cópia.
    */
   it("a chave de telefone vem da lib, não é reescrita aqui", () => {
-    expect(src).toMatch(/import \{ chaveDeTelefone \} from "@\/lib\/contato-formato"/);
+    expect(src).toMatch(/chaveDeTelefone.*from "@\/lib\/contato-formato"/);
     expect(src).not.toMatch(/function chaveTelefone/);
   });
 
@@ -222,9 +222,25 @@ describe("a importação não cria duplicado", () => {
   });
 
   it("dedupa também dentro do próprio arquivo", () => {
-    // Duas listas encaminhadas coladas numa aba só é o caso mais comum.
-    expect(src).toMatch(/if \(e\) emails\.add\(e\)/);
-    expect(src).toMatch(/if \(t\) telefones\.add\(t\)/);
+    // Duas listas encaminhadas coladas numa aba só é o caso mais comum. Os Sets
+    // viraram Maps quando a atualização de duplicados entrou: para ATUALIZAR é
+    // preciso a linha existente, não só saber que ela existe.
+    expect(src).toMatch(/if \(e\) porEmail\.set\(e, r\)/);
+    expect(src).toMatch(/if \(t\) porTelefone\.set\(t, r\)/);
+  });
+
+  /**
+   * A REGRA QUE NÃO NEGOCIA: célula vazia nunca apaga valor existente. Vazio
+   * numa planilha quer dizer "não informado" -- interpretar como "apague" faria
+   * reimportar uma lista sem e-mail limpar todos os e-mails da base, em silêncio.
+   */
+  it("duplicado pode ser ATUALIZADO, e vazio não apaga", () => {
+    expect(src).toContain("camposParaAtualizar");
+    const lib = semComentarios(readFileSync("src/lib/importar-colunas.ts", "utf8"));
+    expect(lib).toMatch(/String\(vindo\)\.trim\(\) === ""\) continue/);
+    // `metadata` MESCLA, sempre: substituir apagaria as respostas do formulário
+    // e a marca `importado_em`, que o filtro "Importação" usa.
+    expect(lib).toMatch(/metaFinal: Record<string, unknown> = \{ \.\.\.metaAtual \}/);
   });
 
   it("diz quantos foram ignorados", () => {

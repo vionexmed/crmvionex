@@ -19,7 +19,7 @@
 import { describe, it, expect } from "vitest";
 import {
   CAMPOS_DE_CONTATO, CAMPOS_DE_EMPRESA, EMPRESA, IGNORAR, NOTA, PREFIXO_META,
-  mapearColunas, planejarEmpresas,
+  camposParaAtualizar, mapearColunas, planejarEmpresas,
 } from "@/lib/importar-colunas";
 
 const mapear = (cabecalho: string[]) => {
@@ -214,5 +214,83 @@ describe("empresas: quais criar e quais reusar", () => {
     const existentes = [{ id: "a", name: "Hospital X" }, { id: "b", name: "HOSPITAL X" }];
     expect(planejarEmpresas(["hospital x"], existentes).porChave.get("hospital x")).toBe("a");
     expect(planejarEmpresas(["hospital x"], existentes).porChave.get("hospital x")).toBe("a");
+  });
+});
+
+describe("o que atualizar quando o contato já existe", () => {
+  const atual = {
+    first_name: "Guilherme", last_name: "RCL",
+    email: "g@exemplo.com", phone: null, title: null,
+    metadata: { source: "APROXIMA MED", importado_em: "2026-08-31", cidade: "Campinas" },
+  };
+
+  it("ignorar não devolve nada", () => {
+    expect(camposParaAtualizar({ phone: "11999998888" }, atual, "ignorar")).toBeNull();
+  });
+
+  /**
+   * O caso que motivou tudo: o lote entrou sem telefone e sem especialidade
+   * porque o mapeamento estava errado. Reimportar corrigido tem de PREENCHER.
+   */
+  it("completar preenche o que está em branco", () => {
+    const r = camposParaAtualizar(
+      { phone: "11999998888", title: "Ortopedista" }, atual, "completar",
+    );
+    expect(r).toEqual({ phone: "11999998888", title: "Ortopedista" });
+  });
+
+  it("completar NÃO toca no que já tem valor", () => {
+    const r = camposParaAtualizar({ email: "outro@exemplo.com" }, atual, "completar");
+    expect(r).toBeNull();
+  });
+
+  it("substituir vence nos campos que a planilha traz", () => {
+    const r = camposParaAtualizar({ email: "novo@exemplo.com" }, atual, "substituir");
+    expect(r).toEqual({ email: "novo@exemplo.com" });
+  });
+
+  /**
+   * A REGRA QUE NÃO NEGOCIA. Vazio numa planilha quer dizer "não informado";
+   * interpretar como "apague" faria reimportar uma lista sem e-mail limpar todos
+   * os e-mails da base, em silêncio.
+   */
+  it.each(["completar", "substituir"] as const)("%s: célula vazia NÃO apaga", (modo) => {
+    for (const vazio of [null, undefined, "", "   "]) {
+      expect(camposParaAtualizar({ email: vazio }, atual, modo)).toBeNull();
+    }
+  });
+
+  it("valor idêntico não gasta escrita", () => {
+    expect(camposParaAtualizar({ email: "g@exemplo.com" }, atual, "substituir")).toBeNull();
+  });
+
+  /**
+   * `metadata` MESCLA, sempre — nem "substituir" troca o objeto. Substituir
+   * apagaria as respostas do formulário, a origem do lote anterior e a marca
+   * `importado_em`, que é o que o filtro "Importação" da tela de Contatos usa
+   * para achar essas pessoas.
+   */
+  it("metadata mescla e nunca perde o que já estava", () => {
+    const r = camposParaAtualizar(
+      { metadata: { atendido_por: "Ana", source: "NOVO LOTE" } },
+      atual,
+      "substituir",
+    );
+    const meta = r?.metadata as Record<string, string>;
+    expect(meta.atendido_por).toBe("Ana");        // novo entrou
+    expect(meta.source).toBe("NOVO LOTE");        // substituído, como pedido
+    expect(meta.cidade).toBe("Campinas");         // não veio na planilha: PERMANECE
+    expect(meta.importado_em).toBe("2026-08-31"); // a marca do filtro sobrevive
+  });
+
+  it("em completar, metadata só preenche o que falta", () => {
+    const r = camposParaAtualizar(
+      { metadata: { cidade: "São Paulo", atendido_por: "Ana" } },
+      atual,
+      "completar",
+    );
+    const meta = r?.metadata as Record<string, string>;
+    expect(meta.cidade).toBe("Campinas");     // já tinha: intacto
+    expect(meta.atendido_por).toBe("Ana");    // estava vazio: preenchido
   });
 });

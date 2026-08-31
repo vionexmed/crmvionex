@@ -62,34 +62,37 @@ SELECT (SELECT count(*) FROM lote)                                        AS con
 
 
 -- ---------- PARTE 3: apagar ----------
--- Descomente TUDO abaixo, de uma vez. A ordem dos DELETEs é obrigatória.
+--
+-- UM COMANDO SÓ, e não é preferência de estilo: o editor do Supabase roda cada
+-- `;` separadamente, e uma `TEMP TABLE` criada num comando NÃO EXISTE no
+-- seguinte. A primeira versão deste script usava temp table e falhava com
+-- `relation "lote" does not exist`.
+--
+-- E funciona apesar das chaves estrangeiras por um detalhe do schema:
+-- `deals.contact_id` e `activities.contact_id` são NO ACTION, não RESTRICT.
+-- NO ACTION permite a checagem ser ADIADA para o fim do comando, então pai e
+-- filhos saem juntos. Com RESTRICT este comando falharia.
+--
+-- Não há BEGIN/COMMIT: comando único já é atômico.
 
 /*
-BEGIN;
-
-CREATE TEMP TABLE lote_para_apagar AS
+WITH lote AS (
   SELECT c.id FROM public.contacts c
-   WHERE c.metadata->>'source' = 'APROXIMA MED'          -- <<< TROQUE AQUI TAMBÉM
-     AND c.metadata->>'importado_em' IS NOT NULL;
-
--- 1. Atividades primeiro (as notas da importação estão aqui).
-DELETE FROM public.activities
- WHERE contact_id IN (SELECT id FROM lote_para_apagar);
-
--- 2. Negócios. O histórico de ciclo de vida (`contact_lifecycle_events`) tem
---    ON DELETE CASCADE e vai junto com o contato -- não precisa de linha própria.
-DELETE FROM public.deals
- WHERE contact_id IN (SELECT id FROM lote_para_apagar);
-
--- 3. Agora sim os contatos. E-mails e mensagens de WhatsApp apontam com
---    ON DELETE SET NULL: não bloqueiam, e ficam sem contato em vez de sumir.
-DELETE FROM public.contacts
- WHERE id IN (SELECT id FROM lote_para_apagar);
-
-DROP TABLE lote_para_apagar;
-
--- Confira as três contagens contra a PARTE 2. Se alguma divergir, ROLLBACK.
-COMMIT;
+   WHERE c.metadata->>'source' = 'APROXIMA MED'          -- <<< TROQUE AQUI
+     AND c.metadata->>'importado_em' IS NOT NULL
+),
+del_ativ AS (
+  DELETE FROM public.activities WHERE contact_id IN (SELECT id FROM lote) RETURNING 1
+),
+del_neg AS (
+  DELETE FROM public.deals      WHERE contact_id IN (SELECT id FROM lote) RETURNING 1
+),
+del_cont AS (
+  DELETE FROM public.contacts   WHERE id         IN (SELECT id FROM lote) RETURNING 1
+)
+SELECT (SELECT count(*) FROM del_cont) AS contatos_apagados,
+       (SELECT count(*) FROM del_neg)  AS negocios_apagados,
+       (SELECT count(*) FROM del_ativ) AS atividades_apagadas;
 */
 
 
@@ -106,9 +109,8 @@ SELECT co.id, co.name, co.created_at::date
 
 /*
 -- Descomente para apagar SÓ as empresas que ficaram sem ninguém.
-BEGIN;
+-- Comando único, atômico por si.
 DELETE FROM public.companies co
  WHERE NOT EXISTS (SELECT 1 FROM public.contacts c WHERE c.company_id = co.id)
    AND NOT EXISTS (SELECT 1 FROM public.deals d WHERE d.company_id = co.id);
-COMMIT;
 */
