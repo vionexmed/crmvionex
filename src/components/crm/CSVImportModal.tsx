@@ -19,6 +19,7 @@ import { CADASTRO_FIELDS } from "@/lib/contact-options";
 import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
 import { buscarEmBlocos } from "@/lib/paginar";
+import { detectarSeparador, parseCSV } from "@/lib/csv";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -85,37 +86,6 @@ const contactFields = [
   { key: EMPRESA, label: "Empresa (vincula ou cria)" },
   { key: "__skip", label: "— Ignorar —" },
 ];
-
-/**
- * Parser CSV correto: respeita campos entre aspas (com vírgulas e quebras
- * de linha embutidas), aspas escapadas ("") e arquivos CRLF do Excel.
- * O split ingênuo por \n e , corrompia arquivos reais.
- */
-function parseCSV(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += ch;
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ",") {
-      row.push(field); field = "";
-    } else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
-      row.push(field); field = "";
-      rows.push(row); row = [];
-    } else field += ch;
-  }
-  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
-  return rows.map((r) => r.map((c) => c.trim()));
-}
 
 /**
  * O que a planilha pode dizer no campo de estágio.
@@ -307,7 +277,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         );
       } else {
         const texto = await file.text();
-        aplicarPlanilha(parseCSV(texto), file.name);
+        aplicarPlanilha(parseCSV(texto, detectarSeparador(texto)), file.name);
       }
     } catch (err) {
       toast({
