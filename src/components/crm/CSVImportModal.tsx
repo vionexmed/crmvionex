@@ -15,11 +15,13 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Upload, Table2, Loader2 } from "lucide-react";
-import { CADASTRO_FIELDS } from "@/lib/contact-options";
 import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarData } from "@/lib/formato";
 import { buscarEmBlocos } from "@/lib/paginar";
-import { detectarSeparador, parseCSV } from "@/lib/csv";
+import { detectarSeparador, lerTexto, parseCSV } from "@/lib/csv";
+import {
+  CAMPOS_DE_CONTATO, CAMPOS_DE_EMPRESA, EMPRESA, NOTA, PREFIXO_META, mapearColunas,
+} from "@/lib/importar-colunas";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,62 +32,12 @@ interface CSVImportModalProps {
   entityType: "contacts" | "companies";
 }
 
-/**
- * Prefixo das perguntas do formulário.
- *
- * Elas NÃO são colunas de `contacts` — vivem em `metadata`, que é jsonb. Sem o
- * prefixo, mapear "Cidade / Estado" tentaria gravar uma coluna `cidade` que não
- * existe, e o insert falharia com a planilha inteira dentro dele.
- */
-const PREFIXO_META = "meta:";
-
-/** Destino especial: a coluna vira uma atividade do tipo `note`. */
-const NOTA = "__nota";
-
-/** Destino especial: procura a empresa pelo nome, cria se não existir. */
-const EMPRESA = "__empresa";
 
 /** O tipo GERADO da tabela, em vez de cast: o compilador cobra org_id, title e
  *  type, que são exatamente os três que um insert de atividade não pode
  *  esquecer. */
 type NotaNova = Database["public"]["Tables"]["activities"]["Insert"];
 
-const contactFields = [
-  { key: "first_name", label: "Nome" },
-  { key: "last_name", label: "Sobrenome" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Telefone" },
-  { key: "title", label: "Cargo" },
-  { key: "lifecycle_stage", label: "Ciclo de vida" },
-  { key: "linkedin_url", label: "LinkedIn" },
-  // As mesmas perguntas que a ficha do contato exibe. Vinham só de formulário
-  // de captação; agora uma planilha também as preenche, e a ficha não sabe a
-  // diferença — é o mesmo `metadata`.
-  ...CADASTRO_FIELDS.map((f) => ({ key: `${PREFIXO_META}${f.key}`, label: f.label })),
-  /**
-   * Observação livre vira NOTA na ficha, não campo.
-   *
-   * Coluna de "obs" traz texto de tamanho imprevisível e sem estrutura --
-   * gravá-la em `metadata` a esconderia atrás de um rótulo fixo, e em `title`
-   * (Especialidade) a colocaria no lugar errado. Nota é o que a ficha já sabe
-   * exibir em ordem cronológica.
-   *
-   * É seguro para o funil: `tg_atividade_contatou` só promove lead para
-   * contatado em `type IN ('call','email','meeting')` -- nota fica fora, então
-   * importar observação NÃO faz a base inteira parecer já abordada.
-   */
-  { key: NOTA, label: "Observação (vira nota na ficha)" },
-  /**
-   * Empresa por NOME, não por id.
-   *
-   * A planilha traz "Hospital Santa Casa", não um uuid. A importação procura a
-   * empresa pelo nome e cria se não existir -- é o que faz a ficha da empresa
-   * passar a listar as pessoas vinculadas, que já é uma aba lá e vivia vazia
-   * para todo mundo que entrou por planilha.
-   */
-  { key: EMPRESA, label: "Empresa (vincula ou cria)" },
-  { key: "__skip", label: "— Ignorar —" },
-];
 
 /**
  * O que a planilha pode dizer no campo de estágio.
@@ -157,16 +109,6 @@ function chaveEmail(v: string | null | undefined): string | null {
   return e || null;
 }
 
-const companyFields = [
-  { key: "name", label: "Nome" },
-  { key: "domain", label: "Domínio" },
-  { key: "industry", label: "Indústria" },
-  { key: "size", label: "Tamanho" },
-  { key: "revenue", label: "Receita" },
-  { key: "website", label: "Website" },
-  { key: "linkedin_url", label: "LinkedIn" },
-  { key: "__skip", label: "— Ignorar —" },
-];
 
 export function CSVImportModal({ open, onOpenChange, onImported, entityType }: CSVImportModalProps) {
   const { orgId } = useOrg();
@@ -192,18 +134,7 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
    */
   const [origem, setOrigem] = useState("");
 
-  const fields = entityType === "contacts" ? contactFields : companyFields;
-
-  /**
-   * Compara cabeçalho de planilha com rótulo de campo.
-   *
-   * Sem tirar acento e pontuação, "Cidade / Estado" não casa com "cidade /
-   * estado" exportado de outro sistema, e o mapeamento automático erra
-   * justamente nas perguntas cujos rótulos são mais longos.
-   */
-  const normalizar = (s: string) =>
-    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const fields = entityType === "contacts" ? CAMPOS_DE_CONTATO : CAMPOS_DE_EMPRESA;
 
   const aplicarPlanilha = (linhas: string[][], nomeArquivo: string) => {
     const naoVazias = linhas.filter((r) => r.some((c) => c && c.trim()));
@@ -222,27 +153,9 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
     // que o mesmo nome com ".xlsx" num selo de 11px.
     setOrigem((atual) => atual.trim() || nomeArquivo.replace(/\.[^.]+$/, "").trim());
 
-    const autoMap: Record<number, string> = {};
-    cabecalho.forEach((header, i) => {
-      const lower = header.toLowerCase();
-      const norm = normalizar(header);
-      const match = fields.find((f) =>
-        f.key !== "__skip" && (
-          normalizar(f.label) === norm ||
-          f.key === lower ||
-          f.key === `${PREFIXO_META}${norm.replace(/ /g, "_")}` ||
-          (f.key === "first_name" && (lower.includes("nome") || lower.includes("first"))) ||
-          (f.key === "last_name" && (lower.includes("sobrenome") || lower.includes("last"))) ||
-          (f.key === "email" && lower.includes("email")) ||
-          (f.key === "phone" && (lower.includes("telefone") || lower.includes("phone"))) ||
-          (f.key === "name" && lower.includes("empresa")) ||
-          // Em contatos, "empresa"/"clínica"/"hospital" vira o VÍNCULO, não a
-          // coluna `name` (que é da entidade Empresa e não existe em contato).
-          (f.key === EMPRESA && /empresa|clinica|clínica|hospital|instituic|instituiç/.test(norm))
-        )
-      );
-      autoMap[i] = match?.key || "__skip";
-    });
+    // Uma chamada. A resolução vive em `lib/importar-colunas`, testada com os
+    // sete cabeçalhos reais que expuseram o defeito.
+    const autoMap = mapearColunas(cabecalho, fields);
     setMapping(autoMap);
     setStep("mapping");
   };
@@ -276,7 +189,10 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
           file.name,
         );
       } else {
-        const texto = await file.text();
+        // `lerTexto` e não `file.text()`: o Excel em português salva em
+        // Windows-1252, e `file.text()` assume UTF-8 -- "Observações" chegava
+        // como "Observa??es".
+        const texto = await lerTexto(file);
         aplicarPlanilha(parseCSV(texto, detectarSeparador(texto)), file.name);
       }
     } catch (err) {

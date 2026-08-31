@@ -10,7 +10,7 @@
  * vírgula é assumir inglês.
  */
 import { describe, it, expect } from "vitest";
-import { detectarSeparador, parseCSV } from "@/lib/csv";
+import { chaveDeCabecalho, detectarSeparador, parseCSV } from "@/lib/csv";
 
 describe("detecta o separador", () => {
   it("ponto e vírgula — o caso do Excel em português", () => {
@@ -80,5 +80,45 @@ describe("o parser respeita o separador escolhido", () => {
     const csv = "Nome;Especialidade;Cidade\nJoão;Ortopedia;SP";
     expect(parseCSV(csv, ",")[0]).toHaveLength(1);
     expect(parseCSV(csv, ";")[0]).toHaveLength(3);
+  });
+});
+
+describe("codificação: Excel em português salva em Windows-1252", () => {
+  /**
+   * "Observações" lido como UTF-8 chega como "Observa��es" — e foi o que
+   * apareceu no cabeçalho de um arquivo real de 835 leads.
+   *
+   * A ordem da tentativa não é chute: UTF-8 primeiro, em modo `fatal`, que lança
+   * em byte inválido. O contrário nunca falharia — todo byte é válido em 1252 —
+   * e um arquivo UTF-8 seria lido errado EM SILÊNCIO.
+   */
+  it("UTF-8 em modo fatal lança em byte inválido de 1252", () => {
+    // 0xE7 0xF5 é "çõ" em Windows-1252 e sequência inválida em UTF-8.
+    const bytes = new Uint8Array([0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x61, 0xe7, 0xf5, 0x65, 0x73]);
+    expect(() => new TextDecoder("utf-8", { fatal: true }).decode(bytes)).toThrow();
+    expect(new TextDecoder("windows-1252").decode(bytes)).toBe("Observações");
+  });
+
+  it("e UTF-8 de verdade passa pela primeira tentativa", () => {
+    const bytes = new TextEncoder().encode("Observações");
+    expect(new TextDecoder("utf-8", { fatal: true }).decode(bytes)).toBe("Observações");
+  });
+});
+
+describe("chave de cabeçalho", () => {
+  /**
+   * Sem ela o mapeamento comparava texto cru, e `"e-mail".includes("email")` é
+   * FALSO por causa do hífen — a coluna de e-mail de um arquivo real ficou em
+   * "Ignorar".
+   */
+  it.each([
+    ["E-mail", "email"],
+    ["Observações", "observacoes"],
+    ["Cidade / Estado", "cidadeestado"],
+    ["WhatsApp", "whatsapp"],
+    ["Especialidade", "especialidade"],
+    ["  NOME  ", "nome"],
+  ])("%s → %s", (entrada, saida) => {
+    expect(chaveDeCabecalho(entrada)).toBe(saida);
   });
 });

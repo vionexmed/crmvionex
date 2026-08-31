@@ -163,3 +163,42 @@ export function parseCSV(text: string, separador = ","): string[][] {
   if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
   return rows.map((r) => r.map((c) => c.trim()));
 }
+
+/**
+ * Lê o arquivo como TEXTO, adivinhando a codificação.
+ *
+ * O Excel em português salva CSV em **Windows-1252**, não em UTF-8. Lido como
+ * UTF-8, "Observações" chega como "Observa��es" — e foi exatamente o que
+ * apareceu no cabeçalho de um arquivo real de 835 leads.
+ *
+ * A ordem importa e não é chute: UTF-8 é tentado PRIMEIRO, em modo `fatal`, que
+ * lança quando encontra byte inválido. Se passar, é UTF-8 de verdade. Só então
+ * cai para 1252 — o contrário nunca falharia, porque todo byte é válido em
+ * 1252, e um arquivo UTF-8 seria lido errado em silêncio.
+ */
+export async function lerTexto(arquivo: File): Promise<string> {
+  const bytes = await arquivo.arrayBuffer();
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    // `windows-1252` e não `latin1`: os dois diferem em 27 caracteres, e entre
+    // eles estão as aspas curvas e o travessão que o Word insere.
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+
+/**
+ * A chave de comparação de um cabeçalho de coluna.
+ *
+ * Sem acento e SEM PONTUAÇÃO NENHUMA: "E-mail" vira "email", "Observações" vira
+ * "observacoes", "Cidade / Estado" vira "cidadeestado".
+ *
+ * Existe porque o mapeamento automático comparava texto cru, e
+ * `"e-mail".includes("email")` é FALSO por causa do hífen — então a coluna de
+ * e-mail de um arquivo real ficou em "Ignorar".
+ */
+export function chaveDeCabecalho(texto: string): string {
+  return texto
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+}

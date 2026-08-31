@@ -63,9 +63,14 @@ describe("todas as perguntas do cadastro são mapeáveis", () => {
   const src = semComentarios(ler(MODAL));
 
   it("os campos saem de CADASTRO_FIELDS, não de uma segunda lista", () => {
-    // Uma lista própria aqui divergiria da ficha do contato na primeira
-    // pergunta nova -- e a divergência seria silenciosa.
-    expect(src).toContain("CADASTRO_FIELDS.map");
+    // Uma lista própria divergiria da ficha do contato na primeira pergunta
+    // nova -- e a divergência seria silenciosa.
+    //
+    // A lista mudou de arquivo: saiu do modal para `lib/importar-colunas`,
+    // porque dentro do `.tsx` não dava para testar -- importar o componente
+    // arrasta o cliente Supabase. É onde ela vive agora.
+    const lib = semComentarios(ler("src/lib/importar-colunas.ts"));
+    expect(lib).toContain("CADASTRO_FIELDS.map");
   });
 
   it("as perguntas vão para metadata, não para coluna", () => {
