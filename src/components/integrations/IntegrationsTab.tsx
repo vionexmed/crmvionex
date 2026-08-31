@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { AlertCircle, CheckCircle2, Chrome, Eye, EyeOff, Loader2, Mail, MessageSquare, Plus, RefreshCw, Webhook } from "lucide-react";
 function MetaIcon({ className }: { className?: string }) {
@@ -226,6 +226,8 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   };
 
   const [metaConnecting, setMetaConnecting] = useState(false);
+  /** O diálogo do Google. O cartão só diz o estado; o resto abre daqui. */
+  const [googleAberto, setGoogleAberto] = useState(false);
   const handleMetaConnect = async () => {
     if (!orgId) return;
     const cfg = getConfig("meta");
@@ -446,176 +448,199 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             Configurações → Conectar e-mail. Os dois modelos conviviam e a
             tabela email_connections carregava duas dimensões sobrepostas
             (purpose e scope_type). Ficou só o modelo por pessoa. */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                <Mail className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <CardTitle>Google — credenciais OAuth</CardTitle>
-                <CardDescription>
-                  Configuradas uma vez pela empresa. Cada pessoa conecta o próprio Gmail depois.
-                </CardDescription>
+        {/* GOOGLE: cartão compacto, informação no diálogo.
+            Era um Card de duas colunas com todo o estado, os avisos e o
+            formulário abertos na tela -- sozinho, ocupava mais que os outros
+            cinco juntos, e a tela virava uma parede de texto antes de você
+            escolher o que fazer.
+            Mesmo tratamento do WhatsApp: o cartão diz o estado, o clique abre o
+            resto. */}
+        <CartaoDeIntegracao
+          icone={Mail}
+          nome="Google — credenciais OAuth"
+          descricao={
+            hasGmailCredentials
+              ? servidor?.origem === "legado"
+                ? "Configuradas, mas numa tabela que o navegador lê"
+                : "Configuradas · a equipe já pode conectar as contas"
+              : "Cada pessoa conecta o próprio Gmail depois de você cadastrar aqui"
+          }
+          estado={hasGmailCredentials ? "ativo" : "disponivel"}
+          acoes={
+            <Button variant="outline" size="sm" className="h-8 text-label"
+              onClick={() => setGoogleAberto(true)}>
+              {hasGmailCredentials ? "Gerenciar" : "Cadastrar credenciais"}
+            </Button>
+          }
+        />
+
+        <Dialog open={googleAberto} onOpenChange={setGoogleAberto}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-sm">Google — credenciais OAuth</DialogTitle>
+              <DialogDescription className="text-xs">
+                Configuradas uma vez pela empresa. Cada pessoa conecta o próprio Gmail depois.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+        {hasGmailCredentials ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/5 p-3">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-success">
+                  Credenciais configuradas — a equipe já pode conectar as contas
+                </p>
+                <p className="mt-0.5 text-label text-success/80">
+                  {servidor?.origem === "crm"
+                    ? "Origem: cadastrada aqui no CRM, guardada fora do alcance do navegador."
+                    : servidor?.origem === "legado"
+                      ? "Origem: configuração antiga do banco. Recadastre aqui para movê-la para o compartimento protegido."
+                      : "Origem: secrets do servidor. O segredo nunca chega ao navegador."}
+                </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {hasGmailCredentials ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/5 p-3">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-success">
-                      Credenciais configuradas — a equipe já pode conectar as contas
-                    </p>
-                    <p className="mt-0.5 text-label text-success/80">
-                      {servidor?.origem === "crm"
-                        ? "Origem: cadastrada aqui no CRM, guardada fora do alcance do navegador."
-                        : servidor?.origem === "legado"
-                          ? "Origem: configuração antiga do banco. Recadastre aqui para movê-la para o compartimento protegido."
-                          : "Origem: secrets do servidor. O segredo nunca chega ao navegador."}
-                    </p>
-                  </div>
-                </div>
-                {/* Credencial em integration_configs é herança: aquela tabela é
-                    lida pelo navegador do admin. A migração 20260824130000 tirou
-                    as chaves de lá, mas alguém pode reintroduzir por SQL. */}
-                {servidor?.origem === "legado" && (
-                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-label leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
-                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span>
-                      Esta credencial está numa <strong>tabela que o navegador lê</strong>, herança da
-                      configuração antiga. Clique em <strong>Trocar credencial</strong> e recadastre o
-                      mesmo par para movê-la ao compartimento protegido. As contas conectadas não são
-                      afetadas se o valor for o mesmo.
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+            {/* Credencial em integration_configs é herança: aquela tabela é
+                lida pelo navegador do admin. A migração 20260824130000 tirou
+                as chaves de lá, mas alguém pode reintroduzir por SQL. */}
+            {servidor?.origem === "legado" && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-label leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  Sem o <strong>Client ID</strong> e o <strong>Client Secret</strong> do Google,
-                  ninguém consegue conectar e-mail — nem você.
+                  Esta credencial está numa <strong>tabela que o navegador lê</strong>, herança da
+                  configuração antiga. Clique em <strong>Trocar credencial</strong> e recadastre o
+                  mesmo par para movê-la ao compartimento protegido. As contas conectadas não são
+                  afetadas se o valor for o mesmo.
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              Sem o <strong>Client ID</strong> e o <strong>Client Secret</strong> do Google,
+              ninguém consegue conectar e-mail — nem você.
+            </span>
+          </div>
+        )}
+
+        <div className="rounded-md border border-border bg-muted/30 p-3">
+          <p className="text-meta font-medium">Onde cada pessoa conecta a conta dela</p>
+          <p className="mt-0.5 text-label leading-relaxed text-muted-foreground">
+            Em <strong>Configurações → Conectar e-mail</strong>. A caixa de cada um é privada:
+            ninguém vê o e-mail do outro, nem você.
+          </p>
+          {emailConnections.length > 0 && (
+            <p className="mt-1.5 text-label tabular-nums text-muted-foreground">
+              {emailConnections.length}{" "}
+              {emailConnections.length === 1 ? "conta conectada" : "contas conectadas"} na equipe
+            </p>
+          )}
+        </div>
+
+        {/* Quem conectou e quem está com problema. Só admin: o RLS de
+            email_connections mostra ao admin as conexões de todos e ao
+            comercial apenas a dele — sem esta guarda, um não-admin veria a
+            equipe inteira como "não conectada" e concluiria que está tudo
+            quebrado. */}
+        {isAdmin && emailConnections.length > 0 && (
+          <div className="rounded-md border border-border">
+            <p className="border-b border-border px-3 py-2 text-meta font-medium">
+              Contas conectadas
+            </p>
+            <div className="divide-y divide-border">
+              {emailConnections.map((c) => (
+                <div key={c.id} className="flex items-center gap-2 px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate text-meta">{c.email_address}</span>
+                  {c.invalid_since ? (
+                    <Badge variant="destructive" className="shrink-0 text-micro">
+                      {c.invalid_reason === "credenciais_trocadas"
+                        ? "reconectar: credencial trocada"
+                        : c.invalid_reason === "token_revogado"
+                          ? "reconectar: acesso revogado"
+                          : "reconectar"}
+                    </Badge>
+                  ) : (
+                    <span className="shrink-0 text-label tabular-nums text-muted-foreground">
+                      {c.connected_at
+                        ? formatarData(c.connected_at)
+                        : "—"}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Formulário próprio, não o diálogo compartilhado. O diálogo
+            gravava direto em integration_configs, tabela que o navegador LÊ
+            — e junto arrastava dez campos de assinatura que duplicavam
+            Configurações → Assinatura, sobrescrevendo sem merge. Aqui são
+            dois campos, e eles vão para uma edge function. */}
+        {!formAberto ? (
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" className="h-8 text-label"
+              onClick={() => { setFormAberto(true); setFormId(""); setFormSecret(""); }}>
+              {hasGmailCredentials ? "Trocar credencial" : "Cadastrar credencial"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+            <div className="space-y-1">
+              <label className="text-label font-medium" htmlFor="g-cid">Client ID</label>
+              <Input id="g-cid" autoComplete="off" className="h-8 font-mono text-xs"
+                placeholder="000000000000-xxxx.apps.googleusercontent.com"
+                value={formId} onChange={(e) => setFormId(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-label font-medium" htmlFor="g-csec">Client Secret</label>
+              <Input id="g-csec" type="password" autoComplete="off" className="h-8 font-mono text-xs"
+                placeholder="GOCSPX-..."
+                value={formSecret} onChange={(e) => setFormSecret(e.target.value)} />
+            </div>
+
+            <p className="text-label leading-relaxed text-muted-foreground">
+              Guardado em um compartimento que o navegador não lê — nem admin consegue
+              recuperar depois. Por isso os campos vêm vazios em vez de fingir
+              pré-preenchimento. Validamos com o Google antes de salvar.
+            </p>
+
+            {/* Avisar ANTES, não descobrir depois: trocar a credencial invalida
+                todo token já emitido, porque o Google exige que a renovação use
+                as mesmas credenciais da emissão. */}
+            {hasGmailCredentials && emailConnections.length > 0 && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-label leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>
+                  {emailConnections.length === 1
+                    ? "1 conta conectada precisará reconectar"
+                    : `${emailConnections.length} contas conectadas precisarão reconectar`}
+                  {" "}depois da troca. Cada pessoa verá o motivo em Conectar e-mail.
                 </span>
               </div>
             )}
 
-            <div className="rounded-md border border-border bg-muted/30 p-3">
-              <p className="text-meta font-medium">Onde cada pessoa conecta a conta dela</p>
-              <p className="mt-0.5 text-label leading-relaxed text-muted-foreground">
-                Em <strong>Configurações → Conectar e-mail</strong>. A caixa de cada um é privada:
-                ninguém vê o e-mail do outro, nem você.
-              </p>
-              {emailConnections.length > 0 && (
-                <p className="mt-1.5 text-label tabular-nums text-muted-foreground">
-                  {emailConnections.length}{" "}
-                  {emailConnections.length === 1 ? "conta conectada" : "contas conectadas"} na equipe
-                </p>
-              )}
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" className="h-8 text-label"
+                onClick={() => setFormAberto(false)} disabled={salvandoCred}>
+                Cancelar
+              </Button>
+              <Button size="sm" className="h-8 text-label"
+                onClick={salvarCredencialGoogle}
+                disabled={salvandoCred || !formId.trim() || !formSecret.trim()}>
+                {salvandoCred && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                Validar e salvar
+              </Button>
             </div>
+          </div>
+        )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
-            {/* Quem conectou e quem está com problema. Só admin: o RLS de
-                email_connections mostra ao admin as conexões de todos e ao
-                comercial apenas a dele — sem esta guarda, um não-admin veria a
-                equipe inteira como "não conectada" e concluiria que está tudo
-                quebrado. */}
-            {isAdmin && emailConnections.length > 0 && (
-              <div className="rounded-md border border-border">
-                <p className="border-b border-border px-3 py-2 text-meta font-medium">
-                  Contas conectadas
-                </p>
-                <div className="divide-y divide-border">
-                  {emailConnections.map((c) => (
-                    <div key={c.id} className="flex items-center gap-2 px-3 py-2">
-                      <span className="min-w-0 flex-1 truncate text-meta">{c.email_address}</span>
-                      {c.invalid_since ? (
-                        <Badge variant="destructive" className="shrink-0 text-micro">
-                          {c.invalid_reason === "credenciais_trocadas"
-                            ? "reconectar: credencial trocada"
-                            : c.invalid_reason === "token_revogado"
-                              ? "reconectar: acesso revogado"
-                              : "reconectar"}
-                        </Badge>
-                      ) : (
-                        <span className="shrink-0 text-label tabular-nums text-muted-foreground">
-                          {c.connected_at
-                            ? formatarData(c.connected_at)
-                            : "—"}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Formulário próprio, não o diálogo compartilhado. O diálogo
-                gravava direto em integration_configs, tabela que o navegador LÊ
-                — e junto arrastava dez campos de assinatura que duplicavam
-                Configurações → Assinatura, sobrescrevendo sem merge. Aqui são
-                dois campos, e eles vão para uma edge function. */}
-            {!formAberto ? (
-              <div className="flex justify-end">
-                <Button variant="outline" size="sm" className="h-8 text-label"
-                  onClick={() => { setFormAberto(true); setFormId(""); setFormSecret(""); }}>
-                  {hasGmailCredentials ? "Trocar credencial" : "Cadastrar credencial"}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
-                <div className="space-y-1">
-                  <label className="text-label font-medium" htmlFor="g-cid">Client ID</label>
-                  <Input id="g-cid" autoComplete="off" className="h-8 font-mono text-xs"
-                    placeholder="000000000000-xxxx.apps.googleusercontent.com"
-                    value={formId} onChange={(e) => setFormId(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-label font-medium" htmlFor="g-csec">Client Secret</label>
-                  <Input id="g-csec" type="password" autoComplete="off" className="h-8 font-mono text-xs"
-                    placeholder="GOCSPX-..."
-                    value={formSecret} onChange={(e) => setFormSecret(e.target.value)} />
-                </div>
-
-                <p className="text-label leading-relaxed text-muted-foreground">
-                  Guardado em um compartimento que o navegador não lê — nem admin consegue
-                  recuperar depois. Por isso os campos vêm vazios em vez de fingir
-                  pré-preenchimento. Validamos com o Google antes de salvar.
-                </p>
-
-                {/* Avisar ANTES, não descobrir depois: trocar a credencial invalida
-                    todo token já emitido, porque o Google exige que a renovação use
-                    as mesmas credenciais da emissão. */}
-                {hasGmailCredentials && emailConnections.length > 0 && (
-                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-label leading-relaxed text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
-                    <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-                    <span>
-                      {emailConnections.length === 1
-                        ? "1 conta conectada precisará reconectar"
-                        : `${emailConnections.length} contas conectadas precisarão reconectar`}
-                      {" "}depois da troca. Cada pessoa verá o motivo em Conectar e-mail.
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" className="h-8 text-label"
-                    onClick={() => setFormAberto(false)} disabled={salvandoCred}>
-                    Cancelar
-                  </Button>
-                  <Button size="sm" className="h-8 text-label"
-                    onClick={salvarCredencialGoogle}
-                    disabled={salvandoCred || !formId.trim() || !formSecret.trim()}>
-                    {salvandoCred && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                    Validar e salvar
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
       </GrupoDeIntegracoes>
 
