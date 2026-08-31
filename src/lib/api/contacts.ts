@@ -24,7 +24,14 @@ export interface ContactListParams {
   companyId?: string;
   createdFrom?: string;
   createdTo?: string;
-  origin?: string; // filtro por origem (metadata.source): cadastro_likawave | landing | manual | import
+  /**
+   * Filtro por origem: cadastro_likawave | landing | manual | import.
+   *
+   * Lê `metadata.source`, exceto em `import`, que lê a marca
+   * `metadata.importado_em` -- desde que a importação passou a gravar o NOME DO
+   * ARQUIVO em `source`, o texto deixou de ser previsível.
+   */
+  origin?: string;
   sortKey?: "name" | "email" | "status" | "created_at" | "title";  // "status" mantido: é a coluna de ordenação do cabeçalho da tabela
   sortDir?: "asc" | "desc";
 }
@@ -71,7 +78,17 @@ const buildListQuery = (orgId: string, params: ContactListParams) => {
     if (origin === "cadastro_likawave") {
       query = query.eq("metadata->>source", "cadastro_likawave");
     } else if (origin === "import") {
-      query = query.or("metadata->>source.eq.csv_import,metadata->>source.eq.import,metadata->>source.eq.importacao");
+      // `importado_em` é a MARCA, e `source` virou o nome do arquivo.
+      //
+      // O casamento exato em `csv_import` continua para os contatos importados
+      // ANTES dessa mudança -- tirá-lo faria eles sumirem deste filtro. Os
+      // novos entram pela marca de data, que independe do nome do arquivo: sem
+      // ela, uma planilha chamada "Congresso 2026" não seria reconhecida como
+      // importação por nada.
+      query = query.or(
+        "metadata->>importado_em.not.is.null," +
+        "metadata->>source.eq.csv_import,metadata->>source.eq.import,metadata->>source.eq.importacao",
+      );
     } else if (origin === "landing") {
       query = query.or("metadata->>source.ilike.%landing%,metadata->>source.ilike.%site%,metadata->>source.ilike.%form%,metadata->>source.ilike.%web%,metadata->>source.ilike.%utm%");
     } else if (origin === "manual") {

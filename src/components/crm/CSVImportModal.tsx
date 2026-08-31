@@ -12,7 +12,10 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Upload, FileText } from "lucide-react";
+import { Upload, Table2, Loader2 } from "lucide-react";
+import { CADASTRO_FIELDS } from "@/lib/contact-options";
+import { mensagemErro } from "@/lib/erro-supabase";
+import { formatarData } from "@/lib/formato";
 import { useToast } from "@/hooks/use-toast";
 
 interface CSVImportModalProps {
@@ -22,6 +25,15 @@ interface CSVImportModalProps {
   entityType: "contacts" | "companies";
 }
 
+/**
+ * Prefixo das perguntas do formulário.
+ *
+ * Elas NÃO são colunas de `contacts` — vivem em `metadata`, que é jsonb. Sem o
+ * prefixo, mapear "Cidade / Estado" tentaria gravar uma coluna `cidade` que não
+ * existe, e o insert falharia com a planilha inteira dentro dele.
+ */
+const PREFIXO_META = "meta:";
+
 const contactFields = [
   { key: "first_name", label: "Nome" },
   { key: "last_name", label: "Sobrenome" },
@@ -30,6 +42,10 @@ const contactFields = [
   { key: "title", label: "Cargo" },
   { key: "lifecycle_stage", label: "Ciclo de vida" },
   { key: "linkedin_url", label: "LinkedIn" },
+  // As mesmas perguntas que a ficha do contato exibe. Vinham só de formulário
+  // de captação; agora uma planilha também as preenche, e a ficha não sabe a
+  // diferença — é o mesmo `metadata`.
+  ...CADASTRO_FIELDS.map((f) => ({ key: `${PREFIXO_META}${f.key}`, label: f.label })),
   { key: "__skip", label: "— Ignorar —" },
 ];
 
@@ -93,6 +109,28 @@ const ESTAGIO_DA_PLANILHA: Record<string, string> = {
   churned: "disqualified",
 };
 
+/**
+ * Uma célula de planilha, como texto.
+ *
+ * O leitor de xlsx devolve o TIPO da célula: número, data, booleano. O CSV
+ * devolve tudo como texto, e o mapeamento adiante assume texto — converter aqui
+ * mantém um formato só em vez de espalhar checagem de tipo.
+ *
+ * Data passa por `formatarData` e não por `toLocaleDateString`: o formato
+ * inline estava em 18 arquivos com oito variações, e há teste proibindo que
+ * volte.
+ *
+ * Número inteiro sem casas perde o `.0` que o leitor às vezes traz — telefone
+ * digitado como número numa planilha vira "5511999998888", não
+ * "5511999998888.0".
+ */
+function textoDaCelula(c: unknown): string {
+  if (c instanceof Date) return formatarData(c);
+  if (typeof c === "boolean") return c ? "Sim" : "Não";
+  if (typeof c === "number") return Number.isInteger(c) ? String(c) : String(c);
+  return String(c).trim();
+}
+
 const companyFields = [
   { key: "name", label: "Nome" },
   { key: "domain", label: "Domínio" },
@@ -115,48 +153,124 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
   const [csvRows, setCsvRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<number, string>>({});
   const [importing, setImporting] = useState(false);
+  const [lendo, setLendo] = useState(false);
+  /** Nome do arquivo. Vira a ORIGEM de cada contato importado. */
+  const [arquivo, setArquivo] = useState("");
 
   const fields = entityType === "contacts" ? contactFields : companyFields;
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Compara cabeçalho de planilha com rótulo de campo.
+   *
+   * Sem tirar acento e pontuação, "Cidade / Estado" não casa com "cidade /
+   * estado" exportado de outro sistema, e o mapeamento automático erra
+   * justamente nas perguntas cujos rótulos são mais longos.
+   */
+  const normalizar = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+  const aplicarPlanilha = (linhas: string[][], nomeArquivo: string) => {
+    const naoVazias = linhas.filter((r) => r.some((c) => c && c.trim()));
+    if (naoVazias.length < 2) {
+      toast({ title: "A planilha está vazia ou só tem cabeçalho", variant: "destructive" });
+      return;
+    }
+
+    const cabecalho = naoVazias[0];
+    setCsvHeaders(cabecalho);
+    setCsvRows(naoVazias.slice(1));
+    setArquivo(nomeArquivo);
+
+    const autoMap: Record<number, string> = {};
+    cabecalho.forEach((header, i) => {
+      const lower = header.toLowerCase();
+      const norm = normalizar(header);
+      const match = fields.find((f) =>
+        f.key !== "__skip" && (
+          normalizar(f.label) === norm ||
+          f.key === lower ||
+          f.key === `${PREFIXO_META}${norm.replace(/ /g, "_")}` ||
+          (f.key === "first_name" && (lower.includes("nome") || lower.includes("first"))) ||
+          (f.key === "last_name" && (lower.includes("sobrenome") || lower.includes("last"))) ||
+          (f.key === "email" && lower.includes("email")) ||
+          (f.key === "phone" && (lower.includes("telefone") || lower.includes("phone"))) ||
+          (f.key === "name" && lower.includes("empresa"))
+        )
+      );
+      autoMap[i] = match?.key || "__skip";
+    });
+    setMapping(autoMap);
+    setStep("mapping");
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      const lines = parseCSV(text);
-      if (lines.length < 2) { toast({ title: "CSV vazio ou inválido", variant: "destructive" }); return; }
-      setCsvHeaders(lines[0]);
-      setCsvRows(lines.slice(1).filter((r) => r.some((c) => c)));
-      // Auto-map by header name
-      const autoMap: Record<number, string> = {};
-      lines[0].forEach((header, i) => {
-        const lower = header.toLowerCase();
-        const match = fields.find((f) =>
-          f.key !== "__skip" && (f.label.toLowerCase() === lower || f.key === lower ||
-            (f.key === "first_name" && (lower.includes("nome") || lower.includes("first"))) ||
-            (f.key === "last_name" && (lower.includes("sobrenome") || lower.includes("last"))) ||
-            (f.key === "email" && lower.includes("email")) ||
-            (f.key === "phone" && (lower.includes("telefone") || lower.includes("phone"))) ||
-            (f.key === "name" && lower.includes("empresa")))
+    // Permite escolher o MESMO arquivo de novo depois de um erro: sem isto o
+    // input não dispara change na segunda vez e a tela parece travada.
+    e.target.value = "";
+
+    const ehPlanilha = /\.xlsx?$/i.test(file.name);
+    setLendo(true);
+    try {
+      if (ehPlanilha) {
+        // Import dinâmico: a biblioteca de xlsx só é baixada por quem importa
+        // planilha. Estática, ela entraria no pacote de TODA tela.
+        // Duas armadilhas do pacote, as duas apontadas pelo compilador:
+        //
+        // 1. não há export raiz -- só subcaminhos por ambiente, então é
+        //    "read-excel-file/browser" e não "read-excel-file";
+        // 2. na v9 o export PADRÃO devolve a lista de ABAS, não as linhas.
+        //    Quem devolve linhas é `readSheet`, que lê a primeira aba.
+        const { readSheet } = await import("read-excel-file/browser");
+        const linhas = await readSheet(file);
+        // As células vêm tipadas (número, data, booleano). O mapeamento adiante
+        // trabalha com texto, e converter aqui mantém um formato só.
+        aplicarPlanilha(
+          linhas.map((r) =>
+            r.map((c) => (c === null || c === undefined ? "" : textoDaCelula(c)))),
+          file.name,
         );
-        autoMap[i] = match?.key || "__skip";
+      } else {
+        const texto = await file.text();
+        aplicarPlanilha(parseCSV(texto), file.name);
+      }
+    } catch (err) {
+      toast({
+        title: "Não consegui ler o arquivo",
+        description: mensagemErro(err),
+        variant: "destructive",
       });
-      setMapping(autoMap);
-      setStep("mapping");
-    };
-    reader.readAsText(file);
+    } finally {
+      setLendo(false);
+    }
   };
 
   const handleImport = async () => {
     if (!orgId) return;
     setImporting(true);
     try {
+      // O nome do arquivo, sem extensão, é o que aparece no selo de Origem.
+      // "Leads Congresso 2026" lê melhor que "Leads Congresso 2026.xlsx" num
+      // selo de 11px, e a extensão não distingue nada que importe.
+      const origem = arquivo.replace(/\.[^.]+$/, "").trim() || "Importação";
+      const importadoEm = new Date().toISOString();
+
       const records = csvRows.map((row) => {
         const record: Record<string, any> = { org_id: orgId, owner_id: user?.id };
+        const perguntas: Record<string, string> = {};
+
         Object.entries(mapping).forEach(([colIdx, fieldKey]) => {
-          if (fieldKey !== "__skip") {
-            record[fieldKey] = row[Number(colIdx)] || null;
+          if (fieldKey === "__skip") return;
+          const valor = row[Number(colIdx)] || null;
+          if (fieldKey.startsWith(PREFIXO_META)) {
+            // Resposta de formulário: vai para `metadata`, não para coluna.
+            // Vazia é omitida — a ficha do contato só mostra o que tem valor, e
+            // gravar string vazia faria aparecer um rótulo sem resposta.
+            if (valor) perguntas[fieldKey.slice(PREFIXO_META.length)] = valor;
+          } else {
+            record[fieldKey] = valor;
           }
         });
         if (entityType === "contacts") {
@@ -185,8 +299,21 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
           if (estagio) record.lifecycle_stage = estagio;
           else delete record.lifecycle_stage;
           delete record.status;
-          // Marca a origem para diferenciar na lista de Contatos
-          record.metadata = { ...(record.metadata || {}), source: "csv_import" };
+          // A ORIGEM é o nome do documento. `getContactOrigin` não conhece
+          // esse valor e cai no ramo final, que exibe o texto cru — então o
+          // selo mostra o nome do arquivo sem precisar de caso novo.
+          //
+          // `importado_em` existe separado porque o filtro "Importação" da
+          // página Contatos casava o texto `csv_import` de forma exata. Com o
+          // nome do arquivo no lugar, esse casamento morreria e os importados
+          // sumiriam do filtro; a marca de data é o que o mantém funcionando
+          // seja qual for o nome do arquivo.
+          record.metadata = {
+            ...(record.metadata || {}),
+            ...perguntas,
+            source: origem,
+            importado_em: importadoEm,
+          };
         }
         return record;
       });
@@ -227,8 +354,8 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
         <DialogHeader>
           <DialogTitle>Importar CSV</DialogTitle>
           <DialogDescription>
-            {step === "upload" && "Selecione um arquivo CSV para importar"}
-            {step === "mapping" && "Mapeie as colunas do CSV para os campos"}
+            {step === "upload" && "Selecione uma planilha (.xlsx) ou um arquivo .csv"}
+            {step === "mapping" && `Mapeie as colunas de ${arquivo || "a planilha"} para os campos`}
             {step === "preview" && `Preview: ${csvRows.length} registros`}
           </DialogDescription>
         </DialogHeader>
@@ -238,10 +365,27 @@ export function CSVImportModal({ open, onOpenChange, onImported, entityType }: C
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Upload className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground">Arraste ou selecione um arquivo .csv</p>
-            <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
-            <Button onClick={() => fileRef.current?.click()}>
-              <FileText className="mr-2 h-4 w-4" />Selecionar Arquivo
+            <p className="text-sm text-muted-foreground">
+              Planilha do Excel (.xlsx) ou arquivo .csv
+            </p>
+            {entityType === "contacts" && (
+              <p className="max-w-sm text-center text-xs text-muted-foreground">
+                O nome do arquivo vira a <strong>origem</strong> de cada contato, e as
+                colunas podem ser mapeadas para qualquer pergunta do cadastro.
+              </p>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFile}
+              className="hidden"
+            />
+            <Button onClick={() => fileRef.current?.click()} disabled={lendo}>
+              {lendo
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : <Table2 className="mr-2 h-4 w-4" />}
+              {lendo ? "Lendo o arquivo…" : "Selecionar arquivo"}
             </Button>
           </div>
         )}

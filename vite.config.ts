@@ -140,6 +140,21 @@ export default defineConfig(({ mode }) => {
             // cmdk 44 KB, dompurify 26 KB, canvas-confetti 11 KB -- 87% do
             // vendor em cinco pacotes com um ou dois importadores cada.
             if (id.includes("libphonenumber")) return "telefone";
+            // Leitor de xlsx: UM importador, e dinâmico. Sem regra própria ele
+            // cai no catch-all `vendor`, que é pré-carregado na entrada -- e a
+            // tela de login passa a baixar um parser de planilha. Medido: 19 kB
+            // comprimidos indo para dentro do vendor.
+            //
+            // As DEPENDÊNCIAS dela acompanham, e não é detalhe: separar só o
+            // pacote de entrada deixou 5,2 kB comprimidos no vendor -- medido.
+            // Mesmo caso do pipeline do markdown, logo abaixo.
+            if (
+              id.includes("read-excel-file") ||
+              id.includes("/fflate") ||
+              id.includes("/saxen") ||
+              id.includes("unzipper-esm") ||
+              id.includes("/worker-f")
+            ) return "planilha";
             if (
               id.includes("react-markdown") ||
               id.includes("/micromark") ||

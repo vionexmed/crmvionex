@@ -237,13 +237,26 @@ describe("ninguém formata à mão", () => {
     return saida;
   })("src").filter((f) => !f.endsWith("lib/formato.ts") && !f.includes("/test/"));
 
+  /**
+   * COMENTÁRIO NÃO É CÓDIGO, e sem esta linha estes testes são impossíveis de
+   * documentar: um arquivo que explica "aqui usamos formatarData e não
+   * toLocaleDateString" era REPROVADO pela própria regra que a frase descreve.
+   *
+   * Aconteceu de verdade, em `CSVImportModal` -- a armadilha que o CLAUDE.md
+   * registra e que os outros varredores deste projeto já evitavam. Este arquivo
+   * era o que faltava.
+   */
+  const semComentarios = (s: string) =>
+    s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const codigo = (f: string) => semComentarios(readFileSync(f, "utf8"));
+
   it("Intl.NumberFormat só existe no módulo compartilhado", () => {
-    const infratores = arquivos.filter((f) => readFileSync(f, "utf8").includes("new Intl.NumberFormat"));
+    const infratores = arquivos.filter((f) => codigo(f).includes("new Intl.NumberFormat"));
     expect(infratores, infratores.join("\n")).toEqual([]);
   });
 
   it("nenhum toLocaleDateString inline", () => {
-    const infratores = arquivos.filter((f) => readFileSync(f, "utf8").includes("toLocaleDateString"));
+    const infratores = arquivos.filter((f) => codigo(f).includes("toLocaleDateString"));
     expect(infratores, infratores.join("\n")).toEqual([]);
   });
 
@@ -260,12 +273,12 @@ describe("ninguém formata à mão", () => {
    * Uma regra que cobre dois dos três casos dá a impressão de estar fechada.
    */
   it("nenhum toLocaleString inline", () => {
-    const infratores = arquivos.filter((f) => /\.toLocaleString\(/.test(readFileSync(f, "utf8")));
+    const infratores = arquivos.filter((f) => /\.toLocaleString\(/.test(codigo(f)));
     expect(infratores, infratores.join("\n")).toEqual([]);
   });
 
   it("nenhum toLocaleTimeString inline", () => {
-    const infratores = arquivos.filter((f) => readFileSync(f, "utf8").includes("toLocaleTimeString"));
+    const infratores = arquivos.filter((f) => codigo(f).includes("toLocaleTimeString"));
     expect(infratores, infratores.join("\n")).toEqual([]);
   });
 });

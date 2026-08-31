@@ -36,6 +36,7 @@ describe("as bibliotecas pesadas têm chunk próprio", () => {
     ["dompurify", "sanitizador"],
     ["canvas-confetti", "confete"],
     ["date-fns", "datas"],
+    ["read-excel-file", "planilha"],
   ];
 
   it.each(pesadas)("%s vai para o chunk %s", (pacote, chunk) => {
@@ -56,6 +57,18 @@ describe("as bibliotecas pesadas têm chunk próprio", () => {
    */
   it("o pipeline do markdown acompanha o pacote", () => {
     for (const dep of ["/micromark", "/mdast", "/hast", "/unified"]) {
+      expect(VITE).toContain(`id.includes("${dep}")`);
+    }
+  });
+
+  /**
+   * Mesmo caso: separar só `read-excel-file` deixou as dependências dela no
+   * vendor, e o vendor é pré-carregado. Medido na entrada: 233,1 kB sem a
+   * biblioteca, 238,4 kB com ela só no pacote de entrada, 233,2 kB depois de as
+   * quatro dependências acompanharem.
+   */
+  it("as dependências do leitor de planilha acompanham o pacote", () => {
+    for (const dep of ["/fflate", "/saxen", "unzipper-esm", "/worker-f"]) {
       expect(VITE).toContain(`id.includes("${dep}")`);
     }
   });
