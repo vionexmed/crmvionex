@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogoUploadField } from "@/components/crm/LogoUploadField";
 import { WhatsAppCard } from "@/components/crm/WhatsAppCard";
+import { InstagramCard } from "@/components/crm/InstagramCard";
 import { CartaoDeIntegracao, GrupoDeIntegracoes } from "@/components/integrations/CartaoDeIntegracao";
 import { formatarData } from "@/lib/formato";
 
@@ -440,6 +441,12 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             code da Evolution vive dentro dele: é consequência de configurar um
             dos dois, não uma decisão separada tomada antes. */}
         <WhatsAppCard />
+
+        {/* Instagram Direct, ao lado do WhatsApp porque é o mesmo tipo de coisa:
+            um canal onde a pessoa escreve primeiro. Cartão mais simples que o do
+            WhatsApp porque aqui há uma rota só -- não existe a escolha entre API
+            oficial e QR code. */}
+        <InstagramCard />
 
         {/* ── Google: só as credenciais ──────────────────
             Aqui NÃO se conecta conta de e-mail. Antes este cartão oferecia duas

@@ -387,6 +387,8 @@ export type Database = {
           email: string | null
           first_name: string
           id: string
+          instagram_igsid: string | null
+          instagram_username: string | null
           last_name: string | null
           lead_score: number | null
           lifecycle_changed_at: string
@@ -410,6 +412,8 @@ export type Database = {
           email?: string | null
           first_name: string
           id?: string
+          instagram_igsid?: string | null
+          instagram_username?: string | null
           last_name?: string | null
           lead_score?: number | null
           lifecycle_changed_at?: string
@@ -433,6 +437,8 @@ export type Database = {
           email?: string | null
           first_name?: string
           id?: string
+          instagram_igsid?: string | null
+          instagram_username?: string | null
           last_name?: string | null
           lead_score?: number | null
           lifecycle_changed_at?: string
@@ -1163,6 +1169,183 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: true
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_connections: {
+        Row: {
+          connected_at: string
+          daily_send_limit: number
+          display_name: string | null
+          id: string
+          ig_user_id: string
+          is_active: boolean
+          org_id: string
+          profile_pic_url: string | null
+          scope_type: string
+          sent_today: number
+          sent_today_date: string | null
+          user_id: string
+          username: string | null
+          webhook_verify_token: string
+        }
+        Insert: {
+          connected_at?: string
+          daily_send_limit?: number
+          display_name?: string | null
+          id?: string
+          ig_user_id: string
+          is_active?: boolean
+          org_id: string
+          profile_pic_url?: string | null
+          scope_type?: string
+          sent_today?: number
+          sent_today_date?: string | null
+          user_id: string
+          username?: string | null
+          webhook_verify_token?: string
+        }
+        Update: {
+          connected_at?: string
+          daily_send_limit?: number
+          display_name?: string | null
+          id?: string
+          ig_user_id?: string
+          is_active?: boolean
+          org_id?: string
+          profile_pic_url?: string | null
+          scope_type?: string
+          sent_today?: number
+          sent_today_date?: string | null
+          user_id?: string
+          username?: string | null
+          webhook_verify_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_connections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_messages: {
+        Row: {
+          body: string | null
+          connection_id: string | null
+          contact_id: string | null
+          created_at: string
+          deal_id: string | null
+          direction: string
+          error_message: string | null
+          from_igsid: string
+          id: string
+          ig_message_id: string | null
+          message_type: string
+          org_id: string
+          raw: Json | null
+          status: string
+          to_igsid: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          connection_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          direction: string
+          error_message?: string | null
+          from_igsid: string
+          id?: string
+          ig_message_id?: string | null
+          message_type?: string
+          org_id: string
+          raw?: Json | null
+          status?: string
+          to_igsid: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          connection_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          direction?: string
+          error_message?: string | null
+          from_igsid?: string
+          id?: string
+          ig_message_id?: string | null
+          message_type?: string
+          org_id?: string
+          raw?: Json | null
+          status?: string
+          to_igsid?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_messages_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instagram_messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instagram_messages_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instagram_messages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_secrets: {
+        Row: {
+          access_token: string
+          connection_id: string
+          expires_at: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          connection_id: string
+          expires_at?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          connection_id?: string
+          expires_at?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_secrets_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: true
+            referencedRelation: "instagram_connections"
             referencedColumns: ["id"]
           },
         ]
@@ -2654,7 +2837,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      mensagens_do_atendimento: {
+        Row: {
+          body: string | null
+          canal: string | null
+          connection_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          de: string | null
+          deal_id: string | null
+          direction: string | null
+          error_message: string | null
+          id: string | null
+          id_externo: string | null
+          message_type: string | null
+          org_id: string | null
+          para: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_pending_invitation: {
@@ -2687,6 +2890,20 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: undefined
       }
+      instagram_janela: {
+        Args: { _contact_id: string }
+        Returns: {
+          humano_ate: string
+          livre_ate: string
+          pode_responder: boolean
+          precisa_etiqueta: boolean
+          ultima_entrada: string
+        }[]
+      }
+      instagram_token_vence_em: {
+        Args: { _connection_id: string }
+        Returns: string
+      }
       is_org_admin: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -2694,6 +2911,10 @@ export type Database = {
       next_round_robin_owner: {
         Args: { _org_id: string }
         Returns: string
+      }
+      reserve_instagram_send: {
+        Args: { _connection_id: string }
+        Returns: boolean
       }
       reserve_email_send: {
         Args: { _connection_id: string }
