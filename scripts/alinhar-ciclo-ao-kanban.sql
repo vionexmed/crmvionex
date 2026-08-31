@@ -30,76 +30,66 @@
 -- de reescrever o passado em silêncio.
 -- ============================================================================
 
--- ---------- PARTE 1: quem seria afetado, e por quê ----------
-
-SELECT c.lifecycle_stage::text                            AS ciclo_atual,
-       CASE
-         WHEN NOT EXISTS (SELECT 1 FROM public.deals d WHERE d.contact_id = c.id)
-           THEN 'sem negócio nenhum'
-         ELSE 'card na coluna de entrada'
-       END                                                AS motivo,
-       count(*)                                           AS contatos,
-       string_agg(trim(concat(c.first_name, ' ', coalesce(c.last_name, ''))), ', '
-                  ORDER BY c.first_name)                  AS quem
-  FROM public.contacts c
- WHERE c.lifecycle_stage IN ('qualified', 'opportunity')
-   -- Nenhum negócio FORA da etapa de entrada: ninguém moveu este card.
-   AND NOT EXISTS (
-     SELECT 1 FROM public.deals d
-       JOIN public.pipeline_stages s ON s.id = d.stage_id
-      WHERE d.contact_id = c.id
-        AND d.status NOT IN ('won', 'lost')
-        AND d.stage_id <> public.etapa_de_entrada(s.pipeline_id)
-   )
-   -- E nenhum negócio ganho: isso seria cliente, e cliente não é tocado.
-   AND NOT EXISTS (
-     SELECT 1 FROM public.deals d WHERE d.contact_id = c.id AND d.status = 'won'
-   )
- GROUP BY 1, 2
- ORDER BY 1, 2;
-
-
--- ---------- PARTE 2: corrigir ----------
--- Descomente e rode. Comando único, atômico por si.
-
-/*
-UPDATE public.contacts c
-   SET lifecycle_stage = 'lead',
-       qualified_at    = NULL,
-       qualified_by    = NULL
- WHERE c.lifecycle_stage IN ('qualified', 'opportunity')
-   AND NOT EXISTS (
-     SELECT 1 FROM public.deals d
-       JOIN public.pipeline_stages s ON s.id = d.stage_id
-      WHERE d.contact_id = c.id
-        AND d.status NOT IN ('won', 'lost')
-        AND d.stage_id <> public.etapa_de_entrada(s.pipeline_id)
-   )
-   AND NOT EXISTS (
-     SELECT 1 FROM public.deals d WHERE d.contact_id = c.id AND d.status = 'won'
-   );
-*/
-
-
--- ---------- PARTE 3: quem ficou sem card, e precisa de um ----------
+-- ---------- A CORREÇÃO ----------
 --
--- "Todos precisam acompanhar o kanban" também vale para quem não tem card
--- nenhum: sem negócio, a pessoa não aparece no quadro e não há o que arrastar.
+-- UM comando, e não três. A versão anterior tinha PARTE 1 (prévia), PARTE 2
+-- (correção comentada) e PARTE 3 (sem card) -- e o editor do Supabase mostra só
+-- o resultado do ÚLTIMO SELECT. O usuário rodou o arquivo, viu a Parte 3, e a
+-- correção nem havia sido descomentada. Terceira vez que esse formato me morde
+-- nesta sessão.
+--
+-- Agora o comando já devolve quem foi afetado, então prévia e correção são a
+-- mesma coisa.
 
-SELECT count(*) AS contatos_sem_card
-  FROM public.contacts c
- WHERE NOT EXISTS (SELECT 1 FROM public.deals d WHERE d.contact_id = c.id);
+-- Rebaixa para "lead" quem está marcado como qualificado SEM ter card fora da
+-- coluna de entrada. Um comando só, e ele já diz quem foi afetado.
+--
+-- A REGRA: o quadro manda. Ninguém moveu o card, logo ninguém qualificou.
+--
+-- É REVERSÍVEL pela tela: o gatilho `negocio_move_ciclo` está aplicado, então
+-- arrastar o card de alguém para a segunda coluna requalifica na hora.
+--
+-- NÃO toca em 'customer': cliente vem de negócio GANHO, fato registrado.
+-- NÃO toca em quem já teve o card movido: aquilo foi decisão de alguém.
+WITH corrigidos AS (
+  UPDATE public.contacts c
+     SET lifecycle_stage = 'lead',
+         qualified_at    = NULL,
+         qualified_by    = NULL
+   WHERE c.lifecycle_stage IN ('qualified', 'opportunity')
+     AND NOT EXISTS (
+       SELECT 1 FROM public.deals d
+         JOIN public.pipeline_stages s ON s.id = d.stage_id
+        WHERE d.contact_id = c.id
+          AND d.status NOT IN ('won', 'lost')
+          AND d.stage_id <> public.etapa_de_entrada(s.pipeline_id)
+     )
+     AND NOT EXISTS (
+       SELECT 1 FROM public.deals d WHERE d.contact_id = c.id AND d.status = 'won'
+     )
+  RETURNING trim(concat(c.first_name, ' ', coalesce(c.last_name, ''))) AS nome
+)
+SELECT count(*)                                    AS rebaixados_para_lead,
+       string_agg(nome, ' · ' ORDER BY nome)        AS quem
+  FROM corrigidos;
+
+
+-- ---------- QUEM NÃO TEM CARD NENHUM ----------
+--
+-- "Todos precisam acompanhar o kanban desde a entrada" também vale para quem não
+-- tem negócio: sem card, a pessoa não aparece no quadro e não há o que arrastar.
+--
+-- Comando único que CRIA os que faltam e diz quantos foram. Rode só depois da
+-- correção acima -- a ordem importa, porque criar_negocio_de_entrada dispara o
+-- gatilho `negocio_move_ciclo`, e o card nasce na entrada (não avança ninguém).
 
 /*
--- Descomente para criar o card de entrada de quem não tem.
-DO $$
-DECLARE r record;
-BEGIN
-  FOR r IN
-    SELECT c.id FROM public.contacts c
-     WHERE NOT EXISTS (SELECT 1 FROM public.deals d WHERE d.contact_id = c.id)
-  LOOP
-    PERFORM public.criar_negocio_de_entrada(r.id);
-  END LOOP;
-END $$;
+WITH sem_card AS (
+  SELECT c.id FROM public.contacts c
+   WHERE NOT EXISTS (SELECT 1 FROM public.deals d WHERE d.contact_id = c.id)
+),
+criados AS (
+  SELECT public.criar_negocio_de_entrada(id) AS negocio FROM sem_card
+)
+SELECT count(*) AS cards_criados FROM criados WHERE negocio IS NOT NULL;
 */
