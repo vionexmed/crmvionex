@@ -7,22 +7,24 @@
 -- 20260831120000 faz o kanban EMPURRAR o ciclo de vida -- mas só para frente, e
 -- só a partir de agora. O que já estava torto continua torto.
 --
--- Três causas produzem o mesmo sintoma, e a saída é diferente em cada uma. Este
--- script as separa antes de qualquer correção.
+-- QUATRO situações produzem o mesmo sintoma, e a saída é diferente em cada uma. A
+-- consulta abaixo as separa antes de qualquer correção.
 --
--- Nenhuma parte aqui ALTERA dado. A correção é a PARTE 4, e está comentada.
+-- Ela NÃO altera dado. As correções estão no fim, comentadas.
 -- ============================================================================
 
--- ---------- PARTE 0: UMA consulta que responde tudo ----------
+-- ---------- O DIAGNÓSTICO: uma consulta, e é a única ----------
 --
--- Por que existe: o editor do Supabase mostra só o resultado do ÚLTIMO SELECT
--- de um script. Rodar as três partes de uma vez exibia a Parte 3 e escondia as
--- outras duas -- que são justamente as que dizem o que corrigir.
+-- Havia três consultas separadas aqui, e isso era um defeito do arquivo: o
+-- editor do Supabase mostra só o resultado do ÚLTIMO SELECT de um script. Quem
+-- colava o arquivo inteiro via a terceira -- a menos útil das três -- e as
+-- outras duas ficavam invisíveis.
 --
--- Rode SÓ esta e você tem o quadro completo.
+-- Agora é UMA. Ela responde o que as três respondiam juntas, então colar o
+-- arquivo inteiro dá o resultado certo.
 
 SELECT CASE
-         WHEN d.negocios = 0 THEN '1 · SEM NEGÓCIO — precisa da correção 4a'
+         WHEN d.negocios = 0 THEN '1 · SEM NEGÓCIO — precisa da correção A'
          WHEN d.abertos  = 0 THEN '2 · só ganho/perdido — kanban de abertos não mostra, e está certo'
          WHEN d.fora_da_entrada > 0
            THEN '3 · card já avançado — está no kanban; se não vê, é filtro de funil ou de dono'
@@ -53,71 +55,16 @@ SELECT CASE
  ORDER BY 1, 2;
 
 
--- ---------- PARTE 1: quantos, e por qual causa ----------
-
-WITH avancados AS (
-  SELECT c.id, c.first_name, c.last_name, c.lifecycle_stage, c.metadata->>'source' AS origem
-    FROM public.contacts c
-   WHERE c.lifecycle_stage IN ('qualified', 'opportunity', 'customer')
-),
-com_negocio AS (
-  SELECT a.*,
-         (SELECT count(*) FROM public.deals d WHERE d.contact_id = a.id) AS negocios,
-         (SELECT count(*) FROM public.deals d
-           WHERE d.contact_id = a.id AND d.status NOT IN ('won', 'lost')) AS abertos
-    FROM avancados a
-)
-SELECT CASE
-         WHEN negocios = 0 THEN '1. SEM NEGÓCIO NENHUM — o gatilho de entrada não rodou, ou o negócio foi apagado'
-         WHEN abertos = 0  THEN '2. só negócio ganho/perdido — o kanban de abertos não mostra, e está certo'
-         ELSE                   '3. tem negócio aberto — aparece no kanban; se não vê, é filtro de funil ou de dono'
-       END AS causa,
-       count(*) AS contatos
-  FROM com_negocio
- GROUP BY 1
- ORDER BY 1;
-
-
--- ---------- PARTE 2: quem são, na causa 1 (a que precisa de correção) ----------
-
-SELECT c.id,
-       trim(concat(c.first_name, ' ', coalesce(c.last_name, ''))) AS nome,
-       c.lifecycle_stage,
-       c.metadata->>'source'   AS origem,
-       c.created_at::date      AS criado,
-       c.qualified_at::date    AS qualificado_em
-  FROM public.contacts c
- WHERE c.lifecycle_stage IN ('qualified', 'opportunity', 'customer')
-   AND NOT EXISTS (SELECT 1 FROM public.deals d WHERE d.contact_id = c.id)
- ORDER BY c.created_at DESC
- LIMIT 100;
-
-
--- ---------- PARTE 3: veio de importação com coluna de estágio? ----------
---
--- Se a maioria dos avançados tem `importado_em`, a causa é a planilha: uma
--- coluna mapeada para "Ciclo de vida" avançou o contato, e o gatilho de entrada
--- criou o negócio na PRIMEIRA etapa -- então o selo diz "negociação" e o card
--- está na coluna de entrada. Não é o mesmo defeito, mas produz a mesma
--- estranheza na tela.
-
-SELECT c.lifecycle_stage,
-       count(*) FILTER (WHERE c.metadata->>'importado_em' IS NOT NULL) AS de_planilha,
-       count(*) FILTER (WHERE c.metadata->>'importado_em' IS NULL)     AS de_outro_lugar
-  FROM public.contacts c
- WHERE c.lifecycle_stage IN ('qualified', 'opportunity', 'customer')
- GROUP BY 1
- ORDER BY 1;
-
-
 -- ---------- PARTE 4: as duas correções ----------
 --
--- ESCOLHA UMA, conforme a PARTE 1 e a PARTE 3 mostrarem. Descomente só a que
--- você quer, e rode dentro da transação para poder desistir.
+-- ESCOLHA conforme a coluna `situacao` do diagnóstico. Descomente só a que você
+-- quer, e rode dentro da transação para poder desistir.
+--
+-- As situações 2 e 3 NÃO precisam de correção -- estão certas.
 
 /*
--- 4a. CRIAR o negócio que falta, na etapa de entrada.
---     Para a causa 1: o contato está avançado e não tem card nenhum. Mantém o
+-- A. CRIAR o negócio que falta, na etapa de entrada.
+--     Para a situação 1: o contato está avançado e não tem card nenhum. Mantém o
 --     ciclo de vida e devolve a pessoa ao quadro.
 BEGIN;
 DO $$
@@ -135,8 +82,8 @@ COMMIT;
 */
 
 /*
--- 4b. DEVOLVER o contato para "lead", quando o avanço foi engano da planilha.
---     Para a causa da PARTE 3: você quer todos a qualificar, e a coluna de
+-- B. DEVOLVER o contato para "lead", quando o avanço foi engano da planilha.
+--     Para quem veio de planilha avançado: você quer todos a qualificar, e a coluna de
 --     estágio da planilha avançou gente que ninguém avaliou.
 --
 --     Escreve `lifecycle_stage` e NUNCA `status`: no UPDATE o gatilho
