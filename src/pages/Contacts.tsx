@@ -58,6 +58,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
+import { formatarEmail, formatarTelefone, nomeDoContato } from "@/lib/contato-formato";
 import { BarraDeFiltros, BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 import { Paginacao } from "@/components/layout/Paginacao";
 
@@ -65,7 +66,6 @@ type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type SortKey = "name" | "email" | "status" | "created_at" | "title";
 type ViewMode = "table" | "cards" | "owner";
 
-const cleanPhone = (p: string | null) => p || "";
 
 interface ContactFilters {
   /**
@@ -341,7 +341,9 @@ export default function Contacts() {
         const comp = empresaPorId.get((c as Record<string, unknown>).company_id as string);
         return {
           Nome: c.first_name, Sobrenome: c.last_name || "", Email: c.email || "",
-          Telefone: cleanPhone(c.phone), Cargo: c.title || "", Empresa: comp?.name || "", "Ciclo de vida": LIFECYCLE_LABELS[c.lifecycle_stage ?? "lead"],
+          // O CSV leva o dado CRU, não o formatado: exportação existe para
+          // reimportar e para cruzar com outro sistema, e máscara atrapalha as duas.
+          Telefone: c.phone || "", Cargo: c.title || "", Empresa: comp?.name || "", "Ciclo de vida": LIFECYCLE_LABELS[c.lifecycle_stage ?? "lead"],
         };
       });
       exportarCSV(rows, "contatos");
@@ -531,12 +533,12 @@ export default function Contacts() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 shrink-0">
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {initials(`${c.first_name ?? ""} ${c.last_name ?? ""}`)}
+                          {initials(nomeDoContato(c.first_name, c.last_name))}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-medium truncate">{c.first_name} {c.last_name}</span>
+                          <span className="font-medium truncate">{nomeDoContato(c.first_name, c.last_name)}</span>
                           {(() => {
                             const days = getInactivityDays(c.id, c.created_at);
                             if (days === null || days < 14) return null;
@@ -553,11 +555,11 @@ export default function Contacts() {
                             );
                           })()}
                         </div>
-                        <span className="text-xs text-muted-foreground truncate block sm:hidden">{c.email}</span>
+                        <span className="text-xs text-muted-foreground truncate block sm:hidden">{formatarEmail(c.email)}</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{c.email || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{formatarEmail(c.email)}</TableCell>
                   <TableCell className="text-muted-foreground hidden sm:table-cell text-xs">
                     {(() => {
                       const comp = empresaPorId.get((c as Record<string, unknown>).company_id as string);
@@ -567,7 +569,7 @@ export default function Contacts() {
                     })()}
                   </TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell text-xs">{c.title || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground hidden md:table-cell text-xs">{cleanPhone(c.phone) || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell text-xs tabular-nums">{formatarTelefone(c.phone)}</TableCell>
                   <TableCell>
                     <LifecycleBadge stage={c.lifecycle_stage} />
                   </TableCell>
@@ -617,15 +619,15 @@ export default function Contacts() {
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                      {initials(`${c.first_name ?? ""} ${c.last_name ?? ""}`)}
+                      {initials(nomeDoContato(c.first_name, c.last_name))}
                     </AvatarFallback>
                   </Avatar>
                   <div className="overflow-hidden">
-                    <p className="font-medium truncate">{c.first_name} {c.last_name}</p>
+                    <p className="font-medium truncate">{nomeDoContato(c.first_name, c.last_name)}</p>
                     {c.title && <p className="text-xs text-muted-foreground truncate">{c.title}</p>}
                   </div>
                 </div>
-                {c.email && <p className="text-xs text-muted-foreground truncate">{c.email}</p>}
+                {c.email && <p className="text-xs text-muted-foreground truncate">{formatarEmail(c.email)}</p>}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <LifecycleBadge stage={c.lifecycle_stage} />
                   <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
