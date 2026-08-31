@@ -512,15 +512,20 @@ export default function Contacts() {
           <Table>
             <TableHeader>
               <TableRow>
+                {/* SEIS colunas, não nove.
+                    Eram nove, e duas -- Empresa e Especialidade -- vinham
+                    vazias em toda a página quando a lista é de leads
+                    importados: largura morta forçando rolagem lateral para ver
+                    o resto.
+                    Campos parentes passaram a dividir célula (nome com e-mail,
+                    empresa com especialidade, situação com origem). É o padrão
+                    de CRM, e cabe numa tela de notebook sem arrastar. */}
                 <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todos" /></TableHead>
-                <TableHead><SortHeader rotulo="Nome" campo="name" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
-                <TableHead><SortHeader rotulo="Email" campo="email" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
-                <TableHead className="hidden sm:table-cell">Empresa</TableHead>
-                <TableHead className="hidden md:table-cell"><SortHeader rotulo="Especialidade" campo="title" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
-                <TableHead className="hidden md:table-cell">Telefone</TableHead>
-                <TableHead><SortHeader rotulo="Status" campo="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
-                <TableHead className="hidden lg:table-cell">Origem</TableHead>
-                <TableHead className="hidden lg:table-cell"><SortHeader rotulo="Criado em" campo="created_at" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead><SortHeader rotulo="Contato" campo="name" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden sm:table-cell">Empresa · Especialidade</TableHead>
+                <TableHead className="hidden md:table-cell w-[150px]">Telefone</TableHead>
+                <TableHead className="w-[190px]"><SortHeader rotulo="Situação" campo="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
+                <TableHead className="hidden lg:table-cell w-[110px]"><SortHeader rotulo="Criado em" campo="created_at" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -555,26 +560,39 @@ export default function Contacts() {
                             );
                           })()}
                         </div>
-                        <span className="text-xs text-muted-foreground truncate block sm:hidden">{formatarEmail(c.email)}</span>
+                        {/* Sempre visível, não só no celular: é o que permitiu
+                            a coluna de e-mail sair. */}
+                        <span className="block truncate text-xs text-muted-foreground">{formatarEmail(c.email)}</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{formatarEmail(c.email)}</TableCell>
-                  <TableCell className="text-muted-foreground hidden sm:table-cell text-xs">
+                  <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
                     {(() => {
                       const comp = empresaPorId.get((c as Record<string, unknown>).company_id as string);
-                      if (comp) return comp.name;
                       const meta = (c as Record<string, unknown>).metadata as Record<string, string> | null;
-                      return meta?.empresa_manual || "—";
+                      const empresa = comp?.name || meta?.empresa_manual || null;
+                      // Nenhum dos dois: UM travessão, não dois em colunas
+                      // separadas. Lead importado quase nunca traz os dois, e
+                      // duas colunas de travessão foi o que empurrou o resto
+                      // para fora da tela.
+                      if (!empresa && !c.title) return "—";
+                      return (
+                        <div className="min-w-0">
+                          {empresa && <span className="block truncate text-foreground">{empresa}</span>}
+                          {c.title && <span className="block truncate">{c.title}</span>}
+                        </div>
+                      );
                     })()}
                   </TableCell>
-                  <TableCell className="text-muted-foreground hidden md:table-cell text-xs">{c.title || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground hidden md:table-cell text-xs tabular-nums">{formatarTelefone(c.phone)}</TableCell>
+                  <TableCell className="hidden md:table-cell text-xs text-muted-foreground tabular-nums">{formatarTelefone(c.phone)}</TableCell>
                   <TableCell>
-                    <LifecycleBadge stage={c.lifecycle_stage} />
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
+                    {/* Situação e origem na mesma célula: as duas respondem
+                        "em que ponto está e de onde veio", e ninguém lê uma sem
+                        a outra. */}
+                    <div className="flex flex-col items-start gap-1">
+                      <LifecycleBadge stage={c.lifecycle_stage} />
+                      <OriginBadge metadata={(c as Record<string, unknown>).metadata} />
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs hidden lg:table-cell">
                     {formatarData(c.created_at)}
