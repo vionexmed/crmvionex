@@ -13,6 +13,46 @@
 -- Nenhuma parte aqui ALTERA dado. A correção é a PARTE 4, e está comentada.
 -- ============================================================================
 
+-- ---------- PARTE 0: UMA consulta que responde tudo ----------
+--
+-- Por que existe: o editor do Supabase mostra só o resultado do ÚLTIMO SELECT
+-- de um script. Rodar as três partes de uma vez exibia a Parte 3 e escondia as
+-- outras duas -- que são justamente as que dizem o que corrigir.
+--
+-- Rode SÓ esta e você tem o quadro completo.
+
+SELECT CASE
+         WHEN d.negocios = 0 THEN '1 · SEM NEGÓCIO — precisa da correção 4a'
+         WHEN d.abertos  = 0 THEN '2 · só ganho/perdido — kanban de abertos não mostra, e está certo'
+         WHEN d.fora_da_entrada > 0
+           THEN '3 · card já avançado — está no kanban; se não vê, é filtro de funil ou de dono'
+         ELSE '4 · card na COLUNA DE ENTRADA — o selo diz avançado e o quadro diz que não'
+       END                                                    AS situacao,
+       d.lifecycle_stage                                      AS ciclo_de_vida,
+       count(*)                                               AS contatos,
+       count(*) FILTER (WHERE d.de_planilha)                   AS veio_de_planilha,
+       string_agg(d.nome, ', ' ORDER BY d.nome)
+         FILTER (WHERE d.negocios = 0)                        AS quem_esta_sem_negocio
+  FROM (
+    SELECT c.id,
+           c.lifecycle_stage::text,
+           trim(concat(c.first_name, ' ', coalesce(c.last_name, ''))) AS nome,
+           (c.metadata->>'importado_em') IS NOT NULL          AS de_planilha,
+           (SELECT count(*) FROM public.deals x WHERE x.contact_id = c.id) AS negocios,
+           (SELECT count(*) FROM public.deals x
+             WHERE x.contact_id = c.id AND x.status NOT IN ('won','lost'))  AS abertos,
+           (SELECT count(*) FROM public.deals x
+              JOIN public.pipeline_stages s ON s.id = x.stage_id
+             WHERE x.contact_id = c.id
+               AND x.status NOT IN ('won','lost')
+               AND x.stage_id <> public.etapa_de_entrada(s.pipeline_id))    AS fora_da_entrada
+      FROM public.contacts c
+     WHERE c.lifecycle_stage IN ('qualified','opportunity','customer')
+  ) d
+ GROUP BY 1, 2
+ ORDER BY 1, 2;
+
+
 -- ---------- PARTE 1: quantos, e por qual causa ----------
 
 WITH avancados AS (
