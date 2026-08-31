@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     }
 
     const corpo = await req.json().catch(() => ({}));
-    const { waba_id, access_token, provider, remover } = corpo as Record<string, unknown>;
+    const { waba_id, access_token, provider, server_url, remover } = corpo as Record<string, unknown>;
 
     // ---------- Desligar ----------
     // O token é apagado e a conta fica inativa, mas as conexões das pessoas
@@ -83,44 +83,63 @@ Deno.serve(async (req) => {
     }
 
     const prov = resolverProvedor(typeof provider === "string" ? provider : "meta");
+    const daMeta = prov.nome === "meta";
 
-    if (typeof waba_id !== "string" || !waba_id.trim()) {
+    // Os dois provedores pedem coisas diferentes, e pedir a errada é o tipo de
+    // erro que faz alguém procurar um "WABA ID" que não existe na Evolution.
+    if (daMeta && (typeof waba_id !== "string" || !waba_id.trim())) {
       return json({ ok: false, error: "Informe o ID da conta WhatsApp Business (WABA)." }, 400);
     }
+    if (!daMeta && (typeof server_url !== "string" || !server_url.trim())) {
+      return json({ ok: false, error: "Informe a URL do servidor Evolution." }, 400);
+    }
     if (typeof access_token !== "string" || !access_token.trim()) {
-      return json({ ok: false, error: "Informe o token de sistema." }, 400);
+      return json({
+        ok: false,
+        error: daMeta ? "Informe o token de sistema." : "Informe a chave da API (apikey).",
+      }, 400);
     }
 
     const cred = {
       provider: prov.nome,
       token: access_token.trim(),
-      wabaId: waba_id.trim(),
-      serverUrl: null,
+      wabaId: daMeta ? (waba_id as string).trim() : null,
+      serverUrl: daMeta ? null : (server_url as string).trim().replace(/\/+$/, ""),
     };
 
-    // Validar ANTES de gravar. Token errado gravado é pior que token recusado:
-    // fica parecendo configurado e falha só quando alguém tenta enviar.
+    // Validar ANTES de gravar. Credencial errada gravada é pior que recusada:
+    // fica parecendo configurada e falha só quando alguém tenta enviar.
     const teste = await prov.verificarCredencial(cred);
     if (!teste.ok) {
-      return json({ ok: false, error: `A Meta recusou a credencial: ${teste.erro}` }, 400);
+      const quem = daMeta ? "A Meta" : "O servidor Evolution";
+      return json({ ok: false, error: `${quem} recusou a credencial: ${teste.erro}` }, 400);
     }
 
     // Já traz os números, para o admin ver na hora que o cadastro pegou o WABA
     // certo — e para descobrir agora, não depois, que a conta está sem número.
+    // Na Evolution a lista nasce VAZIA e isso é o esperado: as instâncias são
+    // criadas depois, uma por pessoa, ao ler o QR. Falhar aqui por lista vazia
+    // impediria o cadastro de existir antes do primeiro pareamento.
     let numeros: Awaited<ReturnType<typeof prov.listarNumeros>> = [];
     try {
       numeros = await prov.listarNumeros(cred);
     } catch (e) {
-      // Credencial válida mas listagem falhou: normalmente falta a permissão
-      // whatsapp_business_management no token. Vale gravar e avisar, porque
-      // enviar já funciona com whatsapp_business_messaging.
-      return json({
-        ok: false,
-        error:
-          "A credencial é válida, mas não consegui listar os números. " +
-          "Confira se o token tem a permissão whatsapp_business_management. " +
-          `Detalhe: ${e instanceof Error ? e.message : String(e)}`,
-      }, 400);
+      // Na Meta, listagem que falha com credencial válida é quase sempre falta
+      // da permissão whatsapp_business_management — vale recusar o cadastro e
+      // dizer isso, porque sem ela ninguém consegue reivindicar número.
+      if (daMeta) {
+        return json({
+          ok: false,
+          error:
+            "A credencial é válida, mas não consegui listar os números. " +
+            "Confira se o token tem a permissão whatsapp_business_management. " +
+            `Detalhe: ${e instanceof Error ? e.message : String(e)}`,
+        }, 400);
+      }
+      // Na Evolution não: as instâncias são criadas depois, uma por pessoa, ao
+      // ler o QR. Recusar aqui impediria o cadastro de existir antes do
+      // primeiro pareamento — que é a ordem obrigatória do fluxo.
+      console.error("whatsapp-waba-setup: listagem da Evolution falhou", e);
     }
 
     // Preserva o token de verificação já cadastrado: trocá-lo quebraria o
@@ -139,6 +158,7 @@ Deno.serve(async (req) => {
         org_id: orgId,
         provider: prov.nome,
         waba_id: cred.wabaId,
+        server_url: cred.serverUrl,
         webhook_verify_token: verifyToken,
         is_active: true,
         updated_at: new Date().toISOString(),
@@ -156,7 +176,10 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
+      provider: prov.nome,
+      forma_de_pareamento: prov.formaDePareamento,
       waba_id: cred.wabaId,
+      server_url: cred.serverUrl,
       // O admin precisa deste valor para colar no painel da Meta. Não é segredo:
       // a Meta só o ecoa de volta no handshake.
       webhook_verify_token: verifyToken,

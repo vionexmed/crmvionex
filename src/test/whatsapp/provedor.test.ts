@@ -165,19 +165,145 @@ describe("lerWebhook() — vários eventos no mesmo POST", () => {
   });
 });
 
-describe("provedor Evolution — stub honesto", () => {
-  it("recusa envio dizendo o motivo, em vez de falhar sem explicação", async () => {
-    const evo = resolverProvedor("evolution");
-    await expect(
-      evo.enviarTexto({ provider: "evolution", token: "x", wabaId: null, serverUrl: null },
-        { origem: "i", para: "55" }, "oi"),
-    ).rejects.toThrow(/ainda não está disponível/);
+describe("provedor Evolution — leitura do webhook", () => {
+  const evo = resolverProvedor("evolution");
+
+  /** Envelope da Evolution: evento no topo, instância, e `data`. */
+  const upsert = (data: unknown) => ({ event: "messages.upsert", instance: "org-a-user-b", data });
+
+  it("extrai texto simples e usa a INSTÂNCIA como origem", () => {
+    const [ev] = evo.lerWebhook(upsert({
+      key: { id: "3EB0A1", remoteJid: "5511888887777@s.whatsapp.net", fromMe: false },
+      pushName: "Fulano",
+      messageType: "conversation",
+      message: { conversation: "oi" },
+    }));
+
+    expect(ev).toMatchObject({
+      tipo: "mensagem",
+      // Na Meta a origem é o phone_number_id; aqui é a instância. Mesmo papel:
+      // é por ela que o webhook descobre de quem é a conexão.
+      origem: "org-a-user-b",
+      idMensagem: "3EB0A1",
+      de: "5511888887777",
+      texto: "oi",
+      nomePerfil: "Fulano",
+    });
   });
 
-  it("verificarCredencial NÃO lança — o cadastro precisa poder exibir o motivo", async () => {
-    const evo = resolverProvedor("evolution");
-    const r = await evo.verificarCredencial({ provider: "evolution", token: "x", wabaId: null, serverUrl: null });
+  it("tira o sufixo do JID do telefone", () => {
+    // Ainda há contato em produção com `@s.whatsapp.net` gravado no telefone,
+    // resíduo da fase anterior. Deixar passar reintroduziria aquilo.
+    const [ev] = evo.lerWebhook(upsert({
+      key: { id: "1", remoteJid: "5511999998888:12@s.whatsapp.net" },
+      message: { conversation: "x" },
+    }));
+    expect(ev && "de" in ev && ev.de).toBe("5511999998888");
+  });
+
+  it("lê texto estendido, legenda de mídia e resposta de botão", () => {
+    const texto = (message: unknown) => {
+      const [ev] = evo.lerWebhook(upsert({ key: { id: "1", remoteJid: "55@s.whatsapp.net" }, message }));
+      return ev && "texto" in ev ? ev.texto : null;
+    };
+    expect(texto({ extendedTextMessage: { text: "com link" } })).toBe("com link");
+    expect(texto({ imageMessage: { caption: "olha isso" } })).toBe("olha isso");
+    expect(texto({ buttonsResponseMessage: { selectedDisplayText: "Sim" } })).toBe("Sim");
+  });
+
+  it("mídia sem legenda vira [tipo], não bolha vazia", () => {
+    const [ev] = evo.lerWebhook(upsert({
+      key: { id: "1", remoteJid: "55@s.whatsapp.net" },
+      message: { audioMessage: { seconds: 3 } },
+    }));
+    expect(ev && "texto" in ev && ev.texto).toBe("[audio]");
+  });
+
+  it("ignora o que NÓS mandamos", () => {
+    // Volta pelo mesmo evento. Gravar como recebida criaria conversa consigo
+    // mesmo e contaria resposta que não houve -- a taxa de resposta do painel
+    // viraria ficção.
+    expect(evo.lerWebhook(upsert({
+      key: { id: "1", remoteJid: "55@s.whatsapp.net", fromMe: true },
+      message: { conversation: "eu mandei" },
+    }))).toEqual([]);
+  });
+
+  it("ignora grupo", () => {
+    // O CRM não tem conceito de conversa em grupo; entraria como contato fantasma.
+    expect(evo.lerWebhook(upsert({
+      key: { id: "1", remoteJid: "12036304@g.us" },
+      message: { conversation: "no grupo" },
+    }))).toEqual([]);
+  });
+
+  it("aceita data como objeto OU como array", () => {
+    const um = { key: { id: "1", remoteJid: "55@s.whatsapp.net" }, message: { conversation: "a" } };
+    expect(evo.lerWebhook(upsert(um))).toHaveLength(1);
+    expect(evo.lerWebhook(upsert([um, { ...um, key: { id: "2", remoteJid: "56@s.whatsapp.net" } }]))).toHaveLength(2);
+  });
+
+  it("traduz o status do Baileys para o vocabulário da tabela", () => {
+    const st = (status: string) => {
+      const [ev] = evo.lerWebhook({
+        event: "messages.update", instance: "i", data: { keyId: "9", status },
+      });
+      return ev && "status" in ev ? ev.status : null;
+    };
+    expect(st("SERVER_ACK")).toBe("sent");
+    expect(st("DELIVERY_ACK")).toBe("delivered");
+    expect(st("READ")).toBe("read");
+    // Status que não conhecemos não vira linha: gravar "PLAYED_2" cru faria a
+    // consulta de abordagens, que compara por string, parar de contar.
+    expect(st("INVENTADO")).toBeNull();
+  });
+
+  it("evento sem instância ou sem data não produz nada", () => {
+    expect(evo.lerWebhook({ event: "messages.upsert", data: {} })).toEqual([]);
+    expect(evo.lerWebhook({ event: "messages.upsert", instance: "i" })).toEqual([]);
+    expect(evo.lerWebhook({})).toEqual([]);
+  });
+
+  it("connection.update não vira mensagem", () => {
+    // Quem cuida do estado é a tela de pareamento, perguntando ao servidor.
+    expect(evo.lerWebhook({
+      event: "connection.update", instance: "i", data: { state: "open" },
+    })).toEqual([]);
+  });
+});
+
+describe("as duas formas de parear", () => {
+  it("a Meta é lista; a Evolution é QR code", () => {
+    expect(resolverProvedor("meta").formaDePareamento).toBe("lista");
+    expect(resolverProvedor("evolution").formaDePareamento).toBe("qrcode");
+  });
+
+  it("a Meta recusa QR dizendo onde o número é cadastrado", async () => {
+    await expect(
+      resolverProvedor("meta").iniciarPareamento(
+        { provider: "meta", token: "x", wabaId: "1", serverUrl: null }, "i",
+      ),
+    ).rejects.toThrow(/Business Manager/);
+  });
+
+  /**
+   * O webhook da Meta é apontado à mão no painel dela. Recusar aqui obrigaria
+   * quem chama a saber de qual provedor se trata -- que é justamente o que o
+   * contrato existe para evitar.
+   */
+  it("apontarWebhook da Meta não falha, porque não há o que fazer", async () => {
+    await expect(
+      resolverProvedor("meta").apontarWebhook(
+        { provider: "meta", token: "x", wabaId: "1", serverUrl: null }, "i", "https://x",
+      ),
+    ).resolves.toBeUndefined();
+  });
+
+  it("a Evolution exige a URL do servidor antes de qualquer coisa", async () => {
+    const r = await resolverProvedor("evolution").verificarCredencial(
+      { provider: "evolution", token: "x", wabaId: null, serverUrl: null },
+    );
     expect(r.ok).toBe(false);
-    expect(r.erro).toMatch(/ainda não está disponível/);
+    expect(r.erro).toMatch(/URL do servidor/);
   });
 });

@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogoUploadField } from "@/components/crm/LogoUploadField";
 import { WhatsAppOfficialCard } from "@/components/crm/WhatsAppOfficialCard";
+import { WhatsAppEvolutionCard } from "@/components/crm/WhatsAppEvolutionCard";
 import { formatarData } from "@/lib/formato";
 
 type IntegrationConfig = {
@@ -355,6 +356,12 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
         <WhatsAppOfficialCard />
+
+        {/* As duas saídas de WhatsApp, lado a lado. Cada cartão se esconde
+            sozinho quando a empresa já escolheu o outro provedor — não há
+            seletor, porque escolher provedor é consequência de configurar um
+            dos dois, não uma decisão separada. */}
+        <WhatsAppEvolutionCard />
 
         {/* ── Google: só as credenciais ──────────────────
             Aqui NÃO se conecta conta de e-mail. Antes este cartão oferecia duas

@@ -33,6 +33,8 @@ export function WhatsAppOfficialCard() {
   const { orgId } = useOrg();
   const { toast } = useToast();
   const [config, setConfig] = useState<WAConfig | null>(null);
+  /** A empresa já está na Evolution: este cartão não tem o que oferecer. */
+  const [outroProvedor, setOutroProvedor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -51,8 +53,17 @@ export function WhatsAppOfficialCard() {
   const load = useCallback(async () => {
     if (!orgId) return;
     setLoading(true);
-    const { data } = await supabase.from("whatsapp_config").select("*").eq("org_id", orgId).maybeSingle();
+    // A conta da empresa diz QUAL provedor foi escolhido. Sem esta leitura, os
+    // dois cartões de WhatsApp apareceriam juntos depois de a empresa já ter
+    // escolhido um -- e oferecer os dois caminhos ao mesmo tempo é o convite
+    // para alguém configurar os dois e não saber por qual as mensagens saem.
+    const [{ data }, { data: conta }] = await Promise.all([
+      supabase.from("whatsapp_config").select("*").eq("org_id", orgId).maybeSingle(),
+      supabase.from("whatsapp_business_accounts")
+        .select("provider, is_active").eq("org_id", orgId).maybeSingle(),
+    ]);
     setConfig((data as WAConfig) || null);
+    setOutroProvedor(!!conta?.is_active && conta.provider === "evolution");
     setLoading(false);
   }, [orgId]);
 
@@ -129,6 +140,9 @@ export function WhatsAppOfficialCard() {
     setCopied(key);
     setTimeout(() => setCopied(null), 1500);
   }
+
+  // A empresa está na Evolution: quem manda é o cartão de QR code.
+  if (outroProvedor) return null;
 
   return (
     <>

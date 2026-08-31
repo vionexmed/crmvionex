@@ -13,6 +13,7 @@
  * "admin, ou dono da conexão".
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { carregarCredencial, resolverProvedor } from "../_shared/whatsapp/index.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
 
     const { data: conexao } = await admin
       .from("whatsapp_connections")
-      .select("id, org_id, user_id, display_phone_number")
+      .select("id, org_id, user_id, display_phone_number, provider, instance_name")
       .eq("id", connection_id)
       .maybeSingle();
 
@@ -61,13 +62,36 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: "Você só pode desconectar o seu próprio número" }, 403);
     }
 
+    // Na Evolution, desativar a linha NÃO basta: a instância continua pareada
+    // no servidor e o aparelho segue listando o CRM em "Aparelhos conectados".
+    // Pior, o próximo pareamento encontraria a instância já conectada e voltaria
+    // "conectado" na hora, sem QR nenhum -- o botão pareceria não funcionar.
+    //
+    // Falha aqui não impede a desativação: uma instância órfã no servidor é
+    // recuperável; uma linha que não se consegue desativar prende a pessoa a um
+    // número que ela não usa mais.
+    let avisoProvedor: string | null = null;
+    const instancia = conexao.instance_name as string | null;
+    if (conexao.provider === "evolution" && instancia) {
+      try {
+        const credencial = await carregarCredencial(admin, conexao.org_id as string);
+        if (credencial.ok) {
+          await resolverProvedor(credencial.cred.provider)
+            .encerrarInstancia(credencial.cred, instancia);
+        }
+      } catch (e) {
+        avisoProvedor = e instanceof Error ? e.message : String(e);
+        console.error("whatsapp-disconnect: instância não removida", avisoProvedor);
+      }
+    }
+
     const { error } = await admin
       .from("whatsapp_connections")
       .update({ is_active: false })
       .eq("id", connection_id);
     if (error) throw error;
 
-    return json({ ok: true, numero: conexao.display_phone_number });
+    return json({ ok: true, numero: conexao.display_phone_number, avisoProvedor });
   } catch (e) {
     console.error("whatsapp-disconnect", e);
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 500);

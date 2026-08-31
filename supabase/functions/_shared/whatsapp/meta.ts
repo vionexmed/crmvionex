@@ -93,8 +93,32 @@ async function postMensagem(
   };
 }
 
+/**
+ * O pareamento da Meta é escolher um número que JÁ existe no WABA — quem
+ * verifica o telefone é o Business Manager, fora do CRM. Não há QR code.
+ *
+ * `formaDePareamento: "lista"` é o que diz à tela para desenhar a lista em vez
+ * do QR; os quatro métodos abaixo existem só para o contrato fechar, e recusam
+ * dizendo o caminho certo em vez de "não implementado".
+ */
+const SO_QRCODE =
+  "O WhatsApp oficial da Meta não parea por QR code. O número é cadastrado no "
+  + "Business Manager e escolhido na lista.";
+
 export const provedorMeta: ProvedorWhatsApp = {
   nome: "meta",
+  formaDePareamento: "lista",
+
+  iniciarPareamento: () => Promise.reject(new Error(SO_QRCODE)),
+  consultarPareamento: () => Promise.reject(new Error(SO_QRCODE)),
+  encerrarInstancia: () => Promise.reject(new Error(SO_QRCODE)),
+
+  /**
+   * O webhook da Meta é UM só, apontado à mão no painel do Business Manager e
+   * validado pelo handshake `hub.challenge`. Não há como o CRM configurá-lo por
+   * API, então isto não é recusa: é ausência de trabalho a fazer.
+   */
+  apontarWebhook: () => Promise.resolve(),
 
   enviarTexto(cred, rota, texto) {
     return postMensagem(cred, rota, { type: "text", text: { body: texto } });

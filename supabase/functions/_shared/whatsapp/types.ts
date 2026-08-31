@@ -8,7 +8,11 @@
  * para a Meta, e sobrou código morto em process-automation chamando tabela que
  * não existe mais. Declarar o contrato agora é o que evita repetir isso.
  *
- * Só a Meta está implementada. `evolution.ts` é um stub explícito.
+ * Os dois provedores estão implementados. Eles diferem numa coisa que o
+ * contrato precisa expor: como um número ENTRA no CRM. Na Meta você escolhe um
+ * número que já existe no WABA; na Evolution você cria uma instância e lê um QR
+ * code com o celular. São fluxos de tela diferentes, então `formaDePareamento`
+ * existe para a interface saber qual desenhar sem conhecer o provedor.
  */
 
 /** Um número dentro do WABA (ou uma instância, na Evolution). */
@@ -89,6 +93,36 @@ export type EventoWebhook =
       erro: string | null;
     };
 
+/**
+ * Como um número entra no CRM.
+ *
+ * "lista"  — o provedor já tem números; a pessoa escolhe um (Meta).
+ * "qrcode" — a pessoa parea o próprio aparelho lendo um código (Evolution).
+ */
+export type FormaDePareamento = "lista" | "qrcode";
+
+export type EstadoPareamento = "aguardando" | "conectado" | "desconectado";
+
+/** Uma leitura do pareamento. A tela pergunta em intervalo até sair de "aguardando". */
+export type Pareamento = {
+  /** Nome da instância no provedor. */
+  instancia: string;
+  estado: EstadoPareamento;
+  /**
+   * QR pronto para `<img src>`, já como data URI. Só quando "aguardando".
+   *
+   * Data URI e não o código cru: a Evolution devolve `base64` ora com o prefixo
+   * `data:image/png;base64,` ora sem, dependendo da versão. Normalizar aqui
+   * evita que a tela tenha de saber disso.
+   */
+  qr: string | null;
+  /** Código de pareamento por telefone, quando o provedor oferece. */
+  codigo: string | null;
+  /** Telefone conectado. Só quando "conectado". */
+  telefone: string | null;
+  nomePerfil: string | null;
+};
+
 export interface ProvedorWhatsApp {
   readonly nome: string;
   enviarTexto(cred: Credencial, rota: Rota, texto: string): Promise<ResultadoEnvio>;
@@ -98,4 +132,25 @@ export interface ProvedorWhatsApp {
   /** Números que a credencial alcança. Alimenta a lista de reivindicação. */
   listarNumeros(cred: Credencial): Promise<NumeroDisponivel[]>;
   lerWebhook(payload: unknown): EventoWebhook[];
+
+  // ---------- pareamento ----------
+  //
+  // Declarados como obrigatórios, e a Meta os recusa com mensagem própria. A
+  // alternativa -- métodos opcionais -- obrigaria cada chamador a checar
+  // existência antes de chamar, e o compilador não avisaria quem esquecesse.
+  // `formaDePareamento` é o que diz se faz sentido chamá-los.
+
+  readonly formaDePareamento: FormaDePareamento;
+
+  /** Cria a instância (ou retoma a existente) e devolve o QR para ler. */
+  iniciarPareamento(cred: Credencial, instancia: string): Promise<Pareamento>;
+
+  /** Estado atual. A tela chama em intervalo enquanto o QR está na frente da pessoa. */
+  consultarPareamento(cred: Credencial, instancia: string): Promise<Pareamento>;
+
+  /** Faz o provedor mandar os eventos para o CRM. Chamado logo após criar. */
+  apontarWebhook(cred: Credencial, instancia: string, url: string): Promise<void>;
+
+  /** Desfaz o pareamento no provedor. Chamado ao desconectar. */
+  encerrarInstancia(cred: Credencial, instancia: string): Promise<void>;
 }
