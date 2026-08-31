@@ -111,7 +111,61 @@ describe("cartão solto no destaque, faixa no detalhe", () => {
       readFileSync("src/components/dashboard/StatCard.tsx", "utf8"),
     );
     const j = cartao.indexOf("emFaixa ?");
-    expect(cartao.slice(j, j + 160)).toMatch(/border-b border-r border-border/);
+    expect(cartao.slice(j, j + 160)).toMatch(/border-l border-t border-border/);
+  });
+
+  /**
+   * DE QUE LADO A CÉLULA DESENHA, e é o que fechou o problema.
+   *
+   * A primeira correção usou `border-b border-r`: cada célula desenhava para
+   * baixo e para a direita. Numa linha INCOMPLETA -- que é a regra aqui, com
+   * grupos de 5, 4, 4 e 3 numa grade de 5, 3 ou 2 colunas -- a última célula
+   * desenhava uma divisória apontando para o vazio, e a linha de cima desenhava
+   * um trecho horizontal por baixo de célula que não existe. Contando por
+   * tamanho de tela: até 3 traços verticais soltos e até 5 trechos horizontais
+   * sobrando. Traço de 1px separando nada de nada é o que faz a tela parecer
+   * quebrada.
+   *
+   * `border-t border-l` desenha em direção a vizinhos que SEMPRE existem -- a
+   * primeira linha e a primeira coluna ficam escondidas sob a moldura pela
+   * margem negativa. Célula que falta não tem quem desenhe para ela.
+   *
+   * As duas metades andam juntas: borda no topo/esquerda exige margem negativa
+   * no topo/esquerda. Trocar uma sem a outra dobra a moldura de um lado e deixa
+   * o outro sem divisória.
+   */
+  it("a célula desenha para cima e para a esquerda, nunca para o vazio", () => {
+    const cartao = semComentarios(
+      readFileSync("src/components/dashboard/StatCard.tsx", "utf8"),
+    );
+    const j = cartao.indexOf("emFaixa ?");
+    const emFaixa = cartao.slice(j, j + 160);
+    expect(emFaixa).toContain("border-l");
+    expect(emFaixa).toContain("border-t");
+    expect(emFaixa, "border-b/border-r desenham para o vazio em linha incompleta")
+      .not.toMatch(/border-[br]\b/);
+
+    const i = PAINEL.indexOf('value="indicadores"');
+    const bloco = PAINEL.slice(i, i + 1400);
+    expect(bloco).toContain("-ml-px");
+    expect(bloco).toContain("-mt-px");
+    expect(bloco, "a margem negativa tem de ser do mesmo lado da borda")
+      .not.toMatch(/-m[br]-px/);
+  });
+
+  /**
+   * O esqueleto tem a mesma forma da célula.
+   *
+   * Sem isso a grade nascia sem divisória nenhuma e com dezesseis retângulos
+   * arredondados, e ao terminar de carregar saltava para uma grade de fio de
+   * cabelo: duas telas diferentes para o mesmo conteúdo.
+   */
+  it("o esqueleto leva as bordas da célula", () => {
+    const i = PAINEL.indexOf('value="indicadores"');
+    const bloco = PAINEL.slice(i, i + 1400);
+    const iEsqueleto = bloco.indexOf("isLoading ? (");
+    expect(iEsqueleto).toBeGreaterThan(-1);
+    expect(bloco.slice(iEsqueleto, iEsqueleto + 400)).toMatch(/border-l border-t border-border/);
   });
 
   /**

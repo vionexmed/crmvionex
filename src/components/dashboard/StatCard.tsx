@@ -200,8 +200,26 @@ export function StatCard({
          * Com a linha desenhada pela célula, célula que não existe não desenha
          * nada -- e o fundo do contêiner passou a ser `bg-card`, então o que
          * sobra é fundo de cartão, não cor de borda.
+         *
+         * DE QUE LADO, e isto é o que fecha o problema.
+         *
+         * A primeira versão usava `border-b border-r`: cada célula desenhava
+         * para BAIXO e para a DIREITA. Numa linha incompleta -- que é a regra
+         * aqui, com grupos de 5, 4, 4 e 3 numa grade de 5, 3 ou 2 colunas -- a
+         * última célula desenhava uma divisória apontando para o vazio, e a linha
+         * de cima desenhava um trecho horizontal por baixo de célula que não
+         * existe. Contei: até 3 traços verticais soltos e até 5 trechos
+         * horizontais sobrando, variando por tamanho de tela. Traço de 1px
+         * separando nada de nada é exatamente o que faz a tela parecer quebrada.
+         *
+         * `border-t border-l` inverte: a célula desenha para CIMA e para a
+         * ESQUERDA, ou seja em direção a vizinhos que SEMPRE existem -- a
+         * primeira coluna e a primeira linha são recortadas pela margem negativa
+         * do contêiner. Célula que falta não tem quem desenhe para ela. Zero
+         * traços soltos, em qualquer contagem de células e de colunas, sem
+         * `nth-child`.
          */
-        emFaixa ? "min-w-0 rounded-none border-b border-r border-border" : "vx-elevado",
+        emFaixa ? "min-w-0 rounded-none border-l border-t border-border" : "vx-elevado",
         clickable && "cursor-pointer hover:shadow-[0_2px_4px_hsl(217_72%_14%/0.08),0_8px_20px_hsl(217_72%_14%/0.08)]",
         noSource && "opacity-60",
       )}

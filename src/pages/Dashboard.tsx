@@ -338,16 +338,25 @@ export default function Dashboard() {
                   e a elevação deixaria de significar "isto importa" para
                   significar "isto é um cartão". A moldura por grupo é o que faz
                   o grupo se ler como grupo. */}
-              {/* `bg-card` e não `bg-border`: as divisórias agora são borda de
-                  cada célula (ver `emFaixa` no StatCard), então o fundo é o que
-                  aparece onde NÃO há métrica. A margem negativa puxa a última
-                  linha e a última coluna 1px para fora, escondendo a borda delas
-                  sob a borda do contêiner -- sem isso a moldura ficaria dupla. */}
+              {/* `bg-card` e não `bg-border`: as divisórias são borda de cada
+                  célula (ver `emFaixa` no StatCard), então o fundo é o que
+                  aparece onde NÃO há métrica.
+                  `-mt-px -ml-px` e não `-mb-px -mr-px`: a célula desenha para
+                  cima e para a esquerda, então o que precisa ficar escondido sob
+                  a moldura é a PRIMEIRA linha e a PRIMEIRA coluna. Ver o
+                  comentário de `emFaixa`, que explica por que esse lado importa. */}
               <div className="overflow-hidden rounded-lg border border-border bg-card">
-                <div className="-mb-px -mr-px grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                <div className="-ml-px -mt-px grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {group.tiles.map((tile) =>
                   isLoading ? (
-                    <Skeleton key={tile.key} className="h-[104px]" />
+                    /* O esqueleto leva as MESMAS bordas da célula real, e é
+                       quadrado. Sem isso a grade nascia sem divisória nenhuma e
+                       com dezesseis retângulos arredondados, e ao terminar de
+                       carregar saltava para uma grade de fio de cabelo -- duas
+                       telas diferentes para o mesmo conteúdo. */
+                    <div key={tile.key} className="border-l border-t border-border p-4">
+                      <Skeleton className="h-[72px] rounded-none" />
+                    </div>
                   ) : (
                     <StatCard
                       key={tile.key}
