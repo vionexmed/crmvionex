@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { EmailComposeModal } from "@/components/crm/EmailComposeModal";
-import { mensagemErro } from "@/lib/erro-supabase";
+import { mensagemErro, erroDaFuncao } from "@/lib/erro-supabase";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 // `Folder as FolderIcon` porque `Folder` já é o TIPO das sete abas locais desta
 // tela -- o nome colidiria e o erro seria "only refers to a type".
@@ -245,13 +245,20 @@ export default function Inbox() {
     acao: string,
     labelId?: string,
   ): Promise<boolean> => {
-    const { data, error } = await supabase.functions.invoke("gmail-modify", {
+    const res = await supabase.functions.invoke("gmail-modify", {
       body: { ids, acao, label_id: labelId },
     });
-    if (error || !data?.ok) {
+    const data = res.data as { ok?: boolean; aplicados?: number; falhas?: { erro: string }[] } | null;
+    /*
+     * `erroDaFuncao` porque o `invoke` NÃO lê o corpo em status não-2xx: o motivo
+     * real -- "Nenhuma conta de e-mail conectada", "Requested entity was not
+     * found" -- chegava aqui como "Edge Function returned a non-2xx status code",
+     * e a pessoa via a ação falhar sem saber por quê.
+     */
+    if (res.error || !data?.ok) {
       toast({
         title: "A ação não chegou ao Gmail",
-        description: data?.error ?? data?.falhas?.[0]?.erro ?? mensagemErro(error),
+        description: data?.falhas?.[0]?.erro ?? (await erroDaFuncao(res)) ?? "Motivo não informado.",
         variant: "destructive",
       });
       return false;

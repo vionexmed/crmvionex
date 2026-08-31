@@ -87,9 +87,19 @@ describe("o banco só é atualizado DEPOIS do Gmail confirmar", () => {
    */
   it("o update local vem depois da checagem de resposta", () => {
     const iRecusa = MODIFY.indexOf("if (!resp.ok)");
-    const iUpdate = MODIFY.indexOf('admin.from("emails")\n          .update(');
+    /*
+     * Por REGEX com `\s*`, não pela string com a indentação embutida.
+     *
+     * A versão anterior procurava `admin.from("emails")\n` seguido de exatamente
+     * dez espaços. Envolver o trecho num laço a mais -- o que a busca por caixa
+     * fez -- mudou o recuo e reprovou o teste sem que o invariante tivesse
+     * mudado: o update continuava depois da checagem. Teste que quebra por
+     * recuo é teste que alguém desliga.
+     */
+    const update = /admin\s*\.from\("emails"\)\s*\.update\(/.exec(MODIFY);
     expect(iRecusa).toBeGreaterThan(-1);
-    expect(iUpdate).toBeGreaterThan(iRecusa);
+    expect(update, "não achei o update local em gmail-modify").not.toBeNull();
+    expect(update!.index).toBeGreaterThan(iRecusa);
   });
 
   /**
@@ -99,6 +109,56 @@ describe("o banco só é atualizado DEPOIS do Gmail confirmar", () => {
    */
   it("as labels gravadas vêm da resposta do Gmail", () => {
     expect(MODIFY).toMatch(/labelsAgora = \(corpo as \{ labelIds\?: string\[\] \}/);
+  });
+});
+
+/**
+ * A CAIXA CERTA, e o que fazer quando não se sabe qual é.
+ *
+ * `synced_from` guarda o e-mail da caixa de onde a mensagem veio. Mensagens
+ * sincronizadas antes de essa coluna existir têm nulo ali -- o `gmail-attachment`
+ * já registrava esse caso com um fallback próprio.
+ *
+ * O `gmail-modify` passava `null` nessas, e `obterAccessToken` com e-mail nulo
+ * devolve o token MAIS RECENTE DA ORGANIZAÇÃO -- que pode ser a caixa de outra
+ * pessoa. O Gmail recebia um id que não existe naquela caixa e respondia 404.
+ * Na tela, a ação simplesmente não acontecia: apagar não apagava.
+ */
+describe("a ação encontra a caixa da mensagem", () => {
+  it("a caixa conhecida vem primeiro", () => {
+    // `synced_from` na frente, e as outras atrás. O contrário faria toda ação
+    // começar errando.
+    expect(MODIFY).toMatch(/m\.synced_from\s*\n?\s*\?\s*\[m\.synced_from as string, \.\.\.contas/);
+  });
+
+  it("404 tenta a próxima caixa; outro erro não", () => {
+    /*
+     * 404 é "esta caixa não conhece esta mensagem". Qualquer outro status é
+     * problema de verdade -- 401 de token, 403 de escopo, 429 de cota -- e
+     * repetir em outra caixa só multiplica a falha e queima cota.
+     */
+    const i = MODIFY.indexOf("if (resp.status === 404) continue;");
+    expect(i, "o 404 não tenta a próxima caixa").toBeGreaterThan(-1);
+    // O `break` imediatamente depois é o que impede a repetição dos outros.
+    expect(MODIFY.slice(i, i + 60)).toContain("break;");
+  });
+
+  it("a caixa descoberta é gravada, para não varrer de novo", () => {
+    expect(MODIFY).toMatch(/conta && !m\.synced_from \? \{ synced_from: conta \}/);
+  });
+
+  it("o erro do select não é descartado", () => {
+    /*
+     * Sem esta checagem, coluna que falta -- `labels` só existe desde
+     * 20260831180000 -- fazia `mensagens` vir undefined e a resposta ser
+     * "Mensagens não encontradas". Migração pendente aparecia como mensagem
+     * inexistente, que é a pista errada.
+     */
+    expect(MODIFY).toContain("error: erroBusca");
+    const iErro = MODIFY.indexOf("if (erroBusca)");
+    const iVazio = MODIFY.indexOf("Mensagens não encontradas");
+    expect(iErro).toBeGreaterThan(-1);
+    expect(iErro).toBeLessThan(iVazio);
   });
 });
 

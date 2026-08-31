@@ -24,6 +24,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { signState } from "../_shared/oauth-state.ts";
+import { explicarAusencia, resolverCredencialApp } from "../_shared/instagram/credencial.ts";
 
 const SCOPES = [
   "instagram_business_basic",
@@ -68,17 +69,25 @@ Deno.serve(async (req) => {
      * credencial: aqui "não configurado" é a resposta, não um erro.
      */
     const corpo = await req.json().catch(() => ({}));
-    if (corpo?.verificar === true) {
-      return json({
-        configurado: !!Deno.env.get("INSTAGRAM_APP_ID")
-          && !!Deno.env.get("INSTAGRAM_APP_SECRET"),
-      });
-    }
 
     const { data: prof } = await admin
       .from("profiles").select("org_id").eq("id", userId).maybeSingle();
     const orgId = prof?.org_id;
     if (!orgId) return json({ error: "Sem organização" }, 400);
+
+    /*
+     * A credencial vem do RESOLVEDOR, não de `Deno.env` direto: a ordem é
+     * CRM -> ambiente, e ela tem de ser a mesma aqui, no callback e no webhook.
+     * Ler o ambiente direto aqui faria a credencial cadastrada pela tela ser
+     * ignorada, e o sintoma seria "salvei e não pegou".
+     */
+    const cred = await resolverCredencialApp(admin, orgId);
+
+    if (corpo?.verificar === true) {
+      // Booleano e origem, nunca os valores. 200 mesmo sem credencial: aqui
+      // "não configurado" é a resposta, não um erro.
+      return json({ configurado: cred.origem !== "nenhum", origem: cred.origem });
+    }
 
     /*
      * Só admin conecta a conta da empresa.
@@ -96,25 +105,18 @@ Deno.serve(async (req) => {
       }, 403);
     }
 
-    const clientId = Deno.env.get("INSTAGRAM_APP_ID");
-    if (!clientId) {
-      return json({
-        error: "Falta configurar INSTAGRAM_APP_ID nos secrets do projeto.",
-      }, 503);
-    }
-    // Falha aqui, e não no callback: sem o secret o fluxo não tem como terminar,
-    // e descobrir isso depois de autorizar é desperdiçar a ida ao Instagram.
-    if (!Deno.env.get("INSTAGRAM_APP_SECRET")) {
-      return json({
-        error: "Falta configurar INSTAGRAM_APP_SECRET nos secrets do projeto.",
-      }, 503);
+    // Falha aqui, e não no callback: sem credencial o fluxo não tem como
+    // terminar, e descobrir isso depois de autorizar desperdiça a ida ao
+    // Instagram -- e a pessoa já autorizou algo que não vai valer.
+    if (cred.origem === "nenhum") {
+      return json({ error: explicarAusencia(cred.origem) }, 503);
     }
 
     const redirectUri = `${url}/functions/v1/instagram-oauth-callback`;
     const state = await signState({ u: userId, o: orgId });
 
     const autorizacao = new URL("https://www.instagram.com/oauth/authorize");
-    autorizacao.searchParams.set("client_id", clientId);
+    autorizacao.searchParams.set("client_id", cred.appId);
     autorizacao.searchParams.set("redirect_uri", redirectUri);
     autorizacao.searchParams.set("response_type", "code");
     autorizacao.searchParams.set("scope", SCOPES);

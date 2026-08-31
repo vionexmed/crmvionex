@@ -17,15 +17,20 @@
  * que o WhatsApp tem para a Evolution: lá ele existe porque a Evolution não
  * assina nada, e o Instagram sempre assina.
  *
- * `INSTAGRAM_APP_SECRET` é variável PRÓPRIA, sem cair para `META_APP_SECRET`.
- * Na rota "Instagram Login" o segredo do app do Instagram pode ser outro, e um
- * fallback silencioso aqui significaria: assinatura conferida contra o segredo
- * errado, sempre falhando -- ou pior, conferida contra um segredo que vazou de
- * outro contexto.
+ * O segredo do app do Instagram é PRÓPRIO, sem cair para `META_APP_SECRET`. Na
+ * rota "Instagram Login" ele pode ser outro, e um fallback silencioso aqui
+ * significaria assinatura conferida contra o segredo errado -- sempre falhando,
+ * ou pior, conferida contra um segredo que vazou de outro contexto.
+ *
+ * De onde ele vem: `resolverCredencialApp`, na ordem CRM -> ambiente, igual ao
+ * início e ao retorno do OAuth. Ler `Deno.env` direto aqui faria a credencial
+ * cadastrada pela tela ser ignorada, e o sintoma seria o pior possível --
+ * conectar funciona, enviar funciona, e nada entra.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { lerWebhook, perfilDe } from "../_shared/instagram/api.ts";
+import { resolverCredencialApp } from "../_shared/instagram/credencial.ts";
 
 type Admin = ReturnType<typeof createClient>;
 
@@ -68,19 +73,66 @@ Deno.serve(async (req) => {
   try {
     const corpoCru = await req.text();
 
-    const segredo = Deno.env.get("INSTAGRAM_APP_SECRET");
-    if (!segredo) {
-      console.error("INSTAGRAM_APP_SECRET ausente — webhook recusado");
+    /*
+     * PARSE ANTES DE CONFERIR A ASSINATURA, e é seguro -- mas exige explicação,
+     * porque à primeira vista parece o contrário.
+     *
+     * Desde que a credencial passou a poder ser cadastrada POR ORGANIZAÇÃO
+     * (`instagram_app_secrets`), o segredo que assina este POST depende de QUAL
+     * conta recebeu a mensagem. E quem diz isso é o próprio corpo, em
+     * `entry[].id`. Não há como escapar: para escolher o segredo é preciso ler o
+     * envelope.
+     *
+     * O que torna isso seguro é o que NÃO se faz com esse valor: ele serve
+     * exclusivamente para escolher qual segredo conferir. Nada é gravado, nada é
+     * confiado, e se a assinatura falhar a requisição morre em 403 -- inclusive
+     * quando o `entry.id` era de uma conta real. Um atacante que conheça o
+     * ig_user_id consegue, no máximo, fazer o servidor ler uma linha do banco.
+     *
+     * O parse ficou em try/catch próprio porque corpo malformado tem de virar
+     * 400, e não estourar no catch geral que responde 200.
+     */
+    let payload: unknown;
+    try {
+      payload = JSON.parse(corpoCru);
+    } catch {
+      return new Response("Bad request", { status: 400 });
+    }
+
+    const eventos = lerWebhook(payload);
+    const contaQueRecebeu = eventos
+      .map((e) => (e.tipo === "ignorado" ? null : e.conta))
+      .find((c): c is string => !!c) ?? null;
+
+    /*
+     * A organização vem da CONEXÃO, não do corpo: o corpo diz qual conta, e é o
+     * banco que diz de quem ela é. Sem conexão conhecida não há segredo por
+     * organização, e sobra o do ambiente -- que é o caso de quem ainda não
+     * cadastrou pela tela, e o do primeiro handshake de uma conta nova.
+     */
+    let orgDaConta: string | null = null;
+    if (contaQueRecebeu) {
+      const { data } = await admin
+        .from("instagram_connections")
+        .select("org_id")
+        .eq("ig_user_id", contaQueRecebeu)
+        .eq("is_active", true)
+        .maybeSingle();
+      orgDaConta = (data?.org_id as string | undefined) ?? null;
+    }
+
+    const cred = await resolverCredencialApp(admin, orgDaConta);
+    if (!cred.appSecret) {
+      console.error("instagram-webhook: nenhuma credencial de app (org=%s)", orgDaConta);
       return new Response(
-        JSON.stringify({ error: "Webhook não configurado: INSTAGRAM_APP_SECRET ausente" }),
+        JSON.stringify({ error: "Webhook não configurado: nenhuma credencial de app de Instagram" }),
         { status: 503, headers: { "Content-Type": "application/json" } },
       );
     }
-    if (!(await assinaturaConfere(segredo, req.headers.get("x-hub-signature-256") ?? "", corpoCru))) {
+
+    if (!(await assinaturaConfere(cred.appSecret, req.headers.get("x-hub-signature-256") ?? "", corpoCru))) {
       return new Response("Forbidden", { status: 403 });
     }
-
-    const eventos = lerWebhook(JSON.parse(corpoCru));
 
     for (const ev of eventos) {
       if (ev.tipo === "ignorado") {

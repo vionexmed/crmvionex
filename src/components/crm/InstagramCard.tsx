@@ -293,8 +293,8 @@ export function InstagramCard() {
                   ].map((campo) => (
                     <div key={campo.rotulo} className="space-y-1">
                       <p className="text-label font-medium text-muted-foreground">{campo.rotulo}</p>
-                      <div className="flex items-center gap-1.5">
-                        <code className="flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5 text-xs">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5 text-xs">
                           {campo.valor}
                         </code>
                         <Button variant="outline" size="sm" className="h-8 w-8 shrink-0 p-0"
@@ -362,8 +362,8 @@ export function InstagramCard() {
                 </li>
                 <li>
                   <strong>4.</strong> Ainda ali, em URIs de redirecionamento OAuth, cole:
-                  <span className="mt-1 flex items-center gap-1.5">
-                    <code className="flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5">
+                  <span className="mt-1 flex min-w-0 items-center gap-1.5">
+                    <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-muted px-2 py-1.5">
                       {urlDoCallback}
                     </code>
                     <Button variant="outline" size="sm" className="h-8 w-8 shrink-0 p-0"

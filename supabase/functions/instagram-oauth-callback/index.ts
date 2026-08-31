@@ -19,6 +19,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { verifyStateDetalhado } from "../_shared/oauth-state.ts";
 import { assinarWebhook, perfilDe, trocarCodigoPorToken } from "../_shared/instagram/api.ts";
+import { resolverCredencialApp } from "../_shared/instagram/credencial.ts";
 
 const DESTINO = "/integrations";
 
@@ -91,17 +92,21 @@ Deno.serve(async (req) => {
     }
     const { u: userId, o: orgId } = conferido.payload;
 
-    const clientId = Deno.env.get("INSTAGRAM_APP_ID");
-    const clientSecret = Deno.env.get("INSTAGRAM_APP_SECRET");
-    if (!clientId || !clientSecret) return falhar("app_nao_configurado");
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+    /*
+     * Mesma ordem CRM -> ambiente do `instagram-oauth-start`. Resolver DEPOIS de
+     * conferir o state, porque é o state que diz de qual organização é a
+     * credencial -- resolver antes obrigaria a adivinhar a org.
+     */
+    const credApp = await resolverCredencialApp(admin, orgId);
+    if (credApp.origem === "nenhum") return falhar("app_nao_configurado");
+
     // ---------- 2. o token ----------
     const troca = await trocarCodigoPorToken(
-      clientId,
-      clientSecret,
+      credApp.appId,
+      credApp.appSecret,
       `${supabaseUrl}/functions/v1/instagram-oauth-callback`,
       codigo,
     );

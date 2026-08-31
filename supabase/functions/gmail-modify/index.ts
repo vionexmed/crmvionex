@@ -95,24 +95,80 @@ Deno.serve(async (req) => {
     // As mensagens, com o id do Gmail. Sem `message_id` não há o que modificar
     // lá -- é o caso de e-mail que o CRM registrou ao ENVIAR e o sync ainda não
     // reconciliou.
-    const { data: mensagens } = await admin
+    const { data: mensagens, error: erroBusca } = await admin
       .from("emails")
       .select("id, message_id, labels, synced_from")
       .eq("org_id", orgId)
       .in("id", ids as string[]);
 
+    /*
+     * O erro do select NÃO pode ser descartado.
+     *
+     * Sem esta checagem, uma coluna que falta -- `labels` só existe desde
+     * 20260831180000 -- fazia `mensagens` vir undefined e a resposta ser
+     * "Mensagens não encontradas". Uma migração pendente aparecia como mensagem
+     * inexistente, que é a pista errada.
+     */
+    if (erroBusca) {
+      console.error("gmail-modify: falha ao buscar mensagens", erroBusca);
+      return json({ ok: false, error: `Erro ao buscar as mensagens: ${erroBusca.message}` }, 500);
+    }
     if (!mensagens?.length) return json({ ok: false, error: "Mensagens não encontradas" }, 404);
 
-    // Uma conta por vez: `synced_from` guarda o e-mail da caixa de onde a
-    // mensagem veio. Mensagens de caixas diferentes exigiriam tokens diferentes.
-    const caixas = [...new Set(mensagens.map((m) => m.synced_from).filter(Boolean))];
-    const tk = await obterAccessToken(admin, orgId, caixas.length === 1 ? caixas[0] as string : null);
-    if (!tk.ok) return json({ ok: false, error: tk.erro, motivo: tk.motivo }, 400);
+    /*
+     * QUAL CAIXA, e o que fazer quando não se sabe.
+     *
+     * `synced_from` guarda o e-mail da caixa de onde a mensagem veio. Mensagens
+     * sincronizadas ANTES de essa coluna existir têm nulo ali -- o
+     * `gmail-attachment` já registra esse caso.
+     *
+     * O código anterior passava `null` nessas, e `obterAccessToken` com e-mail
+     * nulo devolve o token MAIS RECENTE DA ORGANIZAÇÃO -- que pode ser a caixa de
+     * outra pessoa. O Gmail então recebe um id de mensagem que não existe naquela
+     * caixa e responde 404 "Requested entity was not found". Na tela: a ação
+     * simplesmente não acontece.
+     *
+     * Agora a caixa conhecida vem primeiro e as outras ficam como RESERVA, para
+     * mensagem antiga funcionar em vez de falhar. É tentativa e erro, sim -- mas
+     * o alvo é `messages/{id}`, que só existe na caixa certa: tentar na errada
+     * não altera nada, só recebe 404.
+     */
+    const caixaConhecida = [...new Set(mensagens.map((m) => m.synced_from).filter(Boolean))];
+    const contas: (string | null)[] = [...caixaConhecida as string[]];
 
-    const cabecalhos = {
-      Authorization: `Bearer ${tk.accessToken}`,
+    if (contas.length !== 1) {
+      // Sem caixa certa (ou várias): todas as conectadas, em ordem de uso.
+      const { data: tokens } = await admin
+        .from("gmail_oauth_tokens").select("email")
+        .eq("org_id", orgId).order("updated_at", { ascending: false });
+      for (const t of tokens ?? []) {
+        const e = t.email as string | null;
+        if (e && !contas.includes(e)) contas.push(e);
+      }
+      if (contas.length === 0) contas.push(null);
+    }
+
+    /** Token por caixa, buscado uma vez. Nulo quando a conta não dá token. */
+    const tokenDe = new Map<string | null, string>();
+    for (const conta of contas) {
+      const t = await obterAccessToken(admin, orgId, conta);
+      if (t.ok) tokenDe.set(conta, t.accessToken);
+      // A primeira conta é a mais provável; se ela nem token dá, vale relatar.
+      else if (conta === contas[0]) {
+        return json({ ok: false, error: t.erro, motivo: t.motivo }, 400);
+      }
+    }
+    if (tokenDe.size === 0) {
+      return json({
+        ok: false,
+        error: "Nenhuma conta de e-mail conectada. Conecte em Configurações › Conectar e-mail.",
+      }, 400);
+    }
+
+    const cabecalhosDe = (conta: string | null) => ({
+      Authorization: `Bearer ${tokenDe.get(conta)}`,
       "Content-Type": "application/json",
-    };
+    });
 
     /** O que muda no Gmail, por ação. */
     const mudanca = (): { add: string[]; remove: string[] } => {
@@ -144,49 +200,82 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      try {
-        let resp: Response;
-        if (acao === "lixeira" || acao === "restaurar") {
-          // Rota PRÓPRIA, não label. `TRASH` como label é aceito e produz um
-          // estado meio-apagado que a interface do Gmail mostra de forma
-          // estranha.
-          resp = await fetch(
-            `${GMAIL}/messages/${encodeURIComponent(gid)}/${acao === "lixeira" ? "trash" : "untrash"}`,
-            { method: "POST", headers: cabecalhos },
-          );
-        } else {
-          const { add, remove } = mudanca();
-          resp = await fetch(`${GMAIL}/messages/${encodeURIComponent(gid)}/modify`, {
-            method: "POST",
-            headers: cabecalhos,
-            body: JSON.stringify({ addLabelIds: add, removeLabelIds: remove }),
-          });
+      /*
+       * A caixa da mensagem primeiro; as outras só como reserva.
+       *
+       * `synced_from` preenchido acerta na primeira tentativa, que é o caso
+       * normal. Nulo -- mensagem antiga -- passa por todas até uma reconhecer o
+       * id.
+       */
+      const ordem = m.synced_from
+        ? [m.synced_from as string, ...contas.filter((c) => c !== m.synced_from)]
+        : contas;
+
+      let aplicou = false;
+      let ultimoErro = "não foi possível aplicar em nenhuma das contas conectadas";
+
+      for (const conta of ordem) {
+        if (!tokenDe.has(conta)) continue;
+
+        try {
+          let resp: Response;
+          if (acao === "lixeira" || acao === "restaurar") {
+            // Rota PRÓPRIA, não label. `TRASH` como label é aceito e produz um
+            // estado meio-apagado que a interface do Gmail mostra de forma
+            // estranha.
+            resp = await fetch(
+              `${GMAIL}/messages/${encodeURIComponent(gid)}/${acao === "lixeira" ? "trash" : "untrash"}`,
+              { method: "POST", headers: cabecalhosDe(conta) },
+            );
+          } else {
+            const { add, remove } = mudanca();
+            resp = await fetch(`${GMAIL}/messages/${encodeURIComponent(gid)}/modify`, {
+              method: "POST",
+              headers: cabecalhosDe(conta),
+              body: JSON.stringify({ addLabelIds: add, removeLabelIds: remove }),
+            });
+          }
+
+          const corpo = await resp.json().catch(() => null);
+
+          if (!resp.ok) {
+            const e = corpo as { error?: { message?: string } } | null;
+            ultimoErro = e?.error?.message ?? `HTTP ${resp.status}`;
+            /*
+             * 404 é "esta caixa não conhece esta mensagem" -- vale tentar a
+             * próxima. Qualquer outro status é problema de verdade (401 de token,
+             * 403 de escopo, 429 de cota) e repetir em outra caixa só multiplica
+             * a falha.
+             */
+            if (resp.status === 404) continue;
+            break;
+          }
+
+          // As labels que o GMAIL devolve, não as que a gente supôs. É o que
+          // mantém a coluna fiel: se o Google fez algo além do pedido -- e ele
+          // faz, ao mover para spam -- a coluna reflete a verdade.
+          const labelsAgora = (corpo as { labelIds?: string[] } | null)?.labelIds ?? null;
+
+          await admin.from("emails")
+            .update({
+              ...(LOCAL[acao as string] ?? {}),
+              ...(labelsAgora ? { labels: labelsAgora } : {}),
+              // Descoberta a caixa de uma mensagem antiga, ela fica gravada: a
+              // próxima ação acerta de primeira em vez de varrer tudo de novo.
+              ...(conta && !m.synced_from ? { synced_from: conta } : {}),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", m.id);
+
+          aplicou = true;
+          break;
+        } catch (e) {
+          ultimoErro = e instanceof Error ? e.message : String(e);
         }
-
-        const corpo = await resp.json().catch(() => null);
-        if (!resp.ok) {
-          const e = corpo as { error?: { message?: string } } | null;
-          falhas.push({ id: m.id as string, erro: e?.error?.message ?? `HTTP ${resp.status}` });
-          continue;
-        }
-
-        // As labels que o GMAIL devolve, não as que a gente supôs. É o que
-        // mantém a coluna fiel: se o Google fez algo além do pedido -- e ele faz,
-        // ao mover para spam -- a coluna reflete a verdade.
-        const labelsAgora = (corpo as { labelIds?: string[] } | null)?.labelIds ?? null;
-
-        await admin.from("emails")
-          .update({
-            ...(LOCAL[acao as string] ?? {}),
-            ...(labelsAgora ? { labels: labelsAgora } : {}),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", m.id);
-
-        aplicados++;
-      } catch (e) {
-        falhas.push({ id: m.id as string, erro: e instanceof Error ? e.message : String(e) });
       }
+
+      if (aplicou) aplicados++;
+      else falhas.push({ id: m.id as string, erro: ultimoErro });
     }
 
     return json({ ok: aplicados > 0, aplicados, falhas });
