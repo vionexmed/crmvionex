@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Instagram, ExternalLink, AlertTriangle, Copy, Check } from "lucide-react";
 import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrations/CartaoDeIntegracao";
 import { useToast } from "@/hooks/use-toast";
@@ -119,6 +120,11 @@ export function InstagramCard() {
    * saber, e não deve: a resposta é um BOOLEANO, nunca os valores.
    */
   const [appConfigurado, setAppConfigurado] = useState<boolean | null>(null);
+  /** De onde vem a credencial: 'crm' dá para editar pela tela, 'ambiente' não. */
+  const [origemCredencial, setOrigemCredencial] = useState<string | null>(null);
+  const [formAppId, setFormAppId] = useState("");
+  const [formSegredo, setFormSegredo] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   const carregar = useCallback(async () => {
     if (!orgId) return;
@@ -164,7 +170,9 @@ export function InstagramCard() {
       });
       // Falha na pergunta não vira alarme: cai em "não sei" e o cartão continua
       // oferecendo o botão, que aí explica o motivo real se falhar.
-      setAppConfigurado((res.data as { configurado?: boolean } | null)?.configurado ?? null);
+      const d = res.data as { configurado?: boolean; origem?: string } | null;
+      setAppConfigurado(d?.configurado ?? null);
+      setOrigemCredencial(d?.origem ?? null);
     })();
   }, []);
 
@@ -209,6 +217,67 @@ export function InstagramCard() {
     for (const k of ["instagram", "motivo", "detalhe", "conta"]) limpo.delete(k);
     setParams(limpo, { replace: true });
   }, [params, setParams, toast, carregar]);
+
+  /**
+   * Cadastra a credencial do app PELA TELA.
+   *
+   * Vai para `instagram_app_secrets`, que tem RLS ligada e ZERO policies -- o
+   * mesmo compartimento de `google_oauth_secrets`. É o que permite cadastrar
+   * aqui sem o segredo voltar para o navegador: a função responde com o app_id,
+   * que é público, e nunca com a chave.
+   *
+   * A alternativa era mandar a pessoa ao painel do Supabase, que é o que eu havia
+   * feito -- e o projeto já tinha resolvido isso melhor para o Google.
+   */
+  const salvarCredencial = async () => {
+    setSalvando(true);
+    try {
+      const res = await supabase.functions.invoke("instagram-credentials-save", {
+        body: { app_id: formAppId.trim(), app_secret: formSegredo.trim() },
+      });
+      const motivo = await erroDaFuncao(res);
+      if (motivo) throw new Error(motivo);
+
+      // O campo do segredo é limpo SEMPRE. Deixá-lo preenchido sugere que dá
+      // para relê-lo depois, e não dá — nem para quem acabou de salvá-lo.
+      setFormSegredo("");
+      setAppConfigurado(true);
+      setOrigemCredencial("crm");
+      toast({
+        title: "Credencial salva",
+        description: "Já dá para conectar a conta do Instagram.",
+      });
+    } catch (e) {
+      toast({ title: "Não foi possível salvar", description: mensagemErro(e), variant: "destructive" });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const removerCredencial = async () => {
+    setSalvando(true);
+    try {
+      const res = await supabase.functions.invoke("instagram-credentials-save", {
+        body: { remover: true },
+      });
+      const motivo = await erroDaFuncao(res);
+      if (motivo) throw new Error(motivo);
+      const d = res.data as { origem?: string; contas_afetadas?: number } | null;
+      setAppConfigurado(d?.origem !== "nenhum");
+      setOrigemCredencial(d?.origem ?? null);
+      setFormAppId("");
+      toast({
+        title: "Credencial removida",
+        description: (d?.contas_afetadas ?? 0) > 0
+          ? `${d?.contas_afetadas} conta(s) conectada(s) param de receber até uma credencial nova.`
+          : undefined,
+      });
+    } catch (e) {
+      toast({ title: "Não foi possível remover", description: mensagemErro(e), variant: "destructive" });
+    } finally {
+      setSalvando(false);
+    }
+  };
 
   const conectar = async () => {
     setConectando(true);
@@ -358,19 +427,28 @@ export function InstagramCard() {
               Desconectar
             </Button>
           </div>
-        ) : faltaCredencial ? (
-          <Dialog>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            {!faltaCredencial && (
+              <Button size="sm" className="h-8 text-label" onClick={conectar}
+                disabled={conectando || appConfigurado === null}>
+                {conectando ? "Abrindo…" : "Conectar"}
+                <ExternalLink className="ml-1.5 h-3 w-3" />
+              </Button>
+            )}
+            <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-label">
-                Como configurar
+              <Button variant={faltaCredencial ? "outline" : "ghost"} size="sm"
+                className="h-8 text-label">
+                {faltaCredencial ? "Como configurar" : "Credenciais"}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Ligar o Instagram Direct</DialogTitle>
                 <DialogDescription>
-                  Cinco passos no painel da Meta, uma vez só. Depois disso qualquer
-                  administrador conecta a conta por aqui.
+                  Quatro passos no painel da Meta, uma vez só — e as credenciais você cola
+                  aqui embaixo. Depois disso qualquer administrador conecta a conta.
                 </DialogDescription>
               </DialogHeader>
               <ol className="min-w-0 space-y-2.5 text-xs leading-relaxed">
@@ -402,30 +480,72 @@ export function InstagramCard() {
                       copiado={copiado} onCopiar={copiar} />
                   </div>
                 </li>
-                <li>
-                  <strong>5.</strong> No Supabase, em Project Settings → Edge Functions → Secrets,
-                  grave os dois com estes nomes:
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {["INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET"].map((nome) => (
-                      <code key={nome} className="rounded-md border border-border bg-muted px-2 py-1">
-                        {nome}
-                      </code>
-                    ))}
-                  </div>
-                </li>
               </ol>
+
+              {/*
+                O PASSO 5 ERA "vá ao painel do Supabase e grave dois secrets".
+                Virou este formulário, e a diferença não é conveniência: o projeto
+                já tinha resolvido isso para o Google (`google_oauth_secrets`), e
+                mandar a pessoa a outro painel quando a tela pode receber é
+                inconsistência.
+                O valor vai para `instagram_app_secrets` -- RLS ligada, ZERO
+                policies -- então cola aqui e nunca volta ao navegador.
+              */}
+              <div className="min-w-0 space-y-2.5 rounded-lg border border-border bg-muted/40 p-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-xs font-semibold">5. Cole as credenciais aqui</p>
+                  {origemCredencial === "ambiente" && (
+                    <span className="text-meta text-muted-foreground">
+                      hoje vindo do ambiente
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="ig-app-id" className="text-label font-medium text-muted-foreground">
+                    ID do app do Instagram
+                  </label>
+                  <Input id="ig-app-id" value={formAppId} inputMode="numeric"
+                    onChange={(e) => setFormAppId(e.target.value)}
+                    placeholder="1234567890123456" className="h-8 text-xs" />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="ig-app-secret" className="text-label font-medium text-muted-foreground">
+                    Chave secreta do app do Instagram
+                  </label>
+                  <Input id="ig-app-secret" type="password" value={formSegredo}
+                    onChange={(e) => setFormSegredo(e.target.value)}
+                    placeholder={appConfigurado ? "•••••••• (já cadastrada)" : "cole aqui"}
+                    className="h-8 text-xs" />
+                  <p className="text-meta leading-relaxed text-muted-foreground">
+                    Fica guardada num compartimento que o navegador não alcança, e não volta
+                    para a tela — nem para quem acabou de salvá-la.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Button size="sm" className="h-8 text-label"
+                    onClick={() => void salvarCredencial()}
+                    disabled={salvando || !formAppId.trim() || !formSegredo.trim()}>
+                    {salvando ? "Salvando…" : appConfigurado ? "Substituir" : "Salvar"}
+                  </Button>
+                  {origemCredencial === "crm" && (
+                    <Button variant="ghost" size="sm" className="h-8 text-label text-muted-foreground"
+                      onClick={() => void removerCredencial()} disabled={salvando}>
+                      Remover
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               <p className="text-meta leading-relaxed text-muted-foreground">
                 Enquanto a Análise do App não sair, o fluxo funciona só para contas adicionadas
                 como testadoras no app — o bastante para validar antes de submeter.
               </p>
-            </DialogContent>
-          </Dialog>
-        ) : (
-          <Button size="sm" className="h-8 text-label" onClick={conectar}
-            disabled={conectando || appConfigurado === null}>
-            {conectando ? "Abrindo…" : "Conectar"}
-            <ExternalLink className="ml-1.5 h-3 w-3" />
-          </Button>
+              </DialogContent>
+            </Dialog>
+          </div>
         )
       }
       nota={

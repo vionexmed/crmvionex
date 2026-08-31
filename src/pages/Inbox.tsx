@@ -16,7 +16,7 @@ import {
   Reply, ReplyAll, Forward, ChevronLeft, Inbox as InboxIcon,
   Eye, MousePointerClick, RefreshCw, Trash2, AlertOctagon,
   FileText, SendHorizonal, Pencil, Printer, MoreVertical, Tag,
-  Paperclip, Download, Image as ImageIcon, Loader2, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen,
+  Paperclip, Download, Image as ImageIcon, Loader2, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, RotateCcw,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -31,7 +31,7 @@ import { FolderInput, Folder as FolderIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
 import type { Email, InboxContact as Contact } from "@/lib/api/emails";
-import { formatarData, formatarDataCurta, textoDeHtml } from "@/lib/formato";
+import { formatarData, formatarDataCurta, textoDeHtml, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 
 type Folder =
@@ -329,7 +329,10 @@ export default function Inbox() {
     if (selectedEmail?.id === id) setSelectedEmail(null);
     try {
       await deleteEmailMutation.mutateAsync(id);
-      toast({ title: "Excluído permanentemente" });
+      toast({
+        title: "Removido do CRM",
+        description: "A mensagem continua na lixeira do Gmail, que o Google esvazia em 30 dias.",
+      });
     } catch (e: any) {
       toast({ title: "Erro ao excluir email", description: e.message, variant: "destructive" });
     }
@@ -380,20 +383,23 @@ export default function Inbox() {
     toast({ title: `${(data as any)?.synced ?? 0} novos emails` });
   };
 
-  const batchAction = async (action: "archive" | "trash" | "spam" | "read") => {
+  const batchAction = async (
+    action: "archive" | "trash" | "spam" | "read" | "restore",
+  ) => {
     const ids = Array.from(selectedIds);
     // Traduz a ação da tela para o vocabulário da edge function, que fala em
     // termos de label do Gmail.
     const acao =
       action === "archive" ? "arquivar" :
       action === "trash" ? "lixeira" :
-      action === "spam" ? "spam" : "ler";
+      action === "spam" ? "spam" :
+      action === "restore" ? "restaurar" : "ler";
     try {
       if (!(await noGmail(ids, acao))) return;
       setSelectedIds(new Set());
-      toast({ title: `${ids.length} mensagens atualizadas no Gmail` });
-    } catch (e: any) {
-      toast({ title: "Erro ao atualizar emails", description: e.message, variant: "destructive" });
+      toast({ title: `${ids.length} ${pluralizar(ids.length, "mensagem", "mensagens")} no Gmail` });
+    } catch (e) {
+      toast({ title: "Erro ao atualizar emails", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -527,10 +533,28 @@ export default function Inbox() {
             {selectedIds.size > 0 ? (
               <>
                 <div className="h-5 w-px bg-border mx-1" />
-                <Button variant="ghost" size="sm" onClick={() => batchAction("archive")} title="Arquivar"><Archive className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => batchAction("spam")} title="Marcar como spam"><AlertOctagon className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => batchAction("trash")} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => batchAction("read")} title="Marcar como lido"><Mail className="h-4 w-4" /></Button>
+                {/*
+                  A BARRA CONHECE A PASTA, e antes não conhecia.
+                  Na Lixeira, "Excluir" chamava a MESMA ação `lixeira` numa
+                  mensagem já na lixeira: o Gmail respondia 200, nada mudava, e o
+                  aviso dizia "1 mensagem atualizada". Do lado de quem clicou:
+                  "clico para excluir e não funciona".
+                */}
+                {folder === "trash" ? (
+                  <Button variant="ghost" size="sm" onClick={() => batchAction("restore")}
+                    title="Restaurar para a caixa de entrada">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => batchAction("archive")} title="Arquivar"><Archive className="h-4 w-4" /></Button>
+                    {folder !== "spam" && (
+                      <Button variant="ghost" size="sm" onClick={() => batchAction("spam")} title="Marcar como spam"><AlertOctagon className="h-4 w-4" /></Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => batchAction("trash")} title="Mover para a lixeira"><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => batchAction("read")} title="Marcar como lido"><Mail className="h-4 w-4" /></Button>
+                  </>
+                )}
                 {/* MOVER PARA PASTA — pasta no Gmail é label, e mover aplica a
                   label removendo INBOX, igual ao que o Gmail faz quando você
                   arrasta. Sem remover INBOX, a mensagem apareceria nos dois
@@ -828,11 +852,28 @@ export default function Inbox() {
               <Button variant="ghost" size="sm" onClick={() => notSpam(selectedEmail.id)} title="Não é spam"><AlertOctagon className="h-4 w-4 text-destructive" /></Button>
             )}
             {!selectedEmail.is_trashed ? (
-              <Button variant="ghost" size="sm" onClick={() => trashEmail(selectedEmail.id)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="sm" onClick={() => trashEmail(selectedEmail.id)}
+                title="Mover para a lixeira"><Trash2 className="h-4 w-4" /></Button>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={() => restoreEmail(selectedEmail.id)} title="Restaurar"><Archive className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => deleteForever(selectedEmail.id)} title="Excluir permanentemente"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => restoreEmail(selectedEmail.id)}
+                  title="Restaurar para a caixa de entrada"><RotateCcw className="h-4 w-4" /></Button>
+                {/*
+                  "REMOVER DO CRM", e não "excluir permanentemente".
+                  Apagar de verdade no Gmail é `messages.delete`, que exige o
+                  escopo `https://mail.google.com/` -- acesso TOTAL à caixa. O que
+                  temos é `gmail.modify`, que faz lixeira e restaura mas NÃO
+                  apaga. Escalar para o escopo total só por causa deste botão
+                  custaria novo consentimento de toda a equipe e uma revisão mais
+                  rígida do Google.
+                  Então o botão faz o que dá, e o rótulo diz a verdade: some do
+                  CRM, continua na lixeira do Gmail -- que o Google esvazia
+                  sozinho em 30 dias.
+                */}
+                <Button variant="ghost" size="sm" onClick={() => deleteForever(selectedEmail.id)}
+                  title="Remover do CRM (continua na lixeira do Gmail)">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
               </>
             )}
             <DropdownMenu>
