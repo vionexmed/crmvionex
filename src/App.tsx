@@ -189,7 +189,11 @@ const App = () => (
                     A RLS garante que ninguém vê o e-mail nem a conversa do outro. */}
                 <Route path="/settings/email" element={<SuspenseRoute><MyEmail /></SuspenseRoute>} />
                 <Route path="/inbox" element={<SuspenseRoute><Inbox /></SuspenseRoute>} />
-                <Route path="/conversations" element={<SuspenseRoute><Conversations /></SuspenseRoute>} />
+                {/* Um canal por rota. O componente é o mesmo; o que muda é o
+                    canal, que vem daqui e não de query string -- ver o comentário
+                    em `navegacao.ts` sobre o `isActive`. */}
+                <Route path="/conversations" element={<SuspenseRoute><Conversations canal="whatsapp" /></SuspenseRoute>} />
+                <Route path="/instagram" element={<SuspenseRoute><Conversations canal="instagram" /></SuspenseRoute>} />
 
                 {/* Todo mundo vê quem é da equipe. As ações (trocar papel, remover,
                     convidar) já são protegidas por isAdmin dentro da própria página. */}

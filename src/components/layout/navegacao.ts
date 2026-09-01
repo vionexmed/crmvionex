@@ -1,7 +1,24 @@
 import {
-  Activity, AlertTriangle, BarChart3, Building2, FileText, Handshake,
-  Inbox, LayoutDashboard, Mail, Megaphone, MessageSquare, Plug, Settings, Shield,
-  Target, TrendingUp, Users, UsersRound, Zap,
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Building2,
+  FileText,
+  Handshake,
+  Inbox,
+  Instagram,
+  LayoutDashboard,
+  Mail,
+  Megaphone,
+  MessageSquare,
+  Plug,
+  Settings,
+  Shield,
+  Target,
+  TrendingUp,
+  Users,
+  UsersRound,
+  Zap,
 } from "lucide-react";
 
 /**
@@ -60,9 +77,16 @@ export const NAV_GRUPOS: GrupoNav[] = [
   {
     label: "Atendimento",
     items: [
-      // Os dois CANAIS, em paralelo. Cada pessoa vê só a própria caixa — a RLS
+      // Os CANAIS, em paralelo. Cada pessoa vê só a própria caixa — a RLS
       // impede ver a do colega.
+      //
+      // Um item por canal, e não um item "Atendimento" com filtro dentro: é a
+      // barra lateral que troca de canal, e é assim que a pessoa pensa. Duas
+      // ROTAS e não `?canal=`, porque `isActive` compara por
+      // `pathname.startsWith` -- com query string os dois itens ficariam
+      // apagados, já que o pathname seria o mesmo para ambos.
       { title: "WhatsApp", url: "/conversations", icon: MessageSquare },
+      { title: "Instagram", url: "/instagram", icon: Instagram },
       { title: "E-mail", url: "/inbox", icon: Inbox },
       { title: "Templates", url: "/email-templates", icon: FileText, adminOnly: true },
       { title: "Sequências", url: "/email-sequences", icon: Zap, adminOnly: true },

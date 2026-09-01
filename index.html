@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VIONEX — CRM B2B Inteligente</title>
-    <meta name="description" content="VIONEX é um CRM B2B completo para gerenciar contatos, empresas, negócios e atividades de vendas.">
+    <title>VIONEX — CRM para o comercial da saúde</title>
+    <meta name="description" content="Do primeiro contato ao fechamento: leads, contatos, negócios e atendimento por WhatsApp, Instagram e e-mail — num lugar só.">
     <link rel="icon" type="image/png" href="/favicon.png">
 
     <!--
@@ -49,19 +49,42 @@
     -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Poppins:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-    
+
+    <!--
+      PRÉVIA DO LINK (Open Graph).
+
+      A imagem daqui era um URL de PREVIEW DO LOVABLE, num R2 de terceiros:
+      um screenshot antigo do app, hospedado fora do nosso controle, com o id do
+      projeto do andaime exposto na URL. Era isso que aparecia ao compartilhar o
+      link -- a "foto antiga".
+
+      Agora é `/og-vionex.png`, servida pelo próprio domínio, gerada a partir de
+      `scripts/og-imagem.html` com a marca e as cores reais do projeto.
+
+      DUAS COISAS QUE PARECEM DETALHE E NÃO SÃO:
+
+      1. URL ABSOLUTA, sempre. WhatsApp, Slack e iMessage buscam a imagem de
+         fora do navegador da pessoa -- caminho relativo não resolve para eles, e
+         a prévia sai sem imagem.
+      2. TROCAR O NOME DO ARQUIVO ao trocar a imagem. Essas plataformas guardam
+         a prévia em cache POR URL, por semanas. Sobrescrever `og-vionex.png`
+         mantém a imagem velha aparecendo; publicar `og-vionex-2.png` é o que faz
+         a nova valer. É por isso que a de agora tem nome novo em vez de
+         reaproveitar o antigo.
+    -->
     <meta property="og:type" content="website" />
-    
-  
-  
-  
-  <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3e457a57-f3bd-48ae-825e-b70b13696bef/id-preview-ea8324da--b5299edd-a1b5-49b5-9cfe-d896391cd7cb.lovable.app-1774626568076.png">
-  <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3e457a57-f3bd-48ae-825e-b70b13696bef/id-preview-ea8324da--b5299edd-a1b5-49b5-9cfe-d896391cd7cb.lovable.app-1774626568076.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta property="og:title" content="VIONEX — CRM B2B Inteligente">
-  <meta name="twitter:title" content="VIONEX — CRM B2B Inteligente">
-  <meta property="og:description" content="VIONEX é um CRM B2B completo para gerenciar contatos, empresas, negócios e atividades de vendas.">
-  <meta name="twitter:description" content="VIONEX é um CRM B2B completo para gerenciar contatos, empresas, negócios e atividades de vendas.">
+    <meta property="og:site_name" content="VIONEX" />
+    <meta property="og:url" content="https://crmvionex.vercel.app/" />
+    <meta property="og:image" content="https://crmvionex.vercel.app/og-vionex.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="VIONEX — do primeiro contato ao fechamento">
+    <meta name="twitter:image" content="https://crmvionex.vercel.app/og-vionex.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta property="og:title" content="VIONEX — CRM para o comercial da saúde">
+    <meta name="twitter:title" content="VIONEX — CRM para o comercial da saúde">
+    <meta property="og:description" content="Do primeiro contato ao fechamento: leads, contatos, negócios e atendimento por WhatsApp, Instagram e e-mail — num lugar só.">
+    <meta name="twitter:description" content="Do primeiro contato ao fechamento: leads, contatos, negócios e atendimento por WhatsApp, Instagram e e-mail — num lugar só.">
 </head>
   <body>
     <div id="root"></div>

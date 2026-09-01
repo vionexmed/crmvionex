@@ -1,0 +1,67 @@
+<!--
+  FONTE DA IMAGEM DE PREVIA DO LINK (Open Graph).
+
+  Existe para a imagem ser REPRODUZIVEL. Sem este arquivo, `public/og-vionex.png`
+  seria um binario que ninguem sabe de onde veio nem como mexer -- que e
+  exatamente o problema da imagem anterior, um screenshot num CDN de terceiros.
+
+  COMO GERAR (macOS, com o Chromium que o Playwright ja baixou). Rode de dentro
+  de `scripts/`, porque o caminho do logo e relativo a este arquivo:
+
+    CH="$HOME/Library/Caches/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-mac-arm64/chrome-headless-shell"
+    "$CH" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+      --window-size=1200,630 --virtual-time-budget=4000 \
+      --screenshot=../public/og-vionex-2.png "file://$PWD/og-imagem.html"
+
+  PUBLIQUE COM NOME NOVO. WhatsApp, Slack e iMessage guardam a previa em cache
+  POR URL, por semanas -- sobrescrever o arquivo mantem a imagem velha
+  aparecendo. Troque o nome aqui e nas meta tags do `index.html` juntos.
+
+  `--virtual-time-budget` nao e opcional: sem ele o screenshot sai antes de o
+  Poppins do Google Fonts chegar, e o titulo cai na fonte de sistema.
+-->
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px}
+  body{
+    /* Navy da marca. O teal do logo só canta sobre fundo escuro; sobre branco
+       ele some nas prévias do WhatsApp, que já são pequenas. */
+    background:#0A1E3D;
+    font-family:Nunito,-apple-system,sans-serif;
+    color:#fff; position:relative; overflow:hidden;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 86px;
+  }
+  /* Brilho teal fora de foco, no canto. Dá profundidade sem desenhar nada que
+     precise de significado. */
+  .brilho{
+    position:absolute; width:760px; height:760px; right:-260px; top:-300px;
+    background:radial-gradient(circle,rgba(0,123,138,.55) 0%,rgba(0,123,138,0) 68%);
+  }
+  .logo{ width:300px; height:auto; display:block; }
+  h1{
+    font-family:Poppins,sans-serif; font-weight:600; font-size:60px;
+    line-height:1.1; letter-spacing:-.022em; margin-top:40px; max-width:820px;
+  }
+  h1 em{ font-style:normal; color:#5FD3DE; }
+  p{ font-size:23px; line-height:1.5; color:rgba(255,255,255,.66); margin-top:24px; max-width:672px; }
+  /* O FUNIL, e é literal: é o que a tela principal do produto mostra. Quatro
+     etapas encolhendo. Motivo verdadeiro em vez de ícone de banco de imagem. */
+  .funil{ position:absolute; right:86px; bottom:84px; display:flex; flex-direction:column; gap:11px; align-items:flex-end; }
+  .funil span{ height:13px; border-radius:7px; background:#00A9BC; display:block; }
+  .funil span:nth-child(1){ width:230px; opacity:1 }
+  .funil span:nth-child(2){ width:178px; opacity:.78 }
+  .funil span:nth-child(3){ width:126px; opacity:.56 }
+  .funil span:nth-child(4){ width:74px;  opacity:.34 }
+  .rodape{ position:absolute; left:86px; bottom:46px; font-size:17px; font-weight:600; color:rgba(255,255,255,.34); letter-spacing:.04em; }
+</style></head><body>
+  <div class="brilho"></div>
+  <img class="logo" src="../src/assets/vionex-logo-sidebar.png" alt="vionex">
+  <h1>Do primeiro contato<br><em>ao fechamento.</em></h1>
+  <p>CRM para o comercial da saúde. Leads, negócios e atendimento por WhatsApp, Instagram e e-mail.</p>
+  <div class="funil"><span></span><span></span><span></span><span></span></div>
+  <div class="rodape">crmvionex.vercel.app</div>
+</body></html>

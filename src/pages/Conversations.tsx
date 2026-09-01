@@ -8,10 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import {
-  Search, Send, Loader2, CheckCheck, Phone, AlertCircle,
-  Instagram, MessageCircle, Inbox as InboxIcon, AtSign,
+  Search, Send, Loader2, CheckCheck, Phone, AlertCircle, AtSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -20,19 +18,24 @@ import { mensagemErro } from "@/lib/erro-supabase";
 import { formatarTelefone } from "@/lib/contato-formato";
 
 /**
- * Atendimento: WhatsApp e Instagram Direct na mesma tela.
+ * Atendimento de UM canal. A rota decide qual: `/conversations` é WhatsApp,
+ * `/instagram` é Direct.
+ *
+ * Uma tela por canal, e não uma tela com filtro dentro: quem troca de canal é a
+ * barra lateral, que é como a pessoa pensa. Duas ROTAS e não `?canal=` porque o
+ * `isActive` do menu compara por `pathname.startsWith` -- com query string os
+ * dois itens ficariam apagados, já que o pathname seria o mesmo.
  *
  * A leitura vem da VIEW `mensagens_do_atendimento`, que une as duas tabelas com
- * uma coluna `canal`. Uma consulta em vez de duas mais junção no cliente -- e,
- * mais importante, uma ORDENAÇÃO só: com duas consultas, paginar por data exigia
- * intercalar no navegador e o `limit` cortaria cada canal separadamente,
- * escondendo conversa recente de um canal atrás de conversa velha do outro.
+ * uma coluna `canal`, e o filtro por canal vai no BANCO. No cliente, o `limit` de
+ * 2000 cortaria antes da separação -- e conversa recente de um canal ficaria de
+ * fora por causa de conversa velha do outro.
  *
  * O QUE NÃO SE UNIFICA, e é de propósito:
  *
  * - a CONVERSA. Mesma pessoa no WhatsApp e no Instagram são duas conversas, e a
  *   chave da thread inclui o canal. Juntar seria bonito e errado: as duas têm
- *   janela própria, rota de envio própria, e uma pode estar aberta enquanto a
+ *   janela própria e rota de envio própria, e uma pode estar aberta enquanto a
  *   outra fechou. Uma thread misturada teria um campo de texto que às vezes
  *   envia e às vezes não, sem nada na tela explicando por quê;
  * - a JANELA. No WhatsApp, fora das 24h só com template aprovado. No Instagram,
@@ -41,7 +44,6 @@ import { formatarTelefone } from "@/lib/contato-formato";
  */
 
 type Canal = "whatsapp" | "instagram";
-type Aba = "tudo" | Canal;
 
 /** Linha da view. `de`/`para` são telefone no WhatsApp e IGSID no Instagram. */
 type Mensagem = {
@@ -81,11 +83,6 @@ type Thread = {
 const ROTULO_CANAL: Record<Canal, string> = {
   whatsapp: "WhatsApp",
   instagram: "Instagram",
-};
-
-const ICONE_CANAL: Record<Canal, typeof MessageCircle> = {
-  whatsapp: MessageCircle,
-  instagram: Instagram,
 };
 
 function formatTime(iso: string | null) {
@@ -164,7 +161,7 @@ function janelaDaThread(t: Thread | null): { podeEnviar: boolean; aviso: string 
   };
 }
 
-export default function Conversations() {
+export default function Conversations({ canal }: { canal: Canal }) {
   const { orgId } = useOrg();
   const { toast } = useToast();
   const [temWhatsapp, setTemWhatsapp] = useState<boolean | null>(null);
@@ -172,7 +169,6 @@ export default function Conversations() {
   const [allMessages, setAllMessages] = useState<Mensagem[]>([]);
   const [contactsMap, setContactsMap] = useState<Record<string, Contato>>({});
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [aba, setAba] = useState<Aba>("tudo");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState("");
@@ -202,6 +198,13 @@ export default function Conversations() {
         .from("mensagens_do_atendimento")
         .select("*")
         .eq("org_id", orgId)
+        /*
+         * Filtra no BANCO, não no cliente.
+         * Com o filtro no cliente, o `limit` de 2000 cortava antes da separação
+         * por canal -- então conversa recente de um canal podia ficar de fora por
+         * causa de conversa velha do outro. Agora cada tela pede só o que mostra.
+         */
+        .eq("canal", canal)
         // DESC no banco e reversão aqui: com ASC, o `limit` de 2000 traria as
         // mensagens MAIS ANTIGAS da organização e a tela abriria vazia numa base
         // grande. O que se quer truncar é o passado, não o presente.
@@ -235,7 +238,7 @@ export default function Conversations() {
       }
       setLoading(false);
     })();
-  }, [orgId, toast]);
+  }, [orgId, canal, toast]);
 
   // ---------- tempo real ----------
   /*
@@ -282,9 +285,13 @@ export default function Conversations() {
           })
         .subscribe();
 
-    const canais = [assinar("whatsapp", "whatsapp_messages"), assinar("instagram", "instagram_messages")];
-    return () => { for (const c of canais) supabase.removeChannel(c); };
-  }, [orgId]);
+    // Uma assinatura só: a do canal desta tela. Assinar as duas traria mensagem
+    // que esta tela filtra fora, e o filtro do `postgres_changes` é por tabela.
+    const assinatura = canal === "instagram"
+      ? assinar("instagram", "instagram_messages")
+      : assinar("whatsapp", "whatsapp_messages");
+    return () => { supabase.removeChannel(assinatura); };
+  }, [orgId, canal]);
 
   // ---------- threads ----------
   const threads = useMemo<Thread[]>(() => {
@@ -326,23 +333,16 @@ export default function Conversations() {
     return Array.from(map.values()).sort((a, b) => b.last_at.localeCompare(a.last_at));
   }, [allMessages, contactsMap]);
 
-  const contagem = useMemo(() => ({
-    tudo: threads.length,
-    whatsapp: threads.filter((t) => t.canal === "whatsapp").length,
-    instagram: threads.filter((t) => t.canal === "instagram").length,
-  }), [threads]);
-
   const filtered = useMemo(() => {
-    const doCanal = aba === "tudo" ? threads : threads.filter((t) => t.canal === aba);
     const q = search.trim().toLowerCase();
-    if (!q) return doCanal;
-    return doCanal.filter((t) =>
+    if (!q) return threads;
+    return threads.filter((t) =>
       (t.contact_name ?? "").toLowerCase().includes(q) ||
       (t.instagram_username ?? "").toLowerCase().includes(q) ||
       t.identidade.includes(q) ||
       (t.last_body ?? "").toLowerCase().includes(q),
     );
-  }, [threads, search, aba]);
+  }, [threads, search]);
 
   const selected = threads.find((t) => t.key === selectedKey) || null;
 
@@ -405,48 +405,41 @@ export default function Conversations() {
     }
   }
 
-  const nenhumCanal = temWhatsapp === false && temInstagram === false;
+  /*
+   * Só avisa sobre o canal DESTA tela. Antes o aviso exigia que os dois
+   * estivessem desconectados, então quem tinha WhatsApp e não tinha Instagram
+   * abria a tela do Instagram vazia, sem nada dizendo o porquê.
+   */
+  const canalDesconectado = canal === "instagram" ? temInstagram === false : temWhatsapp === false;
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col">
       <PageHeader
-        title="Atendimento"
-        description="WhatsApp e Instagram Direct, na ordem em que chegaram"
-        contagem={{ valor: contagem.tudo, unidade: "conversa" }}
+        title={ROTULO_CANAL[canal]}
+        description={canal === "instagram"
+          ? "Direct do perfil da empresa, na ordem em que chegaram"
+          : "Mensagens do seu número, na ordem em que chegaram"}
+        contagem={{ valor: threads.length, unidade: "conversa" }}
       />
 
-      {nenhumCanal && (
+      {canalDesconectado && (
         <div className="m-4 flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
           <AlertCircle className="h-4 w-4 shrink-0 text-warning" />
           <div className="flex-1">
-            Nenhum canal conectado ainda.{" "}
-            <Link to="/integrations" className="font-medium underline">Conectar WhatsApp ou Instagram</Link>
+            {ROTULO_CANAL[canal]} ainda não está conectado.{" "}
+            <Link to="/integrations" className="font-medium underline">Conectar agora</Link>
           </div>
         </div>
       )}
 
       <div className="grid flex-1 grid-cols-[320px_1fr] overflow-hidden border-t">
         <aside className="flex flex-col border-r bg-card">
-          <div className="space-y-2 border-b p-3">
+          <div className="border-b p-3">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar..." className="pl-8" />
             </div>
-            {/* O filtro só aparece quando há dois canais: com um só, seria uma
-                escolha entre "tudo" e "a mesma coisa". */}
-            {contagem.whatsapp > 0 && contagem.instagram > 0 && (
-              <SegmentedControl<Aba>
-                rotuloGrupo="Canal"
-                valor={aba}
-                onChange={(v) => { setAba(v); setSelectedKey(null); }}
-                opcoes={[
-                  { valor: "tudo", rotulo: `Tudo (${contagem.tudo})`, icone: InboxIcon },
-                  { valor: "whatsapp", rotulo: String(contagem.whatsapp), icone: MessageCircle },
-                  { valor: "instagram", rotulo: String(contagem.instagram), icone: Instagram },
-                ]}
-              />
-            )}
           </div>
           <ScrollArea className="flex-1">
             {loading ? (
@@ -460,7 +453,6 @@ export default function Conversations() {
             ) : (
               <ul className="divide-y">
                 {filtered.map((t) => {
-                  const IconeCanal = ICONE_CANAL[t.canal];
                   const nome = rotuloDaThread(t);
                   return (
                     <li key={t.key}>
@@ -469,19 +461,14 @@ export default function Conversations() {
                           "flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-accent/50",
                           selectedKey === t.key && "bg-accent",
                         )}>
-                        <div className="relative shrink-0">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                              {initials(nome)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {/* O canal é um selo no avatar, não uma coluna: numa
-                              lista de 320px, coluna de canal custa largura de
-                              nome -- e o ícone responde a mesma pergunta. */}
-                          <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-card bg-card">
-                            <IconeCanal className="h-2.5 w-2.5 text-muted-foreground" />
-                          </span>
-                        </div>
+                        {/* Sem selo de canal: ele existia para desambiguar lista
+                            misturada, e agora a tela inteira é de um canal só --
+                            o título da página e a barra lateral já dizem qual. */}
+                        <Avatar className="h-9 w-9 shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {initials(nome)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="flex flex-1 flex-col overflow-hidden">
                           <div className="flex items-center justify-between gap-2">
                             <span className="truncate text-sm font-medium">{nome}</span>
