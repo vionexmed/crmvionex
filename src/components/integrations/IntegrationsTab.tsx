@@ -3,14 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle2, Chrome, Eye, EyeOff, Loader2, Mail, MessageSquare, RefreshCw, Search, Webhook } from "lucide-react";
+import { AlertCircle, CheckCircle2, Chrome, Loader2, Mail, MessageSquare, RefreshCw, Search, Settings2, Webhook } from "lucide-react";
 function MetaIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -20,10 +17,11 @@ function MetaIcon({ className }: { className?: string }) {
 }
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogoUploadField } from "@/components/crm/LogoUploadField";
 import { WhatsAppCard } from "@/components/crm/WhatsAppCard";
 import { InstagramCard } from "@/components/crm/InstagramCard";
-import { CartaoDeIntegracao } from "@/components/integrations/CartaoDeIntegracao";
+import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrations/CartaoDeIntegracao";
+import { PainelDeIntegracao, CamposDeIntegracao, ProvedorDoPainel } from "@/components/integrations/PainelDeIntegracao";
+import { useContextoDoPainel } from "@/components/integrations/contexto-do-painel";
 import { formatarData } from "@/lib/formato";
 
 type IntegrationConfig = {
@@ -40,11 +38,31 @@ type EmailConnection = {
   invalid_since: string | null; invalid_reason: string | null;
 };
 
-export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userId?: string }) {
+/**
+ * A CASCA. Ela existe só para abrir o contexto do painel.
+ *
+ * O conteúdo precisa CHAMAR `useContextoDoPainel()` -- é dali que vem o `abrir`
+ * dos seis botões --, e um componente não enxerga o contexto que ele mesmo
+ * fornece. Daí a divisão em dois: a casca fornece, o conteúdo consome.
+ */
+export function IntegrationsTab(props: { orgId: string | null; userId?: string }) {
+  return (
+    <ProvedorDoPainel>
+      {(alvoRef) => <ConteudoDeIntegracoes {...props} alvoRef={alvoRef} />}
+    </ProvedorDoPainel>
+  );
+}
+
+function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
+  orgId: string | null;
+  userId?: string;
+  /** Onde os painéis se desenham. Ver `contexto-do-painel.ts`. */
+  alvoRef: (n: HTMLDivElement | null) => void;
+}) {
+  const { abrir, aberto, fechar } = useContextoDoPainel();
   const { toast } = useToast();
   const { isAdmin } = useAuth();
   const [configs, setConfigs] = useState<IntegrationConfig[]>([]);
-  const [editProvider, setEditProvider] = useState<string | null>(null);
   const [editConfig, setEditConfig] = useState<any>({});
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [emailConnections, setEmailConnections] = useState<EmailConnection[]>([]);
@@ -160,7 +178,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
         title: "Slack conectado",
         description: "Mandei uma mensagem de teste agora. Se chegou, o resumo das 20h também chega.",
       });
-      setEditProvider(null);
+      fechar();
       fetchConfigs();
       return;
     }
@@ -174,7 +192,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
         await supabase.from("integration_configs").insert({ org_id: orgId, provider: "meta", config: editConfig, is_active: true, connected_by: userId } as any);
       }
       toast({ title: "Meta Ads configurado — clique em Sincronizar para importar campanhas" });
-      setEditProvider(null);
+      fechar();
       fetchConfigs();
       return;
     }
@@ -185,7 +203,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
       await supabase.from("integration_configs").insert({ org_id: orgId, provider, config: editConfig, connected_by: userId } as any);
     }
     toast({ title: `${provider} configurado` });
-    setEditProvider(null);
+    fechar();
     fetchConfigs();
   };
 
@@ -227,8 +245,6 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
   };
 
   const [metaConnecting, setMetaConnecting] = useState(false);
-  /** O diálogo do Google. O cartão só diz o estado; o resto abre daqui. */
-  const [googleAberto, setGoogleAberto] = useState(false);
   const handleMetaConnect = async () => {
     if (!orgId) return;
     const cfg = getConfig("meta");
@@ -236,7 +252,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
     // relação com o sync de anúncios, e mantê-lo aqui faria uma empresa com
     // WhatsApp configurado e Ads não parecer pronta para sincronizar.
     if (!cfg?.config?.access_token) {
-      setEditProvider("meta");
+      abrir("meta");
       setEditConfig(cfg?.config || {});
       return;
     }
@@ -382,12 +398,16 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
         // JÁ está configurada. Sem `cfg` não há nada para alternar, e um
         // interruptor ali seria controle morto.
         aoAlternar={cfg ? (v) => toggleActive(cfg.id, v) : undefined}
+        selecionado={aberto === intg.provider}
         acoes={
           cfg ? (
             <>
+              {/* Engrenagem + rótulo, como o "Settings" da referência. O ícone
+                  sozinho não diria o quê, e o rótulo sozinho some numa grade de
+                  seis cartões com um botão cada. */}
               <Button variant="outline" size="sm" className="h-8 text-label"
-                onClick={() => { setEditProvider(intg.provider); setEditConfig(cfg.config || {}); }}>
-                Configurar
+                onClick={() => { abrir(intg.provider); setEditConfig(cfg.config || {}); }}>
+                <Settings2 className="mr-1 h-3.5 w-3.5" />Configurar
               </Button>
               {intg.provider === "meta" && cfg.is_active && (
                 <Button variant="ghost" size="sm" className="h-8 text-label"
@@ -403,12 +423,12 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
               disabled={intg.connectLoading}
               onClick={() => {
                 if (intg.connectAction) return intg.connectAction();
-                setEditProvider(intg.provider);
+                abrir(intg.provider);
                 setEditConfig({});
               }}>
               {intg.connectLoading
                 ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Conectando…</>
-                : "Conectar"}
+                : <><Settings2 className="mr-1 h-3.5 w-3.5" />Conectar</>}
             </Button>
           )
         }
@@ -425,15 +445,37 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
 
 
   /**
-   * BUSCA E FILTRO POR TIPO, no lugar dos três títulos de grupo.
+   * BUSCA E FILTRO POR ESTADO -- é o que a referência faz.
    *
-   * Os grupos existiam por um bom motivo -- eram seis cartões em pilha plana e
-   * TRÊS eram WhatsApp, então achar um exigia ler todos. As pílulas fazem o
-   * mesmo trabalho com um controle em vez de três cabeçalhos, e ainda somam a
-   * busca, que os títulos não davam.
+   * O filtro era por TIPO (atendimento / anúncios / automação). A referência
+   * filtra por estado, e os quatro botões dela têm correspondente exato aqui,
+   * incluindo o terceiro estado que este CRM inventou: "não integrado" é o
+   * "Archived" da referência, e é o único dos quatro que responde uma pergunta
+   * que ninguém mais responde -- "isto existe no CRM?".
+   *
+   * Procurar pelo assunto continua possível pela busca, que os três títulos de
+   * grupo nunca deram.
    */
   const [buscaIntg, setBuscaIntg] = useState("");
-  const [tipoIntg, setTipoIntg] = useState<"todos" | "atendimento" | "anuncios" | "automacao">("todos");
+  const [filtroEstado, setFiltroEstado] = useState<"todos" | EstadoIntegracao>("todos");
+
+  /**
+   * O ESTADO DE WHATSAPP E INSTAGRAM VEM DE DENTRO DELES.
+   *
+   * Os dois descobrem sozinhos se há conta conectada -- o WhatsApp consulta três
+   * tabelas para isso. Sem eles reportarem para cima, filtrar por "Ativas"
+   * esconderia um WhatsApp ativo, e um filtro que mente é pior que filtro
+   * nenhum.
+   *
+   * O `m[chave] === e ? m : {...}` devolve o MESMO objeto quando nada mudou.
+   * Sem essa guarda, o cartão reporta a cada render, o estado troca de
+   * identidade, o pai re-renderiza e o cartão reporta de novo -- laço infinito.
+   */
+  const [estadosCanais, setEstadosCanais] = useState<Record<string, EstadoIntegracao>>({});
+  const estadoDoWhatsApp = useCallback(
+    (e: EstadoIntegracao) => setEstadosCanais((m) => (m.whatsapp === e ? m : { ...m, whatsapp: e })), []);
+  const estadoDoInstagram = useCallback(
+    (e: EstadoIntegracao) => setEstadosCanais((m) => (m.instagram === e ? m : { ...m, instagram: e })), []);
 
   const cartaoGoogleOAuth = (
         <CartaoDeIntegracao
@@ -449,7 +491,7 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           estado={hasGmailCredentials ? "ativo" : "disponivel"}
           acoes={
             <Button variant="outline" size="sm" className="h-8 text-label"
-              onClick={() => setGoogleAberto(true)}>
+              onClick={() => abrir("google-oauth")}>
               {hasGmailCredentials ? "Gerenciar" : "Cadastrar credenciais"}
             </Button>
           }
@@ -473,93 +515,180 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
    * cartão do Google, e quem procura "dm" quer o do Instagram. Buscar só no
    * nome visível deixaria os dois de fora.
    */
-  const entradasIntg: { chave: string; tipo: string; busca: string; no: React.ReactNode }[] = [
-    { chave: "whatsapp", tipo: "atendimento", busca: "whatsapp wpp meta evolution qr code mensagem", no: <WhatsAppCard /> },
-    { chave: "instagram", tipo: "atendimento", busca: "instagram direct dm mensagem", no: <InstagramCard /> },
-    { chave: "google-oauth", tipo: "atendimento", busca: "google gmail oauth credencial e-mail email", no: cartaoGoogleOAuth },
+  const entradasIntg: { chave: string; estado: EstadoIntegracao; busca: string; no: React.ReactNode }[] = [
+    { chave: "whatsapp", estado: estadosCanais.whatsapp ?? "disponivel",
+      busca: "whatsapp wpp meta evolution qr code mensagem",
+      no: <WhatsAppCard aoMudarEstado={estadoDoWhatsApp} /> },
+    { chave: "instagram", estado: estadosCanais.instagram ?? "disponivel",
+      busca: "instagram direct dm mensagem",
+      no: <InstagramCard aoMudarEstado={estadoDoInstagram} /> },
+    { chave: "google-oauth", estado: hasGmailCredentials ? "ativo" : "disponivel",
+      busca: "google gmail oauth credencial e-mail email", no: cartaoGoogleOAuth },
     ...integrations.filter((i) => !i.hidden && grupoDo[i.provider] === "anuncios")
-      .map((i) => ({ chave: i.provider, tipo: "anuncios", busca: `${i.name} ${i.description} anuncio campanha`, no: cartaoGenerico(i) })),
-    { chave: "google-ads", tipo: "anuncios", busca: "google ads anuncio campanha", no: cartaoGoogleAds },
+      .map((i) => ({
+        chave: i.provider,
+        estado: (getConfig(i.provider)?.is_active ? "ativo" : "disponivel") as EstadoIntegracao,
+        busca: `${i.name} ${i.description} anuncio campanha`,
+        no: cartaoGenerico(i),
+      })),
+    { chave: "google-ads", estado: "nao-integrado" as EstadoIntegracao,
+      busca: "google ads anuncio campanha", no: cartaoGoogleAds },
     ...integrations.filter((i) => !i.hidden && grupoDo[i.provider] === "automacao")
-      .map((i) => ({ chave: i.provider, tipo: "automacao", busca: `${i.name} ${i.description} automacao aviso webhook`, no: cartaoGenerico(i) })),
+      .map((i) => ({
+        chave: i.provider,
+        estado: (getConfig(i.provider)?.is_active ? "ativo" : "disponivel") as EstadoIntegracao,
+        busca: `${i.name} ${i.description} automacao aviso webhook`,
+        no: cartaoGenerico(i),
+      })),
   ];
+
+  /**
+   * AS RECOMENDADAS, na faixa de cima -- é a seção que a referência abre.
+   *
+   * Lista fixa e não "as que ainda não estão conectadas": a segunda esvaziaria a
+   * seção justamente na empresa que já configurou tudo, e uma seção que some
+   * quando você acerta é uma seção que ninguém entende.
+   *
+   * São estas duas porque são as que o resto do CRM CONSOME: sem WhatsApp não há
+   * conversa na caixa de entrada, e sem a credencial do Google ninguém conecta
+   * e-mail -- nem o admin. As outras acrescentam; estas duas destravam.
+   *
+   * Elas saem da lista de baixo para não aparecerem duas vezes, e por isso não
+   * passam pelo filtro: ficam sempre à vista, como na referência.
+   */
+  const RECOMENDADAS = ["whatsapp", "google-oauth"];
+  const recomendadas = entradasIntg.filter((e) => RECOMENDADAS.includes(e.chave));
 
   const termoIntg = buscaIntg.trim().toLowerCase();
   const visiveisIntg = entradasIntg.filter(
-    (e) => (tipoIntg === "todos" || e.tipo === tipoIntg) && (!termoIntg || e.busca.toLowerCase().includes(termoIntg)),
+    (e) =>
+      !RECOMENDADAS.includes(e.chave) &&
+      (filtroEstado === "todos" || e.estado === filtroEstado) &&
+      (!termoIntg || e.busca.toLowerCase().includes(termoIntg)),
   );
 
-  const TIPOS_INTG = [
-    { valor: "todos", rotulo: "Todos" },
-    { valor: "atendimento", rotulo: "Atendimento" },
-    { valor: "anuncios", rotulo: "Anúncios" },
-    { valor: "automacao", rotulo: "Automação" },
+  const FILTROS_ESTADO = [
+    { valor: "todos", rotulo: "Todas" },
+    { valor: "ativo", rotulo: "Ativas" },
+    { valor: "disponivel", rotulo: "Inativas" },
+    { valor: "nao-integrado", rotulo: "Não integradas" },
   ] as const;
 
+  /**
+   * O PAINEL DA DIREITA, no lugar do diálogo de configuração.
+   *
+   * Só os genéricos (Meta Ads, Slack, Zapier) abrem aqui: são os que têm lista
+   * de campos declarada. WhatsApp, Instagram e Google têm formulário próprio,
+   * com validação própria contra o provedor -- o do Google, em particular, grava
+   * por edge function porque a credencial não pode passar por
+   * `integration_configs`, que o navegador lê.
+   */
+  const intgEmEdicao = integrations.find((i) => i.provider === aberto);
+  const cfgEmEdicao = aberto ? getConfig(aberto) : null;
+
   return (
-    <div className="space-y-7">
-      {/* AGRUPADO POR FINALIDADE, e não por fornecedor.
-          Eram seis cartões em pilha plana -- plataforma de anúncio, canal de
-          atendimento e ferramenta de automação lado a lado, sem hierarquia --
-          e TRÊS deles eram WhatsApp. Achar um exigia ler todos. */}
+    /*
+      DUAS COLUNAS: a lista à esquerda, a configuração à direita.
 
-      {/* Busca à esquerda, tipo à direita -- o desenho da referência. */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative sm:max-w-xs sm:flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={buscaIntg}
-            onChange={(e) => setBuscaIntg(e.target.value)}
-            placeholder="Buscar integração"
-            className="h-9 pl-8 text-xs"
-          />
-        </div>
+      Era uma coluna só com um diálogo por cima. O diálogo cobria a lista, então
+      conferir se você abriu a integração certa exigia fechar. `items-start` para
+      o painel não esticar até a altura da lista -- ele tem a altura do conteúdo
+      dele, e gruda no topo ao rolar.
+    */
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+      <div className="min-w-0 flex-1 space-y-6">
+        {/*
+          INTEGRAÇÕES RECOMENDADAS, a faixa de cima da referência.
 
-        <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
-          {TIPOS_INTG.map((t) => (
-            <button
-              key={t.valor}
-              type="button"
-              onClick={() => setTipoIntg(t.valor)}
-              className={cn(
-                "rounded-md px-2.5 py-1.5 text-label font-medium transition-colors",
-                tipoIntg === t.valor
-                  ? "bg-card text-foreground shadow-[var(--shadow-xs)]"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.rotulo}
-            </button>
-          ))}
-        </div>
-      </div>
+          Num quadro próprio, com fundo levemente distinto: sem a moldura ela
+          leria como as primeiras duas da lista, e a separação entre "comece por
+          aqui" e "tudo o que existe" some.
+        */}
+        <section className="rounded-xl border border-border bg-muted/25 p-3.5">
+          <h3 className="vx-titulo-secao">Integrações recomendadas</h3>
+          <p className="vx-subtitulo mt-1 leading-relaxed">
+            As duas de que o resto do CRM depende: sem WhatsApp não há conversa na
+            caixa de entrada, e sem a credencial do Google ninguém conecta e-mail.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {recomendadas.map((e) => (
+              <div key={e.chave} className="contents">{e.no}</div>
+            ))}
+          </div>
+        </section>
 
-      {visiveisIntg.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border py-12 text-center text-xs text-muted-foreground">
-          Nenhuma integração para “{buscaIntg.trim()}”.
-        </p>
-      ) : (
-        /* Três colunas como a referência; duas em `md`, onde três espremeriam a
-           descrição em quatro linhas. */
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {visiveisIntg.map((e) => (
-            <div key={e.chave} className="contents">{e.no}</div>
-          ))}
-        </div>
-      )}
+        {/* LISTA DE INTEGRAÇÕES */}
+        <section>
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="vx-titulo-secao">Lista de integrações</h3>
+            <div className="relative sm:w-56">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={buscaIntg}
+                onChange={(e) => setBuscaIntg(e.target.value)}
+                placeholder="Buscar integração"
+                className="h-9 pl-8 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* As pílulas de estado. `overflow-x-auto` porque em telas estreitas
+              os quatro rótulos não cabem, e quebrar a linha faria a faixa virar
+              dois blocos empilhados que não leem mais como um controle só. */}
+          <div className="mt-2.5 overflow-x-auto">
+            <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
+              {FILTROS_ESTADO.map((f) => (
+                <button
+                  key={f.valor}
+                  type="button"
+                  onClick={() => setFiltroEstado(f.valor)}
+                  className={cn(
+                    "whitespace-nowrap rounded-md px-2.5 py-1.5 text-label font-medium transition-colors",
+                    filtroEstado === f.valor
+                      ? "bg-card text-foreground shadow-[var(--shadow-xs)]"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {f.rotulo}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {visiveisIntg.length === 0 ? (
+            <p className="mt-3 rounded-lg border border-dashed border-border py-12 text-center text-xs text-muted-foreground">
+              {termoIntg
+                ? `Nenhuma integração para “${buscaIntg.trim()}”.`
+                : "Nenhuma integração neste estado."}
+            </p>
+          ) : (
+            /* DUAS colunas, como a referência -- e não três. Com o painel aberto
+               à direita sobra pouco mais de 600px, e três cartões ali dentro
+               espremeriam a descrição em quatro linhas. */
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {visiveisIntg.map((e) => (
+                <div key={e.chave} className="contents">{e.no}</div>
+              ))}
+            </div>
+          )}
+        </section>
 
       {/* O diálogo das credenciais do Google fica FORA da grade: é sobreposição,
           não cartão, e dentro do grid ocupava uma célula invisível. */}
-        <Dialog open={googleAberto} onOpenChange={setGoogleAberto}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-sm">Google — credenciais OAuth</DialogTitle>
-              <DialogDescription className="text-xs">
-                Configuradas uma vez pela empresa. Cada pessoa conecta o próprio Gmail depois.
-              </DialogDescription>
-            </DialogHeader>
+        {/* As credenciais do Google, no MESMO painel dos outros cinco.
+            O formulário continua sendo o daqui -- ele grava por edge function,
+            que valida contra o Google antes e marca as contas que precisarão
+            reconectar. Um "Salvar" na moldura não saberia fazer nada disso, por
+            isso o painel vai sem rodapé. */}
+        <PainelDeIntegracao
+          chave="google-oauth"
+          nome="Google — credenciais OAuth"
+          icone={Mail}
+          descricao="Configuradas uma vez pela empresa. Cada pessoa conecta o próprio Gmail depois."
+          estado={hasGmailCredentials ? "ativo" : "disponivel"}
+        >
+          <div className="space-y-3">
 
-            <div className="space-y-3">
         {hasGmailCredentials ? (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/5 p-3">
@@ -713,95 +842,13 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             </div>
           </div>
         )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-      {/* Config Dialog */}
-      <Dialog open={!!editProvider} onOpenChange={() => setEditProvider(null)}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-sm">
-              Configurar {integrations.find((i) => i.provider === editProvider)?.name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {editProvider === "meta" && (
-              <div className="rounded-md border border-[#1877F2]/30 bg-[#EEF4FF] p-3 text-meta text-[#1877F2]">
-                Preencha só a seção que você usa — <strong>Meta Ads</strong> para campanhas, <strong>WhatsApp</strong> para mensagens, ou ambas.
-                O token é gerado no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="underline font-medium">Meta Graph API Explorer</a>.
-              </div>
-            )}
-            {integrations.find((i) => i.provider === editProvider)?.fields.map((field) => {
-              if (field.type === "section") {
-                return (
-                  <div key={field.key} className="pt-2 mt-2 border-t border-border">
-                    <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">{field.label}</p>
-                  </div>
-                );
-              }
-              return (
-              <div key={field.key} className="space-y-1">
-                <Label className="text-xs">{field.label}</Label>
-                {field.type === "switch" ? (
-                  <div className="flex items-center gap-2">
-                    <Switch checked={!!editConfig[field.key]} onCheckedChange={(v) => setEditConfig({ ...editConfig, [field.key]: v })} />
-                    <span className="text-xs text-muted-foreground">{editConfig[field.key] ? "Sim" : "Não"}</span>
-                  </div>
-                ) : field.type === "textarea" ? (
-                  <Textarea value={editConfig[field.key] || ""} onChange={(e) => setEditConfig({ ...editConfig, [field.key]: e.target.value })}
-                    placeholder={field.placeholder} className="text-xs min-h-[80px]" />
-                ) : field.type === "logo" ? (
-                  <LogoUploadField
-                    value={editConfig[field.key] || ""}
-                    onChange={(url) => setEditConfig({ ...editConfig, [field.key]: url })}
-                  />
-                ) : field.type === "secret" || ["client_secret", "refresh_token", "client_id"].includes(field.key) ? (
-                  <div className="relative">
-                    <Input
-                      type={revealed[field.key] ? "text" : "password"}
-                      value={editConfig[field.key] || ""}
-                      onChange={(e) => setEditConfig({ ...editConfig, [field.key]: e.target.value })}
-                      placeholder={field.placeholder}
-                      className="h-8 text-xs pr-8 font-mono"
-                      autoComplete="off"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setRevealed((s) => ({ ...s, [field.key]: !s[field.key] }))}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label={revealed[field.key] ? "Ocultar" : "Mostrar"}
-                    >
-                      {revealed[field.key] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
-                ) : (
-                  <Input
-                    type="text"
-                    value={editConfig[field.key] || ""}
-                    onChange={(e) => setEditConfig({ ...editConfig, [field.key]: e.target.value })}
-                    placeholder={field.placeholder}
-                    className="h-8 text-xs"
-                  />
-                )}
-                {(field as any).helpUrl && (
-                  <p className="text-label text-muted-foreground">
-                    {(field as any).helpText}{" "}
-                    <a href={(field as any).helpUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
-                      {(field as any).helpLabel}
-                    </a>
-                  </p>
-                )}
-              </div>
-              );
-            })}
           </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setEditProvider(null)}>Cancelar</Button>
-            <Button size="sm" onClick={() => editProvider && saveConfig(editProvider)}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </PainelDeIntegracao>
+
+      {/* O DIÁLOGO DE CONFIGURAÇÃO SAIU DAQUI.
+          Virou `PainelDeIntegracao`, a coluna da direita -- ver o comentário
+          lá. O guia do Slack abaixo continua diálogo de propósito: é leitura de
+          quatro passos, não formulário, e não há lista para consultar ao lado. */}
 
       {/* Slack Setup Guide */}
       <Dialog open={slackSetupGuide} onOpenChange={setSlackSetupGuide}>
@@ -865,6 +912,50 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
+
+      {intgEmEdicao && (
+        <PainelDeIntegracao
+          chave={intgEmEdicao.provider}
+          nome={intgEmEdicao.name}
+          icone={intgEmEdicao.icon}
+          descricao={intgEmEdicao.description}
+          estado={cfgEmEdicao?.is_active ? "ativo" : "disponivel"}
+          aoAlternarAtivo={cfgEmEdicao ? (v) => toggleActive(cfgEmEdicao.id, v) : undefined}
+          rodape={
+            <>
+              <Button variant="ghost" size="sm" className="h-8 text-label" onClick={fechar}>
+                Cancelar
+              </Button>
+              <Button size="sm" className="h-8 text-label"
+                onClick={() => intgEmEdicao && saveConfig(intgEmEdicao.provider)}>
+                Salvar
+              </Button>
+            </>
+          }
+        >
+          {intgEmEdicao.provider === "meta" && (
+            <div className="rounded-md border border-[#1877F2]/30 bg-[#EEF4FF] p-3 text-meta leading-relaxed text-[#1877F2]">
+              Preencha só a seção que você usa — <strong>Meta Ads</strong> para campanhas.
+              O token é gerado no{" "}
+              <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="font-medium underline">
+                Meta Graph API Explorer
+              </a>.
+            </div>
+          )}
+          <CamposDeIntegracao
+            campos={intgEmEdicao.fields}
+            valores={editConfig}
+            aoMudarValor={(chave, valor) => setEditConfig((c: any) => ({ ...c, [chave]: valor }))}
+            revelados={revealed}
+            aoAlternarRevelado={(chave) => setRevealed((r) => ({ ...r, [chave]: !r[chave] }))}
+          />
+        </PainelDeIntegracao>
+      )}
+
+      {/* O ALVO DOS PAINÉIS. `contents` para não virar uma coluna vazia: os
+          painéis se desenham aqui por portal e viram itens desta linha flex. */}
+      <div ref={alvoRef} className="contents" />
     </div>
   );
 }

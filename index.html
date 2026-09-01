@@ -39,10 +39,16 @@
     <!--
       UMA FAMÍLIA, só os pesos que o código usa.
 
-      Eram duas famílias -- Nunito no corpo, Poppins nos títulos. A referência da
-      lateral usa a mesma em tudo, e Plus Jakarta Sans é a mais próxima dela
-      entre as do Google Fonts (comparei com Inter, Manrope e Outfit: Jakarta
-      acerta a largura e o `g` de um andar).
+      Eram duas famílias -- Nunito no corpo, Poppins nos títulos --, depois Plus
+      Jakarta Sans em tudo. Agora Roboto, que é a do print de referência: dá para
+      reconhecer pelo `y` de perna reta cortada na horizontal, pela cauda do `Q`
+      atravessando a barriga e pela abertura fechada do `C`. Jakarta é geométrica
+      e de contraforma aberta; trocar por Roboto estreita o texto e baixa um
+      pouco a altura-x, então a mesma caixa comporta mais caractere.
+
+      Roboto no Google Fonts hoje é VARIÁVEL (wght 100..900), e é por isso que os
+      pesos 600 e 800 podem continuar sendo pedidos -- a Roboto estática não tem
+      esses dois, e o pedido cairia no peso vizinho sem erro nenhum.
 
       Cinco pesos: 400 corpo, 500 item de menu, 600 título e rótulo, 700 número
       grande do painel, 800 o "404" e o wordmark. O 300 fica de fora -- não há um
@@ -51,7 +57,7 @@
       Importa mais do que o tamanho: este <link> é BLOQUEANTE de renderização,
       então cada peso a menos é uma requisição a menos no caminho crítico.
     -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 
     <!--

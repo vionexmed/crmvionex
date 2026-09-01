@@ -24,7 +24,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Kanban, List, TrendingUp, Plus, Filter, Settings2, Loader2, ChevronLeft, ChevronRight, Trophy, XCircle, Trash2 } from "lucide-react";
+import { BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { DealsKanban } from "@/components/crm/DealsKanban";
@@ -493,6 +494,35 @@ export default function Deals() {
         </div>
       )}
 
+      {/*
+        A BARRA DE SELEÇÃO EM LOTE, também no quadro.
+
+        Ela morava só dentro de DealsList, então a caixa que o card do kanban
+        ganhou marcaria negócios sem nada acontecer -- e uma caixa que marca e
+        não leva a ação nenhuma é exatamente o controle morto que o card evita
+        no resto. Mesma seleção, mesmas ações, mesmo componente das outras telas.
+      */}
+      {viewMode === "kanban" && selectedDeals.size > 0 && (
+        <BarraDeSelecao
+          quantidade={selectedDeals.size}
+          substantivo="negócio"
+          substantivoPlural="negócios"
+          onLimpar={() => setSelectedDeals(new Set())}
+        >
+          <Button size="sm" variant="outline" onClick={() => handleBatchAction("won")}>
+            <Trophy className="mr-1 h-3.5 w-3.5 text-success" />Ganhos
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => handleBatchAction("lost")}>
+            <XCircle className="mr-1 h-3.5 w-3.5 text-destructive" />Perdidos
+          </Button>
+          {isAdmin && (
+            <Button size="sm" variant="destructive" onClick={() => handleBatchAction("delete")}>
+              <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir
+            </Button>
+          )}
+        </BarraDeSelecao>
+      )}
+
       {viewMode === "kanban" && !funilCarregando && !funilFalhou && !semFunil && (
         <DealsKanban
           deals={openDeals}
@@ -506,6 +536,8 @@ export default function Deals() {
           onEditDeal={abrirEdicao}
           onMarkWon={markAsWon}
           onMarkLost={openLossModal}
+          selectedDeals={selectedDeals}
+          onSelectionChange={setSelectedDeals}
         />
       )}
 

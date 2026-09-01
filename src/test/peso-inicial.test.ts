@@ -137,17 +137,19 @@ describe("as fontes pedem só os pesos usados", () => {
   /**
    * UMA FAMÍLIA, e não duas.
    *
-   * Eram Nunito (corpo) e Poppins (títulos). A referência da lateral usa a mesma
-   * em tudo, e misturar Plus Jakarta com Poppins daria dois geométricos
-   * discutindo: parecidos demais para contrastar, diferentes demais para não
-   * incomodar.
+   * Eram Nunito (corpo) e Poppins (títulos), depois Plus Jakarta Sans. Hoje é
+   * Roboto, a do print de referência.
    *
    * Cinco pesos, todos com uso: 400 corpo, 500 item de menu, 600 título e
    * rótulo, 700 número grande do painel, 800 o "404" e o wordmark. Sem 300 --
    * não há um `font-light` no projeto.
+   *
+   * Os 600 e 800 só existem porque a Roboto do Google Fonts é VARIÁVEL
+   * (wght 100..900). A estática tem 100/300/400/500/700/900, e pedir 600 nela
+   * não dá erro: cai no vizinho, em silêncio.
    */
-  it("pede Plus Jakarta Sans com os cinco pesos usados", () => {
-    expect(HTML).toMatch(/Plus\+Jakarta\+Sans:wght@400;500;600;700;800/);
+  it("pede Roboto com os cinco pesos usados", () => {
+    expect(HTML).toMatch(/family=Roboto:wght@400;500;600;700;800/);
   });
 
   it("as famílias antigas não voltam pelo <link>", () => {
@@ -155,6 +157,36 @@ describe("as fontes pedem só os pesos usados", () => {
     // e a segunda entraria em silêncio, porque nada quebra ao pedir uma fonte.
     expect(HTML).not.toMatch(/family=Nunito/);
     expect(HTML).not.toMatch(/family=Poppins/);
+    expect(HTML).not.toMatch(/family=Plus\+Jakarta/);
+  });
+
+  /**
+   * O <link> PEDE e o CSS DECLARA, em arquivos diferentes -- e discordar não
+   * quebra nada: o navegador baixa uma família, não acha a outra no
+   * `font-family` e cai no `-apple-system`. A tela fica com a fonte do sistema
+   * e nenhum erro aparece em lugar nenhum.
+   *
+   * São TRÊS lugares desde que o Tailwind ganhou `fontFamily` próprio, então a
+   * checagem compara os três contra o que o <link> pediu.
+   */
+  it("o <link>, o CSS e o Tailwind pedem a MESMA família", () => {
+    const pedida = HTML.match(/family=([A-Za-z+]+):wght/)?.[1].replace(/\+/g, " ");
+    expect(pedida).toBeTruthy();
+
+    const CSS = readFileSync("src/index.css", "utf8");
+    const TW = readFileSync("tailwind.config.ts", "utf8");
+
+    // `body` e os títulos, as duas declarações do index.css.
+    const declaradas = [...CSS.matchAll(/font-family: '([^']+)'/g)].map((m) => m[1]);
+    expect(declaradas).toContain(pedida);
+    // A mono é outra história -- só não pode ser a família de texto.
+    expect(declaradas.filter((f) => f !== "JetBrains Mono")).toEqual(
+      declaradas.filter((f) => f !== "JetBrains Mono").map(() => pedida),
+    );
+
+    // `sans` e `heading` do Tailwind, os dois apelidos que a mesma família serve.
+    expect(TW).toContain(`sans: ['${pedida}'`);
+    expect(TW).toContain(`heading: ['${pedida}'`);
   });
 
   it("JetBrains não pede o peso 600", () => {

@@ -64,17 +64,19 @@ export default {
          * UMA FAMÍLIA SÓ, e é o que a referência da lateral faz.
          *
          * Eram duas -- Nunito no corpo, Poppins nos títulos. A referência usa a
-         * mesma em tudo, e misturar Jakarta com Poppins daria dois geométricos
-         * discutindo: parecidos o bastante para não contrastar, diferentes o
-         * bastante para incomodar.
+         * mesma em tudo, e misturar duas grotescas daria duas fontes discutindo:
+         * parecidas o bastante para não contrastar, diferentes o bastante para
+         * incomodar.
+         *
+         * A família é Roboto, a do print de referência.
          *
          * `heading` CONTINUA EXISTINDO como apelido. São 12 usos de
          * `font-heading` mais `.vx-titulo-*` no CSS, e apontar o apelido para a
          * mesma família troca tudo de uma vez sem reescrever chamada nenhuma --
          * e deixa o caminho aberto para voltar a ter uma display própria.
          */
-        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        heading: ['Plus Jakarta Sans', '-apple-system', 'sans-serif'],
+        sans: ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        heading: ['Roboto', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {

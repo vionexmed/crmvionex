@@ -166,7 +166,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 13px;
@@ -181,7 +181,7 @@
    * O par claro/escuro já existe em --foreground -- a regra .dark deixou de ser
    * necessária. */
   h1, h2, h3, h4 {
-    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    font-family: 'Roboto', -apple-system, sans-serif;
     letter-spacing: -0.02em;
     color: hsl(var(--foreground));
   }
@@ -382,7 +382,11 @@
     border-radius: 0.75rem;
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
-    padding: 12px 14px;
+    /* 14px NOS QUATRO LADOS, e não 12/14. O rodapé de ações sangra até a borda
+       com margem negativa (`-mx-3.5 -mb-3.5`), e margem negativa só cancela o
+       padding se os dois forem o mesmo número -- com 12 embaixo e 14 dos lados,
+       a linha divisória parava 2px antes do canto de baixo. */
+    padding: 14px;
     cursor: pointer;
     transition: box-shadow 0.15s ease, transform 0.1s ease;
     box-shadow: var(--shadow-xs);
@@ -392,6 +396,13 @@
     transform: translateY(-1px);
   }
   .vx-deal-card:active { transform: translateY(0); }
+  /* Marcado na seleção em lote. Borda de destaque e não fundo colorido: o card
+     tem quatro linhas de texto por cima, e tingir o fundo baixaria o contraste
+     de todas elas de uma vez. */
+  .vx-deal-card--marcado {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 1px hsl(var(--primary));
+  }
 
   /* ── Input refinado ───────────────────────────────────── */
   input[type="text"], input[type="email"], input[type="number"], input[type="date"],

@@ -82,76 +82,95 @@ describe("excluir negócio conta os vínculos antes", () => {
   });
 });
 
-describe("a última interação aparece no card", () => {
-  it("a listagem embute as atividades", () => {
+/**
+ * A LISTAGEM AINDA EMBUTE AS ATIVIDADES -- e hoje ninguém lê.
+ *
+ * O card do quadro mostrava última interação, próxima ação e todas as notas.
+ * Essas três linhas saíram quando o card passou a seguir a referência, que tem
+ * quatro linhas e para. O embed continua em `dealsApi.list`: tirá-lo arrasta a
+ * invalidação de cache entre negócios e atividades (ver useActivities.ts), que
+ * é outra mudança.
+ *
+ * Os testes abaixo guardam o EMBED, não mais o que o card faz com ele. Se
+ * alguém for remover o embed, é aqui que a decisão está escrita.
+ */
+describe("a listagem embute as atividades", () => {
+  it("o embed existe", () => {
     expect(api).toContain("atividades:activities!activities_deal_id_fkey");
   });
 
   /**
    * O filtro `.eq("notas.type","note")` saiu, e essa é a correção: ligação,
-   * reunião e e-mail ficavam de fora do card, quando são justamente o que
-   * responde "o que aconteceu com esse cliente".
+   * reunião e e-mail ficavam de fora, quando são justamente o que responde
+   * "o que aconteceu com esse cliente".
    */
-  it("não filtra mais por tipo", () => {
+  it("não filtra por tipo", () => {
     expect(api).not.toMatch(/\.eq\("(notas|atividades)\.type"/);
   });
 
-  it("traz os campos que as duas linhas precisam", () => {
+  it("traz os campos que distinguem feito de agendado", () => {
     for (const campo of ["type", "due_date", "completed_at"]) {
       expect(api).toContain(campo);
     }
   });
-
-  /**
-   * O teste que mais importa. Sem `completed_at`, o card diria "ligação há 2
-   * dias" para uma ligação que ninguém fez -- e discordaria de "Abordagens
-   * realizadas" no painel sobre o mesmo evento.
-   */
-  it("só atividade concluída conta como interação", () => {
-    expect(kanban).toMatch(/filter\(\(a\) => a\.completed_at\)/);
-  });
-
-  it("ordena pela hora em que aconteceu", () => {
-    expect(kanban).toContain("aconteceuEm(b) - aconteceuEm(a)");
-  });
-
-  /**
-   * `sort` muta. Aqui é seguro porque vem sempre depois de `filter`, que devolve
-   * array novo -- ordenar `deal.atividades` direto mutaria o cache do
-   * react-query.
-   */
-  it("nunca ordena o array do cache direto", () => {
-    expect(kanban).not.toMatch(/deal\.atividades\s*\.sort|atividades\.sort\(/);
-  });
-
-  it("cai no título quando a atividade não tem corpo", () => {
-    expect(kanban).toMatch(/a\.body\?\.trim\(\) \|\| a\.title\?\.trim\(\)/);
-  });
-
-  it("card sem atividade não mostra caixa vazia", () => {
-    expect(kanban).toContain("{ultimaInteracao && (");
-  });
 });
 
-describe("a próxima ação aparece quando existe", () => {
-  it("exige pendente E com prazo", () => {
-    // Sem prazo não há o que cobrar, e a linha viraria permanente sem informar
-    // urgência nenhuma.
-    expect(kanban).toMatch(/filter\(\(a\) => !a\.completed_at && a\.due_date\)/);
+/**
+ * O CARD DO QUADRO, no desenho da referência.
+ *
+ * Quatro linhas e para: título com caixa de seleção, subtítulo, `valor · data`,
+ * divisória e quatro botões redondos.
+ */
+describe("o card do quadro segue a referência", () => {
+  it("o valor fica na terceira linha, não no rodapé", () => {
+    // Ele terminava depois das notas, então em cards de alturas diferentes o
+    // número aparecia em alturas diferentes -- comparar dois negócios da mesma
+    // coluna exigia procurar.
+    const i = kanban.indexOf("const DealCard");
+    const card = kanban.slice(i, kanban.indexOf("const StageColumn") + 1 || undefined);
+    expect(card.indexOf("formatarMoeda(")).toBeGreaterThan(-1);
+    expect(card.indexOf("formatarMoeda(")).toBeLessThan(card.indexOf("border-t border-border"));
   });
 
-  it("pega o prazo mais próximo", () => {
-    expect(kanban).toMatch(/new Date\(a\.due_date!\)\.getTime\(\) - new Date\(b\.due_date!\)\.getTime\(\)/);
+  /** A referência escreve o valor na mesma fonte do resto; `num` é a mono. */
+  it("o valor não usa a fonte mono", () => {
+    expect(kanban).not.toMatch(/className="num[^"]*"[^>]*>\s*\{formatarMoeda/);
   });
 
-  /** Vencer hoje não está atrasado. Mesmo critério do chip de close_date. */
-  it("compara atraso por dia, não por instante", () => {
-    expect(kanban).toContain("inicioDeHoje.setHours(0, 0, 0, 0)");
-    expect(kanban).toMatch(/new Date\(proximaAcao\.due_date\) < inicioDeHoje/);
+  it("são quatro botões, e o e-mail apaga sem endereço", () => {
+    for (const chave of ['chave: "abrir"', 'chave: "editar"', 'chave: "email"', 'chave: "agenda"']) {
+      expect(kanban).toContain(chave);
+    }
+    // `mailto:` vazio abre o cliente de e-mail em branco: pior que botão apagado.
+    expect(kanban).toContain("desabilitado: !email");
   });
 
-  it("só aparece quando existe", () => {
-    expect(kanban).toContain("{proximaAcao && (");
+  /**
+   * O teste que importa nesta leva. A caixa de seleção alimenta a MESMA seleção
+   * da visão de lista, e a barra de ações em lote aparece nas duas -- senão
+   * marcar no quadro não levaria a ação nenhuma, que é o controle morto que o
+   * resto deste arquivo evita.
+   */
+  it("a caixa de seleção leva à ação em lote", () => {
+    expect(kanban).toContain("onAlternarSelecao");
+    const deals = semComentarios(ler("src/pages/Deals.tsx"));
+    expect(deals).toContain("selectedDeals={selectedDeals}");
+    expect(deals).toContain("onSelectionChange={setSelectedDeals}");
+    // A barra existe no quadro, e não só dentro de DealsList.
+    expect(deals).toMatch(/viewMode === "kanban" && selectedDeals\.size > 0/);
+    expect(deals).toContain("<BarraDeSelecao");
+  });
+
+  /** Sem as duas props a caixa não aparece: não há barra para receber o clique. */
+  it("sem barra, sem caixa", () => {
+    expect(kanban).toContain("onAlternarSelecao={onSelectionChange ? alternarSelecao : undefined}");
+  });
+
+  it("a largura do clone acompanha a da coluna", () => {
+    // Já esteve dessincronizado: o clone tinha w-[220px] fixo enquanto a coluna
+    // ia a sm:w-[240px].
+    expect((kanban.match(/w-\[264px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((kanban.match(/w-\[288px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -209,46 +228,5 @@ describe("o mapa de tipos de atividade tem um dono só", () => {
   it.each(consumidores)("%s não declara o próprio mapa", (arq) => {
     const src = semComentarios(ler(arq));
     expect(src).not.toMatch(/call: Phone, email: Mail/);
-  });
-});
-
-describe("o card mostra TODAS as notas", () => {
-  /**
-   * Mostrava só a interação mais recente, então o segundo registro do mesmo
-   * negócio ficava invisível: você anotava e o card não mudava, o que faz
-   * parecer que o registro não funcionou.
-   */
-  it("lista as notas, não só a última", () => {
-    expect(kanban).toMatch(/const notas = concluidas\.filter\(\(a\) => a\.type === "note"\)/);
-    expect(kanban).toContain("{notas.map((n) => (");
-  });
-
-  it("não impõe teto", () => {
-    // O pedido foi explicitamente que o card cresça com elas. O limite prático
-    // é a coluna rolar, o que já acontece.
-    const bloco = kanban.slice(kanban.indexOf("const notas ="), kanban.indexOf("const ultimaInteracao"));
-    expect(bloco).not.toMatch(/\.slice\(0,\s*\d/);
-  });
-
-  /**
-   * Ligação e reunião costumam ter título genérico ("Ligação"). Empilhar cinco
-   * linhas dizendo "Ligação" não informaria nada -- por isso só nota vira lista,
-   * e a última interação não-nota aparece separada.
-   */
-  it("a última interação não repete o que a lista já mostrou", () => {
-    expect(kanban).toMatch(/concluidas\.find\(\(a\) => a\.type !== "note"\)/);
-  });
-
-  it("usa o formatador nativo, não o date-fns", () => {
-    // "há menos de um minuto" tem 21 caracteres e foi o que quebrou o layout.
-    expect(kanban).toContain("formatarTempoRelativo(");
-    expect(kanban).not.toContain("formatDistanceToNow");
-  });
-
-  it("a largura do clone acompanha a da coluna", () => {
-    // Já esteve dessincronizado: o clone tinha w-[220px] fixo enquanto a coluna
-    // ia a sm:w-[240px].
-    expect((kanban.match(/w-\[264px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    expect((kanban.match(/w-\[288px\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });

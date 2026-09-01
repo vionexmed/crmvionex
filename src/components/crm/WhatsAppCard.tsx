@@ -2,10 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { MessageCircle, QrCode, ShieldCheck } from "lucide-react";
+import { PainelDeIntegracao } from "@/components/integrations/PainelDeIntegracao";
+import { useContextoDoPainel } from "@/components/integrations/contexto-do-painel";
+import { MessageCircle, QrCode, ShieldCheck, Settings2 } from "lucide-react";
 import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrations/CartaoDeIntegracao";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { WhatsAppOfficialCard } from "@/components/crm/WhatsAppOfficialCard";
@@ -26,12 +25,22 @@ import { WhatsAppEvolutionCard } from "@/components/crm/WhatsAppEvolutionCard";
 
 type Provedor = "meta" | "evolution";
 
-export function WhatsAppCard() {
+/**
+ * `aoMudarEstado` existe por causa do filtro por estado da lista de
+ * integrações: este cartão descobre sozinho se há número conectado (são três
+ * tabelas), e sem reportar para cima a aba filtraria "Ativos" escondendo um
+ * WhatsApp ativo. Opcional -- fora daquela lista ninguém precisa saber.
+ */
+export function WhatsAppCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoIntegracao) => void } = {}) {
   const { orgId } = useOrg();
-  const [aberto, setAberto] = useState(false);
+  // O `aberto` local saiu: quem está aberto é decidido pelo contexto, e é isso
+  // que faz abrir o segundo painel fechar o primeiro.
+  const { abrir, aberto: painelAberto } = useContextoDoPainel();
   const [provedor, setProvedor] = useState<Provedor>("meta");
   const [estado, setEstado] = useState<EstadoIntegracao>("disponivel");
   const [resumo, setResumo] = useState("Nenhum número conectado");
+
+  useEffect(() => { aoMudarEstado?.(estado); }, [estado, aoMudarEstado]);
 
   /**
    * Lê as TRÊS fontes, porque as três existem em produção:
@@ -79,8 +88,11 @@ export function WhatsAppCard() {
   }, [orgId]);
 
   useEffect(() => { void carregar(); }, [carregar]);
-  // Ao fechar o diálogo, o estado pode ter mudado lá dentro.
-  useEffect(() => { if (!aberto) void carregar(); }, [aberto, carregar]);
+  // Ao fechar o painel, o estado pode ter mudado lá dentro -- conectar um
+  // número acontece DENTRO dele, e o resumo do cartão precisa acompanhar.
+  useEffect(() => {
+    if (painelAberto !== "whatsapp") void carregar();
+  }, [painelAberto, carregar]);
 
   return (
     <>
@@ -90,20 +102,27 @@ export function WhatsAppCard() {
         descricao={resumo}
         estado={estado}
         acoes={
-          <Button variant="outline" size="sm" className="h-8 text-label" onClick={() => setAberto(true)}>
+          <Button variant="outline" size="sm" className="h-8 text-label" onClick={() => abrir("whatsapp")}>
+            <Settings2 className="mr-1 h-3.5 w-3.5" />
             {estado === "ativo" ? "Gerenciar" : "Conectar"}
           </Button>
         }
       />
 
-      <Dialog open={aberto} onOpenChange={setAberto}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-sm">WhatsApp</DialogTitle>
-            <DialogDescription className="text-xs">
-              Dois caminhos, e eles não convivem: a empresa usa um.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Sem rodapé: cada provedor tem o próprio botão de salvar, dentro do
+          cartão embutido. Um "Salvar" na moldura seria um segundo botão que não
+          salva o que o de dentro salva. */}
+      <PainelDeIntegracao
+        chave="whatsapp"
+        nome="WhatsApp"
+        icone={MessageCircle}
+        descricao={resumo}
+        estado={estado}
+      >
+        <div className="space-y-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Dois caminhos, e eles não convivem: a empresa usa um.
+          </p>
 
           <SegmentedControl<Provedor>
             rotuloGrupo="Como conectar"
@@ -146,8 +165,8 @@ export function WhatsAppCard() {
               ? <WhatsAppOfficialCard embutido />
               : <WhatsAppEvolutionCard embutido />}
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </PainelDeIntegracao>
     </>
   );
 }

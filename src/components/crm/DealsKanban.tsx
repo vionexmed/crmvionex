@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect, memo } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText, Pencil, User } from "lucide-react";
-import { ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_COR, aconteceuEm } from "@/lib/atividade-tipos";
-import { formatarDataCurta, formatarDataHora, formatarTempoRelativo } from "@/lib/formato";
+import { useState, useRef, useEffect, useMemo, useCallback, memo } from "react";
+import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, Pencil, Eye, Mail, Calendar } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { formatarDataCurta } from "@/lib/formato";
 import {
   DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
@@ -17,9 +16,19 @@ type Stage = Database["public"]["Tables"]["pipeline_stages"]["Row"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 
 
-/* ── Deal Card (Pipedrive-style) ─────────────────────────── */
+/* ── Deal Card ───────────────────────────────────────────── */
 
 /**
+ * O card do quadro, no desenho da referência: título com caixa de seleção,
+ * uma linha de subtítulo, `valor · data`, divisória e quatro botões redondos.
+ *
+ * AS TRÊS LINHAS DE CONTEXTO SAÍRAM -- notas, última interação e próxima ação.
+ * Elas não existem na referência, e a decisão de segui-la foi tomada
+ * explicitamente. O efeito colateral que vale registrar: `dealsApi.list` ainda
+ * EMBUTE `atividades` na consulta, e agora ninguém lê. É peso morto na listagem
+ * até alguém tirar de lá -- não tirei junto porque mexer no embed arrasta a
+ * invalidação de cache entre negócios e atividades, que é outra história.
+ *
  * `memo` porque o quadro renderiza CONTINUAMENTE durante o arraste -- o dnd-kit
  * atualiza a posição a cada movimento do ponteiro. Sem isso, mover um card
  * renderiza os duzentos.
@@ -31,16 +40,22 @@ type Contact = Database["public"]["Tables"]["contacts"]["Row"];
  */
 const DealCard = memo(function DealCard({
   deal,
+  selecionado,
   onDealClick,
   onContactClick,
   onEditDeal,
+  onAlternarSelecao,
 }: {
   deal: DealWithRelations;
+  /** Marcado na seleção em lote. A mesma que a lista usa. */
+  selecionado: boolean;
   onDealClick: (d: DealWithRelations) => void;
   /** Abre o painel da PESSOA, sem sair do quadro. */
   onContactClick?: (contact: Contact) => void;
   /** Abre o formulário de edição. Ausente: o card não mostra o lápis. */
   onEditDeal?: (d: DealWithRelations) => void;
+  /** Ausente: a caixa de seleção não aparece -- não há barra que a receba. */
+  onAlternarSelecao?: (id: string) => void;
 }) {
   // O clone visual do drag é o DragOverlay — o card original só fica translúcido
   // (aplicar transform aqui fazia DOIS cards se moverem ao mesmo tempo)
@@ -63,62 +78,6 @@ const DealCard = memo(function DealCard({
   // linha, o card mostra o mesmo nome duas vezes seguidas -- o prefixo estava
   // mascarando a repetição, não evitando.
   const nomeContato = nome && nome !== deal.title ? nome : null;
-  const probability = Number(deal.probability) || 0;
-
-  // Última interação e próxima ação, o modelo do Pipedrive.
-  //
-  // As atividades vêm embutidas na listagem, então nada aqui custa consulta.
-  //
-  // O `.sort()` abaixo é seguro porque vem sempre depois de um `.filter()`, que
-  // já devolve array novo. Ordenar `deal.atividades` direto mutaria o cache do
-  // react-query, que trata o próprio estado como imutável -- e o efeito seria
-  // uma reordenação fantasma em outro render.
-  const atividades = deal.atividades ?? [];
-
-  // Só CONCLUÍDA é interação: atividade agendada não é algo que aconteceu.
-  // Mesmo critério de "Abordagens realizadas" no painel; divergir aqui faria as
-  // duas telas discordarem sobre o mesmo evento.
-  //
-  // Qualquer TIPO, incluindo nota -- e aqui os dois conceitos se separam de
-  // propósito. "Abordagem" no painel exige call/email/meeting, porque anotar algo
-  // não é falar com ninguém. "Interação" é a última coisa que aconteceu neste
-  // registro, e uma nota é. Por isso esta linha não se chama abordagem.
-  const concluidas = atividades
-    .filter((a) => a.completed_at)
-    .sort((a, b) => aconteceuEm(b) - aconteceuEm(a));
-
-  /**
-   * TODAS as notas, não só a última -- e o card cresce conforme.
-   *
-   * Mostrava só a interação mais recente, então o segundo registro do mesmo
-   * negócio ficava invisível: você anotava e o card não mudava, o que faz
-   * parecer que o registro não funcionou.
-   *
-   * Nota tem tratamento próprio porque é o que a pessoa ESCREVEU -- ligação e
-   * reunião costumam ter título genérico ("Ligação"), e empilhar cinco linhas
-   * dizendo "Ligação" não informaria nada.
-   */
-  const notas = concluidas.filter((a) => a.type === "note");
-
-  /** A última interação que NÃO é nota, para o card não repetir o que já listou. */
-  const ultimaInteracao = concluidas.find((a) => a.type !== "note") ?? null;
-
-  // Próxima ação: pendente COM prazo. Sem prazo não há o que cobrar, e a
-  // atividade viraria uma linha permanente sem informação de urgência.
-  const proximaAcao = atividades
-    .filter((a) => !a.completed_at && a.due_date)
-    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())[0] ?? null;
-
-  // O corpo é o que a pessoa escreveu; o título costuma ser genérico ("Nota").
-  const textoDe = (a: { body?: string | null; title?: string | null } | null) =>
-    a ? (a.body?.trim() || a.title?.trim() || null) : null;
-
-  // Comparação por DIA, não por instante: vencer hoje não está atrasado. Mesmo
-  // critério do chip de close_date.
-  const inicioDeHoje = new Date();
-  inicioDeHoje.setHours(0, 0, 0, 0);
-  const acaoAtrasada =
-    !!proximaAcao?.due_date && new Date(proximaAcao.due_date) < inicioDeHoje;
 
   // Um arraste abortado não pode engolir o clique seguinte, e soltar um card não
   // pode abrir painel. Mesmo padrão de ContactsKanbanByOwner.
@@ -127,35 +86,47 @@ const DealCard = memo(function DealCard({
     if (isDragging) arrastou.current = true;
   }, [isDragging]);
 
+  const email = deal.contact?.email?.trim() || null;
+
   /**
-   * As ações do rodapé do card.
+   * OS QUATRO BOTÕES da referência: abrir, editar, e-mail e agenda.
    *
-   * Uma lista e não três blocos de JSX: as três diferem só no ícone, no rótulo e
-   * no que fazem, e escrever o botão três vezes convidaria os três a divergirem
-   * no próximo ajuste de estilo.
+   * Uma lista e não quatro blocos de JSX: os quatro diferem só no ícone, no
+   * rótulo e no que fazem, e escrever o botão quatro vezes convidaria os quatro
+   * a divergirem no próximo ajuste de estilo.
    *
-   * Só as que TÊM destino hoje. A referência mostra quatro (ver, editar, e-mail,
-   * agenda); e-mail e agenda exigiriam trazer o compositor e o formulário de
-   * atividade para esta tela, e botão que não leva a lugar nenhum é pior que
-   * botão ausente.
+   * `desabilitado` existe por causa do e-mail: sem endereço no contato não há
+   * para onde mandar, e um botão que abre um `mailto:` vazio é pior que um
+   * botão apagado -- o cliente de e-mail abre em branco e a pessoa não entende
+   * o que aconteceu. O `title` diz o motivo em vez de só apagar.
+   *
+   * Abrir e agenda caem os dois no negócio: é lá que se agenda uma atividade, e
+   * a referência não tem uma tela de agenda para onde apontar.
    */
-  const acoes = [
-    /*
-     * O OLHO SAIU, e é o que respondia "está confuso, não?".
-     *
-     * Ele fazia exatamente o que clicar no card já faz -- abrir o negócio --
-     * então havia dois caminhos idênticos e um terceiro (o lápis) parecido, o
-     * que fazia os três lerem como variações da mesma coisa.
-     *
-     * Ficam as duas que o clique no card NÃO faz: editar sem sair do quadro, e
-     * abrir a PESSOA em vez do negócio.
-     */
+  const acoes: {
+    chave: string;
+    titulo: string;
+    Icone: React.ComponentType<{ className?: string }>;
+    aoClicar: () => void;
+    desabilitado?: boolean;
+  }[] = [
+    { chave: "abrir", titulo: "Abrir negócio", Icone: Eye, aoClicar: () => onDealClick(deal) },
     ...(onEditDeal
       ? [{ chave: "editar", titulo: "Editar", Icone: Pencil, aoClicar: () => onEditDeal(deal) }]
       : []),
-    ...(onContactClick && deal.contact
-      ? [{ chave: "pessoa", titulo: nome ?? "Ver pessoa", Icone: User, aoClicar: () => onContactClick(deal.contact!) }]
-      : []),
+    {
+      chave: "email",
+      titulo: email ? `Escrever para ${email}` : "Sem e-mail no contato",
+      Icone: Mail,
+      desabilitado: !email,
+      aoClicar: () => { if (email) window.location.href = `mailto:${email}`; },
+    },
+    {
+      chave: "agenda",
+      titulo: "Agendar atividade — abre o negócio",
+      Icone: Calendar,
+      aoClicar: () => onDealClick(deal),
+    },
   ];
 
   return (
@@ -164,7 +135,7 @@ const DealCard = memo(function DealCard({
       style={style}
       {...attributes}
       {...listeners}
-      className="vx-deal-card"
+      className={`vx-deal-card ${selecionado ? "vx-deal-card--marcado" : ""}`}
       onPointerDown={(e) => {
         arrastou.current = false;
         listeners?.onPointerDown?.(e);
@@ -177,14 +148,41 @@ const DealCard = memo(function DealCard({
         onDealClick(deal);
       }}
     >
-      {/* Title */}
-      <p className="truncate text-corpo font-semibold leading-snug text-foreground mb-0.5">
-        {deal.title}
-      </p>
+      {/*
+        TÍTULO e CAIXA DE SELEÇÃO na mesma linha, como na referência.
+
+        A caixa alimenta a MESMA seleção da visão de lista, então marcar aqui e
+        trocar para lista mantém a marcação -- e a barra de ações em lote que já
+        existe aparece igual. Sem isso ela seria enfeite: caixa que marca e não
+        leva a ação nenhuma é o controle morto que o resto deste arquivo evita.
+
+        `items-start` e não `center`: o título quebra em duas linhas em negócio
+        de nome longo, e centralizar faria a caixa descer junto.
+      */}
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 flex-1 truncate text-corpo font-medium leading-snug text-foreground">
+          {deal.title}
+        </p>
+        {onAlternarSelecao && (
+          <span
+            // Nos DOIS eventos: sem o `onPointerDown`, o dnd-kit começa a
+            // arrastar o card a partir da caixa e o clique nunca acontece.
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-0.5 shrink-0"
+          >
+            <Checkbox
+              checked={selecionado}
+              onCheckedChange={() => onAlternarSelecao(deal.id)}
+              aria-label={`Selecionar ${deal.title}`}
+            />
+          </span>
+        )}
+      </div>
 
       {/* Empresa (texto) · Pessoa (clicável) */}
       {(deal.company || nomeContato) && (
-        <p className="truncate text-meta text-muted-foreground leading-tight mb-2">
+        <p className="mt-1 truncate text-xs text-muted-foreground leading-tight">
           {deal.company?.name}
           {deal.company && nomeContato && " · "}
           {nomeContato && (
@@ -210,142 +208,57 @@ const DealCard = memo(function DealCard({
         </p>
       )}
 
-      {/* Todas as notas, da mais recente para a mais antiga.
-          Sem teto: o pedido foi explicitamente que o card cresça com elas. O
-          limite prático é a coluna rolar, o que já acontece. */}
-      {notas.length > 0 && (
-        <div className="mb-2 space-y-1">
-          {notas.map((n) => (
-            <div
-              key={n.id}
-              className="flex items-start gap-1.5 rounded-md bg-muted/60 px-2 py-1.5"
-            >
-              <FileText className="mt-px h-3 w-3 shrink-0 text-muted-foreground" />
-              <p className="flex-1 text-meta leading-tight text-muted-foreground">
-                {textoDe(n) ?? ATIVIDADE_ROTULO.note}
-              </p>
-              {n.completed_at && (
-                <span
-                  title={formatarDataHora(n.completed_at)}
-                  className="shrink-0 text-label text-muted-foreground"
-                >
-                  {formatarTempoRelativo(n.completed_at)}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {/*
+        VALOR · DATA, a terceira linha da referência.
 
-      {/* Última interação: o que aconteceu, e quando.
-          `line-clamp-2` em vez de truncate -- cortar em 40 caracteres devolveria
-          "Cliente pediu para retornar na..." e a informação útil ficaria fora. */}
-      {ultimaInteracao && (
-        <div className="mb-2 flex items-start gap-1.5 rounded-md bg-muted/60 px-2 py-1.5">
-          {(() => {
-            const Icone = ATIVIDADE_ICONE[ultimaInteracao.type];
-            return (
-              <Icone
-                className={`mt-px h-3 w-3 shrink-0 ${ATIVIDADE_COR[ultimaInteracao.type]}`}
-              />
-            );
-          })()}
-          <p className="line-clamp-2 flex-1 text-meta leading-tight text-muted-foreground">
-            {textoDe(ultimaInteracao) ?? ATIVIDADE_ROTULO[ultimaInteracao.type]}
-          </p>
-          {ultimaInteracao.completed_at && (
-            <span
-              title={formatarDataHora(ultimaInteracao.completed_at)}
-              className="shrink-0 text-label text-muted-foreground"
-            >
-              {formatarTempoRelativo(ultimaInteracao.completed_at)}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Próxima ação: só quando existe. Negócio sem pendência não ganha linha,
-          então o card não fica com espaço reservado para nada. */}
-      {proximaAcao && (
-        <div
-          className={`mb-2 flex items-start gap-1.5 rounded-md px-2 py-1.5 ${
-            acaoAtrasada ? "bg-destructive/[0.07]" : "bg-muted/40"
-          }`}
-        >
-          {(() => {
-            const Icone = ATIVIDADE_ICONE[proximaAcao.type];
-            return (
-              <Icone
-                className={`mt-px h-3 w-3 shrink-0 ${
-                  acaoAtrasada ? "text-destructive" : "text-muted-foreground"
-                }`}
-              />
-            );
-          })()}
-          <p
-            className={`line-clamp-1 flex-1 text-meta leading-tight ${
-              acaoAtrasada ? "text-destructive" : "text-muted-foreground"
-            }`}
-          >
-            {textoDe(proximaAcao) ?? ATIVIDADE_ROTULO[proximaAcao.type]}
-          </p>
-          <span
-            className={`shrink-0 text-label font-medium ${
-              acaoAtrasada ? "text-destructive" : "text-muted-foreground"
-            }`}
-          >
-            {acaoAtrasada
-              ? "atrasada"
-              : formatarDataCurta(proximaAcao.due_date)}
-          </span>
-        </div>
-      )}
-
-      {/* Bottom row */}
-      <div className="flex items-center justify-between gap-1">
-        <span className="num text-xs font-bold text-foreground tabular-nums">
+        Sem a classe `num` (JetBrains Mono): a referência escreve o valor na
+        MESMA fonte do resto, e a mono destoava logo abaixo de duas linhas de
+        Roboto. `tabular-nums` fica -- é ele que alinha os dígitos, e a Roboto
+        também tem o conjunto tabular.
+      */}
+      <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
+        <span className="shrink-0 text-corpo font-bold tabular-nums text-foreground">
           {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
         </span>
-
-        <div className="flex items-center gap-1.5">
-          {probability > 0 && (
-            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-micro font-bold leading-none
-              ${probability >= 70 ? "bg-success/12 text-success" : probability >= 40 ? "bg-warning/12 text-warning" : "bg-muted text-muted-foreground"}`}>
-              {probability}%
+        {deal.close_date && (
+          <>
+            {/* O ponto separador é um <span>, não o caractere "·": em 11px a
+                bolinha de 3px lê como separador, e o "·" da fonte some. */}
+            <span className="h-[3px] w-[3px] shrink-0 rounded-full bg-muted-foreground/50" aria-hidden />
+            <span className="truncate text-xs text-muted-foreground">
+              {formatarDataCurta(deal.close_date)}
             </span>
-          )}
-          {deal.owner && (
-            <Avatar className="h-5 w-5 ring-1 ring-border">
-              <AvatarImage src={deal.owner.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-primary text-micro font-bold">
-                {deal.owner.name?.charAt(0)?.toUpperCase() || "?"}
-              </AvatarFallback>
-            </Avatar>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/*
         AÇÕES RÁPIDAS, separadas por uma linha -- é o que a referência faz.
 
+        Os botões são círculos CONTORNADOS. Sem borda eram ícones cinza soltos
+        sobre o branco, e nada dizia que eram clicáveis antes de o mouse passar
+        por cima -- num card que inteiro já é clicável, é a diferença entre
+        "ícone" e "botão".
+
         `stopPropagation` nos DOIS eventos, e não só no clique: sem o
         `onPointerDown`, o dnd-kit começa a arrastar o card a partir do botão e o
         clique nunca chega a acontecer.
       */}
-      <div className="-mx-3.5 -mb-3 mt-2.5 flex items-center gap-1 border-t border-border px-2 pt-1.5">
-        {acoes.map(({ chave, titulo, Icone, aoClicar }) => (
+      <div className="-mx-3.5 -mb-3.5 mt-2.5 flex items-center gap-2 border-t border-border px-3.5 py-2.5">
+        {acoes.map(({ chave, titulo, Icone, aoClicar, desabilitado }) => (
           <button
             key={chave}
             type="button"
             title={titulo}
             aria-label={titulo}
+            disabled={desabilitado}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               if (arrastou.current) return;
               aoClicar();
             }}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-foreground/20 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
           >
             <Icone className="h-3.5 w-3.5" />
           </button>
@@ -360,17 +273,21 @@ const DealCard = memo(function DealCard({
 function StageColumn({
   stage,
   deals,
+  selecionados,
   onDealClick,
   onContactClick,
   onAddDeal,
   onEditDeal,
+  onAlternarSelecao,
 }: {
   stage: Stage;
   deals: DealWithRelations[];
+  selecionados: Set<string>;
   onDealClick: (d: DealWithRelations) => void;
   onContactClick?: (contact: Contact) => void;
   onAddDeal: (stageId: string) => void;
   onEditDeal?: (d: DealWithRelations) => void;
+  onAlternarSelecao?: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const total = deals.reduce((s, d) => s + (Number(d.value) || 0), 0);
@@ -402,7 +319,7 @@ function StageColumn({
           <div className="min-w-0 flex-1">
             <h3 className="vx-titulo-secao truncate text-foreground">{stage.name}</h3>
             <p className="mt-0.5 truncate text-meta text-muted-foreground">
-              <span className="num font-semibold tabular-nums text-foreground">
+              <span className="font-semibold tabular-nums text-foreground">
                 {formatarMoeda(total)}
               </span>
               {" · "}
@@ -447,9 +364,11 @@ function StageColumn({
           <DealCard
             key={deal.id}
             deal={deal}
+            selecionado={selecionados.has(deal.id)}
             onDealClick={onDealClick}
             onContactClick={onContactClick}
             onEditDeal={onEditDeal}
+            onAlternarSelecao={onAlternarSelecao}
           />
         ))}
 
@@ -566,14 +485,36 @@ interface DealsKanbanProps {
   onAddDeal: (stageId?: string) => void;
   /** Abre o formulário de edição a partir do card. Ausente: o lápis não aparece. */
   onEditDeal?: (deal: DealWithRelations) => void;
+  /**
+   * A MESMA seleção da visão de lista, e é o que faz a caixa do card valer algo.
+   *
+   * Marcar no quadro e trocar para lista mantém a marcação, e a barra de ações
+   * em lote que já existe (`BarraDeSelecao`, em DealsList) recebe as duas. Sem
+   * estas duas props a caixa não aparece -- não há barra para receber o clique.
+   */
+  selectedDeals?: Set<string>;
+  onSelectionChange?: (s: Set<string>) => void;
   onMarkWon: (dealId: string) => void;
   onMarkLost: (dealId: string) => void;
 }
 
 export function DealsKanban({
   deals, wonDeals, lostDeals, stages, onDragEnd, onDealClick, onContactClick, onAddDeal, onEditDeal, onMarkWon, onMarkLost,
+  selectedDeals, onSelectionChange,
 }: DealsKanbanProps) {
   const [activeDeal, setActiveDeal] = useState<DealWithRelations | null>(null);
+
+  // Estável para o `memo` do card: uma arrow inline aqui teria identidade nova a
+  // cada render do quadro e faria os duzentos cards renderizarem de novo.
+  const alternarSelecao = useCallback((id: string) => {
+    if (!onSelectionChange || !selectedDeals) return;
+    const proxima = new Set(selectedDeals);
+    if (proxima.has(id)) proxima.delete(id);
+    else proxima.add(id);
+    onSelectionChange(proxima);
+  }, [selectedDeals, onSelectionChange]);
+
+  const semSelecao = useMemo(() => new Set<string>(), []);
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
@@ -639,10 +580,12 @@ export function DealsKanban({
               key={stage.id}
               stage={stage}
               deals={deals.filter((d) => d.stage_id === stage.id)}
+              selecionados={selectedDeals ?? semSelecao}
               onDealClick={onDealClick}
               onContactClick={onContactClick}
               onAddDeal={onAddDeal}
               onEditDeal={onEditDeal}
+              onAlternarSelecao={onSelectionChange ? alternarSelecao : undefined}
             />
           ))}
 
