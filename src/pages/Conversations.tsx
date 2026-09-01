@@ -427,7 +427,7 @@ export default function Conversations({ canal }: { canal: Canal }) {
           <AlertCircle className="h-4 w-4 shrink-0 text-warning" />
           <div className="flex-1">
             {ROTULO_CANAL[canal]} ainda não está conectado.{" "}
-            <Link to="/integrations" className="font-medium underline">Conectar agora</Link>
+            <Link to="/settings/integrations" className="font-medium underline">Conectar agora</Link>
           </div>
         </div>
       )}

@@ -21,7 +21,15 @@ import { verifyStateDetalhado } from "../_shared/oauth-state.ts";
 import { assinarWebhook, perfilDe, trocarCodigoPorToken } from "../_shared/instagram/api.ts";
 import { resolverCredencialApp } from "../_shared/instagram/credencial.ts";
 
-const DESTINO = "/integrations";
+/*
+ * `/settings/integrations`, não `/integrations`.
+ *
+ * Eu havia cravado o caminho errado, e este é o pior lugar possível para isso:
+ * a pessoa autoriza no Instagram, o CRM guarda a conexão e o token com sucesso,
+ * e o redirecionamento a joga num 404 -- parecendo que nada funcionou, quando
+ * tudo funcionou.
+ */
+const DESTINO = "/settings/integrations";
 
 function baseDoApp(): string {
   const appBase = Deno.env.get("APP_BASE_URL");
