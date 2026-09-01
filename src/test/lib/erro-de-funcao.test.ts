@@ -9,6 +9,7 @@
  * que falta e a tela mostra uma frase que não ajuda ninguém.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import { erroDaFuncao } from "@/lib/erro-supabase";
 
 /** Imita o `FunctionsHttpError` do supabase-js. */
@@ -66,5 +67,46 @@ describe("erroDaFuncao", () => {
     });
     expect(msg).not.toBe("[object Object]");
     expect(msg).toContain("violates foreign key");
+  });
+});
+
+/**
+ * Quem chama edge function e mostra o erro na tela precisa passar por
+ * `erroDaFuncao`. Ler `error.message` direto mostra sempre a MESMA frase
+ * inútil, qualquer que seja o motivo.
+ *
+ * O caso que motivou: conectar o Meta Ads dizia "Edge Function returned a
+ * non-2xx status code". A função respondia, no corpo,
+ * "META_ACCESS_TOKEN not configured" -- ou seja, dizia exatamente o que faltava
+ * e onde. Quem preenchia o token no formulário do CRM via um erro que não
+ * menciona token nenhum, e preenchia de novo.
+ */
+describe("as telas leem o motivo, não a frase genérica", () => {
+  const semComentarios = (t: string) =>
+    t
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*$/gm, "");
+
+  const TELAS = [
+    "src/components/integrations/IntegrationsTab.tsx",
+    "src/components/crm/InstagramCard.tsx",
+    "src/pages/Inbox.tsx",
+  ];
+
+  it.each(TELAS)("%s usa erroDaFuncao", (arquivo) => {
+    const src = semComentarios(readFileSync(arquivo, "utf8"));
+    if (!src.includes("functions.invoke")) return;
+    expect(src).toContain("erroDaFuncao(");
+  });
+
+  /**
+   * `error.message` de um `invoke` é a frase genérica -- nunca o motivo. Se
+   * aparecer num toast, o diagnóstico da função foi jogado fora.
+   */
+  it.each(TELAS)("%s não joga error.message num toast", (arquivo) => {
+    const src = semComentarios(readFileSync(arquivo, "utf8"));
+    expect(src, "description: e.message esconde o motivo real")
+      .not.toMatch(/description: (e|err|error)\.message/);
   });
 });

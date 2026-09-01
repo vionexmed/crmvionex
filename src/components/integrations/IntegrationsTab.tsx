@@ -16,6 +16,7 @@ import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrat
 import { PainelDeIntegracao, CamposDeIntegracao, ProvedorDoPainel } from "@/components/integrations/PainelDeIntegracao";
 import { useContextoDoPainel } from "@/components/integrations/contexto-do-painel";
 import { formatarData } from "@/lib/formato";
+import { erroDaFuncao } from "@/lib/erro-supabase";
 
 type IntegrationConfig = {
   id: string; org_id: string; provider: string; config: any; is_active: boolean;
@@ -153,14 +154,17 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
         toast({ title: "Cole a URL do webhook", variant: "destructive" });
         return;
       }
-      const { data, error } = await supabase.functions.invoke("validate-slack-webhook", {
+      const res = await supabase.functions.invoke("validate-slack-webhook", {
         body: {
           webhook_url: url,
           channel: editConfig.channel || "",
           stale_days: editConfig.stale_days || 7,
         },
       });
-      const msg = (data as { error?: string } | null)?.error || error?.message;
+      // Mesmo motivo do Meta: em status não-2xx o `data` vem nulo e o
+      // `error.message` é a frase genérica. `erroDaFuncao` cobre os dois
+      // caminhos -- corpo de erro em 2xx e corpo de erro em 4xx/5xx.
+      const msg = await erroDaFuncao(res);
       if (msg) {
         toast({ title: "Não foi possível salvar", description: msg, variant: "destructive" });
         return;
@@ -212,20 +216,28 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
     if (!orgId) return;
     setSlackConnecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("slack-connect", {
+      const res = await supabase.functions.invoke("slack-connect", {
         body: { org_id: orgId },
       });
-      if (error) throw error;
-      if (data?.error?.includes("API_KEY")) {
+      const motivo = await erroDaFuncao(res);
+      // `API_KEY` no motivo significa app do Slack não configurado: aí o guia
+      // ajuda mais que a mensagem crua. Antes só era detectado quando a função
+      // devolvia 200 com erro no corpo -- num 4xx caía no catch e virava a
+      // frase genérica.
+      if (motivo?.includes("API_KEY")) {
         setSlackSetupGuide(true);
         abrir("slack");
         setSlackConnecting(false);
         return;
       }
-      if (data?.workspace_name) {
-        setSlackWorkspace(data.workspace_name);
-        setSlackChannels(data.channels || []);
-        toast({ title: `Conectado ao workspace ${data.workspace_name}` });
+      // `res.data` e não `data`: o destructuring saiu quando o tratamento passou
+      // a usar `erroDaFuncao`, e a referência solta teria dado ReferenceError no
+      // caminho de SUCESSO -- o único que ninguém testa à mão.
+      const dados = res.data as { workspace_name?: string; channels?: { id: string; name: string }[] } | null;
+      if (dados?.workspace_name) {
+        setSlackWorkspace(dados.workspace_name);
+        setSlackChannels(dados.channels || []);
+        toast({ title: `Conectado ao workspace ${dados.workspace_name}` });
         fetchConfigs();
       } else {
         setSlackSetupGuide(true);
@@ -251,15 +263,29 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
       return;
     }
     setMetaConnecting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("meta-ads-sync", {
-        body: { org_id: orgId },
-      });
-      if (error) throw error;
+    /*
+      `erroDaFuncao` e não `error.message` direto.
+
+      O `invoke` NÃO lê o corpo quando o status não é 2xx: a `message` dele é
+      sempre "Edge Function returned a non-2xx status code", e o motivo de
+      verdade fica em `error.context`, que é a Response crua.
+
+      Aqui isso escondia um diagnóstico exato. A função responde
+      "META_ACCESS_TOKEN not configured" -- ou seja, ela lê o token dos SECRETS
+      do projeto, não do formulário -- e a tela mostrava a frase genérica. Quem
+      preenchia o token no CRM via um erro que não menciona token nenhum, e
+      preenchia de novo.
+    */
+    const res = await supabase.functions.invoke("meta-ads-sync", {
+      body: { org_id: orgId },
+    });
+    const motivo = await erroDaFuncao(res);
+    if (motivo) {
+      toast({ title: "Erro ao conectar Meta Ads", description: motivo, variant: "destructive" });
+    } else {
+      const data = res.data as { synced?: number } | null;
       toast({ title: data?.synced ? `Sincronizado — ${data.synced} campanhas importadas` : "Meta Ads conectado" });
       fetchConfigs();
-    } catch (e: any) {
-      toast({ title: "Erro ao conectar Meta Ads", description: e.message, variant: "destructive" });
     }
     setMetaConnecting(false);
   };

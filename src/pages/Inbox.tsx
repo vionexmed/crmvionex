@@ -339,7 +339,7 @@ export default function Inbox() {
     try {
       await updateEmailMutation.mutateAsync({ id, patch });
     } catch (e: any) {
-      toast({ title: "Erro ao atualizar email", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao atualizar email", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -385,7 +385,7 @@ export default function Inbox() {
         description: "A mensagem continua na lixeira do Gmail, que o Google esvazia em 30 dias.",
       });
     } catch (e: any) {
-      toast({ title: "Erro ao excluir email", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao excluir email", description: mensagemErro(e), variant: "destructive" });
     }
   };
 
@@ -1102,14 +1102,22 @@ function EmailAttachments({
     if (urls[att.attachment_id]) return urls[att.attachment_id];
     setLoading((s) => ({ ...s, [att.attachment_id]: true }));
     try {
-      const { data, error } = await supabase.functions.invoke("gmail-attachment", {
+      const res = await supabase.functions.invoke("gmail-attachment", {
         body: { message_id: messageId, attachment_id: att.attachment_id, mime_type: att.mime_type },
       });
-      if (error || !data?.data_url) throw new Error(data?.error || error?.message || "Falha ao baixar");
-      setUrls((u) => ({ ...u, [att.attachment_id]: data.data_url }));
-      return data.data_url as string;
-    } catch (e: any) {
-      toast({ title: "Erro ao baixar anexo", description: e.message, variant: "destructive" });
+      /*
+        `data?.error || error?.message` cobria só metade: em status não-2xx o
+        `data` vem NULO e sobra o `error.message`, que é sempre "Edge Function
+        returned a non-2xx status code". Anexo que falha por token expirado
+        dizia isso -- e o motivo real, que a função escreve no corpo, ia embora.
+      */
+      const motivo = await erroDaFuncao(res);
+      const dados = res.data as { data_url?: string } | null;
+      if (motivo || !dados?.data_url) throw new Error(motivo || "Falha ao baixar");
+      setUrls((u) => ({ ...u, [att.attachment_id]: dados.data_url! }));
+      return dados.data_url as string;
+    } catch (e: unknown) {
+      toast({ title: "Erro ao baixar anexo", description: mensagemErro(e), variant: "destructive" });
       return null;
     } finally {
       setLoading((s) => ({ ...s, [att.attachment_id]: false }));
