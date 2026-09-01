@@ -37,17 +37,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!--
-      Só os pesos que o código realmente usa.
-      
-      Eram 12 pedidos e 8 usados. Fora: Nunito 300 (zero font-light no projeto),
-      Poppins 400 e 500 (os 12 usos de font-heading resolvem em 600 ou 700, e
-      h1-h4 herdam bold do navegador) e JetBrains 600 (nenhum font-mono em
-      semibold). Quatro arquivos woff2 a menos por visita fria.
-      
+      UMA FAMÍLIA, só os pesos que o código usa.
+
+      Eram duas famílias -- Nunito no corpo, Poppins nos títulos. A referência da
+      lateral usa a mesma em tudo, e Plus Jakarta Sans é a mais próxima dela
+      entre as do Google Fonts (comparei com Inter, Manrope e Outfit: Jakarta
+      acerta a largura e o `g` de um andar).
+
+      Cinco pesos: 400 corpo, 500 item de menu, 600 título e rótulo, 700 número
+      grande do painel, 800 o "404" e o wordmark. O 300 fica de fora -- não há um
+      `font-light` no projeto.
+
       Importa mais do que o tamanho: este <link> é BLOQUEANTE de renderização,
       então cada peso a menos é uma requisição a menos no caminho crítico.
     -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Poppins:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 
     <!--

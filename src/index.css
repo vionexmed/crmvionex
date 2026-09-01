@@ -55,16 +55,27 @@
        Cheguei a clareá-la inteira. A lateral escura contra conteúdo claro é o
        formato de "painel de comando": ela ancora a tela pela esquerda e a luz
        fica onde o trabalho está. Foi a escolha, e é a identidade do Vionex. */
-    --sidebar-background: 217 72% 14%;
-    /* Era `0 0% 60%`: cinza PURO sobre um fundo azulado, o que faz o texto
-       parecer sujo. Mesmo tom de claridade, com o azul do fundo dentro dele. */
-    --sidebar-foreground: 213 20% 72%;
-    /* O teal CLARO (#00A4B5). O escuro do conteúdo some contra o navy. */
-    --sidebar-primary: 187 97% 36%;
+    /*
+     * A LATERAL VIROU CARTÃO CLARO FLUTUANTE.
+     *
+     * Era navy (`217 72% 14%`) encostado na borda, com divisória. A referência
+     * pedida é um cartão branco com respiro em volta, sobre o cinza da página --
+     * e é o `--background` (220 14% 97%) que dá esse cinza, então o branco puro
+     * do cartão se destaca sem precisar de sombra pesada.
+     *
+     * O ATIVO É CINZA, NÃO TEAL. Na referência o item selecionado é uma pílula
+     * neutra com texto quase preto. O teal continua sendo a cor da marca e
+     * aparece onde é decisão -- botão primário, gráfico --, não em "você está
+     * aqui", que é orientação e não ação.
+     */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 9% 36%;
+    --sidebar-primary: 187 100% 27%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 45% 20%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 38% 24%;
+    /* A pílula do item ativo e do hover. */
+    --sidebar-accent: 220 14% 95%;
+    --sidebar-accent-foreground: 222 22% 16%;
+    --sidebar-border: 220 13% 91%;
     --sidebar-ring: 187 100% 35%;
     /* Semantic */
     --success: 152 82% 22%;            /* #0A6640 */
@@ -106,11 +117,16 @@
     --ring: 187 100% 35%;
     /* No escuro a lateral é mais ESCURA que o conteúdo, não mais clara: mantém
        o mesmo papel de âncora que tem no tema claro. */
-    --sidebar-background: 217 55% 5%;
-    --sidebar-foreground: 213 20% 68%;
+    /*
+     * No escuro o cartão é MAIS CLARO que a página, não mais escuro: é assim que
+     * um objeto flutua sobre um fundo escuro. A página é `217 50% 7%`; o cartão
+     * sobe para 11%.
+     */
+    --sidebar-background: 217 33% 11%;
+    --sidebar-foreground: 215 16% 66%;
     --sidebar-primary: 187 100% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 45% 16%;
+    --sidebar-accent: 217 26% 18%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 217 35% 20%;
     --sidebar-ring: 187 100% 35%;
@@ -150,7 +166,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 13px;
@@ -165,7 +181,7 @@
    * O par claro/escuro já existe em --foreground -- a regra .dark deixou de ser
    * necessária. */
   h1, h2, h3, h4 {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
     letter-spacing: -0.02em;
     color: hsl(var(--foreground));
   }
@@ -299,19 +315,30 @@
    * O item ativo agora é uma pastilha: fundo na cor de destaque, texto na cor
    * de destaque, sem traço. É o padrão do estilo escolhido. */
   .vx-nav-active {
-    /* 18% e não 10%: contra o navy, dez por cento de teal quase não aparece --
-       o valor tinha sido calibrado para a lateral clara. */
-    background: hsl(var(--sidebar-primary) / 18%) !important;
-    color: hsl(var(--sidebar-primary)) !important;
+    /*
+     * PÍLULA NEUTRA, não teal.
+     *
+     * Era `--sidebar-primary / 18%` com texto teal. A referência marca o item
+     * selecionado com um cinza suave e texto quase preto -- e o argumento é
+     * bom: "você está aqui" é ORIENTAÇÃO, não ação. Gastar a cor da marca nisso
+     * a esvazia justamente onde ela deveria significar decisão: botão primário,
+     * série de gráfico, valor em destaque.
+     *
+     * `--sidebar-accent` também é o hover, então ativo e hover são o mesmo
+     * cinza; o que separa os dois é o PESO do texto e o `--sidebar-accent-
+     * foreground`, que só o ativo recebe.
+     */
+    background: hsl(var(--sidebar-accent)) !important;
+    color: hsl(var(--sidebar-accent-foreground)) !important;
     font-weight: 600;
   }
-  .vx-nav-active svg { color: hsl(var(--sidebar-primary)) !important; }
+  .vx-nav-active svg { color: hsl(var(--sidebar-accent-foreground)) !important; }
   .vx-nav-item {
     transition: background 0.15s ease, color 0.15s ease;
   }
   /* Era `rgba(255,255,255,0.06)`: branco fixo, que assume barra lateral
    * escura. No tema claro o realce simplesmente não aparecia. */
-  .vx-nav-item:hover { background: hsl(var(--sidebar-accent) / 60%) !important; }
+  .vx-nav-item:hover { background: hsl(var(--sidebar-accent) / 70%) !important; }
 
   /* ── KPI Card Variants ────────────────────────────────── */
 

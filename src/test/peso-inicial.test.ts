@@ -134,13 +134,27 @@ describe("as fontes pedem só os pesos usados", () => {
    * O `<link>` do Google Fonts é BLOQUEANTE de renderização: cada peso a mais é
    * uma requisição a mais no caminho crítico. Eram 12 pedidos e 8 usados.
    */
-  it("Nunito não pede o peso 300", () => {
-    expect(HTML).toMatch(/Nunito:wght@400;500;600;700/);
+  /**
+   * UMA FAMÍLIA, e não duas.
+   *
+   * Eram Nunito (corpo) e Poppins (títulos). A referência da lateral usa a mesma
+   * em tudo, e misturar Plus Jakarta com Poppins daria dois geométricos
+   * discutindo: parecidos demais para contrastar, diferentes demais para não
+   * incomodar.
+   *
+   * Cinco pesos, todos com uso: 400 corpo, 500 item de menu, 600 título e
+   * rótulo, 700 número grande do painel, 800 o "404" e o wordmark. Sem 300 --
+   * não há um `font-light` no projeto.
+   */
+  it("pede Plus Jakarta Sans com os cinco pesos usados", () => {
+    expect(HTML).toMatch(/Plus\+Jakarta\+Sans:wght@400;500;600;700;800/);
   });
 
-  it("Poppins pede só semibold e bold", () => {
-    // Os 12 usos de font-heading resolvem em 600 ou 700, e h1–h4 herdam bold.
-    expect(HTML).toMatch(/Poppins:wght@600;700/);
+  it("as famílias antigas não voltam pelo <link>", () => {
+    // Duas famílias carregadas e uma usada é peso morto no caminho crítico --
+    // e a segunda entraria em silêncio, porque nada quebra ao pedir uma fonte.
+    expect(HTML).not.toMatch(/family=Nunito/);
+    expect(HTML).not.toMatch(/family=Poppins/);
   });
 
   it("JetBrains não pede o peso 600", () => {

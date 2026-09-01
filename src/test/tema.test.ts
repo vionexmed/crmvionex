@@ -157,8 +157,21 @@ describe("a lateral ancora a tela", () => {
   const valor = (escopo: string, token: string) =>
     bloco(escopo).match(new RegExp(`${token}:\\s*([^;]+);`))?.[1]?.trim();
 
-  it("é o navy da marca no tema claro", () => {
-    expect(valor(":root {", "--sidebar-background")).toBe("217 72% 14%");
+  /**
+   * A LATERAL DEIXOU DE SER NAVY.
+   *
+   * Era `217 72% 14%`, encostada na borda. Virou cartão BRANCO flutuando sobre o
+   * cinza da página (`--background`, 97%) -- é o formato pedido, e é o que dá
+   * separação sem depender de sombra pesada.
+   *
+   * O teste não trava o branco exato: trava a RELAÇÃO, que é o que precisa valer
+   * para o cartão se ler como cartão. Cravar `0 0% 100%` reprovaria um ajuste
+   * legítimo para 99%.
+   */
+  it("no claro a lateral é mais clara que a página, para flutuar sobre ela", () => {
+    const lum = (v?: string) => Number(v?.match(/(\d+)%\s*$/)?.[1] ?? 0);
+    expect(lum(valor(":root {", "--sidebar-background")))
+      .toBeGreaterThan(lum(valor(":root {", "--background")));
   });
 
   /**
@@ -174,18 +187,46 @@ describe("a lateral ancora a tela", () => {
   });
 
   /**
-   * O teal ESCURO do conteúdo some contra o navy. A lateral usa o claro
-   * (#00A4B5), e é por isso que `--sidebar-primary` existe separado de
-   * `--primary`.
+   * O teal claro existia porque o escuro sumia CONTRA O NAVY. Sem navy, a lateral
+   * usa o mesmo teal do conteúdo -- duas variantes da cor da marca sem motivo
+   * seria justamente o tipo de divergência que o `--sidebar-primary` foi criado
+   * para resolver.
    */
-  it("a cor de destaque da lateral é a clara", () => {
-    expect(valor(":root {", "--sidebar-primary")).toBe("187 97% 36%");
+  it("a cor de destaque da lateral acompanha a do conteúdo", () => {
+    expect(valor(":root {", "--sidebar-primary")).toBe(valor(":root {", "--primary"));
   });
 
-  it("no escuro a lateral é mais escura que o conteúdo, não mais clara", () => {
+  /**
+   * O ATIVO É NEUTRO, não teal.
+   *
+   * "Você está aqui" é orientação, não ação. Gastar a cor da marca nisso a
+   * esvazia onde ela deveria significar decisão -- botão primário, série de
+   * gráfico. A pílula do item ativo é `--sidebar-accent`, e este teste garante
+   * que ela não seja uma variação do destaque.
+   */
+  it("a pílula do item ativo é cinza, não a cor da marca", () => {
+    const acento = valor(":root {", "--sidebar-accent");
+    const [matiz, sat] = acento!.split(" ");
+    // Teal vive perto de 187. Cinza levemente azulado, perto de 220, com
+    // saturação baixa.
+    expect(Number(sat.replace("%", "")), `--sidebar-accent está saturado: ${acento}`)
+      .toBeLessThan(20);
+    expect(Math.abs(Number(matiz) - 187), `--sidebar-accent puxa para o teal: ${acento}`)
+      .toBeGreaterThan(15);
+  });
+
+  /**
+   * INVERTEU, junto com o formato.
+   *
+   * Antes a lateral era um bloco mais escuro, encostado -- ali fazer-se mais
+   * escura era o que a separava. Agora é um cartão que FLUTUA, e objeto que
+   * flutua sobre fundo escuro se aproxima da luz, não se afasta. Mesmo princípio
+   * do tema claro, invertido: em ambos, o cartão se distingue da página.
+   */
+  it("no escuro a lateral é mais clara que o conteúdo, para flutuar sobre ele", () => {
     const lum = (v?: string) => Number(v?.match(/(\d+)%\s*$/)?.[1] ?? 0);
     expect(lum(valor(".dark {", "--sidebar-background")))
-      .toBeLessThan(lum(valor(".dark {", "--background")));
+      .toBeGreaterThan(lum(valor(".dark {", "--background")));
   });
 
   /**

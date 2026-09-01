@@ -83,7 +83,7 @@ export function AppLayout() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar />
+        <AppSidebar onOpenSearch={() => setSearchOpen(true)} />
         <div className="flex flex-1 flex-col min-w-0">
           <AppHeader onOpenSearch={() => setSearchOpen(true)} />
           <main className="flex-1 p-3 sm:p-6 pb-20 md:pb-6 vx-page">
