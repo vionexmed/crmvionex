@@ -1,13 +1,8 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { Search, Plus, Users, Building2, Handshake, ClipboardList } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Search } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NotificationBell } from "@/components/crm/NotificationBell";
-import { AIInsightsPanel } from "@/components/crm/AIInsightsPanel";
-import { Button } from "@/components/ui/button";
 import { NAV_GRUPOS, MENU_DA_CONTA } from "@/components/layout/navegacao";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
@@ -38,14 +33,6 @@ interface AppHeaderProps {
 
 export function AppHeader({ onOpenSearch, actions }: AppHeaderProps) {
   const location = useLocation();
-  const navigate = useNavigate();
-
-  const quickActions = [
-    { label: "Novo Contato", icon: Users, path: "/contacts?action=new" },
-    { label: "Nova Empresa", icon: Building2, path: "/companies?action=new" },
-    { label: "Novo Negócio", icon: Handshake, path: "/deals?action=new" },
-    { label: "Nova Atividade", icon: ClipboardList, path: "/activities?action=new" },
-  ];
 
     // `/` é o LOGIN. O primeiro elo do caminho mandava quem já estava autenticado
   // para a tela de entrada -- o mesmo defeito que NotFound e Setup tinham.
@@ -90,22 +77,15 @@ export function AppHeader({ onOpenSearch, actions }: AppHeaderProps) {
 
       <div className="flex items-center gap-1.5 sm:gap-2">
         {actions}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="default" className="h-8 w-8 rounded-full" aria-label="Ações rápidas">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {quickActions.map((action) => (
-              <DropdownMenuItem key={action.path} onClick={() => navigate(action.path)}>
-                <action.icon className="mr-2 h-4 w-4" />
-                {action.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <AIInsightsPanel />
+        {/* O "+" DE AÇÕES RÁPIDAS E A LÂMPADA DE INSIGHTS SAÍRAM.
+
+            As quatro ações do "+" levavam para `?action=new` das mesmas quatro
+            telas que a barra lateral já abre -- um atalho para onde já se
+            chegava, ocupando o canto mais valioso do cabeçalho. E cada tela tem
+            o próprio botão de criar, no contexto certo.
+
+            Sobram o sino, que avisa de coisa que a pessoa não foi buscar, e a
+            busca. */}
         <NotificationBell />
         <button
           onClick={onOpenSearch}
