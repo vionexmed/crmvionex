@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "@/components/ui/checkbox";
+import { contactsApi } from "@/lib/api/contacts";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -120,6 +122,8 @@ export default function Deals() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<DealFilters>({});
   const [, setPresetStageId] = useState<string | null>(null);
+  /** Marcado: salvar também cria a pessoa. Ver `handleSave`. */
+  const [criarContato, setCriarContato] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Loss reason modal
@@ -234,6 +238,7 @@ export default function Deals() {
    */
   const abrirEdicao = useCallback((d: DealWithRelations) => {
     setEditing(d);
+    setCriarContato(false);
     setPresetStageId(null);
     setForm({
       title: d.title,
@@ -252,6 +257,7 @@ export default function Deals() {
 
   const openNew = (stageId?: string) => {
     setEditing(null);
+    setCriarContato(false);
     setPresetStageId(stageId || null);
     setForm({
       title: "", value: 0, currency: "BRL",
@@ -275,16 +281,82 @@ export default function Deals() {
         },
       });
     } else {
-      await createDeal({
-        org_id: orgId, title: form.title!, value: Number(form.value) || 0,
-        currency: form.currency || "BRL", stage_id: form.stage_id,
-        probability: Number(form.probability) || 0, close_date: form.close_date,
-        status: "open", owner_id: form.owner_id || user?.id,
-        contact_id: form.contact_id || null, company_id: form.company_id || null,
-      });
+      /*
+       * CRIAR A PESSOA JUNTO, sem acabar com dois negócios.
+       *
+       * A armadilha: o gatilho `contato_entra_no_funil` cria um negócio A CADA
+       * contato inserido (migração 20260826170000). Criar o contato e depois
+       * inserir o negócio do formulário produziria DOIS -- o do gatilho, na
+       * etapa de entrada, e o nosso. A pessoa marcaria uma caixinha e ganharia
+       * uma ficha duplicada no quadro.
+       *
+       * Então: cria o contato, deixa o gatilho fazer o negócio, e ATUALIZA esse
+       * negócio com o que o formulário pediu. Um contato, um negócio.
+       */
+      let contactId = form.contact_id || null;
+      let negocioDoGatilho: string | null = null;
+
+      if (criarContato && !contactId) {
+        const bruto = form.title!.trim().replace(/\s+/g, " ");
+        // Primeiro termo é o nome; o resto é sobrenome. "Dr José Paraná" vira
+        // "Dr" + "José Paraná", que não é ideal -- mas inventar regra para
+        // título ("Dr", "Dra", "Prof") erraria em nome que legitimamente começa
+        // assim, e o campo é editável em Contatos.
+        const [primeiro, ...resto] = bruto.split(" ");
+        const novo = await contactsApi.create({
+          org_id: orgId,
+          first_name: primeiro,
+          last_name: resto.join(" ") || null,
+          // `lifecycle_stage`, NUNCA `status`: o gatilho sync_contact_lifecycle
+          // deixa o status legado mandar no INSERT, e escrever `status` faria a
+          // pessoa nascer "qualificada" sem ninguém ter qualificado. Está no
+          // CLAUDE.md.
+          lifecycle_stage: "lead",
+          owner_id: form.owner_id || user?.id || null,
+        });
+        contactId = novo.id;
+
+        // O negócio que o gatilho acabou de criar para esta pessoa.
+        const { data: doGatilho } = await supabase
+          .from("deals")
+          .select("id")
+          .eq("contact_id", novo.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        negocioDoGatilho = (doGatilho?.id as string | undefined) ?? null;
+      }
+
+      if (negocioDoGatilho) {
+        // Aproveita o do gatilho em vez de criar um segundo.
+        await updateDeal({
+          id: negocioDoGatilho,
+          deal: {
+            title: form.title, value: Number(form.value) || 0, currency: form.currency || "BRL",
+            stage_id: form.stage_id, probability: Number(form.probability) || 0,
+            close_date: form.close_date, contact_id: contactId,
+            company_id: form.company_id || null, owner_id: form.owner_id || user?.id || null,
+          },
+        });
+      } else {
+        await createDeal({
+          org_id: orgId, title: form.title!, value: Number(form.value) || 0,
+          currency: form.currency || "BRL", stage_id: form.stage_id,
+          probability: Number(form.probability) || 0, close_date: form.close_date,
+          status: "open", owner_id: form.owner_id || user?.id,
+          contact_id: contactId, company_id: form.company_id || null,
+        });
+      }
+
+      // A pessoa nova precisa aparecer no select e na tela de Contatos.
+      if (criarContato) qc.invalidateQueries({ queryKey: ["contacts"] });
     }
     setSheetOpen(false);
-    toast({ title: editing ? "Negócio atualizado" : "Negócio criado" });
+    setCriarContato(false);
+    toast({
+      title: editing ? "Negócio atualizado" : "Negócio criado",
+      description: !editing && criarContato ? "O contato foi criado junto." : undefined,
+    });
     } catch (e: unknown) {
       toast({ title: "Erro ao salvar negócio", description: mensagemErro(e), variant: "destructive" });
     }
@@ -517,6 +589,31 @@ export default function Deals() {
                   {contacts.map((c) => <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>)}
                 </SelectContent>
               </Select>
+
+              {/*
+                Só aparece quando FAZ SENTIDO: negócio novo, com título escrito e
+                sem contato escolhido. Caixinha permanente sob o select seria
+                ruído nos outros três casos, e marcada por engano num negócio que
+                já tem pessoa criaria uma duplicada.
+              */}
+              {!editing && !form.contact_id && !!form.title?.trim() && (
+                <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-muted/40 p-2.5">
+                  <Checkbox
+                    checked={criarContato}
+                    onCheckedChange={(v) => setCriarContato(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium">
+                      Criar contato “{form.title.trim()}”
+                    </span>
+                    <span className="mt-0.5 block text-label leading-relaxed text-muted-foreground">
+                      Opcional. A pessoa entra em Contatos como lead, já ligada a
+                      este negócio.
+                    </span>
+                  </span>
+                </label>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Empresa</Label>
