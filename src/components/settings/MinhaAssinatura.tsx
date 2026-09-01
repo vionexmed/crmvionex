@@ -167,7 +167,7 @@ export function MinhaAssinatura({
                   // do usuário. Nada aqui é texto cru vindo do banco.
                   <div dangerouslySetInnerHTML={{ __html: html }} />
                 ) : (
-                  <p className="text-meta text-muted-foreground">
+                  <p className="text-label text-muted-foreground">
                     Preencha ao menos um campo para ver a prévia. Sem assinatura própria, seus
                     e-mails usam a da empresa.
                   </p>

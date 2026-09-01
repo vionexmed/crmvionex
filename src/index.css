@@ -662,5 +662,5 @@
 /* Um degrau abaixo do título de seção, e sempre em cor secundária. É o mesmo
  * do CardDescription -- a mesma linha, com ou sem cartão em volta. */
 .vx-subtitulo {
-  @apply text-meta text-muted-foreground;
+  @apply text-label text-muted-foreground;
 }

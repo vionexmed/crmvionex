@@ -71,7 +71,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
               <div className="flex items-center gap-2">
                 {plan.name === "Enterprise" && <Crown className="h-4 w-4 text-warning" />}
                 <CardTitle>{plan.name}</CardTitle>
-                {plan.current && <Badge className="text-micro">Atual</Badge>}
+                {plan.current && <Badge className="text-label">Atual</Badge>}
               </div>
               <p className="text-lg font-bold">{plan.price}</p>
             </CardHeader>
@@ -115,7 +115,7 @@ export function BillingTab({ orgId }: { orgId: string | null }) {
                     <TableCell className="text-xs">{inv.date}</TableCell>
                     <TableCell className="text-xs">{inv.plan}</TableCell>
                     <TableCell className="text-xs">{inv.amount}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-micro text-success">{inv.status}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className="text-label text-success">{inv.status}</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -137,7 +137,7 @@ export function NotificationBell() {
         <button className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
           <Bell className="h-4 w-4" />
           {naoLidas > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-micro font-bold text-destructive-foreground">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-label font-bold text-destructive-foreground">
               {naoLidas > 99 ? "99+" : naoLidas}
             </span>
           )}

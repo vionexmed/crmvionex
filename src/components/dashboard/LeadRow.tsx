@@ -54,7 +54,7 @@ export function LeadRow({
               e-mail ou WhatsApp muda a leitura de tudo que vem depois. */}
           {linha.canal && (
             <span className={cn(
-              "shrink-0 rounded px-1.5 py-px text-micro font-medium",
+              "shrink-0 rounded px-1.5 py-px text-label font-medium",
               CANAL[linha.canal]?.classe ?? "bg-muted text-muted-foreground",
             )}>
               {CANAL[linha.canal]?.rotulo ?? linha.canal}
@@ -87,7 +87,7 @@ export function LeadRow({
         {linha.respondeu !== null && (
           <span
             className={cn(
-              "rounded-full px-1.5 py-px text-micro font-medium",
+              "rounded-full px-1.5 py-px text-label font-medium",
               linha.respondeu
                 ? "bg-success/10 text-success"
                 : "bg-muted text-muted-foreground",

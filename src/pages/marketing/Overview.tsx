@@ -68,7 +68,7 @@ export default function MarketingOverview() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap vx-fade-up">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-meta" style={{ color: "hsl(var(--muted-foreground))" }}>
+          <div className="flex items-center gap-1.5 text-label" style={{ color: "hsl(var(--muted-foreground))" }}>
             <span>Vionex</span>
             <span className="text-border">›</span>
             <span>Marketing</span>
@@ -88,9 +88,9 @@ export default function MarketingOverview() {
 
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "hsl(var(--primary) / 10%)", border: "0.5px solid hsl(var(--primary) / 30%)" }}>
             <span className="h-1.5 w-1.5 rounded-full vx-pulse-dot" style={{ background: "hsl(var(--primary))" }} />
-            <span className="text-meta" style={{ color: "hsl(var(--primary))" }}>Atualizado às {horaAtualizacao}</span>
+            <span className="text-label" style={{ color: "hsl(var(--primary))" }}>Atualizado às {horaAtualizacao}</span>
           </div>
-          <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-meta font-medium transition-colors hover:bg-accent" style={{ border: "0.5px solid hsl(var(--border))", color: "hsl(var(--muted-foreground))" }}>
+          <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-label font-medium transition-colors hover:bg-accent" style={{ border: "0.5px solid hsl(var(--border))", color: "hsl(var(--muted-foreground))" }}>
             <RefreshCw className={`h-3.5 w-3.5 ${data.loading ? "animate-spin" : ""}`} /> Sincronizar
           </button>
         </div>
@@ -150,9 +150,9 @@ function PeriodFilter({ value, onChange, customDays, onCustomChange }: {
             value={customDays}
             onChange={(e) => onCustomChange(Math.max(1, Math.min(365, Number(e.target.value) || 1)))}
             aria-label="Número de dias do período"
-            className="h-8 w-16 text-center text-meta tabular-nums"
+            className="h-8 w-16 text-center text-label tabular-nums"
           />
-          <span className="text-meta text-muted-foreground">dias</span>
+          <span className="text-label text-muted-foreground">dias</span>
         </div>
       )}
     </div>
@@ -338,7 +338,7 @@ function PanelVisao({ data, days }: PanelProps) {
             />
           </div>
           {leadSources.length === 0 && (
-            <p className="mt-2 text-meta text-muted-foreground">
+            <p className="mt-2 text-label text-muted-foreground">
               Nenhum lead no período selecionado.
             </p>
           )}
@@ -588,7 +588,7 @@ function HeroCard({ icon: Icon, iconColor, label, value, format, delta, sub }: a
         <div className="text-[28px] leading-none font-bold tabular-nums tracking-tight" style={{ color: "hsl(var(--foreground))" }}>
           {formatted}
         </div>
-        {sub && <div className="text-meta mt-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</div>}
+        {sub && <div className="text-label mt-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</div>}
 
         {typeof delta === "number" && (
           <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: "0.5px solid hsl(var(--border))" }}>
@@ -621,7 +621,7 @@ function Kpi({ icon: Icon, iconColor, label, value, format, delta, sub, inverted
       <div className="h-[2px]" style={{ background: iconColor || "hsl(var(--primary))" }} />
       <div className="p-3.5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-micro uppercase tracking-[0.09em] font-semibold" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</span>
+          <span className="text-label uppercase tracking-[0.09em] font-semibold" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</span>
           {Icon && (
             <div className="h-6 w-6 rounded-md grid place-items-center" style={{ background: `${iconColor || "hsl(var(--primary))"}14` }}>
               <Icon className="h-3 w-3" style={{ color: iconColor || "hsl(var(--muted-foreground))" }} />
@@ -630,7 +630,7 @@ function Kpi({ icon: Icon, iconColor, label, value, format, delta, sub, inverted
         </div>
         <div className="text-[18px] leading-tight font-bold tabular-nums" style={{ color: "hsl(var(--foreground))" }}>
           {formatted}
-          {sub && <span className="text-meta font-normal ml-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</span>}
+          {sub && <span className="text-label font-normal ml-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</span>}
         </div>
         {typeof delta === "number" && (
           <div className="mt-1.5 text-label font-semibold inline-flex items-center gap-0.5" style={{ color: positive ? "hsl(var(--success))" : "hsl(var(--destructive))" }}>
@@ -657,7 +657,7 @@ function ChannelMiniCard({ color, bg, icon: Icon, name, sub, activeCount, metric
               <Icon className="h-4 w-4" style={{ color }} />
             </div>
             <div>
-              <div className="text-corpo font-medium" style={{ color: "hsl(var(--foreground))" }}>{name}</div>
+              <div className="text-sm font-medium" style={{ color: "hsl(var(--foreground))" }}>{name}</div>
               <div className="text-label" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</div>
             </div>
           </div>
@@ -673,8 +673,8 @@ function ChannelMiniCard({ color, bg, icon: Icon, name, sub, activeCount, metric
         <div className="grid grid-cols-4 gap-3 mb-4">
           {metrics.map((m: any) => (
             <div key={m.label}>
-              <div className="text-micro uppercase tracking-[0.07em]" style={{ color: "hsl(var(--muted-foreground))" }}>{m.label}</div>
-              <div className="text-corpo font-medium tabular-nums mt-0.5" style={{ color: "hsl(var(--foreground))" }}>{m.value}</div>
+              <div className="text-label uppercase tracking-[0.07em]" style={{ color: "hsl(var(--muted-foreground))" }}>{m.label}</div>
+              <div className="text-sm font-medium tabular-nums mt-0.5" style={{ color: "hsl(var(--foreground))" }}>{m.value}</div>
             </div>
           ))}
         </div>
@@ -714,7 +714,7 @@ function FunnelCard({ stages }: { stages: FunnelStage[] }) {
           return (
             <div key={i}>
               <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="text-meta font-medium" style={{ color: "hsl(var(--foreground))" }}>{f.nome}</span>
+                <span className="text-label font-medium" style={{ color: "hsl(var(--foreground))" }}>{f.nome}</span>
                 <span className="text-sm font-medium tabular-nums" style={{ color: cor }}>{f.num}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(var(--primary) / 10%)" }}>
@@ -737,7 +737,7 @@ function PendingDataCard({ title, sub, requirement }: { title: string; sub: stri
     <SubCard title={title} sub={sub}>
       <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
         <Database className="h-6 w-6" style={{ color: "hsl(var(--muted-foreground))" }} />
-        <p className="text-meta max-w-[220px]" style={{ color: "hsl(var(--muted-foreground))" }}>{requirement}</p>
+        <p className="text-label max-w-[220px]" style={{ color: "hsl(var(--muted-foreground))" }}>{requirement}</p>
       </div>
     </SubCard>
   );
@@ -824,7 +824,7 @@ function CampaignTable({ rows, platform }: { rows: any[]; platform: "meta" | "go
 
   return (
     <div className="rounded-[10px] bg-card overflow-x-auto vx-fade-up" style={{ border: "0.5px solid hsl(var(--border))" }}>
-      <table className="w-full text-meta">
+      <table className="w-full text-label">
         <thead>
           <tr className="text-left" style={{ borderBottom: "0.5px solid hsl(var(--border))" }}>
             {[

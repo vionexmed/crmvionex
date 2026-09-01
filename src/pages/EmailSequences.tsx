@@ -198,7 +198,7 @@ export default function EmailSequences() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate">{seq.name}</p>
-                        <Badge variant={seq.is_active ? "default" : "secondary"} className="text-micro px-1">
+                        <Badge variant={seq.is_active ? "default" : "secondary"} className="text-label px-1">
                           {seq.is_active ? "Ativa" : "Inativa"}
                         </Badge>
                       </div>
@@ -320,7 +320,7 @@ export default function EmailSequences() {
                           Etapa {en.current_step + 1}/{seqSteps(selectedSeq.id).length}
                         </p>
                       </div>
-                      <Badge className={`text-micro ${statusColors[en.status] || ""}`}>
+                      <Badge className={`text-label ${statusColors[en.status] || ""}`}>
                         {statusLabels[en.status] || en.status}
                       </Badge>
                     </div>

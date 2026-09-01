@@ -243,7 +243,7 @@ export function StatCard({
                     <Info className="h-3 w-3" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[260px] text-meta leading-relaxed">
+                <TooltipContent className="max-w-[260px] text-label leading-relaxed">
                   {hint}
                 </TooltipContent>
               </Tooltip>

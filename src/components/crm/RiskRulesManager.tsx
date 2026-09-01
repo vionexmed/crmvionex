@@ -197,16 +197,16 @@ export function RiskRulesManager({ open, onOpenChange }: RiskRulesManagerProps) 
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <Badge variant="secondary" className="text-micro">
+                        <Badge variant="secondary" className="text-label">
                           {rule.threshold_days} dias
                         </Badge>
                         <Badge
                           variant="secondary"
-                          className={`text-micro ${rule.risk_level === "high" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}
+                          className={`text-label ${rule.risk_level === "high" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}
                         >
                           {rule.risk_level === "high" ? "Alto risco" : "Médio risco"}
                         </Badge>
-                        <Badge variant="outline" className="text-micro">
+                        <Badge variant="outline" className="text-label">
                           {APPLIES_TO.find((x) => x.value === rule.applies_to)?.label}
                         </Badge>
                       </div>

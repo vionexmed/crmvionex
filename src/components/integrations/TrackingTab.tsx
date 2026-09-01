@@ -76,12 +76,12 @@ export function TrackingTab({ orgId }: { orgId: string | null }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
-            <pre className="rounded-md bg-muted p-4 text-micro font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
+            <pre className="rounded-md bg-muted p-4 text-label font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
               {snippet}
             </pre>
             <Button
               variant="outline" size="sm"
-              className="absolute top-2 right-2 h-8 text-micro"
+              className="absolute top-2 right-2 h-8 text-label"
               onClick={copySnippet}
             >
               {copied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}

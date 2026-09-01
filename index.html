@@ -50,14 +50,19 @@
       pesos 600 e 800 podem continuar sendo pedidos -- a Roboto estática não tem
       esses dois, e o pedido cairia no peso vizinho sem erro nenhum.
 
-      Cinco pesos: 400 corpo, 500 item de menu, 600 título e rótulo, 700 número
-      grande do painel, 800 o "404" e o wordmark. O 300 fica de fora -- não há um
-      `font-light` no projeto.
+      QUATRO pesos: 400 corpo, 500 item de menu, 600 título e rótulo, 700 número
+      grande do painel e o "404". Sem 300 e sem 800 -- não existe `font-light`
+      nem `font-extrabold` no projeto.
+
+      O 800 esteve aqui e não tinha um único consumidor. O comentário que
+      justificava dizia servir "o 404 e o wordmark", e o 404 usa `font-bold`,
+      que é 700. Peso pedido e não usado não dá erro em lugar nenhum: só custa
+      uma requisição a mais neste <link>, que é bloqueante.
 
       Importa mais do que o tamanho: este <link> é BLOQUEANTE de renderização,
       então cada peso a menos é uma requisição a menos no caminho crítico.
     -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 
     <!--

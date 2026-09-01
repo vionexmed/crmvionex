@@ -97,7 +97,7 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
 
               return (
                 <div key={etapa.etapa}>
-                  <div className="mb-1 flex items-baseline justify-between gap-2 text-meta">
+                  <div className="mb-1 flex items-baseline justify-between gap-2 text-label">
                     <span className="font-medium">{etapa.etapa}</span>
                     <span className="flex items-baseline gap-2">
                       {conversao !== null && (
@@ -154,7 +154,7 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
             <CardDescription>De onde cada lead chegou</CardDescription>
           </div>
           {maioriaSemOrigem && (
-            <Badge variant="outline" className="shrink-0 text-micro">origem incompleta</Badge>
+            <Badge variant="outline" className="shrink-0 text-label">origem incompleta</Badge>
           )}
         </div>
       </CardHeader>
@@ -173,7 +173,7 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
             />
             <ul className="min-w-0 flex-1 space-y-1.5">
               {dados.slice(0, 6).map((d, i) => (
-                <li key={d.canal} className="flex items-center gap-2 text-meta">
+                <li key={d.canal} className="flex items-center gap-2 text-label">
                   <span className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                   <span className="flex-1 truncate">{d.canal}</span>
@@ -212,7 +212,7 @@ export function GraficoPessoas({ dados }: { dados: LinhaPessoa[] }) {
               Leads recebidos, abordagens, reuniões e vendas no período
             </CardDescription>
           </div>
-          <Badge variant="outline" className="shrink-0 text-micro">só administradores</Badge>
+          <Badge variant="outline" className="shrink-0 text-label">só administradores</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3 pt-2">

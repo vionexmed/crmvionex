@@ -160,7 +160,7 @@ const DealCard = memo(function DealCard({
         de nome longo, e centralizar faria a caixa descer junto.
       */}
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 flex-1 truncate text-corpo font-medium leading-snug text-foreground">
+        <p className="min-w-0 flex-1 truncate text-sm font-medium leading-snug text-foreground">
           {deal.title}
         </p>
         {onAlternarSelecao && (
@@ -217,7 +217,7 @@ const DealCard = memo(function DealCard({
         também tem o conjunto tabular.
       */}
       <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
-        <span className="shrink-0 text-corpo font-bold tabular-nums text-foreground">
+        <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
           {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
         </span>
         {deal.close_date && (
@@ -318,7 +318,7 @@ function StageColumn({
         <div className="flex items-start justify-between gap-2 px-3 py-2.5">
           <div className="min-w-0 flex-1">
             <h3 className="vx-titulo-secao truncate text-foreground">{stage.name}</h3>
-            <p className="mt-0.5 truncate text-meta text-muted-foreground">
+            <p className="mt-0.5 truncate text-label text-muted-foreground">
               <span className="font-semibold tabular-nums text-foreground">
                 {formatarMoeda(total)}
               </span>
@@ -428,9 +428,9 @@ function CollapsibleStatusColumn({
               className="cursor-pointer rounded-md border border-border bg-card p-2 transition-colors hover:border-primary/40"
               onClick={() => onDealClick(deal)}
             >
-              <p className="truncate text-corpo font-medium">{deal.title}</p>
+              <p className="truncate text-sm font-medium">{deal.title}</p>
               {deal.company && (
-                <p className="truncate text-meta text-muted-foreground">{deal.company.name}</p>
+                <p className="truncate text-label text-muted-foreground">{deal.company.name}</p>
               )}
               <p className={`text-xs font-semibold mt-0.5 ${color}`}>
                 {formatarMoeda(Number(deal.value) || 0, deal.currency || "BRL")}
@@ -598,7 +598,7 @@ export function DealsKanban({
           {activeDeal && (
             <div className="w-[264px] sm:w-[288px] opacity-90">
               <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
-                <p className="text-corpo font-medium">{activeDeal.title}</p>
+                <p className="text-sm font-medium">{activeDeal.title}</p>
                 <p className="text-xs font-semibold text-foreground mt-0.5">
                   {formatarMoeda(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
                 </p>

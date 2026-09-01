@@ -157,11 +157,11 @@ export function WhatsAppOfficialCard({ embutido = false }: { embutido?: boolean 
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       ) : config ? (
         <>
-          <Badge variant={config.is_active ? "default" : "secondary"} className="text-micro">
+          <Badge variant={config.is_active ? "default" : "secondary"} className="text-label">
             {config.is_active ? "Conectado" : "Inativo"}
           </Badge>
           {config.display_phone_number && (
-            <span className="text-meta text-muted-foreground">{config.display_phone_number}</span>
+            <span className="text-label text-muted-foreground">{config.display_phone_number}</span>
           )}
           <Button variant="outline" size="sm" className="ml-auto h-8 text-label" onClick={openDialog}>
             Configurar
@@ -208,7 +208,7 @@ export function WhatsAppOfficialCard({ embutido = false }: { embutido?: boolean 
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-md border bg-muted/30 p-3 text-meta text-muted-foreground space-y-1">
+            <div className="rounded-md border bg-muted/30 p-3 text-label text-muted-foreground space-y-1">
               <div className="font-medium text-foreground">Como obter as credenciais:</div>
               <ol className="ml-4 list-decimal space-y-0.5">
                 <li>Acesse o <a className="underline" target="_blank" rel="noreferrer" href="https://developers.facebook.com/apps">Meta for Developers</a> e crie/selecione um App</li>
@@ -234,7 +234,7 @@ export function WhatsAppOfficialCard({ embutido = false }: { embutido?: boolean 
             <div className="space-y-2">
               <Label className="text-xs">Webhook URL (cole no painel Meta)</Label>
               <div className="flex gap-2">
-                <Input readOnly value={webhookUrl} className="font-mono text-meta" />
+                <Input readOnly value={webhookUrl} className="font-mono text-label" />
                 <Button type="button" variant="outline" size="icon" onClick={() => copy(webhookUrl, "url")}>
                   {copied === "url" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
@@ -246,7 +246,7 @@ export function WhatsAppOfficialCard({ embutido = false }: { embutido?: boolean 
               <div className="flex gap-2">
                 <Input value={form.webhook_verify_token}
                   onChange={(e) => setForm(f => ({ ...f, webhook_verify_token: e.target.value }))}
-                  className="font-mono text-meta" />
+                  className="font-mono text-label" />
                 <Button type="button" variant="outline" size="icon" onClick={() => copy(form.webhook_verify_token, "tk")}>
                   {copied === "tk" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
@@ -257,7 +257,7 @@ export function WhatsAppOfficialCard({ embutido = false }: { embutido?: boolean 
             </div>
 
             {config && (
-              <div className="rounded-md border bg-muted/30 p-3 text-meta space-y-0.5">
+              <div className="rounded-md border bg-muted/30 p-3 text-label space-y-0.5">
                 <div><strong>Número:</strong> {config.display_phone_number || "—"}</div>
                 <div><strong>Nome verificado:</strong> {config.verified_name || "—"}</div>
               </div>

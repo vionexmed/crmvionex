@@ -171,7 +171,7 @@ export default function EmailTemplates() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{t.name}</p>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{t.subject}</p>
-                  {t.category && <Badge variant="outline" className="text-micro mt-1">{t.category}</Badge>}
+                  {t.category && <Badge variant="outline" className="text-label mt-1">{t.category}</Badge>}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -225,7 +225,7 @@ export default function EmailTemplates() {
                 <button
                   key={v}
                   onClick={() => setEditTemplate((p) => ({ ...p!, body_html: (p?.body_html || "") + v }))}
-                  className="rounded border border-border px-1.5 py-0.5 text-micro text-muted-foreground hover:bg-accent transition-colors"
+                  className="rounded border border-border px-1.5 py-0.5 text-label text-muted-foreground hover:bg-accent transition-colors"
                 >
                   {v}
                 </button>

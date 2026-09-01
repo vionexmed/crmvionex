@@ -150,7 +150,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
               <Badge
                 key={f.key}
                 variant={selectedFields.includes(f.key) ? "default" : "outline"}
-                className="cursor-pointer text-micro"
+                className="cursor-pointer text-label"
                 onClick={() => toggleField(f.key)}
               >
                 {f.label}
@@ -178,7 +178,7 @@ export function CustomReportBuilder({ deals, contacts, activities, stages, membe
         <div className="flex gap-1 flex-wrap">
           <span className="text-label text-muted-foreground mr-1">Salvos:</span>
           {savedReports.map((r) => (
-            <Badge key={r.id} variant="secondary" className="cursor-pointer text-micro" onClick={() => loadReport(r)}>
+            <Badge key={r.id} variant="secondary" className="cursor-pointer text-label" onClick={() => loadReport(r)}>
               {r.name}
             </Badge>
           ))}

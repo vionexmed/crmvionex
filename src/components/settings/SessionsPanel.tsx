@@ -182,7 +182,7 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
                   <div className="min-w-0">
                     <CardTitle className="flex items-center gap-2">
                       <span className="truncate">{p.pessoa}</span>
-                      {euMesmo && <Badge variant="secondary" className="text-micro">você</Badge>}
+                      {euMesmo && <Badge variant="secondary" className="text-label">você</Badge>}
                     </CardTitle>
                     <CardDescription className="truncate">
                       {p.email} · {PAPEL[p.papel] ?? p.papel}
@@ -215,12 +215,12 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium">{d.rotulo}</p>
                         {s.atual && (
-                          <Badge className="bg-emerald-500/10 text-micro text-emerald-500 hover:bg-emerald-500/10">
+                          <Badge className="bg-emerald-500/10 text-label text-emerald-500 hover:bg-emerald-500/10">
                             este dispositivo
                           </Badge>
                         )}
                       </div>
-                      <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-muted-foreground">
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-label text-muted-foreground">
                         <span className="tabular-nums">Ativa {tempoRelativo(s.ultima_atividade)}</span>
                         {s.ip && (
                           <span className="flex items-center gap-1">
@@ -258,7 +258,7 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
         <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
           <div className="min-w-0">
             <p className="text-sm font-medium">Sair de todos os meus dispositivos</p>
-            <p className="text-meta text-muted-foreground">
+            <p className="text-label text-muted-foreground">
               Encerra as suas sessões em todo lugar, inclusive esta.
             </p>
           </div>
@@ -268,7 +268,7 @@ export default function SessionsPanel({ isAdmin }: { isAdmin: boolean }) {
         </CardContent>
       </Card>
 
-      <p className="text-meta leading-relaxed text-muted-foreground">
+      <p className="text-label leading-relaxed text-muted-foreground">
         Encerrar uma sessão invalida a renovação do acesso. O token que já está
         na mão daquele dispositivo continua valendo até expirar — no máximo uma
         hora. É como JWT funciona: token emitido não se revoga.

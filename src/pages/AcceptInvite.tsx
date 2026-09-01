@@ -201,7 +201,7 @@ export default function AcceptInvite() {
         <Card>
           <CardHeader>
             <CardTitle className="font-heading text-xl">Concluir cadastro</CardTitle>
-            <CardDescription className="text-corpo">
+            <CardDescription className="text-sm">
               Defina seu nome e uma senha para acessar o CRM
               {email && <> — entrando como <span className="font-medium">{email}</span></>}
             </CardDescription>

@@ -414,14 +414,14 @@ export default function Team() {
                           onCheckedChange={(v) => toggleReceivesLeads(m.id, v)}
                           aria-label={`${m.name || m.email} recebe lead`}
                         />
-                        <span className="hidden text-micro uppercase tracking-wider text-muted-foreground lg:inline">
+                        <span className="hidden text-label uppercase tracking-wider text-muted-foreground lg:inline">
                           Recebe lead
                         </span>
                       </label>
                     )}
                     {isOwner && m.id !== user?.id ? (
                       <Select value={m.role || "member"} onValueChange={(v) => changeRole(m.id, v)}>
-                        <SelectTrigger className={`h-8 text-meta w-36 gap-1 ${roleColor(m.role || "member")}`}>
+                        <SelectTrigger className={`h-8 text-label w-36 gap-1 ${roleColor(m.role || "member")}`}>
                           {roleIcon(m.role || "member")}
                           <SelectValue />
                         </SelectTrigger>
@@ -565,7 +565,7 @@ export default function Team() {
                         >
                           <Avatar className="h-5 w-5">
                             <AvatarImage src={m.avatar_url || ""} />
-                            <AvatarFallback className="text-micro">{m.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+                            <AvatarFallback className="text-label">{m.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
                           </Avatar>
                           {m.name || m.email}
                         </button>
@@ -613,7 +613,7 @@ export default function Team() {
                   ))}
               </SelectContent>
             </Select>
-            <p className="text-meta text-muted-foreground">
+            <p className="text-label text-muted-foreground">
               A caixa de e-mail e o histórico dela não são transferidos: continuam restritos a
               administradores.
             </p>

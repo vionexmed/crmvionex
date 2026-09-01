@@ -52,12 +52,21 @@ export default {
        * NOVO deles.
        */
       fontSize: {
+        /*
+         * DOIS degraus próprios abaixo do padrão do Tailwind, e mais nenhum.
+         *
+         * Havia CINCO nomes para TRÊS valores: `micro` e `meta` eram 11px, o
+         * mesmo que `label`, e `corpo` era 14px, o mesmo que `sm`. Deu 190 usos
+         * repartidos entre apelidos idênticos -- e quatro telas (Inbox, MyEmail,
+         * Team e marketing/Overview) usavam os três nomes de 11px no MESMO
+         * arquivo.
+         *
+         * O custo não é estético. Com um tamanho atendendo por três nomes,
+         * "mudar o rótulo pequeno" vira três buscas, e esquecer uma delas deixa
+         * a tela com dois tamanhos onde deveria haver um -- sem erro, sem aviso.
+         */
         label: ["0.6875rem", { lineHeight: "1rem" }],     // 11px / 16
         xs: ["0.75rem", { lineHeight: "1.125rem" }],      // 12px / 18 — era 12/16
-        // Apelidos, em vias de sair:
-        micro: ["0.6875rem", { lineHeight: "1rem" }],     // = label
-        meta: ["0.6875rem", { lineHeight: "1rem" }],      // = label
-        corpo: ["0.875rem", { lineHeight: "1.25rem" }],   // = sm
       },
       fontFamily: {
         /*

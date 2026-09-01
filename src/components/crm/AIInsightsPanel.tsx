@@ -60,7 +60,7 @@ export function AIInsightsPanel() {
         <Button variant="ghost" size="icon" className="relative h-8 w-8">
           <Lightbulb className="h-4 w-4" />
           {insights.length > 0 && visibleInsights.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-warning text-micro font-bold flex items-center justify-center text-warning-foreground">
+            <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-warning text-label font-bold flex items-center justify-center text-warning-foreground">
               {visibleInsights.length}
             </span>
           )}
@@ -75,7 +75,7 @@ export function AIInsightsPanel() {
               </div>
               <div>
                 <SheetTitle className="text-sm">AI Insights</SheetTitle>
-                <p className="text-micro text-muted-foreground">Análise automática do seu CRM</p>
+                <p className="text-label text-muted-foreground">Análise automática do seu CRM</p>
               </div>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchInsights} disabled={loading}>
@@ -123,7 +123,7 @@ export function AIInsightsPanel() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-6 text-micro"
+                      className="h-6 text-label"
                       onClick={() => { navigate(insight.action_route); setOpen(false); }}
                     >
                       {insight.action_label}
@@ -131,7 +131,7 @@ export function AIInsightsPanel() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 text-micro text-muted-foreground"
+                      className="h-6 text-label text-muted-foreground"
                       onClick={() => setDismissed((prev) => new Set(prev).add(originalIdx))}
                     >
                       Descartar

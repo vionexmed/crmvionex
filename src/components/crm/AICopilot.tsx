@@ -182,11 +182,11 @@ export function AICopilot() {
               </div>
               <div>
                 <h3 className="vx-titulo-secao">AI Copilot</h3>
-                <p className="text-micro text-muted-foreground">⌘+J para abrir · Powered by Lovable AI</p>
+                <p className="text-label text-muted-foreground">⌘+J para abrir · Powered by Lovable AI</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Badge variant="outline" className="text-micro">{messages.filter((m) => m.role === "user").length} msgs</Badge>
+              <Badge variant="outline" className="text-label">{messages.filter((m) => m.role === "user").length} msgs</Badge>
             </div>
           </div>
 

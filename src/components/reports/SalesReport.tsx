@@ -155,8 +155,8 @@ export function SalesReport({ deals, stages, members, companies }: {
               </div>
               <div>
                 <p className="text-lg font-bold">{k.value}</p>
-                <p className="text-micro text-muted-foreground uppercase">{k.label}</p>
-                {k.sub && <p className="text-micro text-muted-foreground">{k.sub}</p>}
+                <p className="text-label text-muted-foreground uppercase">{k.label}</p>
+                {k.sub && <p className="text-label text-muted-foreground">{k.sub}</p>}
               </div>
             </CardContent>
           </Card>
@@ -293,7 +293,7 @@ export function SalesReport({ deals, stages, members, companies }: {
                     <TableCell className="text-xs text-center text-success">{g.won}</TableCell>
                     <TableCell className="text-xs text-center text-destructive">{g.lost}</TableCell>
                     <TableCell className="text-xs text-center">
-                      <Badge variant={pct(g.won, g.won + g.lost) >= 50 ? "default" : "secondary"} className="text-micro">
+                      <Badge variant={pct(g.won, g.won + g.lost) >= 50 ? "default" : "secondary"} className="text-label">
                         {pct(g.won, g.won + g.lost)}%
                       </Badge>
                     </TableCell>
@@ -331,7 +331,7 @@ export function SalesReport({ deals, stages, members, companies }: {
                       <TableCell className="text-xs text-center text-success">{o.won}</TableCell>
                       <TableCell className="text-xs text-center text-destructive">{o.lost}</TableCell>
                       <TableCell className="text-xs text-center">
-                        <Badge variant={o.winRate >= 50 ? "default" : "secondary"} className="text-micro">{o.winRate}%</Badge>
+                        <Badge variant={o.winRate >= 50 ? "default" : "secondary"} className="text-label">{o.winRate}%</Badge>
                       </TableCell>
                       <TableCell className="text-xs text-right font-medium">{fmt(o.value)}</TableCell>
                     </TableRow>

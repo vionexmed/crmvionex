@@ -185,7 +185,7 @@ export function QualificationBar({ score }: { score: number }) {
       <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
         <div className={`h-full rounded-full ${getProgressColor(score)}`} style={{ width: `${score}%` }} />
       </div>
-      <span className={`text-micro font-bold ${getScoreColor(score)}`}>{score}%</span>
+      <span className={`text-label font-bold ${getScoreColor(score)}`}>{score}%</span>
     </div>
   );
 }

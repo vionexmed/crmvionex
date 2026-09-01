@@ -82,7 +82,7 @@ export function MetricLeadsSheet({
                 falta dado. */}
             {resumo.textoResto && (
               <div className="border-b bg-muted/30 px-5 py-2.5">
-                <p className="text-meta leading-relaxed text-muted-foreground">
+                <p className="text-label leading-relaxed text-muted-foreground">
                   A lista mostra <strong className="text-foreground">{resumo.visivel}</strong> de{" "}
                   <strong className="text-foreground">{total}</strong>. {resumo.textoResto}
                   {metric === "abordagens" && (

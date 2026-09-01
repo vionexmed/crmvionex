@@ -789,20 +789,20 @@ export default function Inbox() {
                         )}
                         <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                           {email.importance === "high" && (
-                            <Badge variant="outline" className="h-4 text-meta border-amber-500/40 text-amber-600">Importante</Badge>
+                            <Badge variant="outline" className="h-4 text-label border-amber-500/40 text-amber-600">Importante</Badge>
                           )}
                           {email.open_count > 0 && (
-                            <span className="text-meta text-muted-foreground flex items-center gap-0.5 tabular-nums" title={`Aberto ${email.open_count}x`}>
+                            <span className="text-label text-muted-foreground flex items-center gap-0.5 tabular-nums" title={`Aberto ${email.open_count}x`}>
                               <Eye className="h-3 w-3" />{email.open_count}
                             </span>
                           )}
                           {email.click_count > 0 && (
-                            <span className="text-meta text-muted-foreground flex items-center gap-0.5 tabular-nums" title={`${email.click_count} clique(s)`}>
+                            <span className="text-label text-muted-foreground flex items-center gap-0.5 tabular-nums" title={`${email.click_count} clique(s)`}>
                               <MousePointerClick className="h-3 w-3" />{email.click_count}
                             </span>
                           )}
                           {email.snoozed_until && new Date(email.snoozed_until) > new Date() && (
-                            <span className="text-meta text-amber-600 flex items-center gap-0.5" title="Adiado">
+                            <span className="text-label text-amber-600 flex items-center gap-0.5" title="Adiado">
                               <Clock className="h-3 w-3" />{formatarData(email.snoozed_until)}
                             </span>
                           )}
@@ -987,12 +987,12 @@ export default function Inbox() {
                   {(selectedEmail.open_count > 0 || selectedEmail.click_count > 0) && (
                     <div className="flex items-center gap-2 mt-1.5">
                       {selectedEmail.open_count > 0 && (
-                        <Badge variant="secondary" className="text-micro h-4">
+                        <Badge variant="secondary" className="text-label h-4">
                           <Eye className="mr-1 h-2.5 w-2.5" />{selectedEmail.open_count}x aberto
                         </Badge>
                       )}
                       {selectedEmail.click_count > 0 && (
-                        <Badge variant="secondary" className="text-micro h-4">
+                        <Badge variant="secondary" className="text-label h-4">
                           <MousePointerClick className="mr-1 h-2.5 w-2.5" />{selectedEmail.click_count}x clique
                         </Badge>
                       )}

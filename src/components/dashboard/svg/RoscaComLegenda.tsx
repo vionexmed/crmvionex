@@ -44,7 +44,7 @@ export function RoscaComLegenda({
       <Donut fatias={ordenadas} formatar={formatar} tamanho={tamanho} />
       <ul className="w-full min-w-[180px] flex-1 space-y-1.5 sm:w-auto">
         {visiveis.map((f) => (
-          <li key={f.nome} className="flex items-center gap-2 text-meta">
+          <li key={f.nome} className="flex items-center gap-2 text-label">
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: f.cor }} />
             <span className="flex-1 truncate">{f.nome}</span>
             <span className="font-medium tabular-nums">{formatar(f.valor)}</span>

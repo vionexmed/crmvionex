@@ -79,13 +79,18 @@ describe("nenhum cartão volta a abrir diálogo próprio", () => {
   });
 
   /**
-   * A aba MANTÉM um diálogo, e de propósito: o guia de configuração do Slack é
-   * leitura de quatro passos, não formulário, e não há lista para consultar ao
-   * lado enquanto se lê. Um só -- se virarem dois, a exceção virou regra.
+   * A ABA NÃO TEM MAIS NENHUM DIÁLOGO.
+   *
+   * O guia do Slack era a última exceção -- e cobria justamente o painel do
+   * Slack, então quem seguia os quatro passos perdia de vista o formulário para
+   * o qual eles levam. Agora ele mora dentro daquele painel.
    */
-  it("a aba guarda exatamente um diálogo, o guia do Slack", () => {
-    expect(ABA.match(/<Dialog[\s>]/g) ?? []).toHaveLength(1);
-    expect(ABA).toContain("open={slackSetupGuide}");
+  it("a aba não monta diálogo nenhum", () => {
+    expect(ABA.match(/<Dialog[\s>]/g) ?? []).toHaveLength(0);
+  });
+
+  it("o guia do Slack vive dentro do painel do Slack", () => {
+    expect(ABA).toContain('intgEmEdicao.provider === "slack" && slackSetupGuide');
   });
 });
 

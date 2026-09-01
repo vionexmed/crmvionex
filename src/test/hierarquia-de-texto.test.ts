@@ -96,7 +96,7 @@ describe("o primitivo de cartão tem o default certo", () => {
   });
 
   it("CardDescription nasce no tamanho de subtítulo", () => {
-    expect(CARD).toMatch(/CardDescription[\s\S]*?text-meta text-muted-foreground/);
+    expect(CARD).toMatch(/CardDescription[\s\S]*?text-label text-muted-foreground/);
   });
 
   /**
@@ -122,8 +122,8 @@ describe("o primitivo de cartão tem o default certo", () => {
     for (const arquivo of TSX) {
       const src = semComentarios(readFileSync(arquivo, "utf8"));
       for (const m of src.matchAll(/<CardDescription className="([^"]*)"/g)) {
-        // `text-corpo` acompanha os títulos de nível de tela.
-        if (m[1].includes("text-corpo")) continue;
+        // `text-sm` acompanha os títulos de nível de tela.
+        if (m[1].includes("text-sm")) continue;
         if (/\btext-(sm|xs|label|meta)\b/.test(m[1])) infratores.push(`${arquivo}  ${m[1]}`);
       }
     }

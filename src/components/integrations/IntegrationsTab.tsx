@@ -4,9 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Search, Settings2 } from "lucide-react";
 import {
   LogoGmail, LogoGoogleAds, LogoMeta, LogoSlack, LogoZapier,
@@ -221,6 +218,7 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
       if (error) throw error;
       if (data?.error?.includes("API_KEY")) {
         setSlackSetupGuide(true);
+        abrir("slack");
         setSlackConnecting(false);
         return;
       }
@@ -231,9 +229,11 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
         fetchConfigs();
       } else {
         setSlackSetupGuide(true);
+        abrir("slack");
       }
     } catch {
       setSlackSetupGuide(true);
+      abrir("slack");
     }
     setSlackConnecting(false);
   };
@@ -539,27 +539,20 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
       })),
   ];
 
-  /**
-   * AS RECOMENDADAS, na faixa de cima -- é a seção que a referência abre.
+  /*
+   * A SEÇÃO DE RECOMENDADAS SAIU, e com ela a lista fixa de duas chaves.
    *
-   * Lista fixa e não "as que ainda não estão conectadas": a segunda esvaziaria a
-   * seção justamente na empresa que já configurou tudo, e uma seção que some
-   * quando você acerta é uma seção que ninguém entende.
+   * WhatsApp e Google ficavam numa faixa própria acima da lista, e o efeito era
+   * o contrário do pretendido: as duas integrações mais usadas eram justamente
+   * as que NÃO apareciam onde se procura integração. Quem filtrava por "Ativas"
+   * não as via, e quem buscava pelo nome também não -- elas estavam fora do
+   * filtro por construção.
    *
-   * São estas duas porque são as que o resto do CRM CONSOME: sem WhatsApp não há
-   * conversa na caixa de entrada, e sem a credencial do Google ninguém conecta
-   * e-mail -- nem o admin. As outras acrescentam; estas duas destravam.
-   *
-   * Elas saem da lista de baixo para não aparecerem duas vezes, e por isso não
-   * passam pelo filtro: ficam sempre à vista, como na referência.
+   * Uma lista só, com todas dentro do mesmo filtro e da mesma busca.
    */
-  const RECOMENDADAS = ["whatsapp", "google-oauth"];
-  const recomendadas = entradasIntg.filter((e) => RECOMENDADAS.includes(e.chave));
-
   const termoIntg = buscaIntg.trim().toLowerCase();
   const visiveisIntg = entradasIntg.filter(
     (e) =>
-      !RECOMENDADAS.includes(e.chave) &&
       (filtroEstado === "todos" || e.estado === filtroEstado) &&
       (!termoIntg || e.busca.toLowerCase().includes(termoIntg)),
   );
@@ -594,30 +587,10 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
       de contato.
     */
     <div className="space-y-6">
-        {/*
-          INTEGRAÇÕES RECOMENDADAS, a faixa de cima da referência.
-
-          Num quadro próprio, com fundo levemente distinto: sem a moldura ela
-          leria como as primeiras duas da lista, e a separação entre "comece por
-          aqui" e "tudo o que existe" some.
-        */}
-        <section className="rounded-xl border border-border bg-muted/25 p-3.5">
-          <h3 className="vx-titulo-secao">Integrações recomendadas</h3>
-          <p className="vx-subtitulo mt-1 leading-relaxed">
-            As duas de que o resto do CRM depende: sem WhatsApp não há conversa na
-            caixa de entrada, e sem a credencial do Google ninguém conecta e-mail.
-          </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {recomendadas.map((e) => (
-              <div key={e.chave} className="contents">{e.no}</div>
-            ))}
-          </div>
-        </section>
-
         {/* LISTA DE INTEGRAÇÕES */}
         <section>
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="vx-titulo-secao">Lista de integrações</h3>
+            <h3 className="vx-titulo-secao">Todas as integrações</h3>
             <div className="relative sm:w-56">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -729,7 +702,7 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
         )}
 
         <div className="rounded-md border border-border bg-muted/30 p-3">
-          <p className="text-meta font-medium">Onde cada pessoa conecta a conta dela</p>
+          <p className="text-label font-medium">Onde cada pessoa conecta a conta dela</p>
           <p className="mt-0.5 text-label leading-relaxed text-muted-foreground">
             Em <strong>Configurações → Conectar e-mail</strong>. A caixa de cada um é privada:
             ninguém vê o e-mail do outro, nem você.
@@ -749,15 +722,15 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
             quebrado. */}
         {isAdmin && emailConnections.length > 0 && (
           <div className="rounded-md border border-border">
-            <p className="border-b border-border px-3 py-2 text-meta font-medium">
+            <p className="border-b border-border px-3 py-2 text-label font-medium">
               Contas conectadas
             </p>
             <div className="divide-y divide-border">
               {emailConnections.map((c) => (
                 <div key={c.id} className="flex items-center gap-2 px-3 py-2">
-                  <span className="min-w-0 flex-1 truncate text-meta">{c.email_address}</span>
+                  <span className="min-w-0 flex-1 truncate text-label">{c.email_address}</span>
                   {c.invalid_since ? (
-                    <Badge variant="destructive" className="shrink-0 text-micro">
+                    <Badge variant="destructive" className="shrink-0 text-label">
                       {c.invalid_reason === "credenciais_trocadas"
                         ? "reconectar: credencial trocada"
                         : c.invalid_reason === "token_revogado"
@@ -847,68 +820,6 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
           lá. O guia do Slack abaixo continua diálogo de propósito: é leitura de
           quatro passos, não formulário, e não há lista para consultar ao lado. */}
 
-      {/* Slack Setup Guide */}
-      <Dialog open={slackSetupGuide} onOpenChange={setSlackSetupGuide}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-base flex items-center gap-2">
-              <LogoSlack className="h-5 w-5" />
-              Configurar integração com o Slack
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Para conectar o Slack ao VIONEX, siga os passos abaixo:
-            </p>
-
-            <div className="space-y-3">
-              <div className="flex gap-3 items-start">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                <div>
-                  <p className="text-sm font-medium">Acesse as configurações do projeto no Lovable</p>
-                  <p className="text-xs text-muted-foreground">Clique no nome do projeto (canto superior esquerdo) → "Settings"</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 items-start">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-                <div>
-                  <p className="text-sm font-medium">Vá em "Connectors"</p>
-                  <p className="text-xs text-muted-foreground">Na aba de conectores, procure por "Slack" e clique em "Connect"</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 items-start">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
-                <div>
-                  <p className="text-sm font-medium">Autorize o acesso ao seu workspace</p>
-                  <p className="text-xs text-muted-foreground">Selecione o workspace do Slack e autorize as permissões necessárias (enviar mensagens, listar canais)</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 items-start">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
-                <div>
-                  <p className="text-sm font-medium">Volte aqui e clique em "Conectar"</p>
-                  <p className="text-xs text-muted-foreground">Após vincular o conector, o VIONEX detectará automaticamente seus canais</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-muted/50 p-3">
-              <p className="text-xs text-muted-foreground">
-                <strong>Permissões necessárias:</strong> <code className="text-label bg-muted px-1 rounded">chat:write</code> <code className="text-label bg-muted px-1 rounded">channels:read</code> <code className="text-label bg-muted px-1 rounded">channels:history</code>
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setSlackSetupGuide(false)}>Fechar</Button>
-            <Button size="sm" onClick={() => { setSlackSetupGuide(false); handleSlackConnect(); }}>
-              <RefreshCw className="mr-1 h-3 w-3" /> Tentar novamente
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {intgEmEdicao && (
         <PainelDeIntegracao
@@ -930,8 +841,70 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
             </>
           }
         >
+          {/*
+            O GUIA DO SLACK, aqui dentro — não mais num diálogo à parte.
+
+            Ele era a última coisa da aba que abria centralizada, cobrindo a
+            lista. Pior: cobria o próprio painel do Slack, então quem seguia os
+            passos perdia de vista o formulário para o qual eles levam.
+
+            Aparece quando a conexão falha (é quando a instrução importa) e
+            some assim que o webhook é salvo.
+          */}
+          {intgEmEdicao.provider === "slack" && slackSetupGuide && (
+            <div className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
+              <p className="text-xs font-semibold text-warning">
+                Não consegui conectar sozinho — siga os passos abaixo
+              </p>
+      <div className="space-y-3">
+        <div className="flex gap-3 items-start">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+          <div>
+            <p className="text-sm font-medium">Acesse as configurações do projeto no Lovable</p>
+            <p className="text-xs text-muted-foreground">Clique no nome do projeto (canto superior esquerdo) → "Settings"</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 items-start">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+          <div>
+            <p className="text-sm font-medium">Vá em "Connectors"</p>
+            <p className="text-xs text-muted-foreground">Na aba de conectores, procure por "Slack" e clique em "Connect"</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 items-start">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
+          <div>
+            <p className="text-sm font-medium">Autorize o acesso ao seu workspace</p>
+            <p className="text-xs text-muted-foreground">Selecione o workspace do Slack e autorize as permissões necessárias (enviar mensagens, listar canais)</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 items-start">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
+          <div>
+            <p className="text-sm font-medium">Volte aqui e clique em "Conectar"</p>
+            <p className="text-xs text-muted-foreground">Após vincular o conector, o VIONEX detectará automaticamente seus canais</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-muted/50 p-3">
+        <p className="text-xs text-muted-foreground">
+          <strong>Permissões necessárias:</strong> <code className="text-label bg-muted px-1 rounded">chat:write</code> <code className="text-label bg-muted px-1 rounded">channels:read</code> <code className="text-label bg-muted px-1 rounded">channels:history</code>
+        </p>
+      </div>
+
+              <Button size="sm" className="h-8 w-full text-label"
+                onClick={() => { setSlackSetupGuide(false); handleSlackConnect(); }}>
+                <RefreshCw className="mr-1 h-3 w-3" /> Tentar novamente
+              </Button>
+            </div>
+          )}
+
           {intgEmEdicao.provider === "meta" && (
-            <div className="rounded-md border border-[#1877F2]/30 bg-[#EEF4FF] p-3 text-meta leading-relaxed text-[#1877F2]">
+            <div className="rounded-md border border-[#1877F2]/30 bg-[#EEF4FF] p-3 text-label leading-relaxed text-[#1877F2]">
               Preencha só a seção que você usa — <strong>Meta Ads</strong> para campanhas.
               O token é gerado no{" "}
               <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="font-medium underline">

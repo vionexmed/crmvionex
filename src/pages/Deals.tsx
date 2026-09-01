@@ -42,6 +42,7 @@ import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { LinhaDeEtapa, COR_PADRAO_DE_ETAPA } from "@/components/crm/LinhaDeEtapa";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import type { DealWithRelations } from "@/lib/api/deals";
+import { SeletorDeContato } from "@/components/crm/SeletorDeContato";
 export type { DealWithRelations } from "@/lib/api/deals";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
@@ -614,13 +615,13 @@ export default function Deals() {
             </div>
             <div className="space-y-2">
               <Label>Contato</Label>
-              <Select value={form.contact_id || "none"} onValueChange={(v) => setForm({ ...form, contact_id: v === "none" ? null : v })}>
-                <SelectTrigger><SelectValue placeholder="Selecionar contato" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {contacts.map((c) => <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SeletorDeContato
+                contatos={contacts}
+                valor={form.contact_id || "none"}
+                aoMudar={(v) => setForm({ ...form, contact_id: v === "none" ? null : v })}
+                permitirNenhum
+                placeholder="Selecionar contato"
+              />
 
               {/*
                 Só aparece quando FAZ SENTIDO: negócio novo, com título escrito e

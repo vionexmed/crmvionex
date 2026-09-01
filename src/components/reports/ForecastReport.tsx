@@ -62,7 +62,7 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
             </CardContent>
           </Card>
         ))}
-        <Card><CardContent className="p-3"><p className="text-micro text-muted-foreground uppercase">Valor em aberto</p><p className="text-xl font-bold">{fmt(totals.pipeline)}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><p className="text-label text-muted-foreground uppercase">Valor em aberto</p><p className="text-xl font-bold">{fmt(totals.pipeline)}</p></CardContent></Card>
       </div>
 
       {/* Comparison chart */}
@@ -132,15 +132,15 @@ export function ForecastReport({ deals, stages, ownerFilter, pipelineFilter }: {
                     <div key={deal.id} className="flex items-center justify-between rounded-md border p-2 text-xs">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-medium truncate">{deal.title}</span>
-                        <Badge variant="secondary" className="text-micro shrink-0">{stageName}</Badge>
+                        <Badge variant="secondary" className="text-label shrink-0">{stageName}</Badge>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="outline" className={`text-micro ${scenarioColor}`}>{scenario}</Badge>
+                        <Badge variant="outline" className={`text-label ${scenarioColor}`}>{scenario}</Badge>
                         <Select
                           value={String(prob)}
                           onValueChange={(v) => updateProbability(deal.id, Number(v))}
                         >
-                          <SelectTrigger className="h-5 w-16 text-micro border-dashed"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-5 w-16 text-label border-dashed"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((p) => (
                               <SelectItem key={p} value={String(p)}>{p}%</SelectItem>

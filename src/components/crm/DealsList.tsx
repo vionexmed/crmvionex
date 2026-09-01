@@ -152,7 +152,7 @@ export function DealsList({
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={deal.owner.avatar_url || ""} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-micro">
+                          <AvatarFallback className="bg-primary/10 text-primary text-label">
                             {deal.owner.name?.charAt(0)?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>

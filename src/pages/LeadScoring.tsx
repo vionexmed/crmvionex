@@ -33,6 +33,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { formatarDataHoraCurta, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
+import { SeletorDeContato } from "@/components/crm/SeletorDeContato";
 
 type Contact = {
   id: string; first_name: string; last_name: string | null; email: string | null;
@@ -381,7 +382,7 @@ export default function LeadScoring() {
                     <Switch checked={r.is_active} onCheckedChange={(v) => toggleRule(r.id, v)} className="scale-75" />
                     <div className="min-w-0">
                       <p className="text-xs font-medium truncate">{r.label}</p>
-                      <p className="text-micro text-muted-foreground">{r.event_type}</p>
+                      <p className="text-label text-muted-foreground">{r.event_type}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -391,7 +392,7 @@ export default function LeadScoring() {
                       onChange={(e) => updateRulePoints(r.id, Number(e.target.value))}
                       className="w-16 h-6 text-label text-center"
                     />
-                    <span className="text-micro text-muted-foreground">pts</span>
+                    <span className="text-label text-muted-foreground">pts</span>
                     <button onClick={() => openEditRule(r)} className="p-0.5 rounded hover:bg-accent text-muted-foreground">
                       <Edit2 className="h-3 w-3" />
                     </button>
@@ -429,7 +430,7 @@ export default function LeadScoring() {
                       <TableCell className="font-medium text-sm">{c.first_name} {c.last_name}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{c.email}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="gap-1.5 text-micro">
+                        <Badge variant="secondary" className="gap-1.5 text-label">
                           <span
                             className="h-1.5 w-1.5 shrink-0 rounded-full"
                             style={{ backgroundColor: LIFECYCLE_COLORS[(c.lifecycle_stage || "lead") as LifecycleStage] }}
@@ -491,11 +492,11 @@ export default function LeadScoring() {
                       </DropdownMenu>
                     </div>
                     <div className="mt-3 flex items-center gap-2">
-                      <Badge variant="secondary" className="text-micro">{segContacts.length} contatos</Badge>
-                      {f.minScore !== undefined && <Badge variant="outline" className="text-micro">Score ≥ {f.minScore}</Badge>}
-                      {f.maxScore !== undefined && <Badge variant="outline" className="text-micro">Score ≤ {f.maxScore}</Badge>}
+                      <Badge variant="secondary" className="text-label">{segContacts.length} contatos</Badge>
+                      {f.minScore !== undefined && <Badge variant="outline" className="text-label">Score ≥ {f.minScore}</Badge>}
+                      {f.maxScore !== undefined && <Badge variant="outline" className="text-label">Score ≤ {f.maxScore}</Badge>}
                       {estagioDoFiltro(f).map((e) => (
-                        <Badge key={e} variant="outline" className="text-micro">
+                        <Badge key={e} variant="outline" className="text-label">
                           {LIFECYCLE_LABELS[e as LifecycleStage]}
                         </Badge>
                       ))}
@@ -508,7 +509,7 @@ export default function LeadScoring() {
                           <LeadScoreBadge score={c.lead_score || 0} />
                         </div>
                       ))}
-                      {segContacts.length > 4 && <p className="text-micro text-muted-foreground">+{segContacts.length - 4} mais</p>}
+                      {segContacts.length > 4 && <p className="text-label text-muted-foreground">+{segContacts.length - 4} mais</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -605,7 +606,7 @@ export default function LeadScoring() {
                         {h.created_at ? formatarDataHoraCurta(h.created_at) : "—"}
                       </TableCell>
                       <TableCell className="text-sm font-medium">{c ? `${c.first_name} ${c.last_name || ""}` : "—"}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-micro">{h.event_type || "manual"}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="text-label">{h.event_type || "manual"}</Badge></TableCell>
                       <TableCell className="text-xs text-muted-foreground">{h.reason}</TableCell>
                       <TableCell className="text-center">
                         <span className={`text-xs font-bold ${isPositive ? "text-success" : "text-destructive"}`}>
@@ -634,12 +635,14 @@ export default function LeadScoring() {
           <div className="space-y-3 mt-2">
             <div className="space-y-1">
               <Label className="text-xs">Contato</Label>
-              <Select value={adjustContactId} onValueChange={setAdjustContactId}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
-                <SelectContent>
-                  {contacts.map((c) => <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.lead_score || 0} pts)</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SeletorDeContato
+                contatos={contacts}
+                valor={adjustContactId}
+                aoMudar={setAdjustContactId}
+                sufixoDe={(c) => `${(c as { lead_score?: number }).lead_score || 0} pts`}
+                placeholder="Selecionar..."
+                className="h-9 text-sm"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Pontos (positivo ou negativo)</Label>

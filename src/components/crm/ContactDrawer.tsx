@@ -399,7 +399,7 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                       <Phone className="h-4 w-4 text-muted-foreground" />
                       <span>{cleanPhone}</span>
                       {digits && (
-                        <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-meta text-green-600 hover:underline">
+                        <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-label text-green-600 hover:underline">
                           <MessageCircle className="h-3 w-3" />WhatsApp
                         </a>
                       )}

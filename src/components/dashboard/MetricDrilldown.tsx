@@ -126,7 +126,7 @@ export function MetricDrilldown({
           sintético do React sobe pela árvore de componentes do mesmo jeito. */}
       <HoverCardContent className="p-0" onClick={(e) => e.stopPropagation()}>
         <div className="border-b px-3 py-2">
-          <p className="text-meta font-semibold text-foreground">{COPY[metric].titulo}</p>
+          <p className="text-label font-semibold text-foreground">{COPY[metric].titulo}</p>
           <p className="text-label text-muted-foreground">
             {[SDR_PERIOD_LABELS[period], nota].filter(Boolean).join(" · ")}
           </p>

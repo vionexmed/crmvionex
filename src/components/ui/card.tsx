@@ -64,7 +64,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
       // lugares e 11px em 6; 10px ao lado de um título de 14 abre um vão de
       // quatro degraus e o texto some. Onze ainda é claramente secundário e se
       // lê.
-      className={cn("text-meta text-muted-foreground", className)}
+      className={cn("text-label text-muted-foreground", className)}
       {...props}
     />
   ),

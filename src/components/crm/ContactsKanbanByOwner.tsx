@@ -64,7 +64,7 @@ function ContactCardVisual({
           <div className="flex-1 overflow-hidden space-y-1">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6 shrink-0">
-                <AvatarFallback className="bg-primary/10 text-primary text-micro">
+                <AvatarFallback className="bg-primary/10 text-primary text-label">
                   {contact.first_name?.[0] || "?"}{contact.last_name?.[0] || ""}
                 </AvatarFallback>
               </Avatar>
@@ -164,7 +164,7 @@ function OwnerColumn({
           {owner ? (
             <Avatar className="h-6 w-6">
               <AvatarImage src={owner.avatar_url || ""} />
-              <AvatarFallback className="bg-primary/10 text-primary text-micro">
+              <AvatarFallback className="bg-primary/10 text-primary text-label">
                 {owner.name?.charAt(0)?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>

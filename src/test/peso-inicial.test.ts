@@ -140,16 +140,44 @@ describe("as fontes pedem só os pesos usados", () => {
    * Eram Nunito (corpo) e Poppins (títulos), depois Plus Jakarta Sans. Hoje é
    * Roboto, a do print de referência.
    *
-   * Cinco pesos, todos com uso: 400 corpo, 500 item de menu, 600 título e
-   * rótulo, 700 número grande do painel, 800 o "404" e o wordmark. Sem 300 --
-   * não há um `font-light` no projeto.
+   * QUATRO pesos, todos com uso: 400 corpo, 500 item de menu, 600 título e
+   * rótulo, 700 número grande do painel e o "404". Sem 300 e sem 800.
    *
-   * Os 600 e 800 só existem porque a Roboto do Google Fonts é VARIÁVEL
-   * (wght 100..900). A estática tem 100/300/400/500/700/900, e pedir 600 nela
-   * não dá erro: cai no vizinho, em silêncio.
+   * O 800 ESTEVE AQUI e não tinha um único consumidor -- não existe
+   * `font-extrabold` nem `font-weight: 800` em lugar nenhum do projeto. E o
+   * comentário que o justificava dizia servir "o 404 e o wordmark": o 404
+   * (`src/pages/NotFound.tsx`) usa `font-bold`, que é 700. Peso pedido e não
+   * usado não quebra nada -- só custa uma requisição a mais num <link> que é
+   * bloqueante de renderização.
+   *
+   * O 600 só existe porque a Roboto do Google Fonts é VARIÁVEL (wght 100..900).
+   * A estática tem 100/300/400/500/700/900, e pedir 600 nela não dá erro: cai
+   * no vizinho, em silêncio.
    */
-  it("pede Roboto com os cinco pesos usados", () => {
-    expect(HTML).toMatch(/family=Roboto:wght@400;500;600;700;800/);
+  it("pede Roboto com os quatro pesos usados", () => {
+    expect(HTML).toMatch(/family=Roboto:wght@400;500;600;700(&|")/);
+  });
+
+  /** O 800 não volta sem consumidor: pedir peso que ninguém usa é custo puro. */
+  it("não pede peso sem uso no código", () => {
+    const tsx = (function varrer(dir: string, saida: string[] = []): string[] {
+      for (const nome of readdirSync(dir)) {
+        const caminho = join(dir, nome);
+        if (statSync(caminho).isDirectory()) varrer(caminho, saida);
+        else if (nome.endsWith(".tsx")) saida.push(caminho);
+      }
+      return saida;
+    })("src");
+
+    const usados = new Set<string>();
+    for (const arquivo of tsx) {
+      const src = readFileSync(arquivo, "utf8");
+      for (const [, nome] of src.matchAll(/\bfont-(normal|medium|semibold|bold|extrabold|light)\b/g)) {
+        usados.add({ light: "300", normal: "400", medium: "500", semibold: "600", bold: "700", extrabold: "800" }[nome]!);
+      }
+    }
+    const pedidos = HTML.match(/family=Roboto:wght@([\d;]+)/)?.[1].split(";") ?? [];
+    expect(pedidos.filter((p) => !usados.has(p)), "peso pedido e não usado").toEqual([]);
   });
 
   it("as famílias antigas não voltam pelo <link>", () => {

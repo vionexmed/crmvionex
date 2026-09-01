@@ -64,7 +64,7 @@ export function AppearanceTab() {
               <button key={a.value} onClick={() => setAccentColor(a.value)}
                 className={`flex flex-col items-center gap-1.5 rounded-lg border-2 p-3 transition-colors ${accentColor === a.value ? "border-primary" : "border-border hover:bg-accent/50"}`}>
                 <div className="h-6 w-6 rounded-full" style={{ backgroundColor: a.color }} />
-                <span className="text-micro">{a.label}</span>
+                <span className="text-label">{a.label}</span>
               </button>
             ))}
           </div>
@@ -81,7 +81,7 @@ export function AppearanceTab() {
               <button key={d.value} onClick={() => setDensity(d.value)}
                 className={`text-left rounded-lg border-2 p-3 transition-colors ${density === d.value ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"}`}>
                 <p className="text-xs font-medium">{d.label}</p>
-                <p className="text-micro text-muted-foreground mt-0.5">{d.desc}</p>
+                <p className="text-label text-muted-foreground mt-0.5">{d.desc}</p>
               </button>
             ))}
           </div>

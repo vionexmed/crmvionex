@@ -493,7 +493,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
                   copiado={copiado} onCopiar={copiar} />
               </div>
             ))}
-            <p className="text-meta leading-relaxed text-muted-foreground">
+            <p className="text-label leading-relaxed text-muted-foreground">
               O token de verificação só serve para o aperto de mão inicial. Cada mensagem
               que chega é conferida por assinatura, com um segredo que não sai do servidor —
               então este valor não é credencial de acesso.
@@ -521,7 +521,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
             <li>
               <strong>3.</strong> Em <strong>Instagram → Configuração básica da API</strong>,
               copie o ID e a chave secreta.
-              <span className="mt-1 flex items-start gap-1.5 text-meta text-warning">
+              <span className="mt-1 flex items-start gap-1.5 text-label text-warning">
                 {/* `<span>` aqui é correto: só há texto e ícone dentro. */}
                 <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                 Não são as de Configurações → Básico, que são do app do Facebook. São
@@ -550,7 +550,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-xs font-semibold">5. Cole as credenciais aqui</p>
               {origemCredencial === "ambiente" && (
-                <span className="text-meta text-muted-foreground">
+                <span className="text-label text-muted-foreground">
                   hoje vindo do ambiente
                 </span>
               )}
@@ -573,7 +573,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
                 onChange={(e) => setFormSegredo(e.target.value)}
                 placeholder={appConfigurado ? "•••••••• (já cadastrada)" : "cole aqui"}
                 className="h-8 text-xs" />
-              <p className="text-meta leading-relaxed text-muted-foreground">
+              <p className="text-label leading-relaxed text-muted-foreground">
                 Fica guardada num compartimento que o navegador não alcança, e não volta
                 para a tela — nem para quem acabou de salvá-la.
               </p>
@@ -594,7 +594,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
             </div>
           </div>
 
-          <p className="text-meta leading-relaxed text-muted-foreground">
+          <p className="text-label leading-relaxed text-muted-foreground">
             Enquanto a Análise do App não sair, o fluxo funciona só para contas adicionadas
             como testadoras no app — o bastante para validar antes de submeter.
           </p>

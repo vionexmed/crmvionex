@@ -18,6 +18,7 @@ import {
 import { Send, FileText, Variable, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEmailConnections } from "@/hooks/queries/useEmails";
+import { SeletorDeContato } from "@/components/crm/SeletorDeContato";
 
 type Contact = { id: string; first_name: string; last_name: string | null; email: string | null; org_id: string };
 type Deal = { id: string; title: string; org_id: string; contact_id: string | null };
@@ -246,15 +247,15 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Contato</Label>
-              <Select value={contactId} onValueChange={onContactChange}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {contacts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name} {c.email ? `(${c.email})` : ""}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SeletorDeContato
+                contatos={contacts}
+                valor={contactId}
+                aoMudar={onContactChange}
+                permitirNenhum
+                sufixoDe={(c) => c.email || null}
+                placeholder="Selecionar..."
+                className="h-8 text-xs"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Negócio</Label>
@@ -277,13 +278,13 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
             const minha = connections.find((c) => c.user_id === user?.id);
             if (minha) {
               return (
-                <p className="text-meta text-muted-foreground">
+                <p className="text-label text-muted-foreground">
                   De: <span className="font-medium">{minha.email_address}</span>
                 </p>
               );
             }
             return (
-              <p className="text-meta text-warning">
+              <p className="text-label text-warning">
                 Você ainda não conectou seu e-mail — conecte em Configurações → Conectar e-mail.
               </p>
             );
@@ -342,7 +343,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
                         className="w-full text-left rounded-md px-2 py-1.5 text-xs hover:bg-accent transition-colors"
                       >
                         <p className="font-medium">{t.name}</p>
-                        {t.category && <span className="text-micro text-muted-foreground">{t.category}</span>}
+                        {t.category && <span className="text-label text-muted-foreground">{t.category}</span>}
                       </button>
                     ))}
                   </div>
@@ -366,7 +367,7 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
                       className="w-full text-left rounded-md px-2 py-1 text-xs hover:bg-accent transition-colors flex justify-between"
                     >
                       <span>{v.label}</span>
-                      <code className="text-micro text-muted-foreground">{v.key}</code>
+                      <code className="text-label text-muted-foreground">{v.key}</code>
                     </button>
                   ))}
                 </div>
@@ -409,13 +410,13 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
               </div>
               {aiSubjects.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-micro text-muted-foreground font-medium">Sugestões de assunto:</p>
+                  <p className="text-label text-muted-foreground font-medium">Sugestões de assunto:</p>
                   <div className="flex flex-wrap gap-1">
                     {aiSubjects.map((s, i) => (
                       <button
                         key={i}
                         onClick={() => setSubject(s)}
-                        className="text-micro px-2 py-1 rounded border border-border hover:bg-accent transition-colors"
+                        className="text-label px-2 py-1 rounded border border-border hover:bg-accent transition-colors"
                       >
                         {s}
                       </button>
@@ -522,7 +523,7 @@ function EmailAutocompleteInput({ value, onChange, suggestions, placeholder }: A
               className={`w-full text-left px-3 py-1.5 text-xs flex flex-col ${i === highlight ? "bg-accent" : ""}`}
             >
               {s.name && <span className="font-medium text-foreground">{s.name}</span>}
-              <span className={s.name ? "text-muted-foreground text-meta" : "text-foreground"}>{s.email}</span>
+              <span className={s.name ? "text-muted-foreground text-label" : "text-foreground"}>{s.email}</span>
             </button>
           ))}
         </div>

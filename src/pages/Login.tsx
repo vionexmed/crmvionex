@@ -224,7 +224,7 @@ export default function Login() {
                   <div className="py-8 text-center">
                     <Mail className="mx-auto mb-4 h-12 w-12 text-primary" />
                     <CardTitle className="mb-2">Verifique seu email</CardTitle>
-                    <CardDescription className="text-corpo">
+                    <CardDescription className="text-sm">
                       Enviamos um link mágico para <strong>{email}</strong>
                     </CardDescription>
                   </div>

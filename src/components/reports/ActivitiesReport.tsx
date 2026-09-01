@@ -54,9 +54,9 @@ export function ActivitiesReport({ activities, members }: { activities: Activity
   return (
     <div className="space-y-4 mt-4">
       <div className="grid gap-3 grid-cols-3">
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{activities.length}</p><p className="text-micro text-muted-foreground uppercase">Total Atividades</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-success">{completed}</p><p className="text-micro text-muted-foreground uppercase">Concluídas</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{completionRate}%</p><p className="text-micro text-muted-foreground uppercase">Taxa Conclusão</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{activities.length}</p><p className="text-label text-muted-foreground uppercase">Total Atividades</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-success">{completed}</p><p className="text-label text-muted-foreground uppercase">Concluídas</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{completionRate}%</p><p className="text-label text-muted-foreground uppercase">Taxa Conclusão</p></CardContent></Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

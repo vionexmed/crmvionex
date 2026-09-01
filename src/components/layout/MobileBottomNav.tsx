@@ -42,7 +42,7 @@ export function MobileBottomNav() {
           aria-label={item.title}
         >
           <item.icon className="h-5 w-5" />
-          <span className="text-micro font-medium">{item.title}</span>
+          <span className="text-label font-medium">{item.title}</span>
         </NavLink>
       ))}
 
@@ -53,7 +53,7 @@ export function MobileBottomNav() {
             aria-label="Mais opções de navegação"
           >
             <MoreHorizontal className="h-5 w-5" />
-            <span className="text-micro font-medium">Mais</span>
+            <span className="text-label font-medium">Mais</span>
           </button>
         </DropdownMenuTrigger>
         {/* Rolável: com os 13 destinos de volta a lista passa da altura da tela

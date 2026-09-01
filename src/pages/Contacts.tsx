@@ -613,7 +613,7 @@ export default function Contacts() {
                             return (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className={`inline-flex items-center gap-0.5 text-micro font-semibold px-1 py-0.5 rounded ${isHigh ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
+                                    <span className={`inline-flex items-center gap-0.5 text-label font-semibold px-1 py-0.5 rounded ${isHigh ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"}`}>
                                       <AlertTriangle className="h-2.5 w-2.5" />{days}d
                                     </span>
                                   </TooltipTrigger>

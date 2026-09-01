@@ -112,7 +112,7 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
-              <Button variant="ghost" size="sm" className="h-6 text-micro"
+              <Button variant="ghost" size="sm" className="h-6 text-label"
                 onClick={() => { setShowKey(false); setGeneratedKey(null); }}>
                 Esconder
               </Button>
@@ -138,7 +138,7 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
                       <TableCell className="text-xs">{k.name}</TableCell>
                       <TableCell className="text-xs font-mono">{k.key_prefix}...</TableCell>
                       <TableCell>
-                        <Badge variant={k.is_active ? "default" : "destructive"} className="text-micro">
+                        <Badge variant={k.is_active ? "default" : "destructive"} className="text-label">
                           {k.is_active ? "Ativa" : "Revogada"}
                         </Badge>
                       </TableCell>
@@ -189,15 +189,15 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
                 "GET /companies", "POST /companies", "GET /deals", "POST /deals",
                 "GET /activities", "POST /activities"].map((endpoint) => (
                 <div key={endpoint} className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-micro w-12 justify-center">
+                  <Badge variant="outline" className="text-label w-12 justify-center">
                     {endpoint.split(" ")[0]}
                   </Badge>
-                  <code className="text-micro font-mono text-muted-foreground">{endpoint.split(" ")[1]}</code>
+                  <code className="text-label font-mono text-muted-foreground">{endpoint.split(" ")[1]}</code>
                 </div>
               ))}
             </div>
 
-            <p className="text-micro text-muted-foreground mt-2">
+            <p className="text-label text-muted-foreground mt-2">
               Headers: <code className="bg-background px-1 rounded">Authorization: Bearer fc_xxx</code>
             </p>
           </div>

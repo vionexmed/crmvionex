@@ -94,14 +94,14 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{wh.name}</span>
-                      <Badge variant={wh.is_active ? "default" : "secondary"} className="text-micro">
+                      <Badge variant={wh.is_active ? "default" : "secondary"} className="text-label">
                         {wh.is_active ? "Ativo" : "Inativo"}
                       </Badge>
                     </div>
                     <p className="text-label text-muted-foreground truncate">{wh.url}</p>
                     <div className="flex gap-1 mt-1">
                       {wh.events?.map((e) => (
-                        <Badge key={e} variant="outline" className="text-micro">{e}</Badge>
+                        <Badge key={e} variant="outline" className="text-label">{e}</Badge>
                       ))}
                     </div>
                   </div>
@@ -139,7 +139,7 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
           </div>
           <div className="rounded-md bg-muted p-3">
             <p className="text-label text-muted-foreground mb-1 font-medium">Payload esperado (JSON POST):</p>
-            <pre className="text-micro font-mono text-muted-foreground">{`{
+            <pre className="text-label font-mono text-muted-foreground">{`{
   "entity": "contact",
   "action": "create",
   "data": {

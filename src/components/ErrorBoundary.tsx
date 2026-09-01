@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
             ID: {this.state.errorId}
           </p>
           {this.state.error && (
-            <p className="mt-1 max-w-lg break-all rounded bg-muted px-3 py-2 font-mono text-meta text-destructive">
+            <p className="mt-1 max-w-lg break-all rounded bg-muted px-3 py-2 font-mono text-label text-destructive">
               {this.state.error.message}
             </p>
           )}

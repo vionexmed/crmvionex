@@ -110,7 +110,7 @@ export function CustomFieldsTab({ orgId }: { orgId: string | null }) {
                     <TableRow key={f.id}>
                       <TableCell className="text-xs font-medium">{f.field_label}</TableCell>
                       <TableCell className="text-label font-mono text-muted-foreground">{f.field_key}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-micro">{fieldTypes[f.field_type] || f.field_type}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="text-label">{fieldTypes[f.field_type] || f.field_type}</Badge></TableCell>
                       <TableCell>{f.is_required ? "✓" : "—"}</TableCell>
                       <TableCell>{f.show_in_table ? "✓" : "—"}</TableCell>
                       <TableCell>{f.show_in_card ? "✓" : "—"}</TableCell>

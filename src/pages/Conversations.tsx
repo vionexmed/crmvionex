@@ -563,7 +563,7 @@ export default function Conversations({ canal }: { canal: Canal }) {
               <footer className="border-t bg-card p-3">
                 {janela.aviso && (
                   <div className={cn(
-                    "mb-2 rounded-md border px-2 py-1.5 text-meta",
+                    "mb-2 rounded-md border px-2 py-1.5 text-label",
                     janela.podeEnviar
                       // Aviso que não bloqueia é informação, não alarme.
                       ? "border-border bg-muted text-muted-foreground"

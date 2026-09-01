@@ -46,7 +46,7 @@ export default function ResetPassword() {
         <Card>
           <CardHeader>
             <CardTitle className="font-heading text-xl">Redefinir senha</CardTitle>
-            <CardDescription className="text-corpo">Digite sua nova senha</CardDescription>
+            <CardDescription className="text-sm">Digite sua nova senha</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleReset} className="space-y-4">

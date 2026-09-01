@@ -79,12 +79,12 @@ export function ImportExportTab({ orgId }: { orgId: string | null }) {
         <CardContent>
           <div className="rounded-md bg-muted p-4 space-y-2">
             <p className="text-label font-medium">Formatos suportados:</p>
-            <ul className="text-micro text-muted-foreground space-y-1">
+            <ul className="text-label text-muted-foreground space-y-1">
               <li>• <strong>CSV genérico</strong> — mapeamento de colunas manual</li>
               <li>• <strong>HubSpot Export</strong> — detecta automaticamente colunas "First Name", "Last Name", "Email"</li>
               <li>• <strong>Pipedrive Export</strong> — detecta "Person - Name", "Organization - Name"</li>
             </ul>
-            <p className="text-micro text-muted-foreground mt-2">
+            <p className="text-label text-muted-foreground mt-2">
               A importação inclui preview, mapeamento e detecção de duplicatas por email.
             </p>
           </div>

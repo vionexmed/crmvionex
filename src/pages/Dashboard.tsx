@@ -213,7 +213,7 @@ export default function Dashboard() {
       description="Entrada, abordagem, conversão e velocidade de atendimento"
       meta={
         lastRefresh ? (
-          <p className="text-meta text-muted-foreground">
+          <p className="text-label text-muted-foreground">
             {SDR_PERIOD_LABELS[period]} · atualizado{" "}
             {formatarHora(lastRefresh)}
           </p>
@@ -379,7 +379,7 @@ export default function Dashboard() {
             </Secao>
           ))}
 
-          <p className="text-meta leading-relaxed text-muted-foreground">
+          <p className="text-label leading-relaxed text-muted-foreground">
             Métricas marcadas como <strong>sem fonte</strong> não têm dado no banco — não são zero,
             são não medidas. Passe o mouse no ícone de informação para ver o que falta gravar.
           </p>

@@ -41,6 +41,7 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/layout/Estado
 import { formatarDataCurta, formatarDataHora, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
+import { SeletorDeContato } from "@/components/crm/SeletorDeContato";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -625,14 +626,14 @@ export default function Activities() {
                     {dayActivities.slice(0, 3).map((a) => {
                       const ActIcon = ATIVIDADE_ICONE[a.type];
                       return (
-                        <div key={a.id} className={`flex items-center gap-1 rounded px-1 py-0.5 text-micro truncate bg-muted/50 ${isOverdue(a) ? "ring-1 ring-destructive" : ""}`}>
+                        <div key={a.id} className={`flex items-center gap-1 rounded px-1 py-0.5 text-label truncate bg-muted/50 ${isOverdue(a) ? "ring-1 ring-destructive" : ""}`}>
                           <ActIcon className={`h-2.5 w-2.5 shrink-0 ${typeColors[a.type]}`} />
                           <span className="truncate">{a.title}</span>
                         </div>
                       );
                     })}
                     {dayActivities.length > 3 && (
-                      <span className="text-micro text-muted-foreground px-1">+{dayActivities.length - 3}</span>
+                      <span className="text-label text-muted-foreground px-1">+{dayActivities.length - 3}</span>
                     )}
                   </div>
                 </div>
@@ -854,19 +855,14 @@ function ActivityCreateEditModal({ open, onOpenChange, activity, contacts, compa
 
           <div className="space-y-1">
             <Label className="text-xs">Contato</Label>
-            <Select
-              value={resolvedContactId || "none"}
-              onValueChange={(v) => setContactId(v)}
+            <SeletorDeContato
+              contatos={availableContacts}
+              valor={resolvedContactId || "none"}
+              aoMudar={setContactId}
+              permitirNenhum
               disabled={dealId !== "none" && !!selectedDeal?.contact_id}
-            >
-              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {availableContacts.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className="h-9 text-sm"
+            />
             {dealId !== "none" && selectedDeal?.contact_id && (
               <p className="text-label text-muted-foreground">Preenchido automaticamente pelo negócio</p>
             )}

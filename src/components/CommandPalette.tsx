@@ -110,7 +110,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <CommandItem key={d.id} onSelect={() => handleSelect(`/deals/${d.id}`)} className="gap-2">
                 <Handshake className="h-4 w-4 text-muted-foreground" />
                 <span>{d.title}</span>
-                {d.value && <Badge variant="secondary" className="ml-auto text-micro">R$ {formatarNumero(d.value)}</Badge>}
+                {d.value && <Badge variant="secondary" className="ml-auto text-label">R$ {formatarNumero(d.value)}</Badge>}
               </CommandItem>
             ))}
           </CommandGroup>

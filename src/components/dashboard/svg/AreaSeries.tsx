@@ -145,7 +145,7 @@ export function AreaSeries({
 
           {hover && (
             <div
-              className="pointer-events-none absolute z-10 min-w-[128px] rounded-md border border-border bg-popover p-2 text-meta shadow-md"
+              className="pointer-events-none absolute z-10 min-w-[128px] rounded-md border border-border bg-popover p-2 text-label shadow-md"
               style={{
                 left: Math.min(hover.x + 10, 9999),
                 top: 4,
@@ -175,7 +175,7 @@ export function AreaSeries({
 
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
           {series.map((s) => (
-            <span key={s.nome} className="flex items-center gap-1.5 text-meta text-muted-foreground">
+            <span key={s.nome} className="flex items-center gap-1.5 text-label text-muted-foreground">
               <span className="h-2 w-2 rounded-full" style={{ background: s.cor }} />
               {s.nome}
             </span>

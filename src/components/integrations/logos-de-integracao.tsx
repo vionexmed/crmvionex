@@ -16,6 +16,8 @@
  * publicados; o `translate`/`scale` encaixa no ladrilho de 40.
  */
 
+import { useId } from "react";
+
 type PropsLogo = { className?: string };
 
 /** O ladrilho comum: 40x40, cantos de 10. `rx` igual em todos para a coluna de
@@ -68,12 +70,20 @@ export function LogoWhatsApp({ className }: PropsLogo) {
 }
 
 export function LogoInstagram({ className }: PropsLogo) {
+  /*
+    `useId` porque `id` de SVG é GLOBAL do documento.
+    O ladrilho aparece no cartão e de novo no painel ao mesmo tempo, então um id
+    fixo daria dois elementos com o mesmo nome -- e todo `url(#...)` da página
+    passaria a apontar para o primeiro. Funciona por acidente enquanto os dois
+    degradês forem idênticos, e quebra no dia em que não forem.
+  */
+  const id = `vx-ig-${useId().replace(/:/g, "")}`;
   return (
     <svg viewBox="0 0 40 40" className={className} role="img" aria-label="Instagram">
       {/* O degradê é a marca do Instagram tanto quanto o desenho da câmera --
           em cor sólida ele lê como um ícone qualquer de câmera. */}
       <defs>
-        <radialGradient id="vx-ig" cx="0.3" cy="1.05" r="1.2">
+        <radialGradient id={id} cx="0.3" cy="1.05" r="1.2">
           <stop offset="0%" stopColor="#FFD776" />
           <stop offset="25%" stopColor="#F5983B" />
           <stop offset="50%" stopColor="#E9424B" />
@@ -81,7 +91,7 @@ export function LogoInstagram({ className }: PropsLogo) {
           <stop offset="100%" stopColor="#6A48D6" />
         </radialGradient>
       </defs>
-      <rect width="40" height="40" rx="10" fill="url(#vx-ig)" />
+      <rect width="40" height="40" rx="10" fill={`url(#${id})`} />
       <g transform="translate(9 9)">
         <rect
           x="1.4"
@@ -118,13 +128,19 @@ export function LogoGmail({ className }: PropsLogo) {
 export function LogoMeta({ className }: PropsLogo) {
   return (
     <Ladrilho fundo="#0866FF" className={className} titulo="Meta">
-      <g transform="translate(8 8)">
-        <path
-          fill="#fff"
-          d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"
-          transform="translate(-2 -2)"
-        />
-      </g>
+      {/*
+        O "f" DESENHADO, e não o disco do simple-icons.
+
+        Aquele caminho traz o círculo E o "f" como um recorte só: preenchido de
+        branco sobre o ladrilho azul, saía um disco branco com um "f" azul
+        vazado no meio -- o negativo do ícone que todo mundo conhece, e a razão
+        de ele parecer errado sem que se soubesse dizer o quê.
+      */}
+      <path
+        fill="#fff"
+        transform="translate(8 8) scale(1)"
+        d="M15.12 5.32H17V2.14A26.11 26.11 0 0 0 14.26 2C11.54 2 9.68 3.66 9.68 6.7v2.62H6.61v3.56h3.07V22h3.68v-9.12h3.06l.46-3.56h-3.52V7.05c0-1.05.28-1.73 1.76-1.73Z"
+      />
     </Ladrilho>
   );
 }
@@ -163,12 +179,18 @@ export function LogoZapier({ className }: PropsLogo) {
 export function LogoGoogleAds({ className }: PropsLogo) {
   return (
     <Ladrilho fundo="#fff" borda className={className} titulo="Google Ads">
-      {/* As duas barras inclinadas e o círculo — o desenho do Google Ads. */}
-      <g transform="translate(20 20)">
-        <rect x="-3.6" y="-12" width="7.2" height="20" rx="3.6" fill="#FBBC04" transform="rotate(-30)" />
-        <rect x="-3.6" y="-12" width="7.2" height="20" rx="3.6" fill="#4285F4" transform="rotate(30)" />
-        <circle cx="-6.2" cy="7.2" r="4.4" fill="#34A853" />
+      {/*
+        As duas barras em "Λ" e o ponto verde na ponta esquerda -- o desenho do
+        Google Ads. Eram dois `<rect>` rotacionados, que numa caixa de 40px
+        chegavam com as pontas quadradas e sem se encontrar no ápice. Traçado
+        com `stroke-linecap="round"` resolve as duas coisas: a ponta arredonda
+        sozinha e o vértice fecha porque as duas linhas partem do mesmo ponto.
+      */}
+      <g strokeLinecap="round" strokeWidth="7.4" fill="none">
+        <line x1="20" y1="10.5" x2="12" y2="26" stroke="#FBBC04" />
+        <line x1="20" y1="10.5" x2="28" y2="26" stroke="#4285F4" />
       </g>
+      <circle cx="12" cy="26" r="4.6" fill="#34A853" />
     </Ladrilho>
   );
 }

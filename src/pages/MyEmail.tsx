@@ -264,9 +264,9 @@ export default function MyEmail() {
                 </CardDescription>
               </div>
               {conexao.invalid_since ? (
-                <Badge variant="destructive" className="shrink-0 text-micro">Precisa reconectar</Badge>
+                <Badge variant="destructive" className="shrink-0 text-label">Precisa reconectar</Badge>
               ) : (
-                <Badge className="shrink-0 text-micro">Conectada</Badge>
+                <Badge className="shrink-0 text-label">Conectada</Badge>
               )}
             </div>
           </CardHeader>
@@ -281,7 +281,7 @@ export default function MyEmail() {
                     <p className="text-xs font-medium text-destructive">
                       {motivoDe(conexao.invalid_reason).titulo}
                     </p>
-                    <p className="text-meta leading-relaxed text-muted-foreground">
+                    <p className="text-label leading-relaxed text-muted-foreground">
                       {motivoDe(conexao.invalid_reason).explicacao}
                     </p>
                     <p className="text-label text-muted-foreground">
@@ -290,7 +290,7 @@ export default function MyEmail() {
                     </p>
                   </div>
                 </div>
-                <Button size="sm" className="h-8 text-meta" onClick={conectar} disabled={conectando}>
+                <Button size="sm" className="h-8 text-label" onClick={conectar} disabled={conectando}>
                   {conectando
                     ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                     : <Plug className="mr-1.5 h-3 w-3" />}
@@ -300,7 +300,7 @@ export default function MyEmail() {
             )}
 
             <div className="space-y-1.5">
-              <div className="flex items-baseline justify-between text-meta">
+              <div className="flex items-baseline justify-between text-label">
                 <span className="font-medium">Envios hoje</span>
                 <span className="text-muted-foreground tabular-nums">
                   {enviadosHoje} de {teto}

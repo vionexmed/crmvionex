@@ -35,12 +35,12 @@ function CodeBlock({
   const copiado = copiedId === id;
   return (
     <div className="relative">
-      <pre className="rounded-md bg-muted p-4 text-micro font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
+      <pre className="rounded-md bg-muted p-4 text-label font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre">
         {code}
       </pre>
       <Button
         variant="outline" size="sm"
-        className="absolute top-2 right-2 h-8 text-micro"
+        className="absolute top-2 right-2 h-8 text-label"
         onClick={() => onCopy(code, id)}
       >
         {copiado ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
@@ -232,7 +232,7 @@ fetch("${endpoint}", {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-            <Badge variant="default" className="text-micro shrink-0">POST</Badge>
+            <Badge variant="default" className="text-label shrink-0">POST</Badge>
             <code className="text-label font-mono break-all">{endpoint}</code>
             <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => copy(endpoint, "url")}>
               {copiedId === "url" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -242,7 +242,7 @@ fetch("${endpoint}", {
             <Key className="h-3 w-3" />
             <span>Autenticação: header <code className="bg-muted px-1 rounded">X-Api-Key: sua_chave</code></span>
             {!activeKey && (
-              <Badge variant="outline" className="text-micro text-yellow-600 border-yellow-400">
+              <Badge variant="outline" className="text-label text-yellow-600 border-yellow-400">
                 Gere uma API Key na aba "API Keys" primeiro
               </Badge>
             )}
@@ -282,21 +282,21 @@ fetch("${endpoint}", {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-micro">Campo</TableHead>
-                  <TableHead className="text-micro">Tipo</TableHead>
-                  <TableHead className="text-micro">Obrigatório</TableHead>
-                  <TableHead className="text-micro">Descrição</TableHead>
+                  <TableHead className="text-label">Campo</TableHead>
+                  <TableHead className="text-label">Tipo</TableHead>
+                  <TableHead className="text-label">Obrigatório</TableHead>
+                  <TableHead className="text-label">Descrição</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {fields.map((f) => (
                   <TableRow key={f.name}>
-                    <TableCell className="font-mono text-micro">{f.name}</TableCell>
-                    <TableCell className="text-micro text-muted-foreground">{f.type}</TableCell>
-                    <TableCell className="text-micro">
-                      {f.req ? <Badge variant="destructive" className="text-micro">sim</Badge> : <span className="text-muted-foreground">não</span>}
+                    <TableCell className="font-mono text-label">{f.name}</TableCell>
+                    <TableCell className="text-label text-muted-foreground">{f.type}</TableCell>
+                    <TableCell className="text-label">
+                      {f.req ? <Badge variant="destructive" className="text-label">sim</Badge> : <span className="text-muted-foreground">não</span>}
                     </TableCell>
-                    <TableCell className="text-micro text-muted-foreground">{f.desc}</TableCell>
+                    <TableCell className="text-label text-muted-foreground">{f.desc}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -333,7 +333,7 @@ fetch("${endpoint}", {
           <div>
             <p className="text-label font-semibold mb-2">5. Criar lead + negócio em um único request</p>
             {pipelines.length === 0 && (
-              <p className="text-micro text-yellow-600 mb-1">⚠ Crie um pipeline primeiro para usar pipeline_id</p>
+              <p className="text-label text-yellow-600 mb-1">⚠ Crie um pipeline primeiro para usar pipeline_id</p>
             )}
             <CodeBlock code={withPipelineExample} id="pipeline" copiedId={copiedId} onCopy={copy} />
           </div>
@@ -352,7 +352,7 @@ fetch("${endpoint}", {
               {pipelines.map((p) => (
                 <div key={p.id} className="flex items-center gap-2">
                   <span className="text-label font-medium w-32 truncate">{p.name}</span>
-                  <code className="text-micro font-mono text-muted-foreground flex-1 truncate">{p.id}</code>
+                  <code className="text-label font-mono text-muted-foreground flex-1 truncate">{p.id}</code>
                   <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => copy(p.id, `pipe-${p.id}`)}>
                     {copiedId === `pipe-${p.id}` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                   </Button>

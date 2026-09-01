@@ -65,15 +65,39 @@ describe("os degraus têm nome", () => {
    * intervalo de cinco pixels. A diferença entre 10 e 11px não se lê como "um é
    * mais importante", só como "algo está desalinhado".
    */
-  it("micro, meta e corpo são apelidos, não degraus próprios", () => {
-    expect(px("micro")).toBe(px("label"));
-    expect(px("meta")).toBe(px("label"));
-    expect(px("corpo")).toBe(14);
+  /**
+   * OS APELIDOS SAÍRAM, e é o que este teste passou a guardar.
+   *
+   * Eram cinco nomes para três valores: `micro` e `meta` valiam 11px como
+   * `label`, `corpo` valia 14px como `sm`. Deu 190 usos repartidos entre nomes
+   * idênticos, e QUATRO telas (Inbox, MyEmail, Team, marketing/Overview) usavam
+   * os três nomes de 11px no mesmo arquivo.
+   *
+   * A versão anterior deste teste checava que os apelidos eram iguais ao
+   * original -- ou seja, garantia que a duplicação continuasse coerente em vez
+   * de não existir. Agora ele exige a ausência.
+   */
+  it("micro, meta e corpo não voltam como degraus", () => {
+    for (const apelido of ["micro", "meta", "corpo"]) {
+      expect(px(apelido), `${apelido} voltou à escala`).toBeNull();
+    }
+  });
+
+  /** E nem como classe espalhada pelas telas: o degrau some do config, mas o
+   *  `text-<apelido>` continuaria compilando como classe desconhecida -- sem
+   *  erro, e sem tamanho nenhum aplicado. */
+  it("nenhuma tela usa mais os apelidos", () => {
+    const infratores: string[] = [];
+    for (const arquivo of TSX) {
+      const src = semComentarios(readFileSync(arquivo, "utf8"));
+      if (/\btext-(micro|meta|corpo)\b/.test(src)) infratores.push(arquivo);
+    }
+    expect(infratores, infratores.join("\n")).toEqual([]);
   });
 
   /** 9px é menor que o mínimo legível confortável. */
   it("nada abaixo de 11px na escala", () => {
-    for (const nome of ["label", "xs", "micro", "meta", "corpo"]) {
+    for (const nome of ["label", "xs"]) {
       expect(px(nome), `${nome} abaixo do piso`).toBeGreaterThanOrEqual(11);
     }
   });
