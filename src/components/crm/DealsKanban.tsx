@@ -44,6 +44,7 @@ const DealCard = memo(function DealCard({
   onDealClick,
   onContactClick,
   onEditDeal,
+  onComposeEmail,
   onAlternarSelecao,
 }: {
   deal: DealWithRelations;
@@ -54,6 +55,8 @@ const DealCard = memo(function DealCard({
   onContactClick?: (contact: Contact) => void;
   /** Abre o formulário de edição. Ausente: o card não mostra o lápis. */
   onEditDeal?: (d: DealWithRelations) => void;
+  /** Abre o compositor do CRM já endereçado. Ausente: o envelope fica apagado. */
+  onComposeEmail?: (d: DealWithRelations) => void;
   /** Ausente: a caixa de seleção não aparece -- não há barra que a receba. */
   onAlternarSelecao?: (id: string) => void;
 }) {
@@ -96,9 +99,8 @@ const DealCard = memo(function DealCard({
    * a divergirem no próximo ajuste de estilo.
    *
    * `desabilitado` existe por causa do e-mail: sem endereço no contato não há
-   * para onde mandar, e um botão que abre um `mailto:` vazio é pior que um
-   * botão apagado -- o cliente de e-mail abre em branco e a pessoa não entende
-   * o que aconteceu. O `title` diz o motivo em vez de só apagar.
+   * para onde mandar, e um botão que não leva a lugar nenhum é pior que um
+   * botão apagado. O `title` diz o motivo em vez de só apagar.
    *
    * Abrir e agenda caem os dois no negócio: é lá que se agenda uma atividade, e
    * a referência não tem uma tela de agenda para onde apontar.
@@ -115,11 +117,28 @@ const DealCard = memo(function DealCard({
       ? [{ chave: "editar", titulo: "Editar", Icone: Pencil, aoClicar: () => onEditDeal(deal) }]
       : []),
     {
+      /*
+        ABRE O COMPOSITOR DO CRM, e não o `mailto:`.
+
+        O `mailto:` jogava a pessoa para fora: abria o cliente de e-mail do
+        sistema, e a mensagem saía por lá -- sem passar pela conta conectada,
+        sem assinatura, e sem virar histórico do negócio. Quem olhasse o
+        registro depois não veria e-mail nenhum, porque de fato nenhum e-mail
+        do CRM foi enviado.
+
+        Aqui ele abre o mesmo compositor da Caixa de entrada, já endereçado e
+        já amarrado ao contato e ao negócio -- então o envio conta como
+        interação, que é o que o card mostra na linha de cima.
+      */
       chave: "email",
-      titulo: email ? `Escrever para ${email}` : "Sem e-mail no contato",
+      titulo: !email
+        ? "Sem e-mail no contato"
+        : !onComposeEmail
+          ? "Compositor indisponível nesta tela"
+          : `Escrever para ${email}`,
       Icone: Mail,
-      desabilitado: !email,
-      aoClicar: () => { if (email) window.location.href = `mailto:${email}`; },
+      desabilitado: !email || !onComposeEmail,
+      aoClicar: () => onComposeEmail?.(deal),
     },
     {
       chave: "agenda",
@@ -278,6 +297,7 @@ function StageColumn({
   onContactClick,
   onAddDeal,
   onEditDeal,
+  onComposeEmail,
   onAlternarSelecao,
 }: {
   stage: Stage;
@@ -287,6 +307,7 @@ function StageColumn({
   onContactClick?: (contact: Contact) => void;
   onAddDeal: (stageId: string) => void;
   onEditDeal?: (d: DealWithRelations) => void;
+  onComposeEmail?: (d: DealWithRelations) => void;
   onAlternarSelecao?: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
@@ -368,6 +389,7 @@ function StageColumn({
             onDealClick={onDealClick}
             onContactClick={onContactClick}
             onEditDeal={onEditDeal}
+            onComposeEmail={onComposeEmail}
             onAlternarSelecao={onAlternarSelecao}
           />
         ))}
@@ -485,6 +507,8 @@ interface DealsKanbanProps {
   onAddDeal: (stageId?: string) => void;
   /** Abre o formulário de edição a partir do card. Ausente: o lápis não aparece. */
   onEditDeal?: (deal: DealWithRelations) => void;
+  /** Abre o compositor de e-mail do CRM a partir do card. */
+  onComposeEmail?: (deal: DealWithRelations) => void;
   /**
    * A MESMA seleção da visão de lista, e é o que faz a caixa do card valer algo.
    *
@@ -500,7 +524,7 @@ interface DealsKanbanProps {
 
 export function DealsKanban({
   deals, wonDeals, lostDeals, stages, onDragEnd, onDealClick, onContactClick, onAddDeal, onEditDeal, onMarkWon, onMarkLost,
-  selectedDeals, onSelectionChange,
+  onComposeEmail, selectedDeals, onSelectionChange,
 }: DealsKanbanProps) {
   const [activeDeal, setActiveDeal] = useState<DealWithRelations | null>(null);
 
@@ -585,6 +609,7 @@ export function DealsKanban({
               onContactClick={onContactClick}
               onAddDeal={onAddDeal}
               onEditDeal={onEditDeal}
+              onComposeEmail={onComposeEmail}
               onAlternarSelecao={onSelectionChange ? alternarSelecao : undefined}
             />
           ))}

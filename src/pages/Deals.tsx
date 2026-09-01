@@ -30,6 +30,7 @@ import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { DealsKanban } from "@/components/crm/DealsKanban";
 import { ContactDrawer } from "@/components/crm/ContactDrawer";
+import { EmailComposeModal } from "@/components/crm/EmailComposeModal";
 import { DealsList } from "@/components/crm/DealsList";
 import { DealsForecast } from "@/components/crm/DealsForecast";
 import { DealsFilters, type DealFilters } from "@/components/crm/DealsFilters";
@@ -118,6 +119,20 @@ export default function Deals() {
     (d: DealWithRelations) => navigate(`/deals/${d.id}`),
     [navigate],
   );
+
+  /**
+   * O NEGÓCIO PARA O QUAL ESCREVER, e não um booleano de "modal aberto".
+   *
+   * Guardar o negócio inteiro é o que permite passar destinatário, contato E
+   * negócio para o compositor de uma vez -- e é o que faz o e-mail enviado
+   * virar histórico DAQUELE negócio em vez de mensagem solta.
+   *
+   * `useCallback` porque o card do quadro é `memo`: uma arrow inline aqui teria
+   * identidade nova a cada render e faria os 861 cards renderizarem de novo a
+   * cada movimento do arraste.
+   */
+  const [negocioParaEmail, setNegocioParaEmail] = useState<DealWithRelations | null>(null);
+  const escreverEmail = useCallback((d: DealWithRelations) => setNegocioParaEmail(d), []);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
   const [form, setForm] = useState<Partial<Deal>>({});
@@ -537,6 +552,7 @@ export default function Deals() {
           onEditDeal={abrirEdicao}
           onMarkWon={markAsWon}
           onMarkLost={openLossModal}
+          onComposeEmail={escreverEmail}
           selectedDeals={selectedDeals}
           onSelectionChange={setSelectedDeals}
         />
@@ -783,6 +799,24 @@ export default function Deals() {
           qc.invalidateQueries({ queryKey: ["deals"] });
         }}
         companies={companies}
+      />
+
+      {/* O COMPOSITOR DO CRM, aberto pelo envelope do card.
+          Já vem endereçado e amarrado ao contato e ao negócio, então o envio
+          entra no histórico -- que é o que a linha de interação do card lê. */}
+      <EmailComposeModal
+        open={!!negocioParaEmail}
+        onOpenChange={(aberto) => { if (!aberto) setNegocioParaEmail(null); }}
+        defaultTo={negocioParaEmail?.contact?.email || ""}
+        defaultContactId={negocioParaEmail?.contact_id || undefined}
+        defaultDealId={negocioParaEmail?.id}
+        onSent={() => {
+          setNegocioParaEmail(null);
+          // O card mostra a última interação: sem invalidar, o e-mail enviado
+          // não apareceria até a próxima recarga.
+          qc.invalidateQueries({ queryKey: ["deals"] });
+          qc.invalidateQueries({ queryKey: ["activities"] });
+        }}
       />
     </PageShell>
   );

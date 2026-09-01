@@ -141,8 +141,37 @@ describe("o card do quadro segue a referência", () => {
     for (const chave of ['chave: "abrir"', 'chave: "editar"', 'chave: "email"', 'chave: "agenda"']) {
       expect(kanban).toContain(chave);
     }
-    // `mailto:` vazio abre o cliente de e-mail em branco: pior que botão apagado.
-    expect(kanban).toContain("desabilitado: !email");
+    // Sem endereço não há para onde mandar; sem compositor não há como mandar.
+    expect(kanban).toContain("desabilitado: !email || !onComposeEmail");
+  });
+
+  /**
+   * O ENVELOPE ABRE O COMPOSITOR DO CRM, e nunca um `mailto:`.
+   *
+   * O `mailto:` jogava a pessoa para fora: a mensagem saía pelo cliente de
+   * e-mail do sistema, sem passar pela conta conectada, sem assinatura e sem
+   * virar histórico. Quem abrisse o negócio depois não veria e-mail nenhum --
+   * e não veria porque, do ponto de vista do CRM, nenhum foi enviado.
+   *
+   * A regressão é silenciosa nos dois sentidos: o `mailto:` FUNCIONA (abre o
+   * Mail e a pessoa manda), e o histórico faltando só aparece semanas depois,
+   * quando alguém procura a conversa.
+   */
+  it("o envelope não volta a ser mailto:", () => {
+    expect(kanban).not.toContain("mailto:");
+    expect(kanban).toContain("aoClicar: () => onComposeEmail?.(deal)");
+  });
+
+  it("a página abre o compositor amarrado ao negócio", () => {
+    const deals = semComentarios(ler("src/pages/Deals.tsx"));
+    expect(deals).toContain("<EmailComposeModal");
+    expect(deals).toContain("onComposeEmail={escreverEmail}");
+    // Endereço, contato E negócio -- é o `defaultDealId` que faz o envio virar
+    // histórico DESTE negócio, e não mensagem solta.
+    expect(deals).toContain("defaultDealId={negocioParaEmail?.id}");
+    expect(deals).toMatch(/defaultContactId=\{negocioParaEmail\?\.contact_id/);
+    /** `memo` no card: arrow inline aqui renderizaria os 861 cards a cada movimento. */
+    expect(deals).toContain("const escreverEmail = useCallback(");
   });
 
   /**
