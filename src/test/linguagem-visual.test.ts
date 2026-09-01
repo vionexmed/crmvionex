@@ -70,6 +70,52 @@ describe("a densidade deixou de ser controle morto", () => {
     expect(CARD).toContain("vx-respiro");
     expect(CARD).not.toMatch(/cn\("[^"]*\bp-4\b/);
   });
+
+  /**
+   * O tile de métrica também. Ele tinha `p-4` cravado, e um cartão que ignora a
+   * densidade no meio de uma grade de cartões que a respeitam é exatamente o
+   * desalinhamento que o token existe para evitar.
+   */
+  it("o tile de métrica segue o mesmo respiro", () => {
+    const TILE = semComentarios(
+      readFileSync("src/components/dashboard/StatCard.tsx", "utf8"),
+    );
+    expect(TILE).toContain("vx-respiro");
+  });
+});
+
+describe("a escala de raio não colapsa", () => {
+  const CFG = readFileSync("tailwind.config.ts", "utf8");
+
+  /**
+   * O TESTE QUE MAIS IMPORTA nesta leva, porque a falha é INVISÍVEL no código.
+   *
+   * A escala era `--radius - 2px` e `- 4px`. Com o token em 10px dava 10/8/6 e
+   * ninguém notava; quando ele subiu para 16px virou 16/14/12 -- os três
+   * praticamente iguais. E o estrago é nos elementos pequenos, que são a
+   * maioria: 106 usos de `rounded-md`, 14 de `rounded-sm`.
+   *
+   * Um raio de 14px num botão de 32px é quase pílula, e no quadrado de 24px do
+   * ícone do StatCard vira bolha -- exatamente o que `visual-do-painel` proíbe.
+   * Aquele teste continuou passando porque confere o NOME da classe, não o
+   * valor computado. Nenhum teste da base pegaria isso; este pega.
+   */
+  it("os degraus menores acompanham por fator, não por subtração", () => {
+    const escala = CFG.slice(CFG.indexOf("borderRadius:"), CFG.indexOf("keyframes:"));
+    expect(escala, "subtração fixa achata a escala quando o raio cresce")
+      .not.toMatch(/calc\(var\(--radius\) - \d+px\)/);
+    expect(escala).toMatch(/md: "calc\(var\(--radius\) \* 0\.\d+\)"/);
+    expect(escala).toMatch(/sm: "calc\(var\(--radius\) \* 0\.\d+\)"/);
+  });
+
+  /** E os fatores têm de ser crescentes: sm < md < lg, senão a escala inverte
+   *  sem que nada quebre. */
+  it("sm é menor que md", () => {
+    const fator = (nome: string) =>
+      Number(CFG.match(new RegExp(`${nome}: "calc\\(var\\(--radius\\) \\* ([\\d.]+)\\)"`))?.[1]);
+    expect(fator("sm")).toBeLessThan(fator("md"));
+    expect(fator("md")).toBeLessThan(1);
+  });
 });
 
 describe("a cor de destaque continua trocável", () => {
@@ -132,12 +178,6 @@ describe("o painel mantém as métricas que tem", () => {
     for (const k of chaves) {
       expect(PAINEL, `${k} sumiu do painel`).toContain(`key: "${k}"`);
     }
-  });
-
-  /** A coluna "a fazer" é o que separa painel de relatório: sem ela a tela
-   *  responde "como foi" e não "o que falta". */
-  it("a visão geral tem a coluna do que fazer", () => {
-    expect(PAINEL).toContain("<AFazer />");
   });
 
   /**

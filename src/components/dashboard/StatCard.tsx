@@ -11,7 +11,7 @@
  *                     de entrega sem nenhum envio). Não é 0 — 0 seria mentira.
  */
 import type { ReactNode } from "react";
-import { LucideIcon, Info } from "lucide-react";
+import { LucideIcon, TrendingUp, TrendingDown, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -226,28 +226,11 @@ export function StatCard({
       onClick={clickable ? () => (onCardClick ? onCardClick() : navigate(href!)) : undefined}
     >
       <div className="contents">
-        {/*
-          LINHA DE CIMA: identidade à esquerda, variação à direita.
-
-          A variação era uma linha de texto ABAIXO do número, com seta e
-          "vs. anterior" por extenso. Ela lia como uma terceira informação
-          empilhada; aqui vira uma pílula tingida no canto, que é onde o olho
-          procura o sinal depois de ler o número -- e ocupa espaço que já estava
-          vazio.
-        */}
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <span
-              className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
-                noSource ? "bg-muted" : theme.fundo,
-              )}
-            >
-              <Icon className={cn("h-3.5 w-3.5", noSource ? "text-muted-foreground/50" : theme.icon)} />
-            </span>
-            <span className="truncate text-label font-medium text-muted-foreground">
-              {label}
-            </span>
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <span className="text-label font-medium text-muted-foreground">
+            {label}
+          </span>
+          <div className="flex shrink-0 items-center gap-1">
             {hint && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -255,7 +238,7 @@ export function StatCard({
                     type="button"
                     aria-label={`Sobre ${label}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="shrink-0 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+                    className="text-muted-foreground/60 transition-colors hover:text-muted-foreground"
                   >
                     <Info className="h-3 w-3" />
                   </button>
@@ -265,73 +248,77 @@ export function StatCard({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
-
-          {delta !== null && (
+            {/* Quadrado com raio, não bolha. A bolha circular dava ao ícone o
+                contorno de um botão -- e ele não é clicável. O fundo tênue o
+                assenta sem fingir que se pode tocar. */}
             <span
               className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-label font-semibold tabular-nums",
-                delta === 0
-                  ? "bg-muted text-muted-foreground"
-                  : positive
-                    ? "bg-success/10 text-success"
-                    : "bg-destructive/10 text-destructive",
+                "flex h-6 w-6 items-center justify-center rounded-md",
+                noSource ? "bg-muted" : theme.fundo,
               )}
             >
-              {delta > 0 ? "+" : ""}{delta}%
+              <Icon className={cn("h-3.5 w-3.5", noSource ? "text-muted-foreground/50" : theme.icon)} />
             </span>
-          )}
+          </div>
         </div>
 
-        {/* O NÚMERO e a base da comparação, na mesma linha de base.
-            "Anterior: 130" ao lado do 142 responde "subiu de quanto?" sem
-            gastar uma terceira linha -- é o que a referência faz. */}
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          {(() => {
-            const valor = (
-              <span
-                className={cn(
-                  "block font-heading font-semibold tracking-tight tabular-nums",
-                  emphasis ? "text-3xl leading-none" : "text-[22px] leading-none",
-                  value === null ? "text-muted-foreground" : "text-foreground",
-                )}
-              >
-                {value === null ? "—" : formatValue(value, format)}
+        {(() => {
+          const valor = (
+            <span
+              className={cn(
+                // `font-bold` virou `font-semibold`: no tamanho de 30px o bold
+                // do Poppins fecha os contornos e o número fica pesado demais
+                // ao lado do rótulo de 11px.
+                "block font-heading font-semibold tracking-tight tabular-nums",
+                emphasis ? "text-3xl leading-none" : "text-[22px] leading-none",
+                value === null ? "text-muted-foreground" : "text-foreground",
+              )}
+            >
+              {value === null ? "—" : formatValue(value, format)}
+            </span>
+          );
+
+          if (secundario && secundario.valor !== null && value !== null) {
+            const comSecundario = (
+              <span className="flex items-baseline gap-1.5">
+                {valor}
+                <span className="text-xs font-medium text-muted-foreground">
+                  · {formatValue(secundario.valor, "number")} {secundario.rotulo}
+                </span>
               </span>
             );
-
-            if (secundario && secundario.valor !== null && value !== null) {
-              const comSecundario = (
-                <span className="flex items-baseline gap-1.5">
-                  {valor}
-                  <span className="text-xs font-medium text-muted-foreground">
-                    · {formatValue(secundario.valor, "number")} {secundario.rotulo}
-                  </span>
-                </span>
-              );
-              return drilldown && !noSource ? drilldown(comSecundario) : comSecundario;
-            }
-            // Sem fonte de dado não há linha para revelar — o "—" não é clicável.
-            return drilldown && !noSource && value !== null ? drilldown(valor) : valor;
-          })()}
-
-          {noSource ? (
-            // Texto, não selo. O selo dava a "sem fonte" o mesmo peso visual de
-            // um estado do dado -- e um tile sem fonte já está apagado a 60%.
-            <span className="text-label text-muted-foreground/70">sem fonte de dado</span>
-          ) : previous !== null && previous !== undefined && !noComparison ? (
-            <span className="text-label tabular-nums text-muted-foreground">
-              Anterior {formatValue(previous, format)}
-            </span>
-          ) : (
-            <span className="text-label text-muted-foreground">
-              {noComparison ? "no momento" : value === null ? "sem dados no período" : ""}
-            </span>
-          )}
-        </div>
+            return drilldown && !noSource ? drilldown(comSecundario) : comSecundario;
+          }
+          // Sem fonte de dado não há linha para revelar — o "—" não é clicável.
+          return drilldown && !noSource && value !== null ? drilldown(valor) : valor;
+        })()}
 
         {mostrarTendencia && (
-          <Sparkline points={trend!} className={cn("mt-2.5", theme.icon)} />
+          <Sparkline points={trend!} className={cn("mt-2", theme.icon)} />
+        )}
+
+        {noSource ? (
+          // Texto, não selo. O selo dava a "sem fonte" o mesmo peso visual de
+          // um estado do dado -- e um tile sem fonte já está apagado a 60%; o
+          // selo por cima disso chamava atenção para justamente o que não tem
+          // o que mostrar.
+          <p className="mt-1.5 text-label text-muted-foreground/70">sem fonte de dado</p>
+        ) : delta !== null ? (
+          <div
+            className={cn(
+              "mt-1.5 flex items-center gap-0.5 text-label font-medium",
+              positive ? "text-success" : delta === 0 ? "text-muted-foreground" : "text-destructive",
+            )}
+          >
+            {delta !== 0 &&
+              (positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+            {delta > 0 ? "+" : ""}
+            {delta}% vs. anterior
+          </div>
+        ) : (
+          <p className="mt-1.5 text-label text-muted-foreground">
+            {noComparison ? "no momento" : value === null ? "sem dados no período" : "–"}
+          </p>
         )}
       </div>
     </div>
