@@ -32,13 +32,6 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const token = Deno.env.get('META_ACCESS_TOKEN');
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'META_ACCESS_TOKEN not configured' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
@@ -52,6 +45,40 @@ Deno.serve(async (req) => {
     const { data: profile } = await supabase.from('profiles').select('org_id').eq('id', user.id).single();
     const orgId = profile?.org_id;
     if (!orgId) return new Response(JSON.stringify({ error: 'No org' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    /*
+      O TOKEN É DA ORGANIZAÇÃO, não do projeto.
+
+      Ele vinha de `Deno.env.get('META_ACCESS_TOKEN')` -- um secret só para o
+      Supabase inteiro. Num CRM multiempresa isso é errado por construção: duas
+      organizações têm contas de anúncio diferentes e não podem compartilhar
+      credencial. E era o motivo do erro que ninguém conseguia resolver: o
+      formulário do CRM gravava o token em `integration_configs` e a função lia
+      de outro lugar, então preencher o campo não mudava nada.
+
+      `org_secrets` é a mesma tabela onde o webhook do Slack vive: RLS
+      habilitada e NENHUMA política, então o navegador não alcança. O
+      `integration_configs`, que guardava o token antes, é lido por qualquer
+      membro da organização.
+
+      O env continua como reserva para não derrubar quem já tinha o secret
+      configurado antes desta mudança.
+    */
+    const { data: segredo } = await supabase
+      .from('org_secrets')
+      .select('key_value')
+      .eq('org_id', orgId)
+      .eq('key_name', 'meta_access_token')
+      .maybeSingle();
+
+    const token = segredo?.key_value || Deno.env.get('META_ACCESS_TOKEN');
+    if (!token) {
+      return new Response(JSON.stringify({
+        error: 'Nenhum token do Meta cadastrado para esta organização. Configure em Integrações → Meta Ads.',
+      }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Optional body: { accounts_only?: boolean, account_ids?: string[] }
     let body: any = {};

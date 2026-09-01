@@ -179,14 +179,38 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
     }
 
     if (!orgId) return;
+    /*
+      META ADS: o token NÃO passa por integration_configs.
+
+      Ele gravava ali, e aquela tabela é lida por qualquer membro da
+      organização -- o token de anúncio da empresa ficava à vista do time
+      inteiro. É o mesmo defeito que já tirou o token do WhatsApp de lá.
+
+      Agora vai por edge function para `org_secrets`, que tem RLS e nenhuma
+      política. A função testa o token contra a Graph API antes de gravar, então
+      token expirado ou sem `ads_read` falha AQUI, com o motivo, e não na
+      primeira sincronização.
+
+      O `ad_account_id` continua em integration_configs: ele identifica, não
+      autentica.
+    */
     if (provider === "meta") {
-      const existing = getConfig("meta");
-      if (existing) {
-        await supabase.from("integration_configs").update({ config: editConfig, is_active: true } as any).eq("id", existing.id);
-      } else {
-        await supabase.from("integration_configs").insert({ org_id: orgId, provider: "meta", config: editConfig, is_active: true, connected_by: userId } as any);
+      const res = await supabase.functions.invoke("meta-ads-save", {
+        body: {
+          access_token: editConfig.access_token,
+          ad_account_id: editConfig.ad_account_id,
+        },
+      });
+      const motivo = await erroDaFuncao(res);
+      if (motivo) {
+        toast({ title: "Não foi possível salvar", description: motivo, variant: "destructive" });
+        return;
       }
-      toast({ title: "Meta Ads configurado — clique em Sincronizar para importar campanhas" });
+      const contas = (res.data as { contas?: number } | null)?.contas ?? 0;
+      toast({
+        title: "Meta Ads conectado",
+        description: `Token validado — ${contas} ${contas === 1 ? "conta de anúncio visível" : "contas de anúncio visíveis"}. Clique em Sincronizar para importar campanhas.`,
+      });
       fechar();
       fetchConfigs();
       return;
@@ -334,7 +358,10 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
         { key: "_sec_ads", label: "Meta Ads", type: "section" as const },
         {
           key: "access_token", label: "Token de acesso", placeholder: "EAAxxxxxx...", type: "secret" as const,
-          helpText: "Gere em",
+          // Vem vazio de propósito, como o do Google: o token é guardado num
+          // compartimento que o navegador não lê, então não há o que
+          // pré-preencher. Validamos com a Meta antes de salvar.
+          helpText: "Precisa da permissão ads_read. O campo vem vazio: o token fica onde o navegador não alcança. Gere em",
           helpUrl: "https://developers.facebook.com/tools/explorer/",
           helpLabel: "Meta Graph API Explorer",
         },
