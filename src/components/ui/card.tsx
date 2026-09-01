@@ -35,7 +35,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
       //
       // `pb-2` porque é o que 27 dos 42 já escreviam: o subtítulo fica colado
       // no título, e o vão maior vem do conteúdo abaixo.
-      className={cn("flex flex-col space-y-1.5 p-4 pb-2", className)}
+      className={cn("flex flex-col space-y-1.5 vx-respiro pb-2", className)}
       {...props}
     />
   ),
@@ -77,13 +77,14 @@ const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
       ref={ref}
       // Dois valores de respiro, e os dois são deliberados:
       //
-      //   p-4  cartão normal — este default
-      //   p-3  cartão em espaço ESTREITO: grade de métricas com três a cinco
-      //        colunas, gaveta, painel lateral. São 15 lugares, todos em
-      //        contêiner apertado, e apertar ali é o certo.
+      //   vx-respiro  cartão normal — este default, e ele MUDA com a densidade
+      //               escolhida em Configurações (ver --respiro no index.css)
+      //   p-3         cartão em espaço ESTREITO: grade de métricas com três a
+      //               cinco colunas, gaveta, painel lateral. São 15 lugares,
+      //               todos em contêiner apertado, e apertar ali é o certo.
       //
-      // O que não existe mais é o terceiro valor por acidente.
-      className={cn("p-4 pt-0", className)}
+      // O que não existe é um terceiro valor por acidente.
+      className={cn("vx-respiro pt-0", className)}
       {...props}
     />
   ),
@@ -92,7 +93,7 @@ CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center p-4 pt-0", className)} {...props} />
+    <div ref={ref} className={cn("flex items-center vx-respiro pt-0", className)} {...props} />
   ),
 );
 CardFooter.displayName = "CardFooter";

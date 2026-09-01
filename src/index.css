@@ -45,10 +45,23 @@
     --border: 220 13% 93%;
     --input: 220 12% 91%;
     --ring: 187 100% 27%;
-    /* ▶ Radius aumentado para look mais moderno */
-    /* 10px, e UM raio só. Havia `rounded-md` (115 usos) e `rounded-lg` (92)
-       competindo -- dois arredondamentos diferentes na mesma tela. */
-    --radius: 0.625rem;
+    /* 16px, e UM raio só. Havia `rounded-md` (115 usos) e `rounded-lg` (92)
+       competindo -- dois arredondamentos diferentes na mesma tela.
+       Subiu de 10px: é a diferença mais visível entre a cara antiga e a nova,
+       e sai de graça em todo cartão porque o raio já vinha do token. */
+    --radius: 1rem;
+
+    /*
+     * O RESPIRO, POR DENSIDADE.
+     *
+     * `--respiro` é o padding padrão do cartão e das superfícies. Ele existe
+     * para a densidade deixar de ser controle morto: `ThemeContext` escreve
+     * `data-density` na raiz e estes três blocos respondem.
+     *
+     * `normal` é o novo padrão, mais arejado que o CRM antigo. `compact`
+     * devolve a densidade de antes para quem prefere ver mais linha por tela.
+     */
+    --respiro: 1.25rem;      /* 20px */
     /* Sidebar — Vionex navy */
     /* O navy da marca, #0A1E3D.
        
@@ -158,6 +171,17 @@
     --vx-google: #F87171;
     --vx-google-bg: #331414;
   }
+}
+
+/* ── Densidade ────────────────────────────────────────────────────────────
+   Só o respiro muda; raio, cor e tipografia são os mesmos nas três. Mudar
+   tamanho de fonte junto faria "compacto" virar "ilegível", que é outra
+   coisa. */
+:root[data-density="compact"] {
+  --respiro: 0.875rem;     /* 14px — a densidade do CRM antigo */
+}
+:root[data-density="comfortable"] {
+  --respiro: 1.5rem;       /* 24px */
 }
 
 @layer base {
@@ -383,6 +407,19 @@
   }
 
   /* ── Deal Card (Kanban) ───────────────────────────────── */
+  /*
+   * O RESPIRO DO CARTÃO, numa classe em vez de `p-4` cravado.
+   *
+   * Era literal, então o cartão tinha o mesmo padding em qualquer densidade --
+   * e a densidade em Configurações não fazia nada. Agora ele lê `--respiro`,
+   * que muda com `data-density` na raiz.
+   *
+   * Fica em `@layer components` de propósito: as utilitárias do Tailwind vêm
+   * DEPOIS na cascata, então `pt-0` e `pb-2` nos call sites continuam vencendo
+   * o lado que precisam, mesmo sendo a mesma especificidade.
+   */
+  .vx-respiro { padding: var(--respiro); }
+
   .vx-deal-card {
     /* Maior, e ainda retangular -- o pedido foi "um pouco maior", não outro
        formato. O ganho vem do respiro: 10px de padding num card com quatro

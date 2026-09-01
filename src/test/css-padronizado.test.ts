@@ -146,9 +146,15 @@ describe("nenhuma classe .vx-* morta", () => {
 describe("os cartões respiram igual", () => {
   const CARD = readFileSync("src/components/ui/card.tsx", "utf8");
 
-  it("o default é p-4, não p-6", () => {
+  /**
+   * O respiro saiu de `p-4` cravado para `.vx-respiro`, que lê `--respiro` --
+   * e é o que faz a densidade escolhida em Configurações valer alguma coisa.
+   * Ela era guardada no localStorage e NADA no CSS lia o valor.
+   */
+  it("o default vem do token de respiro, não de px cravado", () => {
     expect(CARD).not.toMatch(/cn\("[^"]*\bp-6\b/);
-    expect(CARD).toMatch(/CardContent[\s\S]*?cn\("p-4 pt-0"/);
+    expect(CARD).not.toMatch(/cn\("[^"]*\bp-4\b/);
+    expect(CARD).toMatch(/CardContent[\s\S]*?cn\("vx-respiro pt-0"/);
   });
 
   /**
@@ -156,7 +162,7 @@ describe("os cartões respiram igual", () => {
    * colado no título, e o vão maior vem do conteúdo abaixo.
    */
   it("o cabeçalho fecha com pb-2", () => {
-    expect(CARD).toMatch(/CardHeader[\s\S]*?cn\("flex flex-col space-y-1\.5 p-4 pb-2"/);
+    expect(CARD).toMatch(/CardHeader[\s\S]*?cn\("flex flex-col space-y-1\.5 vx-respiro pb-2"/);
   });
 
   /**

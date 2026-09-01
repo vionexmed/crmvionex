@@ -37,6 +37,7 @@ import { MetricLeadsSheet } from "@/components/dashboard/MetricLeadsSheet";
 // peso a postergar, então carregar sob demanda só adicionava uma espera — os
 // gráficos entram na mesma pintura dos números.
 import SdrChartsPanel from "@/components/dashboard/SdrChartsPanel";
+import { AFazer } from "@/components/dashboard/AFazer";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { formatarHora } from "@/lib/formato";
 import { Secao } from "@/components/layout/Secao";
@@ -319,7 +320,21 @@ export default function Dashboard() {
             )}
           </div>
 
-          <SdrChartsPanel charts={charts} carregando={loadingCharts} isAdmin={isAdmin} />
+          {/*
+            DUAS COLUNAS: o movimento à esquerda, o que fazer à direita.
+
+            O painel respondia "como foi o período" e parava aí -- para saber o
+            que fazer a seguir era preciso trocar de tela. É a diferença entre
+            um relatório e um painel de trabalho, e é o que a referência resolve
+            com a coluna da direita.
+
+            `items-start` para a coluna da direita não esticar até a altura dos
+            gráficos: ela tem a altura do conteúdo dela.
+          */}
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+            <SdrChartsPanel charts={charts} carregando={loadingCharts} isAdmin={isAdmin} />
+            <AFazer />
+          </div>
 
           <MetricLeadsSheet
             metric={painelDe}

@@ -42,7 +42,10 @@ describe("o tile de métrica tem presença sem competir", () => {
    * clicável. Quadrado com raio o assenta sem fingir que se pode tocar.
    */
   it("o ícone tem fundo quadrado, não bolha", () => {
-    expect(TILE).toMatch(/h-6 w-6 items-center justify-center rounded-md/);
+    // A regex casava a lista de classes na ordem exata, então acrescentar um
+    // `shrink-0` reprovava sem que nada da INTENÇÃO tivesse mudado. Agora ela
+    // cobra o que importa: caixa de 24px e raio, não círculo.
+    expect(TILE).toMatch(/h-6 w-6[^"]*rounded-md/);
     expect(TILE).not.toMatch(/rounded-full[\s\S]{0,60}<Icon/);
   });
 

@@ -49,6 +49,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * A DENSIDADE ERA UM CONTROLE MORTO.
+   *
+   * `density` era guardada no localStorage e desenhada em Configurações →
+   * Aparência com três opções — e NADA no CSS lia o valor. Não existia
+   * `data-density` em lugar nenhum: escolher "compacto" ou "confortável" não
+   * mudava um pixel, e o único jeito de descobrir era medir.
+   *
+   * Agora ela é o eixo do respiro: o CSS lê `data-density` na raiz e ajusta os
+   * tokens de espaçamento. É o que permite arejar o produto sem tirar de quem
+   * prefere a densidade antiga.
+   */
+  const applyDensity = (d: Density) => {
+    document.documentElement.dataset.density = d;
+  };
+
   const applyAccent = (color: string) => {
     const root = document.documentElement;
     const isDark = root.classList.contains("dark");
@@ -64,6 +80,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(theme);
     applyAccent(accentColor);
   }, [theme, accentColor]);
+
+  useEffect(() => { applyDensity(density); }, [density]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
