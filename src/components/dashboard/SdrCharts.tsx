@@ -36,11 +36,11 @@ function Vazio({ texto }: { texto: string }) {
 }
 
 // ── Evolução no tempo ────────────────────────────────────────────────────────
-export function GraficoEvolucao({ dados }: { dados: PontoSerie[] }) {
+export function GraficoEvolucao({ dados, className }: { dados: PontoSerie[]; className?: string }) {
   const temDado = dados.some((d) => d.leads || d.abordagens || d.respostas);
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle>Evolução no período</CardTitle>
         <CardDescription>
@@ -67,11 +67,11 @@ export function GraficoEvolucao({ dados }: { dados: PontoSerie[] }) {
 }
 
 // ── Funil ────────────────────────────────────────────────────────────────────
-export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
+export function GraficoFunil({ dados, className }: { dados: EtapaFunil[]; className?: string }) {
   const topo = dados[0]?.total ?? 0;
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle>Funil de conversão</CardTitle>
         {/* "no período" é a parte que faltava. O funil é de COORTE: conta os
@@ -138,7 +138,7 @@ export function GraficoFunil({ dados }: { dados: EtapaFunil[] }) {
 }
 
 // ── Canais ───────────────────────────────────────────────────────────────────
-export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
+export function GraficoCanais({ dados, className }: { dados: FatiaCanal[]; className?: string }) {
   const total = dados.reduce((s, d) => s + d.total, 0);
   // Enquanto o vocabulário de origem não for unificado (Plano 6), a maior parte
   // dos leads cai em "Não informado" — melhor avisar do que deixar interpretar.
@@ -146,7 +146,7 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
   const maioriaSemOrigem = total > 0 && naoInformado / total > 0.5;
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -198,12 +198,12 @@ export function GraficoCanais({ dados }: { dados: FatiaCanal[] }) {
 }
 
 // ── Desempenho por pessoa (admin) ────────────────────────────────────────────
-export function GraficoPessoas({ dados }: { dados: LinhaPessoa[] }) {
+export function GraficoPessoas({ dados, className }: { dados: LinhaPessoa[]; className?: string }) {
   const comMovimento = dados.filter((d) => d.leads || d.abordagens || d.reunioes || d.vendas);
   const max = Math.max(1, ...comMovimento.flatMap((d) => [d.leads, d.abordagens, d.reunioes, d.vendas]));
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>

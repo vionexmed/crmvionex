@@ -20,17 +20,39 @@ export default function SdrChartsPanel({
   // Esqueleto enquanto a consulta de agregação não volta. Antes morava em
   // arquivo próprio, para o import estático do fallback não arrastar o recharts.
   // Sem recharts, essa separação deixou de ter motivo.
+  /*
+    A GRADE É UMA SÓ, e as posições são explícitas.
+
+    Eram DUAS PILHAS independentes -- um `space-y-4` por coluna. Cada pilha
+    fluía sozinha, então a fileira de baixo começava em alturas diferentes: o
+    "Funil de conversão" tem descrição de duas linhas e o "Evolução" de uma, e
+    esses ~17px de diferença empurravam a coluna da direita inteira para baixo.
+    O olho lê isso como cartão torto, e não como texto mais longo.
+
+    Numa grade de verdade a fileira é uma unidade: as duas células dividem a
+    mesma altura e a de baixo começa no mesmo lugar nas duas colunas.
+
+    A ORDEM DO DOM continua sendo a de leitura no celular -- evolução, pessoas,
+    funil, canais --, e a posição em `lg` vem de `col-start`/`row-start`. O
+    caminho fácil seria reordenar o DOM para evolução/funil/pessoas/canais, e
+    aí o celular passaria a intercalar coluna larga com estreita.
+  */
+  const AREA = {
+    evolucao: "lg:col-start-1 lg:row-start-1",
+    pessoas: "lg:col-start-1 lg:row-start-2",
+    funil: "lg:col-start-2 lg:row-start-1",
+    canais: "lg:col-start-2 lg:row-start-2",
+  } as const;
+
   if (carregando) {
     return (
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <Skeleton className="h-[290px] rounded-lg" />
-          <Skeleton className="h-[240px] rounded-lg" />
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-[265px] rounded-lg" />
-          <Skeleton className="h-[265px] rounded-lg" />
-        </div>
+        {/* O esqueleto usa a MESMA grade: com duas pilhas aqui e grade depois,
+            a tela saltava de um arranjo para outro ao terminar de carregar. */}
+        <Skeleton className={`h-[290px] rounded-lg ${AREA.evolucao}`} />
+        <Skeleton className={`h-[290px] rounded-lg ${AREA.funil}`} />
+        <Skeleton className={`h-[240px] rounded-lg ${AREA.pessoas}`} />
+        <Skeleton className={`h-[240px] rounded-lg ${AREA.canais}`} />
       </div>
     );
   }
@@ -50,24 +72,22 @@ export default function SdrChartsPanel({
      * podem encolher abaixo do conteúdo, que é o que impede um rótulo longo de
      * empurrar a grade.
      *
-     * No celular vira uma coluna só, e a ordem do DOM é a ordem de leitura:
-     * evolução, pessoas, funil, canais.
+     * SEM `items-start`: é ele que deixaria cada cartão com a altura do próprio
+     * conteúdo, e aí os dois de uma fileira terminariam em alturas diferentes.
+     * Esticando, a fileira lê como uma fileira.
      */
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
-      <div className="space-y-4">
-        <GraficoEvolucao dados={charts?.serie ?? []} />
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <GraficoEvolucao dados={charts?.serie ?? []} className={AREA.evolucao} />
 
-        {/* Desempenho individual é restrito: mostrar a todos contradiria a
-            privacidade entre pares. A função no banco também recusa não-admin. */}
-        {isAdmin && charts?.pessoas && charts.pessoas.length > 0 && (
-          <GraficoPessoas dados={charts.pessoas} />
-        )}
-      </div>
+      <GraficoFunil dados={charts?.funil ?? []} className={AREA.funil} />
 
-      <div className="space-y-4">
-        <GraficoFunil dados={charts?.funil ?? []} />
-        <GraficoCanais dados={charts?.canais ?? []} />
-      </div>
+      {/* Desempenho individual é restrito: mostrar a todos contradiria a
+          privacidade entre pares. A função no banco também recusa não-admin. */}
+      {isAdmin && charts?.pessoas && charts.pessoas.length > 0 && (
+        <GraficoPessoas dados={charts.pessoas} className={AREA.pessoas} />
+      )}
+
+      <GraficoCanais dados={charts?.canais ?? []} className={AREA.canais} />
     </div>
   );
 }

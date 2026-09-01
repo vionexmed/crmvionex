@@ -169,7 +169,17 @@ export function CartaoDeIntegracao({
           botões de todos os cartões ficam na MESMA altura. Rodapés desalinhados
           numa grade leem como cartões de tamanhos diferentes.
         */}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
+        {/* `min-h-8` é o que ALINHA a fileira.
+
+            O rodapé tinha a altura do filho mais alto, e os filhos variam: um
+            botão tem 32px e o selo "NÃO INTEGRADO" tem 20px. Numa fileira com
+            um cartão de botão e outro só de selo, o selo assentava ~6px abaixo
+            da linha do botão vizinho -- pouco para nomear, o bastante para a
+            grade parecer torta.
+
+            Com piso igual à altura do botão, todo rodapé ocupa a mesma faixa e
+            o conteúdo centraliza nela. */}
+        <div className="mt-auto flex min-h-8 items-center justify-between gap-2 pt-0.5">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {acoes}
             {/* O selo sobra só para o terceiro estado: o interruptor tem dois, e

@@ -282,3 +282,53 @@ describe("a rosca cabe na coluna estreita", () => {
     expect(ROSCA).toMatch(/min-w-\[180px\]/);
   });
 });
+
+/**
+ * Os gráficos ficam numa GRADE, não em duas pilhas.
+ *
+ * Eram dois `space-y-4`, um por coluna. Cada pilha fluía sozinha, então a
+ * fileira de baixo começava em alturas diferentes nas duas colunas: o "Funil de
+ * conversão" tem descrição de duas linhas e o "Evolução" de uma, e esses ~17px
+ * empurravam a coluna da direita inteira para baixo.
+ *
+ * O olho lê isso como cartão torto, e não como texto mais longo — e a causa não
+ * aparece no código, porque cada pilha isolada está correta.
+ */
+describe("os gráficos alinham por fileira", () => {
+  const PAINEL_GRAFICOS = semComentarios(
+    readFileSync("src/components/dashboard/SdrChartsPanel.tsx", "utf8"),
+  );
+
+  it("não há pilha por coluna", () => {
+    expect(PAINEL_GRAFICOS, "space-y por coluna faz as fileiras desalinharem")
+      .not.toMatch(/<div className="space-y-4">/);
+  });
+
+  /** Posição explícita: é o que permite manter a ordem do DOM (que é a ordem de
+   *  leitura no celular) diferente da ordem visual em duas colunas. */
+  it("cada gráfico tem posição na grade", () => {
+    for (const area of ["evolucao", "pessoas", "funil", "canais"]) {
+      expect(PAINEL_GRAFICOS, `${area} sem posição`).toMatch(
+        new RegExp(`${area}: "lg:col-start-\\d lg:row-start-\\d"`),
+      );
+    }
+  });
+
+  /**
+   * `items-start` daria a cada cartão a altura do próprio conteúdo, e os dois
+   * de uma fileira voltariam a terminar em alturas diferentes — o mesmo
+   * sintoma, por outro caminho.
+   */
+  it("a fileira estica, não encolhe por cartão", () => {
+    expect(PAINEL_GRAFICOS).not.toContain("lg:items-start");
+  });
+
+  /** O esqueleto usa a mesma grade: com pilha no esqueleto e grade depois, a
+   *  tela salta de um arranjo para outro ao terminar de carregar. */
+  it("o esqueleto tem o mesmo arranjo", () => {
+    const i = PAINEL_GRAFICOS.indexOf("if (carregando)");
+    const bloco = PAINEL_GRAFICOS.slice(i, PAINEL_GRAFICOS.indexOf("return (", i + 300));
+    expect(bloco).toContain("AREA.evolucao");
+    expect(bloco).toContain("AREA.canais");
+  });
+});
