@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
+import { ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "@/components/layout/SectionLabel";
 
@@ -52,6 +54,17 @@ export function CartaoDeIntegracao({
   acoes,
   /** Aviso ou detalhe abaixo das ações. */
   nota,
+  /** Documentação do provedor. Vira a seta no canto; ausente, nada aparece. */
+  linkExterno,
+  /**
+   * Liga e desliga.
+   *
+   * OPCIONAL, e é o ponto. A referência põe um interruptor em todo cartão, mas
+   * aqui a maioria não tem "desligar" implementado -- e interruptor que não
+   * desliga é controle morto, pior que controle ausente. Sem esta prop o rodapé
+   * mostra só a ação.
+   */
+  aoAlternar,
   className,
 }: {
   icone: React.ComponentType<{ className?: string }>;
@@ -60,42 +73,73 @@ export function CartaoDeIntegracao({
   estado: EstadoIntegracao;
   acoes?: ReactNode;
   nota?: ReactNode;
+  linkExterno?: string;
+  aoAlternar?: (ligado: boolean) => void;
   className?: string;
 }) {
   const inativo = estado === "nao-integrado";
+  const ativo = estado === "ativo";
 
   return (
-    <Card className={cn(inativo && "bg-muted/20", className)}>
-      <CardContent className="p-3">
-        <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-              estado === "ativo" ? "bg-success/10" : inativo ? "bg-muted" : "bg-primary/10",
-            )}
-          >
-            <Icone
+    <Card className={cn("flex flex-col", inativo && "bg-muted/20", className)}>
+      <CardContent className="flex flex-1 flex-col p-0">
+        <div className="flex flex-1 flex-col gap-2.5 p-3.5">
+          <div className="flex items-start justify-between gap-2">
+            {/*
+              O ÍCONE EM QUADRADO COM BORDA, no topo -- e não ao lado do nome.
+              É o que a referência faz, e o ganho é real: a marca fica no mesmo
+              lugar em todos os cartões, então o olho varre a coluna de ícones
+              sem ler nome nenhum.
+            */}
+            <div
               className={cn(
-                "h-4 w-4",
-                estado === "ativo" ? "text-success" : inativo ? "text-muted-foreground" : "text-primary",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card",
+                inativo && "opacity-50",
               )}
-            />
+            >
+              <Icone className={cn("h-[18px] w-[18px]", inativo ? "text-muted-foreground" : "text-foreground")} />
+            </div>
+
+            {linkExterno && (
+              <a
+                href={linkExterno}
+                target="_blank"
+                rel="noreferrer"
+                title={`Documentação de ${nome}`}
+                className="-mr-1 -mt-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
           </div>
 
-          <div className="min-w-0 flex-1">
-            <p className={cn("vx-titulo-secao truncate", inativo && "text-muted-foreground")}>
-              {nome}
-            </p>
-            <p className="vx-subtitulo mt-0.5">{descricao}</p>
+          <div className="min-w-0">
+            <p className={cn("vx-titulo-secao", inativo && "text-muted-foreground")}>{nome}</p>
+            <p className="vx-subtitulo mt-1 leading-relaxed">{descricao}</p>
           </div>
 
-          <SeloDeIntegracao estado={estado} />
+          {nota && <div className="text-label leading-relaxed text-muted-foreground">{nota}</div>}
         </div>
 
-        {(acoes || nota) && (
-          <div className="mt-3 border-t border-border pt-3">
-            {acoes && <div className="flex flex-wrap items-center gap-2">{acoes}</div>}
-            {nota && <div className={cn("text-label text-muted-foreground", acoes && "mt-2")}>{nota}</div>}
+        {/*
+          O RODAPÉ, separado por linha: ação à esquerda, estado à direita.
+          `mt-auto` para ficar colado embaixo mesmo quando o cartão vizinho é
+          mais alto -- numa grade, rodapés desalinhados leem como cartões de
+          tamanhos diferentes.
+        */}
+        {(acoes || aoAlternar || !inativo) && (
+          <div className="mt-auto flex items-center justify-between gap-2 border-t border-border px-3.5 py-2.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">{acoes}</div>
+            {aoAlternar ? (
+              <Switch
+                checked={ativo}
+                onCheckedChange={aoAlternar}
+                aria-label={ativo ? `Desconectar ${nome}` : `Conectar ${nome}`}
+                className="shrink-0"
+              />
+            ) : (
+              <SeloDeIntegracao estado={estado} />
+            )}
           </div>
         )}
       </CardContent>
@@ -123,7 +167,9 @@ export function GrupoDeIntegracoes({
           `tracking-[0.11em]` -- um SÉTIMO valor de tracking, no arquivo que
           existe justamente porque havia seis. O teste pegou. */}
       <SectionLabel as="h3">{titulo}</SectionLabel>
-      <div className="grid gap-3 md:grid-cols-2">{children}</div>
+      {/* Três colunas como a referência. Em `md` ficam duas: a 288px por
+          cartão, três já espremeriam a descrição em quatro linhas. */}
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>
     </section>
   );
 }

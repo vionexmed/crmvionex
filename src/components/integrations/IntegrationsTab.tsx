@@ -2,15 +2,15 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle2, Chrome, Eye, EyeOff, Loader2, Mail, MessageSquare, Plus, RefreshCw, Webhook } from "lucide-react";
+import { AlertCircle, CheckCircle2, Chrome, Eye, EyeOff, Loader2, Mail, MessageSquare, RefreshCw, Search, Webhook } from "lucide-react";
 function MetaIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -23,7 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LogoUploadField } from "@/components/crm/LogoUploadField";
 import { WhatsAppCard } from "@/components/crm/WhatsAppCard";
 import { InstagramCard } from "@/components/crm/InstagramCard";
-import { CartaoDeIntegracao, GrupoDeIntegracoes } from "@/components/integrations/CartaoDeIntegracao";
+import { CartaoDeIntegracao } from "@/components/integrations/CartaoDeIntegracao";
 import { formatarData } from "@/lib/formato";
 
 type IntegrationConfig = {
@@ -362,63 +362,59 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
    * aparecerem juntos, na mesma pilha. Virou função para que cada grupo peça os
    * seus.
    */
-  const cartoesGenericos = (lista: Integracao[]) => lista.map((intg) => {
-          const cfg = getConfig(intg.provider);
-          const Icon = intg.icon;
-          return (
-            <Card key={intg.provider}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle>{intg.name}</CardTitle>
-                      <CardDescription>{intg.description}</CardDescription>
-                    </div>
-                  </div>
-                  {cfg && <Switch checked={cfg.is_active} onCheckedChange={(v) => toggleActive(cfg.id, v)} />}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {cfg ? (
-                    <>
-                      <Badge variant={cfg.is_active ? "default" : "secondary"} className="text-micro">
-                        {cfg.is_active ? "Conectado" : "Inativo"}
-                      </Badge>
-                      {intg.provider === "meta" && cfg.is_active && (
-                        <Button variant="outline" size="sm" className="h-8 text-label"
-                          disabled={metaConnecting}
-                          onClick={handleMetaConnect}>
-                          {metaConnecting ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Sincronizando...</> : <><RefreshCw className="mr-1 h-3 w-3" />Sincronizar</>}
-                        </Button>
-                      )}
-                      <Button variant="outline" size="sm" className="ml-auto h-8 text-label"
-                        onClick={() => {
-                          setEditProvider(intg.provider);
-                          setEditConfig(cfg.config || {});
-                        }}>
-                        Configurar
-                      </Button>
-                    </>
-                  ) : (
-                    <Button size="sm" className="h-8 text-label"
-                      disabled={intg.connectLoading}
-                      onClick={() => {
-                        if (intg.connectAction) return intg.connectAction();
-                        setEditProvider(intg.provider);
-                        setEditConfig({});
-                      }}>
-                      {intg.connectLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Conectando...</> : <><Plus className="mr-1 h-3 w-3" />Conectar</>}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-  });
+  /**
+   * Os genéricos, no MESMO cartão dos dedicados.
+   *
+   * Eram um `<Card>` cru com `CardHeader`, então Meta Ads e Slack tinham outra
+   * forma que WhatsApp e Instagram -- ícone em lugar diferente, estado em lugar
+   * diferente. Numa grade, dois desenhos leem como duas categorias de coisa.
+   */
+  const cartaoGenerico = (intg: Integracao) => {
+    const cfg = getConfig(intg.provider);
+    return (
+      <CartaoDeIntegracao
+        key={intg.provider}
+        icone={intg.icon}
+        nome={intg.name}
+        descricao={intg.description}
+        estado={cfg?.is_active ? "ativo" : "disponivel"}
+        // O interruptor só existe onde há o que desligar: quando a integração
+        // JÁ está configurada. Sem `cfg` não há nada para alternar, e um
+        // interruptor ali seria controle morto.
+        aoAlternar={cfg ? (v) => toggleActive(cfg.id, v) : undefined}
+        acoes={
+          cfg ? (
+            <>
+              <Button variant="outline" size="sm" className="h-8 text-label"
+                onClick={() => { setEditProvider(intg.provider); setEditConfig(cfg.config || {}); }}>
+                Configurar
+              </Button>
+              {intg.provider === "meta" && cfg.is_active && (
+                <Button variant="ghost" size="sm" className="h-8 text-label"
+                  disabled={metaConnecting} onClick={handleMetaConnect}>
+                  {metaConnecting
+                    ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Sincronizando…</>
+                    : <><RefreshCw className="mr-1 h-3 w-3" />Sincronizar</>}
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button variant="outline" size="sm" className="h-8 text-label"
+              disabled={intg.connectLoading}
+              onClick={() => {
+                if (intg.connectAction) return intg.connectAction();
+                setEditProvider(intg.provider);
+                setEditConfig({});
+              }}>
+              {intg.connectLoading
+                ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Conectando…</>
+                : "Conectar"}
+            </Button>
+          )
+        }
+      />
+    );
+  };
 
   /** Onde cada integração genérica aparece. */
   const grupoDo: Record<string, "atendimento" | "anuncios" | "automacao"> = {
@@ -426,42 +422,20 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
     slack: "automacao",
     zapier: "automacao",
   };
-  const doGrupo = (g: string) =>
-    integrations.filter((i) => !i.hidden && grupoDo[i.provider] === g);
 
-  return (
-    <div className="space-y-7">
-      {/* AGRUPADO POR FINALIDADE, e não por fornecedor.
-          Eram seis cartões em pilha plana -- plataforma de anúncio, canal de
-          atendimento e ferramenta de automação lado a lado, sem hierarquia --
-          e TRÊS deles eram WhatsApp. Achar um exigia ler todos. */}
 
-      <GrupoDeIntegracoes titulo="Canais de atendimento">
-        {/* UM cartão de WhatsApp. A escolha entre a API oficial da Meta e o QR
-            code da Evolution vive dentro dele: é consequência de configurar um
-            dos dois, não uma decisão separada tomada antes. */}
-        <WhatsAppCard />
+  /**
+   * BUSCA E FILTRO POR TIPO, no lugar dos três títulos de grupo.
+   *
+   * Os grupos existiam por um bom motivo -- eram seis cartões em pilha plana e
+   * TRÊS eram WhatsApp, então achar um exigia ler todos. As pílulas fazem o
+   * mesmo trabalho com um controle em vez de três cabeçalhos, e ainda somam a
+   * busca, que os títulos não davam.
+   */
+  const [buscaIntg, setBuscaIntg] = useState("");
+  const [tipoIntg, setTipoIntg] = useState<"todos" | "atendimento" | "anuncios" | "automacao">("todos");
 
-        {/* Instagram Direct, ao lado do WhatsApp porque é o mesmo tipo de coisa:
-            um canal onde a pessoa escreve primeiro. Cartão mais simples que o do
-            WhatsApp porque aqui há uma rota só -- não existe a escolha entre API
-            oficial e QR code. */}
-        <InstagramCard />
-
-        {/* ── Google: só as credenciais ──────────────────
-            Aqui NÃO se conecta conta de e-mail. Antes este cartão oferecia duas
-            contas no nível da empresa (atendimento e marketing), do modelo
-            antigo, enquanto cada pessoa já conecta a própria em
-            Configurações → Conectar e-mail. Os dois modelos conviviam e a
-            tabela email_connections carregava duas dimensões sobrepostas
-            (purpose e scope_type). Ficou só o modelo por pessoa. */}
-        {/* GOOGLE: cartão compacto, informação no diálogo.
-            Era um Card de duas colunas com todo o estado, os avisos e o
-            formulário abertos na tela -- sozinho, ocupava mais que os outros
-            cinco juntos, e a tela virava uma parede de texto antes de você
-            escolher o que fazer.
-            Mesmo tratamento do WhatsApp: o cartão diz o estado, o clique abre o
-            resto. */}
+  const cartaoGoogleOAuth = (
         <CartaoDeIntegracao
           icone={Mail}
           nome="Google — credenciais OAuth"
@@ -480,7 +454,102 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             </Button>
           }
         />
+  );
 
+  const cartaoGoogleAds = (
+        <CartaoDeIntegracao
+          icone={Chrome}
+          nome="Google Ads"
+          descricao="Ainda não construído no CRM"
+          estado="nao-integrado"
+          nota="Requer developer token do Google, tabelas e função de sincronização. Nada a configurar por enquanto."
+        />
+  );
+
+  /**
+   * Um cartão por entrada, com o texto que a busca procura.
+   *
+   * `busca` é escrito à mão e inclui SINÔNIMO: quem procura "gmail" quer o
+   * cartão do Google, e quem procura "dm" quer o do Instagram. Buscar só no
+   * nome visível deixaria os dois de fora.
+   */
+  const entradasIntg: { chave: string; tipo: string; busca: string; no: React.ReactNode }[] = [
+    { chave: "whatsapp", tipo: "atendimento", busca: "whatsapp wpp meta evolution qr code mensagem", no: <WhatsAppCard /> },
+    { chave: "instagram", tipo: "atendimento", busca: "instagram direct dm mensagem", no: <InstagramCard /> },
+    { chave: "google-oauth", tipo: "atendimento", busca: "google gmail oauth credencial e-mail email", no: cartaoGoogleOAuth },
+    ...integrations.filter((i) => !i.hidden && grupoDo[i.provider] === "anuncios")
+      .map((i) => ({ chave: i.provider, tipo: "anuncios", busca: `${i.name} ${i.description} anuncio campanha`, no: cartaoGenerico(i) })),
+    { chave: "google-ads", tipo: "anuncios", busca: "google ads anuncio campanha", no: cartaoGoogleAds },
+    ...integrations.filter((i) => !i.hidden && grupoDo[i.provider] === "automacao")
+      .map((i) => ({ chave: i.provider, tipo: "automacao", busca: `${i.name} ${i.description} automacao aviso webhook`, no: cartaoGenerico(i) })),
+  ];
+
+  const termoIntg = buscaIntg.trim().toLowerCase();
+  const visiveisIntg = entradasIntg.filter(
+    (e) => (tipoIntg === "todos" || e.tipo === tipoIntg) && (!termoIntg || e.busca.toLowerCase().includes(termoIntg)),
+  );
+
+  const TIPOS_INTG = [
+    { valor: "todos", rotulo: "Todos" },
+    { valor: "atendimento", rotulo: "Atendimento" },
+    { valor: "anuncios", rotulo: "Anúncios" },
+    { valor: "automacao", rotulo: "Automação" },
+  ] as const;
+
+  return (
+    <div className="space-y-7">
+      {/* AGRUPADO POR FINALIDADE, e não por fornecedor.
+          Eram seis cartões em pilha plana -- plataforma de anúncio, canal de
+          atendimento e ferramenta de automação lado a lado, sem hierarquia --
+          e TRÊS deles eram WhatsApp. Achar um exigia ler todos. */}
+
+      {/* Busca à esquerda, tipo à direita -- o desenho da referência. */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative sm:max-w-xs sm:flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={buscaIntg}
+            onChange={(e) => setBuscaIntg(e.target.value)}
+            placeholder="Buscar integração"
+            className="h-9 pl-8 text-xs"
+          />
+        </div>
+
+        <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
+          {TIPOS_INTG.map((t) => (
+            <button
+              key={t.valor}
+              type="button"
+              onClick={() => setTipoIntg(t.valor)}
+              className={cn(
+                "rounded-md px-2.5 py-1.5 text-label font-medium transition-colors",
+                tipoIntg === t.valor
+                  ? "bg-card text-foreground shadow-[var(--shadow-xs)]"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t.rotulo}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {visiveisIntg.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border py-12 text-center text-xs text-muted-foreground">
+          Nenhuma integração para “{buscaIntg.trim()}”.
+        </p>
+      ) : (
+        /* Três colunas como a referência; duas em `md`, onde três espremeriam a
+           descrição em quatro linhas. */
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {visiveisIntg.map((e) => (
+            <div key={e.chave} className="contents">{e.no}</div>
+          ))}
+        </div>
+      )}
+
+      {/* O diálogo das credenciais do Google fica FORA da grade: é sobreposição,
+          não cartão, e dentro do grid ocupava uma célula invisível. */}
         <Dialog open={googleAberto} onOpenChange={setGoogleAberto}>
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
@@ -647,27 +716,6 @@ export function IntegrationsTab({ orgId, userId }: { orgId: string | null; userI
             </div>
           </DialogContent>
         </Dialog>
-
-
-      </GrupoDeIntegracoes>
-
-      <GrupoDeIntegracoes titulo="Anúncios">
-        {cartoesGenericos(doGrupo("anuncios"))}
-        {/* Google Ads NÃO tem cartão de conectar, de propósito.
-            Não existem tabelas nem função de sync no CRM -- oferecer um botão
-            faria alguém procurar credencial para nada. O estado diz isso. */}
-        <CartaoDeIntegracao
-          icone={Chrome}
-          nome="Google Ads"
-          descricao="Ainda não construído no CRM"
-          estado="nao-integrado"
-          nota="Requer developer token do Google, tabelas e função de sincronização. Nada a configurar por enquanto."
-        />
-      </GrupoDeIntegracoes>
-
-      <GrupoDeIntegracoes titulo="Avisos e automação">
-        {cartoesGenericos(doGrupo("automacao"))}
-      </GrupoDeIntegracoes>
 
       {/* Config Dialog */}
       <Dialog open={!!editProvider} onOpenChange={() => setEditProvider(null)}>
