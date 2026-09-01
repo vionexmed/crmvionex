@@ -41,7 +41,10 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/layout/Estado
 import { formatarDataCurta, formatarDataHora, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
+import { BarraDeFiltros } from "@/components/layout/BarraDeAcoes";
+import { cn } from "@/lib/utils";
 import { SeletorDeContato } from "@/components/crm/SeletorDeContato";
+import { formatarEmail, formatarTelefone, nomeDoContato } from "@/lib/contato-formato";
 
 type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
@@ -268,6 +271,72 @@ export default function Activities() {
     };
   }, [activities]);
 
+  /**
+   * O QUE DIZER QUANDO A TABELA ESTÁ VAZIA -- e são TRÊS situações, não uma.
+   *
+   * A mensagem era fixa: "Nenhuma atividade encontrada / Registre uma ligação,
+   * reunião ou nota para começar o histórico". Ela aparecia igual com a
+   * organização recém-criada e com dez atividades escondidas por um filtro.
+   *
+   * O caso que motivou isto: dez atividades, todas concluídas, filtro no padrão
+   * "Para fazer". A tela dizia que o histórico não tinha começado enquanto a
+   * própria barra de filtros contava "Todas (10)" logo acima -- a tela se
+   * contradizendo em dois centímetros.
+   *
+   * A distinção é entre `activities.length` (o que existe) e `filtered.length`
+   * (o que passou pelos filtros). Ela precisa vir antes do JSX porque a ação
+   * muda junto com o texto: criar, limpar a busca, ou ver todas.
+   */
+  const vazio = useMemo(() => {
+    const termo = search.trim();
+
+    if (activities.length === 0) {
+      return {
+        icone: CheckSquare,
+        titulo: "Nenhuma atividade ainda",
+        descricao: "Registre uma ligação, reunião ou nota para começar o histórico.",
+        acao: (
+          <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />Criar atividade
+          </Button>
+        ),
+      };
+    }
+
+    if (termo) {
+      return {
+        icone: Search,
+        titulo: `Nada encontrado para “${termo}”`,
+        descricao: `A busca procura em assunto, pessoa, e-mail e negócio. Há ${activities.length} ${pluralizar(activities.length, "atividade")} no total.`,
+        acao: (
+          <Button variant="outline" size="sm" onClick={() => setSearch("")}>
+            Limpar a busca
+          </Button>
+        ),
+      };
+    }
+
+    // Sobrou o filtro. Dizer QUAL, e oferecer a saída em vez de deixar a pessoa
+    // procurar qual dos onze controles está escondendo a lista.
+    return {
+      icone: CheckSquare,
+      titulo: `Nada em “${dateFilterLabels[dateFilter]}”`,
+      descricao:
+        typeFilter !== "all" || ownerFilter !== "all"
+          ? "Os filtros de tipo ou responsável também estão ativos."
+          : undefined,
+      acao: (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => { setDateFilter("todas"); setTypeFilter("all"); setOwnerFilter("all"); }}
+        >
+          Ver todas ({activities.length})
+        </Button>
+      ),
+    };
+  }, [activities.length, search, dateFilter, typeFilter, ownerFilter]);
+
   // Calendar helpers
   const calendarDays = useMemo(() => {
     const { year, month } = calMonth;
@@ -344,37 +413,45 @@ export default function Activities() {
       }
     >
 
-      {/* Filtros — tipo de atividade + busca + responsável */}
-      <div className="flex items-center gap-1 pb-2 border-b border-border flex-wrap pt-1">
-        <button
-          onClick={() => setTypeFilter("all")}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${typeFilter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
-        >
-          Tudo
-        </button>
-        {(["call", "meeting", "task", "email", "note"] as ActivityType[]).map((t) => {
-          const Icon = ATIVIDADE_ICONE[t];
-          return (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${typeFilter === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
-            >
-              <Icon className="h-3 w-3" />
-              {ATIVIDADE_ROTULO[t]}
-            </button>
-          );
-        })}
+      {/*
+        UMA BARRA DE FILTRO, e não uma fileira de pílulas nua.
 
-        {/* Right side: search + owner filter */}
+        Eram SEIS pílulas montadas à mão, com `bg-primary` sólido no
+        selecionado -- enquanto a fileira de período logo abaixo usava
+        `bg-primary/10` tingido. Dois desenhos de "selecionado" na mesma tela,
+        para dois controles que o olho lê como o mesmo tipo de coisa.
+
+        O comentário do `actions` acima registra que este grupo de pílulas já
+        foi consolidado cinco vezes e que esta cópia passou batido duas. Era a
+        sexta.
+
+        Tipo, busca e responsável são as três FACETAS do filtro -- juntá-las
+        numa barra só é o que separa "o que eu quero ver" (aqui) de "de que
+        período" (a fileira de baixo, que é a visão principal da lista).
+      */}
+      <BarraDeFiltros className="mt-1">
+        <SegmentedControl<string>
+          rotuloGrupo="Tipo de atividade"
+          valor={typeFilter}
+          onChange={setTypeFilter}
+          opcoes={[
+            { valor: "all", rotulo: "Tudo" },
+            ...(["call", "meeting", "task", "email", "note"] as ActivityType[]).map((t) => ({
+              valor: t as string,
+              rotulo: ATIVIDADE_ROTULO[t],
+              icone: ATIVIDADE_ICONE[t],
+            })),
+          ]}
+        />
+
         <div className="ml-auto flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-7 h-8 w-44 text-xs"
+              className="h-8 w-44 pl-7 text-xs"
             />
           </div>
           <Select value={ownerFilter} onValueChange={setOwnerFilter}>
@@ -389,35 +466,71 @@ export default function Activities() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </BarraDeFiltros>
 
-      {/* Date filter tabs */}
-      <div className="flex items-center gap-0.5 py-2 text-xs">
-        {(Object.keys(dateFilterLabels) as DateFilter[]).map((key) => {
-          const count = counts[key];
-          const isActive = dateFilter === key;
-          const isOverdueTab = key === "overdue";
-          return (
-            <button
-              key={key}
-              onClick={() => setDateFilter(key)}
-              className={`px-3 py-1 rounded-md font-medium transition-colors ${
-                isActive
-                  ? isOverdueTab && count > 0
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {dateFilterLabels[key]}
-              {count > 0 && (
-                <span className={`ml-1 text-label ${isOverdueTab ? "text-destructive" : ""}`}>
-                  ({count})
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/*
+        O PERÍODO, em DOIS grupos -- porque são duas perguntas.
+
+        Os nove filtros vinham enfileirados iguais, e não são o mesmo eixo:
+        sete respondem "o que vence quando" e dois respondem "o que já
+        aconteceu". O código sempre soube -- `HISTORICO` existe desde antes
+        disto e os dois grupos até ORDENAM diferente (histórico por
+        `aconteceuEm`, o resto por vencimento). O que faltava era a tela dizer.
+
+        A separação lê a mesma `HISTORICO`, e não uma segunda lista: duas listas
+        do mesmo conceito divergem no dia em que alguém acrescenta um filtro.
+
+        A CONTAGEM APARECE SEMPRE, inclusive zero -- era `count > 0`, então sete
+        chips apareciam sem número nenhum e não havia como saber que "Hoje"
+        estava vazio antes de clicar. O chip zerado fica esmaecido: continua
+        clicável, só não finge ter conteúdo.
+      */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2">
+        {([
+          ["A fazer", (Object.keys(dateFilterLabels) as DateFilter[]).filter((k) => !HISTORICO.includes(k))],
+          ["Histórico", HISTORICO],
+        ] as const).map(([grupo, chaves]) => (
+          <div key={grupo} className="flex items-center gap-1.5">
+            <span className="text-label font-semibold uppercase tracking-wide text-muted-foreground/70">
+              {grupo}
+            </span>
+            <div className="flex flex-wrap items-center gap-0.5">
+              {chaves.map((key) => {
+                const count = counts[key];
+                const ativo = dateFilter === key;
+                const alerta = key === "overdue" && count > 0;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setDateFilter(key)}
+                    aria-pressed={ativo}
+                    className={cn(
+                      "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                      ativo
+                        ? alerta
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      // Vazio e não selecionado: esmaecido. Selecionado nunca
+                      // esmaece -- senão o filtro atual some da barra.
+                      !ativo && count === 0 && "opacity-45",
+                    )}
+                  >
+                    {dateFilterLabels[key]}
+                    <span
+                      className={cn(
+                        "ml-1 text-label tabular-nums",
+                        alerta ? "text-destructive" : "text-muted-foreground",
+                      )}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Table view */}
@@ -427,12 +540,15 @@ export default function Activities() {
             <TableHeader>
               <TableRow className="bg-muted/30">
                 <TableHead className="w-10"></TableHead>
-                <TableHead className="min-w-[200px]">Assunto</TableHead>
+                {/* SETE colunas, e não dez.
+                    E-mail, telefone e organização eram três colunas com dados
+                    da MESMA pessoa que a coluna ao lado já nomeia -- e as
+                    quatro juntas espremiam o Assunto, que é o que se lê. Nada
+                    saiu da tela: os três desceram para dentro da célula da
+                    pessoa. */}
+                <TableHead className="min-w-[240px]">Assunto</TableHead>
                 <TableHead>Negócio</TableHead>
-                <TableHead>Pessoa de contato</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Organização</TableHead>
+                <TableHead className="min-w-[200px]">Pessoa de contato</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Atribuído a</TableHead>
                 <TableHead className="w-10"></TableHead>
@@ -474,28 +590,33 @@ export default function Activities() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {contact && (
-                        <span className="text-sm">
-                          {contact.first_name} {contact.last_name || ""}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {contact?.email && (
-                        <a href={`mailto:${contact.email}`} className="text-xs text-primary hover:underline truncate block max-w-[180px]">
-                          {contact.email}
-                        </a>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {contact?.phone && (
-                        <span className="text-xs text-muted-foreground">{contact.phone}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {company && (
-                        <span className="text-xs text-muted-foreground">{company.name}</span>
-                      )}
+                      {/* Nome, contato e organização na mesma célula.
+                          `nomeDoContato` e os formatadores vêm de
+                          `contato-formato.ts` -- a lista escrevia
+                          `first_name last_name` cru, então um cadastro em CAIXA
+                          ALTA aparecia gritando aqui e normalizado na tela de
+                          Contatos. Mesma pessoa, dois nomes. */}
+                      {contact ? (
+                        <div className="min-w-0 leading-tight">
+                          <p className="truncate text-sm">
+                            {nomeDoContato(contact.first_name, contact.last_name)}
+                          </p>
+                          {(contact.email || contact.phone) && (
+                            <p className="truncate text-label text-muted-foreground">
+                              {contact.email && formatarEmail(contact.email)}
+                              {contact.email && contact.phone && " · "}
+                              {contact.phone && formatarTelefone(contact.phone)}
+                            </p>
+                          )}
+                          {company && (
+                            <p className="truncate text-label text-muted-foreground/70">
+                              {company.name}
+                            </p>
+                          )}
+                        </div>
+                      ) : company ? (
+                        <span className="text-label text-muted-foreground">{company.name}</span>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       {/* Três datas diferentes, do mais informativo para o
@@ -566,7 +687,10 @@ export default function Activities() {
                   afirmar um fato que a tela não conhece. */}
               {(carregando || falhou || filtered.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={10} className="p-0">
+                  {/* SETE, como o cabeçalho. Ficou em 10 quando as três
+                      colunas de contato viraram uma -- o navegador perdoa
+                      (estica até o fim), mas o número mente para quem lê. */}
+                  <TableCell colSpan={7} className="p-0">
                     {carregando ? (
                       <LoadingState linhas={6} className="p-4" />
                     ) : falhou ? (
@@ -576,16 +700,7 @@ export default function Activities() {
                         className="m-4"
                       />
                     ) : (
-                      <EmptyState
-                        icone={CheckSquare}
-                        titulo="Nenhuma atividade encontrada"
-                        descricao="Registre uma ligação, reunião ou nota para começar o histórico."
-                        acao={
-                          <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
-                            <Plus className="mr-1.5 h-3.5 w-3.5" />Criar atividade
-                          </Button>
-                        }
-                      />
+                      <EmptyState {...vazio} />
                     )}
                   </TableCell>
                 </TableRow>
