@@ -124,7 +124,25 @@ describe("as telas internas usam a mesma casca", () => {
 
   it("o PageShell é quem fixa o ritmo vertical", () => {
     const src = readFileSync("src/components/layout/PageShell.tsx", "utf8");
-    expect(src).toMatch(/cn\("space-y-4"/);
+    /*
+     * `\s*` entre o `cn(` e o valor: a versão anterior casava o literal
+     * `cn("space-y-4"` e quebrou quando o `cn` ganhou uma segunda linha, sem que
+     * o invariante tivesse mudado -- o ritmo continua saindo daqui. Teste que
+     * quebra por quebra de linha é teste que alguém desliga.
+     */
+    expect(src).toMatch(/cn\(\s*"space-y-4"/);
+  });
+
+  /**
+   * O modo de altura cheia é OPCIONAL, e tem de continuar sendo.
+   *
+   * Ele existe para o kanban, onde a coluna é que rola. Ligado por padrão,
+   * transformaria toda página comprida num contêiner de rolagem interno -- e
+   * lista longa quer rolar a página, não uma caixa dentro dela.
+   */
+  it("o preenchimento de altura é opt-in", () => {
+    const src = readFileSync("src/components/layout/PageShell.tsx", "utf8");
+    expect(src).toMatch(/preencherAltura = false/);
   });
 });
 

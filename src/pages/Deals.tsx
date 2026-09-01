@@ -339,6 +339,9 @@ export default function Deals() {
 
   return (
     <PageShell
+      /* Só no kanban: a coluna é que rola, e para isso o quadro precisa de
+         altura definida. Na lista e na previsão a página rolar é o certo. */
+      preencherAltura={viewMode === "kanban"}
       title="Negócios"
       contagem={{ valor: totalCount, unidade: "negócio no funil", plural: "negócios no funil" }}
       meta={

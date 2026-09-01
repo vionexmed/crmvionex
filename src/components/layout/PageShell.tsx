@@ -29,6 +29,19 @@ export function PageShell({
   meta,
   /** Busca, filtros e seleção em lote. Fica entre o cabeçalho e o conteúdo. */
   toolbar,
+  /**
+   * A tela ocupa a altura da janela, e quem rola é o CONTEÚDO.
+   *
+   * Opcional, e é o ponto: só o kanban precisa disso hoje. Ligar para as 27
+   * telas transformaria toda página comprida num contêiner de rolagem interno,
+   * o que é pior -- lista longa quer rolar a página, não uma caixa dentro dela.
+   *
+   * Com ela, o último filho recebe `flex-1 min-h-0` e é ele que rola. `min-h-0`
+   * não é decorativo: filho de flex nasce com `min-height: auto` e cresce com o
+   * conteúdo em vez de encolher, e sem ele a altura fixa não produz rolagem
+   * nenhuma.
+   */
+  preencherAltura = false,
   children,
   className,
 }: {
@@ -39,6 +52,7 @@ export function PageShell({
   actions?: React.ReactNode;
   meta?: React.ReactNode;
   toolbar?: React.ReactNode;
+  preencherAltura?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -46,7 +60,13 @@ export function PageShell({
     // `space-y-4` é o valor mais praticado no projeto (9 páginas). Ter UM valor
     // importa mais do que qual valor: o ritmo vertical só é perceptível quando
     // se repete.
-    <div className={cn("space-y-4", className)}>
+    <div
+      className={cn(
+        "space-y-4",
+        preencherAltura && "flex h-full min-h-0 flex-col space-y-0 gap-4",
+        className,
+      )}
+    >
       <PageHeader
         kicker={kicker}
         title={title}
@@ -56,7 +76,11 @@ export function PageShell({
         meta={meta}
       />
       {toolbar}
-      {children}
+      {preencherAltura ? (
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      ) : (
+        children
+      )}
     </div>
   );
 }

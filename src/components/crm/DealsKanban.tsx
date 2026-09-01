@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText, Eye, Pencil, User } from "lucide-react";
+import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, FileText, Pencil, User } from "lucide-react";
 import { ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_COR, aconteceuEm } from "@/lib/atividade-tipos";
 import { formatarDataCurta, formatarDataHora, formatarTempoRelativo } from "@/lib/formato";
 import {
@@ -140,7 +140,16 @@ const DealCard = memo(function DealCard({
    * botão ausente.
    */
   const acoes = [
-    { chave: "ver", titulo: "Abrir negócio", Icone: Eye, aoClicar: () => onDealClick(deal) },
+    /*
+     * O OLHO SAIU, e é o que respondia "está confuso, não?".
+     *
+     * Ele fazia exatamente o que clicar no card já faz -- abrir o negócio --
+     * então havia dois caminhos idênticos e um terceiro (o lápis) parecido, o
+     * que fazia os três lerem como variações da mesma coisa.
+     *
+     * Ficam as duas que o clique no card NÃO faz: editar sem sair do quadro, e
+     * abrir a PESSOA em vez do negócio.
+     */
     ...(onEditDeal
       ? [{ chave: "editar", titulo: "Editar", Icone: Pencil, aoClicar: () => onEditDeal(deal) }]
       : []),
@@ -369,7 +378,7 @@ function StageColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-[264px] sm:w-[288px] shrink-0 flex-col transition-colors ${
+      className={`flex h-full w-[264px] min-h-0 shrink-0 flex-col rounded-xl transition-colors sm:w-[288px] ${
         isOver ? "bg-primary/5" : ""
       }`}
     >
@@ -417,8 +426,23 @@ function StageColumn({
         </div>
       </div>
 
-      {/* Cards */}
-      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[calc(100vh-240px)] pr-0.5">
+      {/*
+        A ROLAGEM DA COLUNA, e por que ela estava espremida.
+
+        Era `pr-0.5` -- DOIS pixels para a barra de rolagem, que então passava por
+        cima da borda direita dos cards. E `max-h-[calc(100vh-240px)]` era um
+        número mágico: 240 não corresponde a nada que exista no layout, então em
+        telas de altura diferente a coluna terminava antes ou depois do que devia.
+
+        Agora `pr-2 -mr-2`: a barra ganha 8px de canaleta, e a margem negativa
+        devolve esse espaço para os cards não encolherem. E a altura vem do PAI --
+        `min-h-0` é o que permite um filho de flex encolher abaixo do conteúdo,
+        sem o qual `flex-1` cresce em vez de rolar.
+
+        `pb-2` no fim para o último card não encostar na borda: sem ele parece que
+        a lista foi cortada, não que acabou.
+      */}
+      <div className="-mr-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2 pr-2">
         {deals.map((deal) => (
           <DealCard
             key={deal.id}
@@ -597,14 +621,19 @@ export function DealsKanban({
   }
 
   return (
-    <div className="space-y-3">
+    // `min-h-0` em cada nível até a coluna: sem ele a altura para de descer no
+    // primeiro flex e a coluna volta a crescer em vez de rolar.
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        {/* `flex-1 min-h-0` e não `h-full`: a faixa ocupa o que sobrou da casca
+            sem depender de o pai já ter altura resolvida, e é isso que faz a
+            rolagem acontecer DENTRO de cada coluna em vez de na página. */}
+        <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-2">
           {stages.map((stage) => (
             <StageColumn
               key={stage.id}

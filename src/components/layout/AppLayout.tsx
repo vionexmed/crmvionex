@@ -82,11 +82,26 @@ export function AppLayout() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      {/*
+        A CASCA É FIXA; quem rola é o CONTEÚDO.
+
+        Era `min-h-screen`: a página inteira crescia com o conteúdo e rolava por
+        baixo de tudo -- lateral e cabeçalho subiam junto. Pior no kanban, onde a
+        coluna também rola: dois contêineres de rolagem aninhados, e a roda do
+        mouse escolhia um deles conforme a posição do cursor. É o "a página
+        inteira sobe" que você viu.
+
+        `h-screen` + `overflow-hidden` na casca prende o quadro; `overflow-y-auto`
+        no `<main>` faz a rolagem acontecer DENTRO da área de conteúdo, com a
+        lateral e o cabeçalho parados. `min-h-0` no meio não é decorativo: filho
+        de flex nasce com `min-height: auto`, e sem isso o `<main>` cresce com o
+        conteúdo em vez de rolar -- a correção não vale nada sem ele.
+      */}
+      <div className="flex h-screen w-full overflow-hidden">
         <AppSidebar />
-        <div className="flex flex-1 flex-col min-w-0">
+        <div className="flex min-h-0 flex-1 flex-col min-w-0">
           <AppHeader onOpenSearch={() => setSearchOpen(true)} />
-          <main className="flex-1 p-3 sm:p-6 pb-20 md:pb-6 vx-page">
+          <main className="vx-page min-h-0 flex-1 overflow-y-auto p-3 pb-20 sm:p-6 md:pb-6">
             <Outlet />
           </main>
         </div>
