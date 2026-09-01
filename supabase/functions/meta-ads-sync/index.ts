@@ -93,9 +93,44 @@ Deno.serve(async (req) => {
     let insightsCount = 0;
     const warnings: string[] = [];
 
-    // 1) Discover accounts via /me/adaccounts (direct user access)
     const discovered: Map<string, RawAcct & { business_id?: string | null; business_name?: string | null }> = new Map();
     const acctFields = 'id,name,account_id,currency,timezone_name,account_status,business';
+
+    /*
+      0) A CONTA QUE A ORGANIZAÇÃO CONFIGUROU, primeiro e direto.
+
+      A descoberta abaixo é toda por `/me/...`, e `/me` não resolve para
+      ninguém quando o token é de USUÁRIO DO SISTEMA, do Business Manager --
+      que é o tipo certo para integração servidor-a-servidor. Com um token
+      desses os dois passos seguintes falham, `discovered` fica vazio, e a
+      resposta era "Nenhuma conta de anúncios encontrada para esse token":
+      culpa o token quando o problema é o CAMINHO.
+
+      Consultar `act_<id>` não passa por `/me` e funciona com os dois tipos.
+      Por isso vem antes: é o caminho que sempre existe quando o id está
+      preenchido.
+    */
+    const { data: cfg } = await supabase
+      .from('integration_configs').select('config')
+      .eq('org_id', orgId).eq('provider', 'meta').maybeSingle();
+
+    const idBruto = (cfg?.config as { ad_account_id?: string } | null)?.ad_account_id?.trim();
+    const contaConfig = idBruto
+      ? (idBruto.startsWith('act_') ? idBruto : `act_${idBruto}`)
+      : null;
+
+    if (contaConfig) {
+      try {
+        const r = await fetch(`${GRAPH}/${contaConfig}?fields=${acctFields}&access_token=${token}`);
+        const a = await r.json();
+        if (a?.error) throw new Error(a.error.message || 'Graph API error');
+        discovered.set(a.id, { ...a, business_id: a.business?.id ?? null, business_name: a.business?.name ?? null });
+      } catch (e: any) {
+        warnings.push(`conta ${contaConfig}: ${e?.message || e}`);
+      }
+    }
+
+    // 1) Discover accounts via /me/adaccounts (direct user access)
     try {
       const direct = await fetchAll(`${GRAPH}/me/adaccounts?fields=${acctFields}&limit=200&access_token=${token}`);
       for (const a of direct as RawAcct[]) {
@@ -138,7 +173,10 @@ Deno.serve(async (req) => {
         error_message: warnings.join(' | ') || 'Nenhuma conta encontrada',
         records_synced: 0, duration_ms: Date.now() - startedAt, finished_at: new Date().toISOString(),
       });
-      return new Response(JSON.stringify({ error: 'Nenhuma conta de anúncios encontrada para esse token.', warnings }), {
+      const saida = contaConfig
+        ? `Não consegui ler a conta ${contaConfig} com este token. Confira se o ID está certo e se o token tem acesso a ela.`
+        : 'Nenhuma conta encontrada. Preencha o ID da conta de anúncio em Integrações — com ele a busca não depende de /me, que não funciona com token de Usuário do Sistema.';
+      return new Response(JSON.stringify({ error: saida, warnings }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

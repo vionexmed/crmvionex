@@ -30,6 +30,22 @@ const cors = {
 const json = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
+const GRAPH = "https://graph.facebook.com/v21.0";
+
+/**
+ * `act_` na frente, sempre.
+ *
+ * O Business Manager mostra o id como número puro ("1586102359800493"), mas a
+ * Graph API só reconhece a conta com o prefixo. Colar o que está na tela da
+ * Meta -- que é o que qualquer um faz -- gerava um 404 de "objeto não existe",
+ * que não sugere prefixo nenhum.
+ */
+function normalizarConta(id: unknown): string | null {
+  const bruto = typeof id === "string" ? id.trim() : "";
+  if (!bruto) return null;
+  return bruto.startsWith("act_") ? bruto : `act_${bruto}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
@@ -80,31 +96,50 @@ Deno.serve(async (req) => {
     /*
       TESTA CONTRA A GRAPH API antes de gravar.
 
-      Um token do Meta expira, é revogado, ou vem sem a permissão
-      `ads_read` — e nenhum desses casos se distingue olhando a string. Sem este
-      passo, o erro só apareceria na sincronização, com uma mensagem da Meta que
-      não diz o que fazer.
+      Token do Meta expira, é revogado ou vem sem `ads_read`, e nenhum desses
+      casos se distingue olhando a string. Sem este passo o erro só apareceria
+      na sincronização, com uma mensagem da Meta que não diz o que fazer.
 
-      `/me/adaccounts` é a chamada certa para conferir: ela exige exatamente a
-      permissão que o sync usa, então passar aqui significa que o sync funciona.
+      PELA CONTA, E NÃO POR `/me`. A primeira versão validava em
+      `/me/adaccounts` e recusava um token perfeitamente bom com "An active
+      access token must be used to query information about the current user".
+
+      É o erro de quem usa um token de USUÁRIO DO SISTEMA, do Business Manager:
+      ele não tem usuário por trás, então `/me` não resolve para ninguém. E
+      esse é justamente o tipo de token certo para integração servidor-a-
+      servidor -- o que a validação recusava era o caso mais correto.
+
+      Consultar `act_<id>` direto funciona para os dois tipos, e ainda confere o
+      que realmente importa: que ESTE token enxerga ESTA conta.
     */
-    const teste = await fetch(
-      `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name&limit=1&access_token=${encodeURIComponent(token)}`,
-    );
+    const conta = normalizarConta(ad_account_id);
+    const alvo = conta
+      ? `${GRAPH}/${conta}?fields=name,account_status`
+      : `${GRAPH}/me/adaccounts?fields=id,name&limit=1`;
+
+    const teste = await fetch(`${alvo}&access_token=${encodeURIComponent(token)}`);
     const corpo = await teste.json().catch(() => null);
 
     if (!teste.ok || corpo?.error) {
       const motivo = corpo?.error?.message || `A Meta respondeu ${teste.status}`;
-      return json({ ok: false, error: `A Meta recusou o token: ${motivo}` }, 400);
+      // Sem id de conta não há como escapar do `/me`, então vale dizer a saída.
+      const dica = !conta && /current user/i.test(motivo)
+        ? " Preencha o ID da conta de anúncio: com ele, a checagem não passa por /me e aceita token de Usuário do Sistema."
+        : "";
+      return json({ ok: false, error: `A Meta recusou o token: ${motivo}${dica}` }, 400);
     }
 
-    const contas = Array.isArray(corpo?.data) ? corpo.data.length : 0;
-    if (contas === 0) {
-      return json({
-        ok: false,
-        error: "O token é válido, mas não enxerga nenhuma conta de anúncio. Confira se ele foi gerado com a permissão ads_read e no Business certo.",
-      }, 400);
+    if (!conta) {
+      const achadas = Array.isArray(corpo?.data) ? corpo.data.length : 0;
+      if (achadas === 0) {
+        return json({
+          ok: false,
+          error: "O token é válido, mas não enxerga nenhuma conta de anúncio. Confira a permissão ads_read, ou preencha o ID da conta.",
+        }, 400);
+      }
     }
+
+    const contas = conta ? 1 : (Array.isArray(corpo?.data) ? corpo.data.length : 0);
 
     await admin.from("org_secrets").upsert(
       { org_id: orgId, key_name: "meta_access_token", key_value: token },
@@ -119,7 +154,7 @@ Deno.serve(async (req) => {
 
     const config = {
       ...((existente?.config ?? {}) as Record<string, unknown>),
-      ad_account_id: typeof ad_account_id === "string" ? ad_account_id.trim() : undefined,
+      ad_account_id: conta ?? undefined,
     };
     // O token nunca volta para cá, nem por acidente de spread do que já existia.
     delete (config as Record<string, unknown>).access_token;
