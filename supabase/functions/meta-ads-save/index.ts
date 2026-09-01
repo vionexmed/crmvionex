@@ -40,6 +40,36 @@ const GRAPH = "https://graph.facebook.com/v21.0";
  * Meta -- que é o que qualquer um faz -- gerava um 404 de "objeto não existe",
  * que não sugere prefixo nenhum.
  */
+/**
+ * O QUE FAZER, para os códigos da Meta que se repetem.
+ *
+ * A mensagem crua da Graph API descreve o estado e não a saída: "(#200) Ad
+ * account owner has NOT grant ads_management or ads_read permission" está
+ * correta e não diz onde clicar. Pior, ela vem com um link de documentação
+ * para desenvolvedor no meio de um toast.
+ *
+ * Mesma ideia do `mensagemErro` do frontend, que traduz os códigos do Postgres
+ * que merecem frase própria. Os outros passam cru: inventar tradução para erro
+ * que não se conhece é pior que mostrar o original.
+ */
+function comoResolver(codigo: number | undefined, conta: string | null): string | null {
+  if (codigo === 200) {
+    return [
+      "O token existe e enxerga a conta, mas não tem permissão de leitura de anúncios. São três lugares, nesta ordem:",
+      "1) o token precisa do escopo ads_read — no Graph API Explorer, marque ads_read antes de gerar;",
+      `2) o app precisa estar autorizado na conta ${conta ?? "de anúncio"} — Business Manager → Configurações → Contas de anúncio → Aplicativos conectados;`,
+      "3) se o app estiver em modo de desenvolvimento, só funciona para quem tem cargo nele — para as demais contas, a Meta exige Acesso Avançado ao ads_read.",
+    ].join(" ");
+  }
+  if (codigo === 190) {
+    return "O token expirou ou foi revogado. Gere um novo no Graph API Explorer — e prefira um token de longa duração, senão isso volta em algumas horas.";
+  }
+  if (codigo === 100 || codigo === 803) {
+    return `A Meta não encontrou a conta ${conta ?? ""}. Confira o ID em Business Manager → Contas de anúncio; é só o número, que o CRM prefixa com act_ sozinho.`;
+  }
+  return null;
+}
+
 function normalizarConta(id: unknown): string | null {
   const bruto = typeof id === "string" ? id.trim() : "";
   if (!bruto) return null;
@@ -122,11 +152,21 @@ Deno.serve(async (req) => {
 
     if (!teste.ok || corpo?.error) {
       const motivo = corpo?.error?.message || `A Meta respondeu ${teste.status}`;
+      const saida = comoResolver(corpo?.error?.code, conta);
+
       // Sem id de conta não há como escapar do `/me`, então vale dizer a saída.
       const dica = !conta && /current user/i.test(motivo)
         ? " Preencha o ID da conta de anúncio: com ele, a checagem não passa por /me e aceita token de Usuário do Sistema."
         : "";
-      return json({ ok: false, error: `A Meta recusou o token: ${motivo}${dica}` }, 400);
+
+      return json({
+        ok: false,
+        // Quando há tradução, ela vem NA FRENTE: é o que a pessoa precisa ler.
+        error: saida ? `${saida}${dica}` : `A Meta recusou o token: ${motivo}${dica}`,
+        // O original fica disponível para quem for investigar, sem poluir o aviso.
+        detalhe_meta: motivo,
+        codigo_meta: corpo?.error?.code ?? null,
+      }, 400);
     }
 
     if (!conta) {
