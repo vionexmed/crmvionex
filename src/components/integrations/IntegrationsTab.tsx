@@ -7,14 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle2, Chrome, Loader2, Mail, MessageSquare, RefreshCw, Search, Settings2, Webhook } from "lucide-react";
-function MetaIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/>
-    </svg>
-  );
-}
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Search, Settings2 } from "lucide-react";
+import {
+  LogoGmail, LogoGoogleAds, LogoMeta, LogoSlack, LogoZapier,
+} from "@/components/integrations/logos-de-integracao";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { WhatsAppCard } from "@/components/crm/WhatsAppCard";
@@ -48,16 +44,14 @@ type EmailConnection = {
 export function IntegrationsTab(props: { orgId: string | null; userId?: string }) {
   return (
     <ProvedorDoPainel>
-      {(alvoRef) => <ConteudoDeIntegracoes {...props} alvoRef={alvoRef} />}
+      <ConteudoDeIntegracoes {...props} />
     </ProvedorDoPainel>
   );
 }
 
-function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
+function ConteudoDeIntegracoes({ orgId, userId }: {
   orgId: string | null;
   userId?: string;
-  /** Onde os painéis se desenham. Ver `contexto-do-painel.ts`. */
-  alvoRef: (n: HTMLDivElement | null) => void;
 }) {
   const { abrir, aberto, fechar } = useContextoDoPainel();
   const { toast } = useToast();
@@ -306,7 +300,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
 
   const integrations: Integracao[] = [
     {
-      provider: "meta", name: "Meta Ads", icon: MetaIcon,
+      provider: "meta", name: "Meta Ads", icon: LogoMeta,
       description: "Campanhas, conjuntos e métricas de anúncio",
       connectAction: handleMetaConnect,
       connectLoading: metaConnecting,
@@ -332,7 +326,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
       ],
     },
     {
-      provider: "slack", name: "Slack", icon: MessageSquare,
+      provider: "slack", name: "Slack", icon: LogoSlack,
       description: "Resumo do dia no canal, todo dia às 20h",
       connectAction: handleSlackConnect,
       connectLoading: slackConnecting,
@@ -356,7 +350,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
       ],
     },
     {
-      provider: "zapier", name: "Zapier / Make", icon: Webhook,
+      provider: "zapier", name: "Zapier / Make", icon: LogoZapier,
       description: "Webhooks de saída e entrada para automação",
       fields: [
         { key: "outbound_url", label: "Webhook URL de saída", placeholder: "https://hooks.zapier.com/..." },
@@ -398,6 +392,8 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
         // JÁ está configurada. Sem `cfg` não há nada para alternar, e um
         // interruptor ali seria controle morto.
         aoAlternar={cfg ? (v) => toggleActive(cfg.id, v) : undefined}
+        // Sem `cfg` não há o que ativar: ligar abre a configuração.
+        aoConfigurar={() => { abrir(intg.provider); setEditConfig(cfg?.config || {}); }}
         selecionado={aberto === intg.provider}
         acoes={
           cfg ? (
@@ -479,7 +475,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
 
   const cartaoGoogleOAuth = (
         <CartaoDeIntegracao
-          icone={Mail}
+          icone={LogoGmail}
           nome="Google — credenciais OAuth"
           descricao={
             hasGmailCredentials
@@ -489,6 +485,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
               : "Cada pessoa conecta o próprio Gmail depois de você cadastrar aqui"
           }
           estado={hasGmailCredentials ? "ativo" : "disponivel"}
+          aoConfigurar={() => abrir("google-oauth")}
           acoes={
             <Button variant="outline" size="sm" className="h-8 text-label"
               onClick={() => abrir("google-oauth")}>
@@ -500,7 +497,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
 
   const cartaoGoogleAds = (
         <CartaoDeIntegracao
-          icone={Chrome}
+          icone={LogoGoogleAds}
           nome="Google Ads"
           descricao="Ainda não construído no CRM"
           estado="nao-integrado"
@@ -588,15 +585,15 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
 
   return (
     /*
-      DUAS COLUNAS: a lista à esquerda, a configuração à direita.
+      UMA COLUNA. A configuração entra por uma GAVETA, não por uma coluna fixa.
 
-      Era uma coluna só com um diálogo por cima. O diálogo cobria a lista, então
-      conferir se você abriu a integração certa exigia fechar. `items-start` para
-      o painel não esticar até a altura da lista -- ele tem a altura do conteúdo
-      dele, e gruda no topo ao rolar.
+      Chegou a ser duas colunas, com o painel encaixado à direita. Ele comia
+      ~340px permanentes, então a grade caía para dois cartões por linha o tempo
+      todo -- inclusive com nenhuma integração aberta, que é o estado normal da
+      tela. A gaveta cobre só enquanto está aberta, e é o mesmo gesto do perfil
+      de contato.
     */
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-      <div className="min-w-0 flex-1 space-y-6">
+    <div className="space-y-6">
         {/*
           INTEGRAÇÕES RECOMENDADAS, a faixa de cima da referência.
 
@@ -662,10 +659,10 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
                 : "Nenhuma integração neste estado."}
             </p>
           ) : (
-            /* DUAS colunas, como a referência -- e não três. Com o painel aberto
-               à direita sobra pouco mais de 600px, e três cartões ali dentro
-               espremeriam a descrição em quatro linhas. */
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            /* TRÊS colunas, e isso serve à forma do cartão: a mesma altura
+               mínima numa coluna mais estreita dá uma proporção mais próxima do
+               quadrado, que é o que a referência mostra. */
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {visiveisIntg.map((e) => (
                 <div key={e.chave} className="contents">{e.no}</div>
               ))}
@@ -683,7 +680,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
         <PainelDeIntegracao
           chave="google-oauth"
           nome="Google — credenciais OAuth"
-          icone={Mail}
+          icone={LogoGmail}
           descricao="Configuradas uma vez pela empresa. Cada pessoa conecta o próprio Gmail depois."
           estado={hasGmailCredentials ? "ativo" : "disponivel"}
         >
@@ -855,7 +852,7 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-primary" />
+              <LogoSlack className="h-5 w-5" />
               Configurar integração com o Slack
             </DialogTitle>
           </DialogHeader>
@@ -912,7 +909,6 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>
 
       {intgEmEdicao && (
         <PainelDeIntegracao
@@ -953,9 +949,6 @@ function ConteudoDeIntegracoes({ orgId, userId, alvoRef }: {
         </PainelDeIntegracao>
       )}
 
-      {/* O ALVO DOS PAINÉIS. `contents` para não virar uma coluna vazia: os
-          painéis se desenham aqui por portal e viram itens desta linha flex. */}
-      <div ref={alvoRef} className="contents" />
     </div>
   );
 }

@@ -164,12 +164,29 @@
   * {
     @apply border-border;
   }
+  /*
+   * A PLATAFORMA NÃO BALANÇA AO CHEGAR NO FIM.
+   *
+   * Rolar além do topo ou do fim fazia a tela inteira deslizar e voltar -- o
+   * "rubber band" do trackpad da Apple e do toque no celular. Num site de
+   * conteúdo isso é enfeite; aqui é ruído, porque o cabeçalho e a lateral são
+   * fixos e o quadro tem rolagem própria: a tela toda escorregar sob elementos
+   * que deveriam estar parados lê como falha de renderização.
+   *
+   * `overscroll-behavior: none` no elemento raiz E no body: só no body não
+   * basta, porque quem faz o quique é o VIEWPORT, e ele segue o `html` quando o
+   * body não é o elemento de rolagem.
+   */
+  html {
+    overscroll-behavior: none;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 13px;
+    overscroll-behavior: none;
   }
   /* Título usa o token de texto, não uma cor própria.
    *
@@ -544,6 +561,27 @@
   animation-duration: 200ms;
   animation-timing-function: ease-out;
   animation-fill-mode: both;
+}
+
+/*
+ * ROLAGEM QUE NÃO VAZA PARA A PÁGINA.
+ *
+ * Complemento do `overscroll-behavior: none` do html. Sem isto, chegar ao fim
+ * de uma coluna do kanban (ou da gaveta de integração, ou de uma lista longa)
+ * ENCADEIA a rolagem para a página atrás -- então continuar girando o dedo faz
+ * a tela de trás andar, o que é o mesmo sintoma por outro caminho.
+ *
+ * `contain` e não `none`: o container continua rolando normalmente por dentro,
+ * só para de empurrar o vizinho quando acaba.
+ *
+ * Mira as classes utilitárias do Tailwind de propósito -- é o mesmo recurso que
+ * a regra de kanban por toque logo abaixo já usa, e evita ter de anotar
+ * `overscroll-contain` em cada um dos contêineres que rolam.
+ */
+.overflow-y-auto,
+.overflow-auto,
+.overflow-x-auto {
+  overscroll-behavior: contain;
 }
 
 /* Touch kanban */

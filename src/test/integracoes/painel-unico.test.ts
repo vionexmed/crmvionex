@@ -89,33 +89,58 @@ describe("nenhum cartão volta a abrir diálogo próprio", () => {
   });
 });
 
-describe("o painel se desenha na coluna da direita", () => {
+describe("a configuração abre numa gaveta, como o perfil de contato", () => {
   /**
    * O TESTE QUE MAIS IMPORTA aqui.
    *
-   * Cada cartão é uma célula da GRADE, e o painel é desenhado por ele. Sem o
-   * portal, o painel nasce dentro da célula -- com a largura de um cartão, no
-   * meio da lista. E isso não quebra nada: renderiza, só fica errado.
+   * O CRM já ensinou um gesto para "detalhe de uma coisa": a gaveta que entra
+   * pela direita, do `ContactDrawer`. Abrir integração de outro jeito obrigaria
+   * a aprender duas convenções para o mesmo movimento.
+   *
+   * Já foram tentadas duas outras formas, e as duas tinham defeito próprio: um
+   * `<Dialog>` centralizado, que cobria a lista inteira; e uma coluna fixa no
+   * fluxo, que comia ~340px permanentes e derrubava a grade para dois cartões
+   * por linha mesmo com nada aberto.
    */
-  it("por portal, e não onde o cartão está", () => {
-    expect(PAINEL).toContain("createPortal(");
-    expect(PAINEL).toContain('from "react-dom"');
+  it("usa o Sheet, não Dialog nem coluna fixa", () => {
+    expect(PAINEL).toContain("<Sheet ");
+    expect(PAINEL).toContain("<SheetContent");
+    expect(PAINEL).not.toContain("createPortal");
   });
 
-  it("a aba publica o alvo do portal", () => {
-    expect(ABA).toContain("ref={alvoRef}");
-    // `contents` para o alvo não virar uma coluna vazia ao lado da lista.
-    expect(ABA).toMatch(/ref=\{alvoRef\}\s+className="contents"/);
+  /** Mesma largura do perfil de contato: é o mesmo gesto, e larguras diferentes
+   *  para a mesma gaveta leem como duas coisas. */
+  it("tem a mesma largura da gaveta de contato", () => {
+    const DRAWER = ler("src/components/crm/ContactDrawer.tsx");
+    const largura = DRAWER.match(/w-\[(\d+)px\]/)?.[1];
+    expect(largura).toBeTruthy();
+    expect(PAINEL).toContain(`w-[${largura}px]`);
+    expect(PAINEL).toContain(`sm:max-w-[${largura}px]`);
   });
 
   /**
-   * `alvo` vem de callback ref e não de `useRef`: `useRef` não dispara render
-   * quando o nó aparece, então o primeiro `createPortal` receberia `null` e o
-   * painel só apareceria num render seguinte -- que pode não vir.
+   * O `SheetContent` desenha o próprio X em `right-4 top-4`. Sem afastar, o
+   * controle do topo do painel fica embaixo dele -- é o mesmo motivo do `mr-8`
+   * no ContactDrawer.
    */
-  it("o alvo vem de callback ref", () => {
-    expect(PAINEL).toContain("const alvoRef = useCallback(");
-    expect(PAINEL).not.toMatch(/const alvoRef = useRef/);
+  it("o controle do topo não fica embaixo do X", () => {
+    expect(PAINEL).toContain("mr-8");
+  });
+});
+
+describe("a grade não perde largura para o painel", () => {
+  /**
+   * Com o painel encaixado como coluna, a grade caía para dois cartões por
+   * linha o tempo todo -- inclusive sem nada aberto, que é o estado normal da
+   * tela. A gaveta cobre só enquanto está aberta.
+   */
+  it("a lista chega a três colunas", () => {
+    expect(ABA).toContain("xl:grid-cols-3");
+  });
+
+  it("a aba não monta mais a coluna fixa", () => {
+    expect(ABA).not.toContain("lg:flex-row");
+    expect(ABA).not.toContain("alvoRef");
   });
 });
 
@@ -129,10 +154,6 @@ describe("só um painel por vez", () => {
     expect(CONTEXTO).toMatch(/aberto: string \| null/);
   });
 
-  it("o painel só se desenha quando a chave é a dele", () => {
-    expect(PAINEL).toContain("if (aberto !== chave || !alvo) return null;");
-  });
-
   /**
    * A casca fornece o contexto e o conteúdo consome. Sem a divisão, o conteúdo
    * chamaria `useContextoDoPainel()` dentro do componente que fornece o
@@ -143,5 +164,9 @@ describe("só um painel por vez", () => {
     expect(ABA).toContain("<ProvedorDoPainel>");
     expect(ABA).toContain("function ConteudoDeIntegracoes(");
     expect(ABA).toMatch(/const \{ abrir, aberto, fechar \} = useContextoDoPainel\(\)/);
+  });
+
+  it("o painel só abre quando a chave é a dele", () => {
+    expect(PAINEL).toContain("open={aberto === chave}");
   });
 });

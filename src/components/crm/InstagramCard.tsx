@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Instagram, ExternalLink, AlertTriangle, Copy, Check, Settings2 } from "lucide-react";
+import { ExternalLink, AlertTriangle, Copy, Check, Settings2 } from "lucide-react";
+import { LogoInstagram } from "@/components/integrations/logos-de-integracao";
 import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrations/CartaoDeIntegracao";
 import { useToast } from "@/hooks/use-toast";
 import { mensagemErro, erroDaFuncao } from "@/lib/erro-supabase";
@@ -367,7 +368,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
   return (
     <>
       <CartaoDeIntegracao
-        icone={Instagram}
+        icone={LogoInstagram}
         nome="Instagram Direct"
         descricao={
           carregando
@@ -379,6 +380,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
                 : "Receba e responda Direct do perfil da empresa"
         }
         estado={estado}
+        aoConfigurar={() => abrir("instagram")}
         acoes={
           ligado ? (
             <div className="flex items-center gap-1.5">
@@ -469,7 +471,7 @@ export function InstagramCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInt
       <PainelDeIntegracao
         chave="instagram"
         nome="Instagram Direct"
-        icone={Instagram}
+        icone={LogoInstagram}
         descricao={ligado ? `@${conexao?.username ?? "conta conectada"}` : "Direct do perfil da empresa"}
         estado={estado}
       >

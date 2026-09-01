@@ -1,6 +1,6 @@
 import { ReactNode, useCallback, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { X, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -20,26 +20,24 @@ export type CampoIntegracao = {
 };
 
 /**
- * A configuração da integração, NUMA COLUNA À DIREITA -- e não num diálogo.
+ * A configuração da integração, NUMA GAVETA que entra pela direita.
  *
- * O diálogo cobria a tela inteira com uma sobreposição escura, então durante a
- * configuração a lista sumia. Isso custa em duas horas concretas: conferir se
- * você abriu a integração certa exigia fechar, e comparar dois provedores
- * exigia abrir e fechar dois diálogos.
+ * É o mesmo `Sheet` do perfil de contato (`ContactDrawer`), com a mesma largura
+ * de 520px -- e isso é o ponto, não coincidência: o CRM já ensinou que "detalhe
+ * de uma coisa" entra por ali. Uma segunda convenção para o mesmo gesto
+ * obrigaria a aprender duas.
+ *
+ * Antes disto foram tentadas duas outras formas. Um `<Dialog>` centralizado,
+ * que cobria a lista inteira -- conferir se você abriu a integração certa
+ * exigia fechar. E uma coluna fixa no fluxo, ao lado da grade, que espremia os
+ * cartões e obrigava o painel a nascer por portal para não ficar dentro da
+ * célula do cartão que o abriu. A gaveta não tem nenhum dos dois problemas: sai
+ * da grade sozinha e não come largura de ninguém.
  *
  * O componente é só a MOLDURA: cabeçalho, o resumo de quem está sendo
  * configurado, o corpo (`children`) e o rodapé. O corpo é de quem chama, porque
  * os seis formulários não se parecem -- três são uma lista de campos declarada,
- * o do WhatsApp escolhe entre dois provedores incompatíveis, o do Instagram tem
- * OAuth e webhook, e o do Google grava por edge function.
- *
- * ELE SE DESENHA POR PORTAL, no alvo que a aba publica na coluna da direita.
- * Sem isso o painel nasceria dentro da célula da grade do cartão que o abriu,
- * com a largura de um cartão. Ver `contexto-do-painel.ts`.
- *
- * ACIMA DE `lg` a coluna fica no fluxo, ao lado da lista. Abaixo não cabe -- a
- * lista teria uns 200px --, então vira sobreposição pela direita. Não é um
- * segundo desenho: é o mesmo painel, no único lugar onde ele cabe.
+ * e os outros três têm fluxo próprio.
  */
 export function PainelDeIntegracao({
   chave,
@@ -60,96 +58,62 @@ export function PainelDeIntegracao({
   /** Ausente: o topo mostra o selo em vez do interruptor. */
   aoAlternarAtivo?: (ligado: boolean) => void;
   children: ReactNode;
-  /** Botões do rodapé. Ausente: o painel fecha sem rodapé — é o caso de quem
-      salva por conta própria, como o Instagram. */
+  /** Botões do rodapé. Ausente: o painel não tem rodapé — é o caso de quem
+      salva por conta própria, como o Instagram e o Google. */
   rodape?: ReactNode;
 }) {
-  const { alvo, aberto, fechar } = useContextoDoPainel();
+  const { aberto, fechar } = useContextoDoPainel();
 
-  if (aberto !== chave || !alvo) return null;
+  return (
+    <Sheet open={aberto === chave} onOpenChange={(o) => !o && fechar()}>
+      <SheetContent className="flex w-[520px] flex-col gap-0 p-0 sm:max-w-[520px]">
+        {/* CABEÇALHO. Mesmo desenho do topo do perfil de contato: a coisa
+            grande à esquerda, o controle à direita.
 
-  return createPortal(
-    <>
-      {/* A cortina só existe onde o painel é sobreposição. Em `lg` ele está no
-          fluxo, e escurecer a lista seria escurecer o que se quer olhar. */}
-      <div
-        className="fixed inset-0 z-40 bg-foreground/20 lg:hidden"
-        onClick={fechar}
-        aria-hidden
-      />
-
-      <aside
-        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[420px] flex-col overflow-y-auto border-l border-border bg-card
-                   lg:sticky lg:top-0 lg:z-auto lg:max-h-[calc(100vh-6rem)] lg:w-[340px] lg:max-w-none lg:shrink-0
-                   lg:rounded-xl lg:border lg:shadow-[var(--shadow-xs)]"
-        role="dialog"
-        aria-label={`Configurar ${nome}`}
-      >
-        {/* CABEÇALHO. `sticky` porque a lista de campos rola: sem ele o botão de
-            fechar sai da tela no provedor de sete campos, e a única saída vira
-            rolar de volta até em cima. */}
-        <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-card px-3.5 py-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border">
-            <Icone className="h-4 w-4 text-foreground" />
-          </div>
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">
-            Configurar integração
-          </p>
-          <button
-            type="button"
-            onClick={fechar}
-            aria-label="Fechar"
-            className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-3.5 p-3.5">
-          {/* A INTEGRAÇÃO EM QUESTÃO, repetida no topo do painel.
-              Parece redundante com o cartão da lista, e não é: acima de `lg` o
-              cartão pode estar fora da vista depois de rolar, e abaixo de `lg` a
-              lista está coberta. É o que responde "estou mexendo em qual?". */}
-          <div className="flex items-start justify-between gap-2 rounded-lg border border-border p-3">
-            <div className="flex min-w-0 items-start gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border">
-                <Icone className="h-[18px] w-[18px] text-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-corpo font-semibold leading-snug">{nome}</p>
-                <p className="vx-subtitulo mt-0.5 leading-relaxed">{descricao}</p>
-              </div>
+            `mr-8` no interruptor pelo mesmo motivo que o ContactDrawer usa: o
+            `SheetContent` desenha o próprio X em `right-4 top-4`, e sem o
+            afastamento os dois se sobrepõem. */}
+        <div className="shrink-0 border-b border-border p-5">
+          <div className="flex items-start gap-3">
+            <Icone className="h-11 w-11 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <SheetTitle className="truncate text-sm font-semibold tracking-tight">
+                {nome}
+              </SheetTitle>
+              <p className="vx-subtitulo mt-0.5 leading-relaxed">{descricao}</p>
             </div>
             {aoAlternarAtivo ? (
               <Switch
                 checked={estado === "ativo"}
                 onCheckedChange={aoAlternarAtivo}
-                aria-label={estado === "ativo" ? `Desconectar ${nome}` : `Conectar ${nome}`}
-                className="mt-0.5 shrink-0"
+                aria-label={estado === "ativo" ? `Desativar ${nome}` : `Ativar ${nome}`}
+                className="mr-8 mt-0.5 shrink-0"
               />
             ) : (
-              <SeloDeIntegracao estado={estado} />
+              <span className="mr-8 shrink-0">
+                <SeloDeIntegracao estado={estado} />
+              </span>
             )}
           </div>
+        </div>
 
+        <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5">
           <p className="text-label font-semibold uppercase tracking-wide text-muted-foreground">
             Detalhes da integração
           </p>
-
           {children}
         </div>
 
-        {/* RODAPÉ GRUDADO EMBAIXO. O painel rola, e um Salvar que rola junto
-            some no provedor de sete campos -- que é justamente onde salvar
-            importa mais. */}
+        {/* RODAPÉ GRUDADO EMBAIXO. O corpo rola, e um Salvar que rola junto some
+            no provedor de sete campos -- que é justamente onde salvar importa
+            mais. */}
         {rodape && (
-          <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border bg-card px-3.5 py-3">
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border p-4">
             {rodape}
           </div>
         )}
-      </aside>
-    </>,
-    alvo,
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -271,7 +235,7 @@ export function CamposDeIntegracao({
 }
 
 /**
- * Abre o contexto e publica o alvo dos painéis.
+ * Abre o contexto que diz qual integração está sendo configurada.
  *
  * Mora AQUI e não no arquivo do contexto porque aquele é `.ts` puro: separar o
  * hook do componente é o que impede o `react-refresh` de reclamar de um arquivo
@@ -279,19 +243,13 @@ export function CamposDeIntegracao({
  */
 export function ProvedorDoPainel({
   children,
-  /** Avisa quem precisa reagir à troca — a aba usa para carregar a config. */
+  /** Avisa quem precisa reagir à troca. */
   aoAbrir,
 }: {
-  children: (alvoRef: (n: HTMLDivElement | null) => void) => ReactNode;
+  children: ReactNode;
   aoAbrir?: (chave: string | null) => void;
 }) {
-  const [alvo, setAlvo] = useState<HTMLElement | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
-
-  // Callback ref e não `useRef`: `useRef` não dispara render quando o nó
-  // aparece, então o primeiro `createPortal` receberia `null` e o painel só
-  // apareceria no render seguinte -- que pode não vir.
-  const alvoRef = useCallback((n: HTMLDivElement | null) => setAlvo(n), []);
 
   const abrir = useCallback((chave: string) => {
     setAberto(chave);
@@ -303,10 +261,7 @@ export function ProvedorDoPainel({
     aoAbrir?.(null);
   }, [aoAbrir]);
 
-  const valor = useMemo(
-    () => ({ alvo, aberto, abrir, fechar }),
-    [alvo, aberto, abrir, fechar],
-  );
+  const valor = useMemo(() => ({ aberto, abrir, fechar }), [aberto, abrir, fechar]);
 
-  return <Contexto.Provider value={valor}>{children(alvoRef)}</Contexto.Provider>;
+  return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

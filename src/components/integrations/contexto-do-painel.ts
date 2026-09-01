@@ -1,30 +1,26 @@
 import { createContext, useContext } from "react";
 
 /**
- * QUEM ESTÁ ABERTO NA COLUNA DA DIREITA, e onde ela fica no DOM.
+ * QUAL INTEGRAÇÃO ESTÁ COM A CONFIGURAÇÃO ABERTA.
  *
- * Os seis cartões de integração abriam a configuração de jeitos diferentes:
- * três num diálogo controlado, dois num `<Dialog>` sem estado com
- * `DialogTrigger`, e um numa coluna. Seis cartões, quatro comportamentos --
- * então aprender um não ensinava nada sobre o próximo.
+ * Os seis cartões abriam a configuração de jeitos diferentes: três num diálogo
+ * controlado por `editProvider`, um num diálogo com estado próprio, um em DOIS
+ * `<Dialog>` sem estado disparados por botões diferentes, e um sexto num
+ * terceiro diálogo. Seis cartões, quatro comportamentos -- então aprender um não
+ * ensinava nada sobre o próximo.
  *
- * O problema de unificar é que cada formulário mora no componente do próprio
- * cartão (o do WhatsApp escolhe entre dois provedores, o do Instagram tem OAuth
- * e webhook, o do Google grava por edge function), e o cartão é uma célula da
- * GRADE -- desenhar o painel a partir dali o colocaria dentro da célula, com a
- * largura de um cartão.
- *
- * Daí o portal: a aba publica um alvo na coluna da direita, e cada cartão
- * desenha o painel dele lá sem que o formulário saia de casa. Nenhum estado
- * precisou subir.
+ * Cada formulário continua morando no componente do próprio cartão, porque cada
+ * um é de um tipo: o do WhatsApp escolhe entre dois provedores incompatíveis, o
+ * do Instagram tem OAuth e webhook, e o do Google grava por edge function porque
+ * a credencial não pode passar por `integration_configs`, que o navegador lê.
+ * O que este contexto resolve é só QUEM está aberto -- o `Sheet` de cada painel
+ * se encarrega de sair da grade sozinho.
  *
  * `aberto` é UMA string e não um booleano por cartão: é o que garante que abrir
  * o segundo fecha o primeiro. Com um booleano em cada um, dois painéis
- * empilhariam na mesma coluna.
+ * apareceriam empilhados.
  */
 export type ContextoPainel = {
-  /** O nó onde os painéis se desenham. `null` antes do primeiro layout. */
-  alvo: HTMLElement | null;
   /** A chave do cartão cujo painel está aberto. */
   aberto: string | null;
   abrir: (chave: string) => void;
@@ -32,7 +28,6 @@ export type ContextoPainel = {
 };
 
 export const Contexto = createContext<ContextoPainel>({
-  alvo: null,
   aberto: null,
   abrir: () => {},
   fechar: () => {},

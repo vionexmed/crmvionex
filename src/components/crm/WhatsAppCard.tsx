@@ -4,7 +4,8 @@ import { useOrg } from "@/hooks/useOrg";
 import { Button } from "@/components/ui/button";
 import { PainelDeIntegracao } from "@/components/integrations/PainelDeIntegracao";
 import { useContextoDoPainel } from "@/components/integrations/contexto-do-painel";
-import { MessageCircle, QrCode, ShieldCheck, Settings2 } from "lucide-react";
+import { QrCode, ShieldCheck, Settings2 } from "lucide-react";
+import { LogoWhatsApp } from "@/components/integrations/logos-de-integracao";
 import { CartaoDeIntegracao, type EstadoIntegracao } from "@/components/integrations/CartaoDeIntegracao";
 import { SegmentedControl } from "@/components/layout/SegmentedControl";
 import { WhatsAppOfficialCard } from "@/components/crm/WhatsAppOfficialCard";
@@ -97,10 +98,13 @@ export function WhatsAppCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInte
   return (
     <>
       <CartaoDeIntegracao
-        icone={MessageCircle}
+        icone={LogoWhatsApp}
         nome="WhatsApp"
         descricao={resumo}
         estado={estado}
+        // O interruptor do cartão abre a configuração: conectar um número
+        // acontece lá dentro, escolhendo entre dois provedores.
+        aoConfigurar={() => abrir("whatsapp")}
         acoes={
           <Button variant="outline" size="sm" className="h-8 text-label" onClick={() => abrir("whatsapp")}>
             <Settings2 className="mr-1 h-3.5 w-3.5" />
@@ -115,7 +119,7 @@ export function WhatsAppCard({ aoMudarEstado }: { aoMudarEstado?: (e: EstadoInte
       <PainelDeIntegracao
         chave="whatsapp"
         nome="WhatsApp"
-        icone={MessageCircle}
+        icone={LogoWhatsApp}
         descricao={resumo}
         estado={estado}
       >
