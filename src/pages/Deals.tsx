@@ -219,6 +219,37 @@ export default function Deals() {
     await updateStage({ id: dealId, stageId: newStageId });
   };
 
+  /**
+   * Abre a gaveta em modo EDIÇÃO.
+   *
+   * O estado `editing` e o modo de edição da gaveta já existiam -- inclusive o
+   * título "Editar Negócio" e o `handleSave` que faz update em vez de insert --
+   * e NADA os acionava. Estava construído pela metade: dava para editar e não
+   * havia por onde.
+   *
+   * `useCallback` pelo mesmo motivo de `abrirNegocio`: a prop desce até o card de
+   * cada negócio, e arrastar faz o quadro renderizar continuamente. Uma
+   * identidade nova a cada render obrigaria todos os cards a renderizar junto, e
+   * o `memo` do card só pagaria a comparação sem pular nada.
+   */
+  const abrirEdicao = useCallback((d: DealWithRelations) => {
+    setEditing(d);
+    setPresetStageId(null);
+    setForm({
+      title: d.title,
+      value: d.value,
+      currency: d.currency,
+      stage_id: d.stage_id,
+      status: d.status,
+      probability: d.probability,
+      contact_id: d.contact_id,
+      company_id: d.company_id,
+      owner_id: d.owner_id,
+      close_date: d.close_date,
+    });
+    setSheetOpen(true);
+  }, []);
+
   const openNew = (stageId?: string) => {
     setEditing(null);
     setPresetStageId(stageId || null);
@@ -397,6 +428,7 @@ export default function Deals() {
           onDealClick={abrirNegocio}
           onContactClick={setContatoNoPainel}
           onAddDeal={openNew}
+          onEditDeal={abrirEdicao}
           onMarkWon={markAsWon}
           onMarkLost={openLossModal}
         />

@@ -369,11 +369,19 @@
   .vx-deal-card {
     /* Maior, e ainda retangular -- o pedido foi "um pouco maior", não outro
        formato. O ganho vem do respiro: 10px de padding num card com quatro
-       linhas de conteúdo deixava tudo colado na borda. */
-    border-radius: var(--radius);
+       linhas de conteúdo deixava tudo colado na borda.
+
+       A BORDA COLORIDA DA ESQUERDA SAIU. Ela repetia, em cada card, a informação
+       que a coluna inteira já dá -- e com a faixa de cor agora no cabeçalho da
+       coluna, eram duas marcações para a mesma etapa. O card fica neutro, e a
+       cor identifica a coluna de longe.
+
+       `border-radius` maior (0.75rem contra os 0.5 do token) porque o cabeçalho
+       da coluna usa `rounded-xl`: cartões da mesma pilha com raios diferentes
+       leem como coisas diferentes. */
+    border-radius: 0.75rem;
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
-    border-left-width: 3px;
     padding: 12px 14px;
     cursor: pointer;
     transition: box-shadow 0.15s ease, transform 0.1s ease;

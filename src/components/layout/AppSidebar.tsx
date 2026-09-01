@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { ChevronDown, LogOut, MoreHorizontal, Search } from "lucide-react";
+import { ChevronDown, LogOut, MoreHorizontal } from "lucide-react";
 import vionexLogo from "@/assets/vionex-logo-sidebar.png";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMembers } from "@/hooks/queries/useMembers";
-import { useOrganizacao } from "@/hooks/queries/useOrganizacao";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar,
@@ -18,7 +16,6 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { pluralizar } from "@/lib/formato";
 
 /**
  * A barra lateral, no formato de cartão flutuante.
@@ -34,10 +31,10 @@ import { pluralizar } from "@/lib/formato";
  *   itens já não digam;
  * - os demais viram SEÇÕES RECOLHÍVEIS. Com quatro grupos e catorze itens, quem
  *   não usa Marketing carrega Marketing na tela o dia inteiro;
- * - o cabeçalho passa a mostrar a ORGANIZAÇÃO -- nome e número de pessoas --, que
- *   antes não aparecia em lugar nenhum da navegação;
- * - a BUSCA ganha campo próprio. O ⌘K já existia e só era descobrível por quem
- *   sabia; agora tem onde clicar.
+ * - o topo é só a MARCA, centralizada. Cheguei a pôr ali o nome da organização e
+ *   um campo de busca, copiados da referência, e os dois saíram: a conta é de
+ *   uma empresa só -- não há troca de workspace -- e a busca duplicava a do
+ *   cabeçalho da página, com o mesmo ⌘K abrindo a mesma paleta.
  *
  * Recolhida vira um trilho de ícones, com o nome em tooltip.
  */
@@ -45,13 +42,11 @@ import { pluralizar } from "@/lib/formato";
 /** Quais seções começam fechadas. Vazio: todas abertas, e a pessoa decide. */
 const FECHADAS_POR_PADRAO = new Set<string>();
 
-export function AppSidebar({ onOpenSearch }: { onOpenSearch?: () => void }) {
+export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
   const { profile, signOut, isAdmin } = useAuth();
-  const { data: organizacao } = useOrganizacao();
-  const { data: membros } = useMembers();
 
   const [atRiskOpen, setAtRiskOpen] = useState(false);
   const [fechadas, setFechadas] = useState<Set<string>>(FECHADAS_POR_PADRAO);
@@ -128,9 +123,20 @@ export function AppSidebar({ onOpenSearch }: { onOpenSearch?: () => void }) {
   return (
     <>
       <Sidebar collapsible="icon" variant="floating" className="border-none">
-        {/* ---------- Cabeçalho: a organização ---------- */}
-        <SidebarHeader className={cn("gap-3", collapsed ? "px-2 pt-3" : "px-3 pt-3")}>
-          <div className="flex items-center gap-2.5">
+        {/* ---------- Cabeçalho: só a marca ---------- */}
+        {/*
+          O NOME DA ORGANIZAÇÃO E A BUSCA SAÍRAM.
+
+          Eu os tinha trazido da referência, e aqui não se pagavam: a conta é de
+          uma empresa só -- não há troca de workspace, então "Vionex / 4 pessoas"
+          respondia uma pergunta que ninguém faz. E a busca duplicava a que já
+          existe no cabeçalho da página, com o mesmo ⌘K abrindo a mesma paleta.
+
+          Sobra a marca, maior e centralizada, que é o que o topo de uma lateral
+          precisa fazer.
+        */}
+        <SidebarHeader className={cn("pt-4", collapsed ? "px-2 pb-1" : "px-3 pb-2")}>
+          <div className="flex items-center justify-center">
             <img
               src={vionexLogo}
               alt="VIONEX"
@@ -143,47 +149,9 @@ export function AppSidebar({ onOpenSearch }: { onOpenSearch?: () => void }) {
                */
               className={collapsed
                 ? "h-9 w-9 shrink-0 rounded-lg object-cover object-left"
-                : "h-8 w-auto max-w-[132px] object-contain object-left"}
+                : "h-11 w-auto max-w-[176px] object-contain"}
             />
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-sidebar-accent-foreground">
-                  {organizacao?.name || "Vionex"}
-                </p>
-                {typeof membros?.length === "number" && (
-                  <p className="truncate text-label text-sidebar-foreground/70">
-                    {membros.length} {pluralizar(membros.length, "pessoa")}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
-
-          {/* ---------- Busca ---------- */}
-          {/*
-            O ⌘K já existia e era invisível: só quem sabia, usava. Agora tem onde
-            clicar, e o atalho fica escrito ao lado -- que é como se ensina atalho
-            sem tutorial.
-          */}
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            className={cn(
-              "vx-nav-item flex items-center rounded-lg border border-sidebar-border bg-sidebar-accent/50 text-sm text-sidebar-foreground/80",
-              collapsed ? "justify-center px-0 py-2.5" : "gap-2.5 px-2.5 py-2",
-            )}
-            aria-label="Buscar"
-          >
-            <Search className="h-[18px] w-[18px] shrink-0" />
-            {!collapsed && (
-              <>
-                <span className="flex-1 text-left">Buscar</span>
-                <kbd className="rounded border border-sidebar-border bg-sidebar px-1.5 py-0.5 font-mono text-micro text-sidebar-foreground/70">
-                  ⌘K
-                </kbd>
-              </>
-            )}
-          </button>
         </SidebarHeader>
 
         <SidebarContent className={cn("gap-0 pt-2", collapsed ? "px-2" : "px-3")}>
