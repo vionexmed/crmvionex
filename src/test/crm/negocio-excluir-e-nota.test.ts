@@ -221,8 +221,18 @@ describe("registrar atividade grava quando aconteceu", () => {
 
   it("tarefa fica pendente: é o que falta fazer", () => {
     const tipos = ler("src/lib/atividade-tipos.ts");
-    expect(tipos).toMatch(/ATIVIDADE_JA_ACONTECEU[^=]*=\s*\["note", "call", "email", "meeting"\]/);
-    expect(tipos).not.toMatch(/ATIVIDADE_JA_ACONTECEU[^;]*"task"/);
+    /*
+      Por CONTEÚDO, e não pela lista exata.
+      A versão anterior casava `["note", "call", "email", "meeting"]` inteiro, e
+      reprovou quando o tipo `orcamento` entrou -- sem que a intenção mudasse:
+      `task` continua sendo a única exceção. Teste que reprova por acréscimo
+      legítimo é teste que alguém desliga.
+    */
+    const lista = tipos.match(/ATIVIDADE_JA_ACONTECEU[^=]*=\s*\[([^\]]*)\]/)?.[1] ?? "";
+    for (const t of ["note", "call", "email", "meeting"]) {
+      expect(lista, `${t} deveria contar como já acontecido`).toContain(`"${t}"`);
+    }
+    expect(lista, "tarefa é o que FALTA fazer").not.toContain('"task"');
   });
 });
 
@@ -236,6 +246,68 @@ describe("mexer em atividade atualiza o card", () => {
     const hook = semComentarios(ler("src/hooks/queries/useActivities.ts"));
     expect(hook).toContain("invalidarAtividadeENegocios");
     expect(hook).toMatch(/queryKey: \["deals"\]/);
+  });
+});
+
+/**
+ * OS MAPAS COBREM EXATAMENTE O ENUM — e o TypeScript NÃO garante isso.
+ *
+ * Descobri por acidente ao acrescentar o tipo `orcamento`: pus uma chave
+ * `chave_inexistente` num `Record<ActivityType, …>` e o `tsc` compilou sem
+ * reclamar. `strict: false` no tsconfig desliga a checagem de propriedade
+ * excedente, então os quatro mapas aceitam chave que não existe no enum e
+ * ignoram chave que falta.
+ *
+ * As duas falhas são silenciosas e de sintomas opostos: chave a mais é código
+ * morto que ninguém acha, e chave a MENOS faz `ATIVIDADE_ICONE[tipo]` devolver
+ * `undefined` -- que em JSX vira `<undefined />` e derruba a tela inteira, na
+ * primeira atividade daquele tipo.
+ */
+describe("os mapas de atividade cobrem o enum inteiro", () => {
+  const TIPOS = readFileSync("src/lib/atividade-tipos.ts", "utf8");
+  const GERADO = readFileSync("src/integrations/supabase/types.ts", "utf8");
+
+  /**
+   * Os valores do enum, lidos da lista `Constants` do arquivo gerado.
+   *
+   * NÃO da declaração de tipo: o gerador quebra a união em várias linhas
+   * quando ela cresce -- `activity_type:\n | "call"\n | "email"` -- e a
+   * primeira versão desta leitura, que esperava uma linha só, parou de casar
+   * assim que o sexto valor entrou. `Constants` é um array literal e continua
+   * numa linha.
+   *
+   * O teste "o enum foi lido" existe por causa disso: sem ele, a regex quebrada
+   * devolveria lista vazia e as comparações abaixo passariam por vacuidade.
+   */
+  const doEnum = (GERADO.match(/activity_type: \[([^\]]*)\]/)?.[1] ?? "")
+    .split(",")
+    .map((v) => v.trim().replace(/"/g, ""))
+    .filter(Boolean);
+
+  const chavesDe = (mapa: string) => {
+    const bloco = TIPOS.match(new RegExp(`${mapa}[^{]*\\{([\\s\\S]*?)\\n\\};`))?.[1] ?? "";
+    return [...bloco.matchAll(/^\s{2}([a-z_]+):/gm)].map((m) => m[1]);
+  };
+
+  it("o enum foi lido", () => {
+    // Se a regex parar de casar, os testes abaixo passariam por vacuidade.
+    expect(doEnum.length).toBeGreaterThanOrEqual(5);
+    expect(doEnum).toContain("orcamento");
+  });
+
+  it.each(["ATIVIDADE_ICONE", "ATIVIDADE_ROTULO", "ATIVIDADE_COR"])(
+    "%s tem exatamente as chaves do enum",
+    (mapa) => {
+      expect([...chavesDe(mapa)].sort()).toEqual([...doEnum].sort());
+    },
+  );
+
+  /** Aqui é subconjunto, não igualdade: `task` fica fora de propósito. */
+  it("ATIVIDADE_JA_ACONTECEU só cita tipo que existe", () => {
+    const lista = TIPOS.match(/ATIVIDADE_JA_ACONTECEU[^=]*=\s*\[([^\]]*)\]/)?.[1] ?? "";
+    const citados = [...lista.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+    expect(citados.length).toBeGreaterThan(0);
+    for (const t of citados) expect(doEnum, `${t} não está no enum`).toContain(t);
   });
 });
 

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       activities: {
@@ -185,6 +210,41 @@ export type Database = {
           },
         ]
       }
+      automation_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          org_id: string
+          payload: Json
+          processed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          org_id: string
+          payload?: Json
+          processed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          org_id?: string
+          payload?: Json
+          processed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_logs: {
         Row: {
           actions_result: Json | null
@@ -341,6 +401,48 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "companies_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_lifecycle_events: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          contact_id: string
+          id: string
+          org_id: string
+          stage: Database["public"]["Enums"]["lifecycle_stage"]
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          contact_id: string
+          id?: string
+          org_id: string
+          stage: Database["public"]["Enums"]["lifecycle_stage"]
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          contact_id?: string
+          id?: string
+          org_id?: string
+          stage?: Database["public"]["Enums"]["lifecycle_stage"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_lifecycle_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_lifecycle_events_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -645,11 +747,14 @@ export type Database = {
       }
       email_connections: {
         Row: {
+          backfill_count: number
+          backfill_page_token: string | null
           connected_at: string | null
+          daily_send_limit: number
           email_address: string
           from_name: string | null
+          gmail_history_id: string | null
           id: string
-          daily_send_limit: number
           invalid_reason: string | null
           invalid_since: string | null
           is_active: boolean | null
@@ -663,13 +768,18 @@ export type Database = {
           sent_today_date: string | null
           signature_fields: Json
           signature_html: string | null
+          sync_started_at: string | null
+          sync_status: string
           user_id: string
         }
         Insert: {
+          backfill_count?: number
+          backfill_page_token?: string | null
           connected_at?: string | null
           daily_send_limit?: number
           email_address: string
           from_name?: string | null
+          gmail_history_id?: string | null
           id?: string
           invalid_reason?: string | null
           invalid_since?: string | null
@@ -684,13 +794,18 @@ export type Database = {
           sent_today_date?: string | null
           signature_fields?: Json
           signature_html?: string | null
+          sync_started_at?: string | null
+          sync_status?: string
           user_id: string
         }
         Update: {
+          backfill_count?: number
+          backfill_page_token?: string | null
           connected_at?: string | null
           daily_send_limit?: number
           email_address?: string
           from_name?: string | null
+          gmail_history_id?: string | null
           id?: string
           invalid_reason?: string | null
           invalid_since?: string | null
@@ -705,6 +820,8 @@ export type Database = {
           sent_today_date?: string | null
           signature_fields?: Json
           signature_html?: string | null
+          sync_started_at?: string | null
+          sync_status?: string
           user_id?: string
         }
         Relationships: [
@@ -973,6 +1090,7 @@ export type Database = {
           deal_id: string | null
           direction: string
           from_email: string | null
+          gmail_labels: Json
           id: string
           importance: string | null
           is_archived: boolean | null
@@ -980,6 +1098,7 @@ export type Database = {
           is_spam: boolean
           is_starred: boolean
           is_trashed: boolean
+          labels: string[] | null
           last_clicked_at: string | null
           last_opened_at: string | null
           message_id: string | null
@@ -1009,6 +1128,7 @@ export type Database = {
           deal_id?: string | null
           direction?: string
           from_email?: string | null
+          gmail_labels?: Json
           id?: string
           importance?: string | null
           is_archived?: boolean | null
@@ -1016,6 +1136,7 @@ export type Database = {
           is_spam?: boolean
           is_starred?: boolean
           is_trashed?: boolean
+          labels?: string[] | null
           last_clicked_at?: string | null
           last_opened_at?: string | null
           message_id?: string | null
@@ -1045,6 +1166,7 @@ export type Database = {
           deal_id?: string | null
           direction?: string
           from_email?: string | null
+          gmail_labels?: Json
           id?: string
           importance?: string | null
           is_archived?: boolean | null
@@ -1052,6 +1174,7 @@ export type Database = {
           is_spam?: boolean
           is_starred?: boolean
           is_trashed?: boolean
+          labels?: string[] | null
           last_clicked_at?: string | null
           last_opened_at?: string | null
           message_id?: string | null
@@ -1074,6 +1197,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emails_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "email_connections"
             referencedColumns: ["id"]
           },
           {
@@ -1138,6 +1268,66 @@ export type Database = {
         }
         Relationships: []
       }
+      gmail_sync_log: {
+        Row: {
+          connection_id: string | null
+          duration_ms: number | null
+          email_address: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          messages_synced: number
+          org_id: string
+          pages_fetched: number
+          started_at: string
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          connection_id?: string | null
+          duration_ms?: number | null
+          email_address?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          messages_synced?: number
+          org_id: string
+          pages_fetched?: number
+          started_at?: string
+          status: string
+          sync_type: string
+        }
+        Update: {
+          connection_id?: string | null
+          duration_ms?: number | null
+          email_address?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          messages_synced?: number
+          org_id?: string
+          pages_fetched?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmail_sync_log_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "email_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gmail_sync_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_oauth_secrets: {
         Row: {
           client_id: string
@@ -1166,6 +1356,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "google_oauth_secrets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_app_secrets: {
+        Row: {
+          app_id: string
+          app_secret: string
+          id: string
+          org_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          app_id: string
+          app_secret: string
+          id?: string
+          org_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          app_id?: string
+          app_secret?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_app_secrets_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: true
             referencedRelation: "organizations"
@@ -1508,6 +1733,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leads_evento: {
+        Row: {
+          criado_em: string
+          dispositivo: string | null
+          id: number
+          respostas: Json
+        }
+        Insert: {
+          criado_em?: string
+          dispositivo?: string | null
+          id?: never
+          respostas: Json
+        }
+        Update: {
+          criado_em?: string
+          dispositivo?: string | null
+          id?: never
+          respostas?: Json
+        }
+        Relationships: []
       }
       loss_reasons: {
         Row: {
@@ -1973,6 +2219,164 @@ export type Database = {
           },
         ]
       }
+      orcamento_itens: {
+        Row: {
+          created_at: string
+          desconto: number
+          descricao: string | null
+          id: string
+          nome: string
+          orcamento_id: string
+          ordem: number
+          preco_unit: number
+          produto_id: string | null
+          quantidade: number
+          unidade: string
+        }
+        Insert: {
+          created_at?: string
+          desconto?: number
+          descricao?: string | null
+          id?: string
+          nome: string
+          orcamento_id: string
+          ordem?: number
+          preco_unit: number
+          produto_id?: string | null
+          quantidade?: number
+          unidade?: string
+        }
+        Update: {
+          created_at?: string
+          desconto?: number
+          descricao?: string | null
+          id?: string
+          nome?: string
+          orcamento_id?: string
+          ordem?: number
+          preco_unit?: number
+          produto_id?: string | null
+          quantidade?: number
+          unidade?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamento_itens_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamentos: {
+        Row: {
+          company_id: string | null
+          contact_id: string
+          created_at: string
+          deal_id: string | null
+          decidido_em: string | null
+          decidido_por: string | null
+          desconto: number
+          enviado_em: string | null
+          id: string
+          moeda: string
+          motivo_recusa: string | null
+          numero: number
+          observacoes: string | null
+          org_id: string
+          owner_id: string | null
+          status: string
+          titulo: string | null
+          token: string
+          updated_at: string
+          valido_ate: string | null
+          visto_em: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          contact_id: string
+          created_at?: string
+          deal_id?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          desconto?: number
+          enviado_em?: string | null
+          id?: string
+          moeda?: string
+          motivo_recusa?: string | null
+          numero: number
+          observacoes?: string | null
+          org_id: string
+          owner_id?: string | null
+          status?: string
+          titulo?: string | null
+          token: string
+          updated_at?: string
+          valido_ate?: string | null
+          visto_em?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          contact_id?: string
+          created_at?: string
+          deal_id?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
+          desconto?: number
+          enviado_em?: string | null
+          id?: string
+          moeda?: string
+          motivo_recusa?: string | null
+          numero?: number
+          observacoes?: string | null
+          org_id?: string
+          owner_id?: string | null
+          status?: string
+          titulo?: string | null
+          token?: string
+          updated_at?: string
+          valido_ate?: string | null
+          visto_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_secrets: {
         Row: {
           created_at: string | null
@@ -2108,6 +2512,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pipelines_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          foto_url: string | null
+          id: string
+          moeda: string
+          nome: string
+          org_id: string
+          preco: number
+          sku: string | null
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          moeda?: string
+          nome: string
+          org_id: string
+          preco?: number
+          sku?: string | null
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          moeda?: string
+          nome?: string
+          org_id?: string
+          preco?: number
+          sku?: string | null
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2612,6 +3069,45 @@ export type Database = {
           },
         ]
       }
+      whatsapp_config: {
+        Row: {
+          created_at: string
+          display_phone_number: string | null
+          id: string
+          is_active: boolean
+          org_id: string
+          phone_number_id: string
+          updated_at: string
+          verified_name: string | null
+          waba_id: string
+          webhook_verify_token: string
+        }
+        Insert: {
+          created_at?: string
+          display_phone_number?: string | null
+          id?: string
+          is_active?: boolean
+          org_id: string
+          phone_number_id: string
+          updated_at?: string
+          verified_name?: string | null
+          waba_id: string
+          webhook_verify_token: string
+        }
+        Update: {
+          created_at?: string
+          display_phone_number?: string | null
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          phone_number_id?: string
+          updated_at?: string
+          verified_name?: string | null
+          waba_id?: string
+          webhook_verify_token?: string
+        }
+        Relationships: []
+      }
       whatsapp_connections: {
         Row: {
           connected_at: string
@@ -2677,45 +3173,6 @@ export type Database = {
           },
         ]
       }
-      whatsapp_config: {
-        Row: {
-          created_at: string
-          display_phone_number: string | null
-          id: string
-          is_active: boolean
-          org_id: string
-          phone_number_id: string
-          updated_at: string
-          verified_name: string | null
-          waba_id: string
-          webhook_verify_token: string
-        }
-        Insert: {
-          created_at?: string
-          display_phone_number?: string | null
-          id?: string
-          is_active?: boolean
-          org_id: string
-          phone_number_id: string
-          updated_at?: string
-          verified_name?: string | null
-          waba_id: string
-          webhook_verify_token: string
-        }
-        Update: {
-          created_at?: string
-          display_phone_number?: string | null
-          id?: string
-          is_active?: boolean
-          org_id?: string
-          phone_number_id?: string
-          updated_at?: string
-          verified_name?: string | null
-          waba_id?: string
-          webhook_verify_token?: string
-        }
-        Relationships: []
-      }
       whatsapp_messages: {
         Row: {
           body: string | null
@@ -2771,7 +3228,15 @@ export type Database = {
           user_id?: string | null
           wa_message_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_secrets: {
         Row: {
@@ -2860,10 +3325,15 @@ export type Database = {
       }
     }
     Functions: {
-      claim_pending_invitation: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
+      avancar_ciclo_do_contato: {
+        Args: {
+          _contact_id: string
+          _para: Database["public"]["Enums"]["lifecycle_stage"]
+        }
+        Returns: undefined
       }
+      claim_pending_invitation: { Args: never; Returns: Json }
+      cleanup_automation_events: { Args: never; Returns: undefined }
       create_organization_for_user: {
         Args: {
           p_name: string
@@ -2873,7 +3343,38 @@ export type Database = {
         }
         Returns: string
       }
+      criar_negocio_de_entrada: {
+        Args: { _contact_id: string }
+        Returns: string
+      }
+      deals_parados: {
+        Args: { _dias?: number; _limite?: number; _org_id: string }
+        Returns: {
+          contato: string
+          dias_parado: number
+          responsavel: string
+          titulo: string
+          valor: number
+        }[]
+      }
+      estagio_do_contato_em: {
+        Args: { _contact_id: string; _quando: string }
+        Returns: Database["public"]["Enums"]["lifecycle_stage"]
+      }
+      etapa_de_entrada: { Args: { _pipeline_id: string }; Returns: string }
       get_user_org_id: { Args: { _user_id: string }; Returns: string }
+      gmail_invalidar_conexoes: {
+        Args: { _motivo: string; _org_id: string }
+        Returns: number
+      }
+      gmail_liberar_sync_travado: {
+        Args: { _minutos?: number }
+        Returns: number
+      }
+      gmail_tomar_sync: {
+        Args: { _connection_id: string; _tipo: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _org_id: string
@@ -2882,13 +3383,18 @@ export type Database = {
         }
         Returns: boolean
       }
-      gmail_invalidar_conexoes: {
-        Args: { _motivo: string; _org_id: string }
-        Returns: number
-      }
       initialize_org_owner: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: undefined
+      }
+      instagram_credencial_estado: {
+        Args: never
+        Returns: {
+          app_id: string
+          atualizado_em: string
+          configurado: boolean
+          origem: string
+        }[]
       }
       instagram_janela: {
         Args: { _contact_id: string }
@@ -2908,15 +3414,54 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
-      next_round_robin_owner: {
+      list_org_sessions: {
+        Args: never
+        Returns: {
+          atual: boolean
+          criada_em: string
+          email: string
+          expira_em: string
+          ip: string
+          papel: string
+          pessoa: string
+          session_id: string
+          ultima_atividade: string
+          user_agent: string
+          user_id: string
+        }[]
+      }
+      next_round_robin_owner: { Args: { _org_id: string }; Returns: string }
+      ordem_do_ciclo: {
+        Args: { _estagio: Database["public"]["Enums"]["lifecycle_stage"] }
+        Returns: number
+      }
+      origens_de_contato: {
         Args: { _org_id: string }
+        Returns: {
+          contatos: number
+          origem: string
+        }[]
+      }
+      promover_lead_para_contatado: {
+        Args: { _contact_id: string }
+        Returns: undefined
+      }
+      qualify_lead: {
+        Args: { p_contact_id: string; p_pipeline_id: string }
         Returns: string
       }
+      remove_org_member:
+        | { Args: { _transfer_to?: string; _user_id: string }; Returns: Json }
+        | {
+            Args: {
+              _apagar_conta?: boolean
+              _transfer_to?: string
+              _user_id: string
+            }
+            Returns: Json
+          }
+      reserve_email_send: { Args: { _connection_id: string }; Returns: boolean }
       reserve_instagram_send: {
-        Args: { _connection_id: string }
-        Returns: boolean
-      }
-      reserve_email_send: {
         Args: { _connection_id: string }
         Returns: boolean
       }
@@ -2924,9 +3469,14 @@ export type Database = {
         Args: { _connection_id: string }
         Returns: boolean
       }
+      revoke_session: { Args: { _session_id: string }; Returns: boolean }
+      revoke_user_sessions: { Args: { _user_id: string }; Returns: number }
       sdr_by_channel: {
         Args: { _from?: string; _org_id: string; _to?: string }
-        Returns: { canal: string; total: number }[]
+        Returns: {
+          canal: string
+          total: number
+        }[]
       }
       sdr_by_owner: {
         Args: { _from?: string; _org_id: string; _to?: string }
@@ -2940,31 +3490,10 @@ export type Database = {
       }
       sdr_funnel: {
         Args: { _from?: string; _org_id: string; _to?: string }
-        Returns: { etapa: string; ordem: number; total: number }[]
-      }
-      sdr_series: {
-        Args: { _from?: string; _org_id: string; _to?: string }
         Returns: {
-          abordagens: number
-          dia: string
-          leads: number
-          respostas: number
-        }[]
-      }
-      sdr_metrics: {
-        Args: { _from?: string; _org_id: string; _to?: string }
-        Returns: {
-          abordagens: number
-          aguardando_humano: number
-          conversas_iniciadas: number
-          leads_recebidos: number
-          leads_whatsapp: number
-          oportunidades: number
-          reunioes: number
-          taxa_entrega: number | null
-          taxa_resposta: number | null
-          tempo_resposta_min: number | null
-          vendas_sdr: number
+          etapa: string
+          ordem: number
+          total: number
         }[]
       }
       sdr_metric_leads: {
@@ -2976,23 +3505,50 @@ export type Database = {
           _to?: string
         }
         Returns: {
-          autor: string | null
-          canal: string | null
-          conteudo: string | null
-          detalhe: string | null
+          autor: string
+          canal: string
+          conteudo: string
+          detalhe: string
           id: string
-          quando: string | null
-          respondeu: boolean | null
-          subtitulo: string | null
+          quando: string
+          respondeu: boolean
+          subtitulo: string
           tipo: string
           titulo: string
           toques: number
-          valor: number | null
+          valor: number
         }[]
       }
-      qualify_lead: {
-        Args: { p_contact_id: string; p_pipeline_id: string }
-        Returns: string
+      sdr_metrics: {
+        Args: { _from?: string; _org_id: string; _to?: string }
+        Returns: {
+          abordagens: number
+          aguardando_humano: number
+          conversas_iniciadas: number
+          leads_recebidos: number
+          leads_whatsapp: number
+          oportunidades: number
+          pessoas_abordadas: number
+          reunioes: number
+          taxa_entrega: number
+          taxa_resposta: number
+          tempo_resposta_min: number
+          vendas_sdr: number
+        }[]
+      }
+      sdr_series: {
+        Args: { _from?: string; _org_id: string; _to?: string }
+        Returns: {
+          abordagens: number
+          dia: string
+          leads: number
+          respostas: number
+        }[]
+      }
+      titulo_de_negocio: { Args: { _contact_id: string }; Returns: string }
+      track_email_event: {
+        Args: { p_email_id: string; p_event: string }
+        Returns: undefined
       }
       user_belongs_to_org: {
         Args: { _org_id: string; _user_id: string }
@@ -3000,7 +3556,13 @@ export type Database = {
       }
     }
     Enums: {
-      activity_type: "call" | "email" | "meeting" | "note" | "task"
+      activity_type:
+        | "call"
+        | "email"
+        | "meeting"
+        | "note"
+        | "task"
+        | "orcamento"
       app_role: "owner" | "admin" | "member"
       contact_status: "lead" | "prospect" | "customer" | "churned"
       deal_status: "open" | "won" | "lost"
@@ -3026,12 +3588,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3055,11 +3617,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3080,11 +3642,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3105,11 +3667,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3122,11 +3684,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3136,9 +3698,12 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
-      activity_type: ["call", "email", "meeting", "note", "task"],
+      activity_type: ["call", "email", "meeting", "note", "task", "orcamento"],
       app_role: ["owner", "admin", "member"],
       contact_status: ["lead", "prospect", "customer", "churned"],
       deal_status: ["open", "won", "lost"],

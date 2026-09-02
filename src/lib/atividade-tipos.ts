@@ -1,4 +1,4 @@
-import { Phone, Mail, CalendarDays, FileText, CheckSquare } from "lucide-react";
+import { Phone, Mail, CalendarDays, FileText, CheckSquare, Receipt } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -31,6 +31,7 @@ export const ATIVIDADE_ICONE: Record<ActivityType, LucideIcon> = {
   meeting: CalendarDays,
   note: FileText,
   task: CheckSquare,
+  orcamento: Receipt,
 };
 
 /** "E-mail" com hífen, alinhado a dashboard/canais.ts e ao menu. */
@@ -40,6 +41,7 @@ export const ATIVIDADE_ROTULO: Record<ActivityType, string> = {
   meeting: "Reunião",
   note: "Nota",
   task: "Tarefa",
+  orcamento: "Orçamento",
 };
 
 /**
@@ -60,6 +62,9 @@ export const ATIVIDADE_COR: Record<ActivityType, string> = {
   meeting: "text-warning",
   note: "text-muted-foreground",
   task: "text-foreground",
+  // Cor de destaque, como o e-mail: as duas são coisas que SAEM para o cliente,
+  // e o orçamento é a que mais pesa no funil.
+  orcamento: "text-primary",
 };
 
 /**
@@ -72,12 +77,26 @@ export const ATIVIDADE_COR: Record<ActivityType, string> = {
 export const ATIVIDADE_TIPOS: ActivityType[] = ["note", "call", "email", "meeting", "task"];
 
 /**
+ * Os tipos que uma PESSOA registra à mão.
+ *
+ * `orcamento` fica fora: quem grava é o sistema, quando o cliente vê ou decide
+ * no link público. Oferecê-lo no seletor de "registrar atividade" convidaria a
+ * escrever à mão um evento que tem dono -- e aí a ficha teria dois "aprovado"
+ * com horas diferentes, um real e um digitado.
+ */
+export const ATIVIDADE_TIPOS_MANUAIS: ActivityType[] = ATIVIDADE_TIPOS;
+
+/**
  * Tipos que, quando registrados, descrevem algo que JÁ ACONTECEU.
  *
  * `task` é a exceção: tarefa é o que falta fazer. Usado para decidir se o
  * registro grava `completed_at` -- ver DealDetail.addActivity.
+ *
+ * `orcamento` entra: o sistema só grava a linha DEPOIS de o evento acontecer
+ * (visto, aprovado, recusado). Fora daqui ele nasceria pendente e a ficha do
+ * contato mostraria "Orçamento aprovado" como coisa a fazer.
  */
-export const ATIVIDADE_JA_ACONTECEU: ActivityType[] = ["note", "call", "email", "meeting"];
+export const ATIVIDADE_JA_ACONTECEU: ActivityType[] = ["note", "call", "email", "meeting", "orcamento"];
 
 /**
  * Quando a atividade de fato aconteceu.
