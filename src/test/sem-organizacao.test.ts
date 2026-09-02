@@ -27,10 +27,37 @@ describe("uma resposta só para quem não tem organização", () => {
     expect(infratores, infratores.join("\n")).toEqual([]);
   });
 
-  it("as dez usam o componente compartilhado", () => {
-    // Eram onze; `Tasks` virou um filtro de `Activities` e a tela saiu.
-    const usam = PAGINAS.filter((f) => readFileSync(f, "utf8").includes("<SemOrganizacao />"));
-    expect(usam.length).toBe(10);
+  /**
+   * LISTA, e não contagem.
+   *
+   * A asserção era `usam.length === 10`, e reprovou quando a tela de Produtos
+   * entrou -- sem que nada da intenção mudasse. Pior: a mensagem dizia
+   * "9 não é 10" e deixava para quem lê descobrir QUAL página faltava.
+   *
+   * Cheguei a tentar derivar a lista ("toda página que chama useOrg deve usar o
+   * componente"), e não vale: NOVE páginas chamam `useOrg()` sem ele, de
+   * propósito -- Painel, Configurações e Equipe resolvem a ausência de outro
+   * jeito. A varredura genérica gritaria nas nove.
+   *
+   * Lista explícita, então: acrescentar tela é uma edição deliberada, e a falha
+   * nomeia o arquivo. É o que o CLAUDE.md recomenda para este caso.
+   */
+  const EXIGEM_SEM_ORGANIZACAO = [
+    "src/pages/Activities.tsx",
+    "src/pages/Automations.tsx",
+    "src/pages/Companies.tsx",
+    "src/pages/Contacts.tsx",
+    "src/pages/Deals.tsx",
+    "src/pages/EmailSequences.tsx",
+    "src/pages/EmailTemplates.tsx",
+    "src/pages/Inbox.tsx",
+    "src/pages/LeadScoring.tsx",
+    "src/pages/Produtos.tsx",
+    "src/pages/Reports.tsx",
+  ];
+
+  it.each(EXIGEM_SEM_ORGANIZACAO)("%s usa o componente compartilhado", (arquivo) => {
+    expect(readFileSync(arquivo, "utf8")).toContain("<SemOrganizacao />");
   });
 
   /**

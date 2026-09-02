@@ -11,6 +11,7 @@ import {
   Mail,
   Megaphone,
   MessageSquare,
+  Package,
   Plug,
   Settings,
   Shield,
@@ -72,6 +73,10 @@ export const NAV_GRUPOS: GrupoNav[] = [
       { title: "Contatos", url: "/contacts", icon: Users, noCelular: true },
       { title: "Empresas", url: "/companies", icon: Building2 },
       { title: "Negócios", url: "/deals", icon: Handshake, noCelular: true },
+      // Catálogo do que se vende. Fica em Registros e não em Trabalho porque é
+      // cadastro consultado, não tela de trabalho diário -- o mesmo critério
+      // que põe Empresas aqui e Atividades lá.
+      { title: "Produtos", url: "/produtos", icon: Package },
     ],
   },
   {

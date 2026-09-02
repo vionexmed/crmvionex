@@ -24,6 +24,9 @@ export const TABLES = {
   WHATSAPP_BUSINESS_ACCOUNTS: "whatsapp_business_accounts",
   WHATSAPP_CONNECTIONS: "whatsapp_connections",
   WHATSAPP_MESSAGES: "whatsapp_messages",
+  PRODUTOS: "produtos",
+  ORCAMENTOS: "orcamentos",
+  ORCAMENTO_ITENS: "orcamento_itens",
 } as const;
 
 export type TableName = (typeof TABLES)[keyof typeof TABLES];

@@ -26,6 +26,7 @@ const COM_CASCA = [
   "src/pages/Contacts.tsx",
   "src/pages/Deals.tsx",
   "src/pages/Companies.tsx",
+  "src/pages/Produtos.tsx",
   "src/pages/Activities.tsx",
   "src/pages/Reports.tsx",
   "src/pages/SalesGoals.tsx",

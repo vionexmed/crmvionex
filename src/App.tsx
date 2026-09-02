@@ -86,6 +86,7 @@ function lazyChunk<T extends React.ComponentType<unknown>>(
 const Dashboard        = lazyChunk(() => import("./pages/Dashboard"));
 const Contacts         = lazyChunk(() => import("./pages/Contacts"));
 const Companies        = lazyChunk(() => import("./pages/Companies"));
+const Produtos         = lazyChunk(() => import("./pages/Produtos"));
 const Deals            = lazyChunk(() => import("./pages/Deals"));
 const DealDetail       = lazyChunk(() => import("./pages/DealDetail"));
 const Activities       = lazyChunk(() => import("./pages/Activities"));
@@ -173,6 +174,7 @@ const App = () => (
                 <Route path="/leads" element={<Navigate to="/contacts?estagio=lead" replace />} />
                 <Route path="/contacts" element={<SuspenseRoute><Contacts /></SuspenseRoute>} />
                 <Route path="/companies" element={<SuspenseRoute><Companies /></SuspenseRoute>} />
+                <Route path="/produtos" element={<SuspenseRoute><Produtos /></SuspenseRoute>} />
                 <Route path="/deals" element={<SuspenseRoute><Deals /></SuspenseRoute>} />
                 <Route path="/deals/:id" element={<SuspenseRoute><DealDetail /></SuspenseRoute>} />
                 <Route path="/activities" element={<SuspenseRoute><Activities /></SuspenseRoute>} />
