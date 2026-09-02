@@ -16,3 +16,8 @@ verify_jwt = false
 # código — e agora com falha fechada quando META_APP_SECRET não existe.
 [functions.whatsapp-webhook]
 verify_jwt = false
+
+# O cliente abre o orçamento sem ter conta no CRM. A função devolve só os campos
+# que ele pode ver — a tabela segue fechada por RLS.
+[functions.orcamento-publico]
+verify_jwt = false

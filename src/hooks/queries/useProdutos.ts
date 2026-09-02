@@ -35,7 +35,10 @@ export function useCriarProduto() {
   const invalidar = useInvalidar();
   const { orgId } = useOrg();
   return useMutation({
-    mutationFn: (p: Parameters<typeof produtosApi.create>[0]) =>
+    // `Omit<…, "org_id">`: o hook preenche a organizacao, e o tipo precisa dizer
+    // isso. Exigindo do chamador, ele obrigaria cada tela a repetir `useOrg()`
+    // -- e a primeira que esquecesse gravaria produto na org errada.
+    mutationFn: (p: Omit<Parameters<typeof produtosApi.create>[0], "org_id">) =>
       produtosApi.create({ ...p, org_id: orgId! }),
     onSuccess: invalidar,
   });

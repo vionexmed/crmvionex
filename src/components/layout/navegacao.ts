@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Package,
   Plug,
+  Receipt,
   Settings,
   Shield,
   Target,
@@ -77,6 +78,7 @@ export const NAV_GRUPOS: GrupoNav[] = [
       // cadastro consultado, não tela de trabalho diário -- o mesmo critério
       // que põe Empresas aqui e Atividades lá.
       { title: "Produtos", url: "/produtos", icon: Package },
+      { title: "Orçamentos", url: "/orcamentos", icon: Receipt },
     ],
   },
   {

@@ -2312,7 +2312,7 @@ export type Database = {
           id?: string
           moeda?: string
           motivo_recusa?: string | null
-          numero: number
+          numero?: number
           observacoes?: string | null
           org_id: string
           owner_id?: string | null

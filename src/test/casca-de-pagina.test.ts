@@ -27,6 +27,7 @@ const COM_CASCA = [
   "src/pages/Deals.tsx",
   "src/pages/Companies.tsx",
   "src/pages/Produtos.tsx",
+  "src/pages/Orcamentos.tsx",
   "src/pages/Activities.tsx",
   "src/pages/Reports.tsx",
   "src/pages/SalesGoals.tsx",
@@ -64,6 +65,10 @@ const SEM_CASCA: Record<string, string> = {
 
   // Só redirecionamento e <Outlet/>. Não desenha nada.
   "src/pages/Marketing.tsx": "casca de rota",
+
+  // Pagina do CLIENTE, fora do CRM: ele nao tem conta. Barra lateral, busca e
+  // menu da conta so criariam portas fechadas para quem abriu um link.
+  "src/pages/OrcamentoPublico.tsx": "pagina publica, sem sessao",
 };
 
 describe("as telas internas usam a mesma casca", () => {

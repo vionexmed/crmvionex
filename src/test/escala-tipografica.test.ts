@@ -31,6 +31,21 @@ const semComentarios = (s: string) =>
   s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
 /**
+ * Apaga comentário SEM mover o resto.
+ *
+ * `semComentarios` encurta o texto, e a varredura por elemento dono usa o
+ * deslocamento do casamento para achar a tag e contar a linha -- com o texto
+ * encurtado, os dois saem errados.
+ *
+ * Aqui cada caractere de comentário vira espaço e a quebra de linha fica. O
+ * conteúdo some para a regex, e a posição continua sendo a do arquivo real.
+ */
+const comentariosEmBranco = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, (m) =>
+    m.replace(/[^\n]/g, " "),
+  );
+
+/**
  * Os únicos tamanhos que ficam soltos, e por quê: são números de destaque em
  * cartão, um por lugar, sem par em nenhuma outra tela. Nomeá-los criaria três
  * tokens de um uso cada — ruído maior que o problema.
@@ -164,7 +179,17 @@ describe("nenhum controle abaixo de 32px", () => {
     for (const arquivo of TSX) {
       // `ui/sidebar.tsx` é o primitivo do shadcn, com medidas próprias.
       if (arquivo.endsWith("ui/sidebar.tsx")) continue;
-      const src = readFileSync(arquivo, "utf8");
+      /*
+        SEM COMENTÁRIO, e esta varredura era a única das quatro deste arquivo
+        que lia o texto cru.
+
+        O custo apareceu na hora: um comentário explicando "usei `h-8` e não
+        `h-7` porque 32px é o piso de toque" era reprovado pela própria regra
+        que ele documenta. É a armadilha que o CLAUDE.md registra -- teste que
+        proíbe X reprova quem explica por que não usar X, e aí fica impossível
+        documentar a decisão.
+      */
+      const src = comentariosEmBranco(readFileSync(arquivo, "utf8"));
       for (const m of src.matchAll(/\bh-7\b/g)) {
         let i = src.lastIndexOf("<", m.index!);
         while (i > 0 && " /\n".includes(src[i + 1])) i = src.lastIndexOf("<", i - 1);

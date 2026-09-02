@@ -15,7 +15,7 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { Send, FileText, Variable, Loader2 } from "lucide-react";
+import { Send, FileText, Variable } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEmailConnections } from "@/hooks/queries/useEmails";
 import { SeletorDeContato } from "@/components/crm/SeletorDeContato";

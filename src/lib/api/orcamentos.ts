@@ -28,40 +28,19 @@ export type ItemNovo = {
   desconto: number;
 };
 
-/**
- * Total de um item e de um orçamento, num lugar só.
- *
- * A soma aparece em quatro telas -- construtor, lista, detalhe do negócio e a
- * página pública -- e o cliente aprova o número que ela produz. Duas
- * implementações divergindo por um arredondamento é a diferença entre o total
- * que ele viu e o que o CRM registrou.
- */
-export function totalDoItem(i: { preco_unit: number; quantidade: number; desconto: number }): number {
-  return Math.max(0, Number(i.preco_unit) * Number(i.quantidade) - Number(i.desconto));
-}
+/*
+  A ARITMÉTICA MORA EM `orcamento-calculo.ts`, e é reexportada daqui.
 
-export function totaisDoOrcamento(
-  itens: { preco_unit: number; quantidade: number; desconto: number }[],
-  descontoGeral = 0,
-): { subtotal: number; desconto: number; total: number } {
-  const subtotal = itens.reduce((s, i) => s + totalDoItem(i), 0);
-  // O desconto não pode virar total negativo: "tiro 500" num orçamento de 300
-  // é erro de digitação, e um total negativo passaria para a página do cliente.
-  const desconto = Math.min(Number(descontoGeral) || 0, subtotal);
-  return { subtotal, desconto, total: subtotal - desconto };
-}
+  Ela estava neste arquivo, e o custo apareceu no teste: importar este módulo
+  arrasta o cliente do Supabase, que exige `localStorage` e não carrega no
+  ambiente de teste. A conta que produz o número que o cliente aprova era a
+  única parte NÃO testável do fluxo.
 
-/**
- * O token do link público.
- *
- * 32 bytes de `crypto.getRandomValues`, em hex. Sequencial ou curto deixaria
- * adivinhar o orçamento do vizinho -- e com ele o preço que você cobra dele.
- */
-export function novoToken(): string {
-  const b = new Uint8Array(32);
-  crypto.getRandomValues(b);
-  return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
-}
+  A reexportação existe para os call sites não precisarem saber da separação --
+  quem já importava daqui continua funcionando.
+*/
+export { totalDoItem, totaisDoOrcamento, novoToken } from "@/lib/orcamento-calculo";
+import { novoToken } from "@/lib/orcamento-calculo";
 
 /** O que a tela precisa para montar um item a partir do catálogo. */
 export function itemDeProduto(p: Produto): ItemNovo {

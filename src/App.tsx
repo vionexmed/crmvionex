@@ -87,6 +87,8 @@ const Dashboard        = lazyChunk(() => import("./pages/Dashboard"));
 const Contacts         = lazyChunk(() => import("./pages/Contacts"));
 const Companies        = lazyChunk(() => import("./pages/Companies"));
 const Produtos         = lazyChunk(() => import("./pages/Produtos"));
+const Orcamentos       = lazyChunk(() => import("./pages/Orcamentos"));
+const OrcamentoPublico = lazyChunk(() => import("./pages/OrcamentoPublico"));
 const Deals            = lazyChunk(() => import("./pages/Deals"));
 const DealDetail       = lazyChunk(() => import("./pages/DealDetail"));
 const Activities       = lazyChunk(() => import("./pages/Activities"));
@@ -157,6 +159,16 @@ const App = () => (
               <Route path="/" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
+              {/*
+                PÚBLICA, e é o ponto: quem abre é o cliente, que não tem conta.
+                Fora do ProtectedRoute e sem a casca do CRM -- barra lateral e
+                menu da conta só criariam portas fechadas para ele.
+
+                A leitura e a decisão passam pela edge function
+                `orcamento-publico` (verify_jwt = false), com service_role. A
+                tabela segue fechada por RLS.
+              */}
+              <Route path="/o/:token" element={<SuspenseRoute><OrcamentoPublico /></SuspenseRoute>} />
               {/* `/setup` era uma SEGUNDA implementação do wizard de
                   onboarding: os mesmos passos, chamando as mesmas edge
                   functions, mas sem ler o que já está configurado e sem gravar
@@ -175,6 +187,7 @@ const App = () => (
                 <Route path="/contacts" element={<SuspenseRoute><Contacts /></SuspenseRoute>} />
                 <Route path="/companies" element={<SuspenseRoute><Companies /></SuspenseRoute>} />
                 <Route path="/produtos" element={<SuspenseRoute><Produtos /></SuspenseRoute>} />
+                <Route path="/orcamentos" element={<SuspenseRoute><Orcamentos /></SuspenseRoute>} />
                 <Route path="/deals" element={<SuspenseRoute><Deals /></SuspenseRoute>} />
                 <Route path="/deals/:id" element={<SuspenseRoute><DealDetail /></SuspenseRoute>} />
                 <Route path="/activities" element={<SuspenseRoute><Activities /></SuspenseRoute>} />

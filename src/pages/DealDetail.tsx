@@ -29,6 +29,7 @@ import {
   ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_TIPOS_MANUAIS,
 } from "@/lib/atividade-tipos";
 import { useDealActivities, useCreateActivity, activitiesKeys } from "@/hooks/queries/useActivities";
+import { OrcamentosDoNegocio } from "@/components/orcamentos/OrcamentosDoNegocio";
 import { usePipelineStages } from "@/hooks/queries/usePipelines";
 import { useMembers } from "@/hooks/queries/useMembers";
 import { useCompanies } from "@/hooks/queries/useCompanies";
@@ -468,6 +469,11 @@ export default function DealDetail() {
 
         {/* Right sidebar */}
         <div className="space-y-4">
+          {/* Os orcamentos deste negocio. Ficam ANTES da qualificacao porque
+              proposta enviada e o fato mais acionavel da coluna: quem abre o
+              negocio precisa saber se ja mandou uma antes de mandar outra. */}
+          <OrcamentosDoNegocio dealId={deal.id} contactId={deal.contact_id} />
+
           {/* BANT Qualification */}
           <DealQualification
             dealId={deal.id}
