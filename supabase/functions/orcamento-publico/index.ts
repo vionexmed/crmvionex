@@ -45,12 +45,17 @@ function venceu(validoAte: string | null): boolean {
 }
 
 /**
- * A atividade que aparece na ficha do contato.
+ * A atividade que aparece na ficha do contato — ou do negócio.
  *
- * É o que amarra o ciclo do orçamento ao histórico da pessoa — pedido
- * explicitamente: "se a pessoa aceita ou não, estará no histórico do perfil
- * dela". `completed_at` preenchido porque o evento JÁ aconteceu; sem ele a
- * ficha mostraria "Orçamento aprovado" como coisa a fazer.
+ * É o que amarra o ciclo do orçamento ao histórico. `completed_at` preenchido
+ * porque o evento JÁ aconteceu; sem ele a ficha mostraria "Orçamento aprovado"
+ * como coisa a fazer.
+ *
+ * SEM CONTATO E SEM NEGÓCIO, não grava nada. O contato virou opcional, e uma
+ * atividade sem os dois seria uma linha órfã: aparece na tela de Atividades
+ * sem dizer de quem é, e não entra em ficha nenhuma. O registro do que
+ * aconteceu não se perde -- ele está no próprio orçamento, em `decidido_por` e
+ * `decidido_em`. O que não existe é o eco no histórico.
  *
  * Falha aqui NÃO derruba a decisão: o cliente já clicou, e recusar a aprovação
  * porque o histórico não gravou seria perder o que importa para preservar o
@@ -58,10 +63,12 @@ function venceu(validoAte: string | null): boolean {
  */
 async function registrarAtividade(
   admin: ReturnType<typeof createClient>,
-  orc: { id: string; org_id: string; contact_id: string; deal_id: string | null; numero: number },
+  orc: { id: string; org_id: string; contact_id: string | null; deal_id: string | null; numero: number },
   titulo: string,
   corpo: string | null,
 ) {
+  if (!orc.contact_id && !orc.deal_id) return;
+
   const { error } = await admin.from("activities").insert({
     org_id: orc.org_id,
     contact_id: orc.contact_id,

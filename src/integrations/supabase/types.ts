@@ -2279,7 +2279,7 @@ export type Database = {
       orcamentos: {
         Row: {
           company_id: string | null
-          contact_id: string
+          contact_id: string | null
           created_at: string
           deal_id: string | null
           decidido_em: string | null
@@ -2302,7 +2302,7 @@ export type Database = {
         }
         Insert: {
           company_id?: string | null
-          contact_id: string
+          contact_id?: string | null
           created_at?: string
           deal_id?: string | null
           decidido_em?: string | null
@@ -2325,7 +2325,7 @@ export type Database = {
         }
         Update: {
           company_id?: string | null
-          contact_id?: string
+          contact_id?: string | null
           created_at?: string
           deal_id?: string | null
           decidido_em?: string | null

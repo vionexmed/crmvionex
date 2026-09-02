@@ -64,22 +64,75 @@ describe("o item guarda o que foi ofertado", () => {
   });
 });
 
-describe("o vínculo com a pessoa é obrigatório", () => {
-  /** Sem contato, a decisão do cliente não tem ficha onde aparecer — que era
-   *  justamente o pedido: "tudo precisa se conectar". */
-  it("contact_id é NOT NULL", () => {
-    expect(MIGRACAO).toMatch(/contact_id\s+uuid NOT NULL REFERENCES public\.contacts\(id\)/);
+describe("o contato é opcional, e a consequência está tratada", () => {
+  const OPCIONAL = ler("supabase/migrations/20260902160000_orcamento_contato_opcional.sql");
+
+  /**
+   * Ele nasceu `NOT NULL` porque era o vínculo que levava a decisão do cliente
+   * para a ficha de alguém. Na prática obrigava a cadastrar contato antes de
+   * orçar — e cotação por telefone não começa assim.
+   *
+   * Este teste lê a migração QUE MUDOU, e não a primeira: a de origem ainda diz
+   * `NOT NULL`, então continuar checando lá passaria afirmando o contrário do
+   * que o banco faz hoje.
+   */
+  it("a coluna deixou de ser obrigatória", () => {
+    expect(OPCIONAL).toMatch(/ALTER COLUMN contact_id DROP NOT NULL/);
   });
 
   /**
-   * ON DELETE explícito. O CLAUDE.md registra quatro FKs criadas sem cláusula
-   * que hoje recusam exclusão — e o problema lá não é o RESTRICT, é ele ser
-   * IMPLÍCITO e ninguém saber.
+   * O ON DELETE muda junto. `RESTRICT` fazia sentido para vínculo obrigatório;
+   * para vínculo opcional, recusar a exclusão do contato seria pior que soltar
+   * a referência — o orçamento agora sobrevive sem contato por construção.
    */
-  it("as três FKs declaram o que acontece ao apagar", () => {
-    expect(MIGRACAO).toMatch(/contact_id[^\n]*ON DELETE RESTRICT/);
+  it("apagar contato solta o orçamento em vez de recusar", () => {
+    expect(OPCIONAL).toMatch(/FOREIGN KEY \(contact_id\)[\s\S]{0,80}ON DELETE SET NULL/);
+    expect(OPCIONAL).toContain("DROP CONSTRAINT IF EXISTS orcamentos_contact_id_fkey");
+  });
+
+  /**
+   * O QUE SE PERDE, e o que a função faz com isso: sem contato E sem negócio,
+   * a atividade seria uma linha órfã — aparece na tela de Atividades sem dizer
+   * de quem é, e não entra em ficha nenhuma. O registro do que aconteceu não se
+   * perde: está no próprio orçamento, em `decidido_por` e `decidido_em`.
+   */
+  it("a função não grava atividade órfã", () => {
+    expect(FUNCAO).toContain("if (!orc.contact_id && !orc.deal_id) return;");
+  });
+
+  /** As outras duas FKs seguem explícitas. O CLAUDE.md registra quatro FKs
+   *  criadas sem cláusula, e o problema lá é ela ser IMPLÍCITA. */
+  it("deal_id e itens continuam declarando o que acontece ao apagar", () => {
     expect(MIGRACAO).toMatch(/deal_id[^\n]*ON DELETE SET NULL/);
     expect(MIGRACAO).toMatch(/orcamento_id[^\n]*ON DELETE CASCADE/);
+  });
+});
+
+describe("os campos numéricos aceitam decimal", () => {
+  const CONSTRUTOR = semComentarios(ler("src/components/orcamentos/ConstrutorDeOrcamento.tsx"));
+
+  /**
+   * O DEFEITO QUE ISTO TRANCA, e ele era real: os campos guardavam `number` e
+   * convertiam a cada tecla com `Number(v.replace(",", ".")) || 0`. Digitar
+   * "1,5" mostrava "1" no instante em que a vírgula era digitada, e apagar o
+   * campo travava em "0" — não dava para limpar e recomeçar.
+   *
+   * O formulário de produto já documentava esse cuidado; o construtor repetia o
+   * erro que aquele evitava.
+   */
+  it("o item guarda os números como texto enquanto se digita", () => {
+    expect(CONSTRUTOR).toMatch(/preco_unit: string/);
+    expect(CONSTRUTOR).toMatch(/quantidade: string/);
+    expect(CONSTRUTOR).toMatch(/desconto: string/);
+    // A conversão a cada tecla é justamente o que não pode voltar.
+    expect(CONSTRUTOR, "converter no onChange quebra a digitação de decimal")
+      .not.toMatch(/onChange=\{\(e\) => mudarItem\(i, \{ \w+: Number\(/);
+  });
+
+  /** O desconto por linha existia no banco e em `totalDoItem` desde o início, e
+   *  não tinha campo: dar desconto num item só era impossível. */
+  it("existe entrada de desconto por item", () => {
+    expect(CONSTRUTOR).toMatch(/aria-label=\{`Desconto do item \$\{i \+ 1\}`\}/);
   });
 });
 
