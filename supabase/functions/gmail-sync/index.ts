@@ -383,24 +383,20 @@ serve(async (req) => {
       .eq("org_id", org_id)
       .eq("provider", "gmail")
       .maybeSingle();
-    const cfg: any = cfgRow?.config ?? {};
-    const mode: string = cfg.mode || "oauth_byok";
-
     /*
-      O MODO "connector" SAIU.
+      O MODO "connector" SAIU, e com ele a leitura de `cfg.mode`.
 
       Era o caminho legado: uma caixa de e-mail única do projeto, servida pelo
       gateway da Lovable com `LOVABLE_API_KEY`. Este CRM não usa a Lovable, e
       sem a chave o ramo já respondia `gmail_not_linked` -- ou seja, quem
       tivesse `mode: "connector"` gravado não sincronizava de jeito nenhum.
 
-      Removê-lo troca um erro por o caminho que funciona: o OAuth por conta, que
-      é o padrão (`oauth_byok`) e o único que a tela de Integrações configura.
+      Removê-lo troca um erro pelo caminho que funciona: o OAuth por conta, que
+      é o padrão e o único que a tela de Integrações configura. Sobra um caminho
+      só, então não há mais o que ramificar.
     */
 
-    }
-
-    // ── Modo OAuth: sincroniza todas as contas conectadas da org ──
+    // ── Sincroniza todas as contas conectadas da org ──
     const resultado = await syncOrg(supabaseAdmin, org_id, Number(max) || 25, purpose);
 
     if (Object.keys(resultado.accounts).length === 0) {

@@ -36,7 +36,10 @@ import { useAllContacts } from "@/hooks/queries/useContacts";
 import { useCompanies } from "@/hooks/queries/useCompanies";
 import { useDeals } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
-import { ATIVIDADE_ICONE, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_ROTULO } from "@/lib/atividade-tipos";
+import {
+  ATIVIDADE_ICONE, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_ROTULO, ATIVIDADE_COR,
+  ATIVIDADE_TIPOS, ATIVIDADE_TIPOS_MANUAIS,
+} from "@/lib/atividade-tipos";
 import { LoadingState, ErrorState, EmptyState } from "@/components/layout/EstadoDaLista";
 import { formatarDataCurta, formatarDataHora, pluralizar } from "@/lib/formato";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
@@ -52,14 +55,6 @@ type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-
-const typeColors: Record<ActivityType, string> = {
-  call: "text-emerald-600",
-  email: "text-blue-600",
-  meeting: "text-amber-600",
-  note: "text-muted-foreground",
-  task: "text-violet-600",
-};
 
 type ViewMode = "list" | "calendar";
 type DateFilter =
@@ -436,7 +431,10 @@ export default function Activities() {
           onChange={setTypeFilter}
           opcoes={[
             { valor: "all", rotulo: "Tudo" },
-            ...(["call", "meeting", "task", "email", "note"] as ActivityType[]).map((t) => ({
+            /* A lista compartilhada, e não uma cópia. Esta era a oitava --
+               e faltava `orcamento` nela, então filtrar por orçamento seria
+               impossível justamente na tela feita para procurar atividade. */
+            ...ATIVIDADE_TIPOS.map((t) => ({
               valor: t as string,
               rotulo: ATIVIDADE_ROTULO[t],
               icone: ATIVIDADE_ICONE[t],
@@ -576,7 +574,7 @@ export default function Activities() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-0">
-                        <Icon className={`h-3.5 w-3.5 shrink-0 ${typeColors[a.type]}`} />
+                        <Icon className={`h-3.5 w-3.5 shrink-0 ${ATIVIDADE_COR[a.type]}`} />
                         <span className={`text-sm font-medium truncate ${a.completed_at ? "line-through" : ""}`}>
                           {a.title}
                         </span>
@@ -742,7 +740,7 @@ export default function Activities() {
                       const ActIcon = ATIVIDADE_ICONE[a.type];
                       return (
                         <div key={a.id} className={`flex items-center gap-1 rounded px-1 py-0.5 text-label truncate bg-muted/50 ${isOverdue(a) ? "ring-1 ring-destructive" : ""}`}>
-                          <ActIcon className={`h-2.5 w-2.5 shrink-0 ${typeColors[a.type]}`} />
+                          <ActIcon className={`h-2.5 w-2.5 shrink-0 ${ATIVIDADE_COR[a.type]}`} />
                           <span className="truncate">{a.title}</span>
                         </div>
                       );
@@ -894,7 +892,17 @@ function ActivityCreateEditModal({ open, onOpenChange, activity, contacts, compa
     }
   };
 
-  const typeHints: Record<ActivityType, string> = {
+  /*
+    `Partial`, e é o que o tipo `orcamento` revelou.
+
+    Este mapa alimenta a descrição do formulário de REGISTRO, e orçamento não se
+    registra à mão -- quem grava é o sistema, quando o cliente vê ou decide no
+    link público. Exigir a chave aqui obrigaria a inventar uma instrução para um
+    caminho que o formulário não oferece.
+
+    Ver `ATIVIDADE_TIPOS_MANUAIS`: é ela que decide o que aparece no seletor.
+  */
+  const typeHints: Partial<Record<ActivityType, string>> = {
     note: "Registre observações sobre contatos, negócios ou empresas",
     task: "Crie uma tarefa com prazo e responsável",
     meeting: "Agende uma reunião com data, horário e participantes",
@@ -925,7 +933,10 @@ function ActivityCreateEditModal({ open, onOpenChange, activity, contacts, compa
             valor={type}
             onChange={setType}
             compactoNoCelular={false}
-            opcoes={(["task", "note", "call", "meeting", "email"] as ActivityType[]).map((t) => ({
+            /* MANUAIS, e não todos: orçamento é gravado pelo sistema quando o
+               cliente vê ou decide no link público. Oferecê-lo aqui deixaria a
+               ficha com dois "aprovado" -- um real e um digitado. */
+            opcoes={ATIVIDADE_TIPOS_MANUAIS.map((t) => ({
               valor: t,
               rotulo: ATIVIDADE_ROTULO[t],
               icone: ATIVIDADE_ICONE[t],

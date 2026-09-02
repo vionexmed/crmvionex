@@ -25,7 +25,7 @@ import {
   LIFECYCLE_LABELS, type LifecycleStage,
 } from "@/lib/contact-options";
 import {
-  ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU,
+  ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_TIPOS_MANUAIS,
 } from "@/lib/atividade-tipos";
 import type { Database } from "@/integrations/supabase/types";
 import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
@@ -514,11 +514,13 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                 <Select value={activityForm.type} onValueChange={(v) => setActivityForm({ ...activityForm, type: v as ActivityType })}>
                   <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="note">Nota</SelectItem>
-                    <SelectItem value="call">Ligação</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="meeting">Reunião</SelectItem>
-                    <SelectItem value="task">Tarefa</SelectItem>
+                    {/* A lista compartilhada. Esta cópia escrevia "Email" sem
+                        hífen, enquanto o resto do CRM escreve "E-mail" -- a
+                        divergência exata que `atividade-tipos.ts` existe para
+                        acabar. E `MANUAIS` exclui orçamento, que o sistema grava. */}
+                    {ATIVIDADE_TIPOS_MANUAIS.map((t) => (
+                      <SelectItem key={t} value={t}>{ATIVIDADE_ROTULO[t]}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Input className="h-8 text-sm" placeholder="Título" value={activityForm.title} onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })} />

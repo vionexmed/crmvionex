@@ -74,7 +74,15 @@ export const ATIVIDADE_COR: Record<ActivityType, string> = {
  * filtro de `Activities` usava call→meeting→task→email→note. Aqui a ordem é a do
  * registro: o que se anota mais primeiro.
  */
-export const ATIVIDADE_TIPOS: ActivityType[] = ["note", "call", "email", "meeting", "task"];
+/**
+ * TODOS os tipos, em ordem de exibição. Serve a filtro e a legenda.
+ *
+ * Inclui `orcamento`: filtrar por ele é justamente o que se quer quando alguém
+ * pergunta "o que aconteceu com os orçamentos desta semana".
+ */
+export const ATIVIDADE_TIPOS: ActivityType[] = [
+  "note", "call", "email", "meeting", "task", "orcamento",
+];
 
 /**
  * Os tipos que uma PESSOA registra à mão.
@@ -83,8 +91,14 @@ export const ATIVIDADE_TIPOS: ActivityType[] = ["note", "call", "email", "meetin
  * no link público. Oferecê-lo no seletor de "registrar atividade" convidaria a
  * escrever à mão um evento que tem dono -- e aí a ficha teria dois "aprovado"
  * com horas diferentes, um real e um digitado.
+ *
+ * Duas listas e não uma com filtro no call site: quem monta um seletor novo
+ * escolhe a lista pelo NOME, e errar exige escrever "todos" onde se queria
+ * "manuais". Com uma lista só, esquecer o filtro é o caminho de menor esforço.
  */
-export const ATIVIDADE_TIPOS_MANUAIS: ActivityType[] = ATIVIDADE_TIPOS;
+export const ATIVIDADE_TIPOS_MANUAIS: ActivityType[] = ATIVIDADE_TIPOS.filter(
+  (t) => t !== "orcamento",
+);
 
 /**
  * Tipos que, quando registrados, descrevem algo que JÁ ACONTECEU.

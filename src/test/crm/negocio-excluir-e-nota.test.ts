@@ -311,6 +311,41 @@ describe("os mapas de atividade cobrem o enum inteiro", () => {
   });
 });
 
+/**
+ * NENHUM FORMULÁRIO OFERECE "orçamento" PARA REGISTRO À MÃO.
+ *
+ * Quem grava esse tipo é o sistema, quando o cliente vê ou decide no link
+ * público. Oferecê-lo num seletor de "registrar atividade" deixaria a ficha do
+ * contato com dois "Orçamento aprovado" -- um real, com a hora em que o cliente
+ * clicou, e um digitado por alguém que quis anotar o mesmo fato.
+ *
+ * A regressão é fácil: basta um seletor novo usar `ATIVIDADE_TIPOS` em vez de
+ * `ATIVIDADE_TIPOS_MANUAIS`. Os dois nomes existem exatamente para essa escolha
+ * ser explícita.
+ */
+describe("orçamento não se registra à mão", () => {
+  const TIPOS = readFileSync("src/lib/atividade-tipos.ts", "utf8");
+
+  it("as duas listas são de fato diferentes", () => {
+    // Enquanto `MANUAIS` era um alias de `TIPOS`, escolher entre as duas não
+    // mudava nada — e o nome prometia uma proteção que não existia.
+    expect(TIPOS).toContain('ATIVIDADE_TIPOS.filter(');
+    expect(TIPOS).toMatch(/\(t\) => t !== "orcamento"/);
+  });
+
+  it.each([
+    "src/pages/Activities.tsx",
+    "src/pages/DealDetail.tsx",
+    "src/components/crm/ContactDrawer.tsx",
+  ])("%s registra a partir de ATIVIDADE_TIPOS_MANUAIS", (arquivo) => {
+    const src = semComentarios(ler(arquivo));
+    expect(src).toContain("ATIVIDADE_TIPOS_MANUAIS");
+    // A lista cravada some junto: era a cópia que divergia em "Email" sem
+    // hífen, enquanto o resto do CRM escreve "E-mail".
+    expect(src).not.toMatch(/<SelectItem value="note">Nota<\/SelectItem>/);
+  });
+});
+
 describe("o mapa de tipos de atividade tem um dono só", () => {
   /**
    * Estava em seis cópias, com divergências reais: `meeting` usava CalendarDays
