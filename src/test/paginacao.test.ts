@@ -94,14 +94,18 @@ describe("ninguém monta paginação à mão", () => {
   });
 });
 
-describe("o canto inferior direito é território do copiloto", () => {
-  /**
-   * Este teste existe para a próxima pessoa: o botão é `fixed` com `z-50`, então
-   * QUALQUER coisa naquele canto fica atrás dele. Se ele mudar de lugar ou de
-   * tamanho, é aqui que se descobre por quê a paginação foi para a esquerda.
-   */
-  it("o copiloto continua fixo no canto inferior direito", () => {
-    const src = semComentarios(ler("src/components/crm/AICopilot.tsx"));
-    expect(src).toMatch(/fixed bottom-\d+ right-\d+ z-50/);
-  });
-});
+/**
+ * O CANTO INFERIOR DIREITO FICOU LIVRE.
+ *
+ * Havia aqui um teste guardando que o botão do copiloto continuasse `fixed
+ * bottom-5 right-5 z-50` -- ele existia para a próxima pessoa entender por que
+ * a paginação tinha sido empurrada para a esquerda: qualquer coisa naquele
+ * canto ficava atrás dele.
+ *
+ * O botão saiu junto com as telas de IA, que dependiam de uma chave da Lovable
+ * que este projeto não usa. Com o canto vago, o teste perdeu o objeto -- e o
+ * motivo dele também: não há mais nada `fixed` ali para cobrir a paginação.
+ *
+ * Deixo o registro em vez de apagar em silêncio: se algum dia voltar um botão
+ * flutuante naquele canto, é este parágrafo que explica o que ele vai cobrir.
+ */

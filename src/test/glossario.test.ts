@@ -78,8 +78,6 @@ describe("'Pipeline' não aparece na interface", () => {
     "src/components/settings/BillingTab.tsx",
     "src/components/integrations/LeadCaptureTab.tsx",
     "src/components/reports/SalesReport.tsx",
-    "src/components/crm/AICopilot.tsx",
-    "src/components/crm/DashboardAIChat.tsx",
   ];
 
   // "Pipeline" com maiúscula em literal ou entre tags é sempre rótulo: o

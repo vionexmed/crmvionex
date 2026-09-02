@@ -18,7 +18,6 @@ import { LucideIcon } from "lucide-react";
 import { UserPlus, MessageCircle, Instagram, Globe, Linkedin, Send, CheckCheck, Reply, MessagesSquare, CalendarCheck, Briefcase, Trophy, Sparkles, Timer, Hourglass, UserCheck, RefreshCw, TriangleAlert, LineChart, ListFilter, Bot } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { StatCard, type StatAccent, type StatFormat } from "@/components/dashboard/StatCard";
-import { DashboardAIChat } from "@/components/crm/DashboardAIChat";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -37,6 +36,7 @@ import { MetricLeadsSheet } from "@/components/dashboard/MetricLeadsSheet";
 // peso a postergar, então carregar sob demanda só adicionava uma espera — os
 // gráficos entram na mesma pintura dos números.
 import SdrChartsPanel from "@/components/dashboard/SdrChartsPanel";
+import { EmBreve } from "@/components/layout/EmBreve";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { formatarHora } from "@/lib/formato";
 import { Secao } from "@/components/layout/Secao";
@@ -387,27 +387,19 @@ export default function Dashboard() {
 
         {/* ── Perguntar ── */}
         <TabsContent value="assistente" className="mt-4">
-          {metrics ? (
-            <DashboardAIChat
-              crmData={{
-                periodo: SDR_PERIOD_LABELS[period],
-                leadsRecebidos: metrics.leadsRecebidos.value,
-                abordagens: metrics.abordagens.value,
-                taxaEntrega: metrics.taxaEntrega.value,
-                taxaResposta: metrics.taxaResposta.value,
-                conversasIniciadas: metrics.conversasIniciadas.value,
-                reunioes: metrics.reunioes.value,
-                oportunidades: metrics.oportunidades.value,
-                vendasSdr: metrics.vendasSdr.value,
-                tempoRespostaMin: metrics.tempoRespostaMin.value,
-                aguardandoHumano: metrics.aguardandoHumano.value,
-                leadsWhatsapp: metrics.leadsWhatsapp.value,
-                semFonte: GROUPS.flatMap((g) => g.tiles).filter((t) => t.noSource).map((t) => t.label),
-              }}
-            />
-          ) : (
-            <Skeleton className="h-[420px] rounded-lg" />
-          )}
+          {/*
+            O ASSISTENTE DEPENDIA DE UMA CHAVE DA LOVABLE que este projeto não
+            usa. A tela inteira aparecia, aceitava a pergunta, e só no envio
+            respondia "LOVABLE_API_KEY is not configured" -- erro que não diz
+            nada para quem só quis perguntar algo.
+
+            Interface que promete e não entrega é pior que interface ausente.
+            Mesmo critério que tirou o olho do card do kanban.
+          */}
+          <EmBreve
+            titulo="Assistente do painel"
+            descricao="Perguntar em português sobre os números desta tela — quais leads travaram, por que a taxa de resposta caiu, o que priorizar hoje."
+          />
         </TabsContent>
       </Tabs>
     </PageShell>

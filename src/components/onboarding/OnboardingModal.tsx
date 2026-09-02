@@ -10,9 +10,7 @@ import { WelcomeStep } from "./WelcomeStep";
 import { CompanyStep } from "./CompanyStep";
 
 import { PipelineStep } from "./PipelineStep";
-import { AICopilotStep } from "./AICopilotStep";
 import { EmailStep } from "./EmailStep";
-import { SlackStep } from "./SlackStep";
 import { CompleteStep } from "./CompleteStep";
 import { getResumeStep, loadPersistedOnboardingState } from "./persistence";
 import type { OnboardingStepProps } from "./types";
@@ -21,9 +19,7 @@ const STEPS = [
   { key: "welcome", label: "Boas-vindas", required: true },
   { key: "company", label: "Empresa", required: true },
   { key: "pipeline", label: "Funil", required: true },
-  { key: "ai", label: "AI Copilot", required: false },
   { key: "email", label: "Email", required: false },
-  { key: "slack", label: "Slack", required: false },
   { key: "complete", label: "Conclusão", required: true },
 ];
 
@@ -215,9 +211,7 @@ export function OnboardingModal() {
       case "welcome": return <WelcomeStep {...stepProps} />;
       case "company": return <CompanyStep {...stepProps} />;
       case "pipeline": return <PipelineStep {...stepProps} />;
-      case "ai": return <AICopilotStep {...stepProps} />;
       case "email": return <EmailStep {...stepProps} />;
-      case "slack": return <SlackStep {...stepProps} />;
       case "complete": return <CompleteStep {...stepProps} />;
       default: return null;
     }

@@ -181,12 +181,19 @@ describe("o painel mantém as métricas que tem", () => {
   });
 
   /**
-   * O assistente do painel é o `DashboardAIChat`, que RECEBE as métricas — e
-   * não o Copilot flutuante, que só conhece a rota. Trocar por ele faria o
-   * assistente do painel deixar de saber os números que está ao lado.
+   * O ASSISTENTE VIROU UM AVISO DE "EM BREVE".
+   *
+   * Ele era o `DashboardAIChat`, que recebia as métricas da tela -- e dependia
+   * de uma chave da Lovable que este projeto não usa. A interface inteira
+   * aparecia, aceitava a pergunta, e só no envio respondia
+   * "LOVABLE_API_KEY is not configured".
+   *
+   * Interface que promete e não entrega é pior que interface ausente: é o mesmo
+   * critério que tirou o olho do card do kanban e que mantém o interruptor fora
+   * do cartão de integração que não tem o que desligar.
    */
-  it("o assistente do painel é o que conhece as métricas", () => {
-    expect(PAINEL).toContain("<DashboardAIChat");
-    expect(PAINEL).toContain("crmData={{");
+  it("a aba do assistente diz que está por vir, em vez de falhar no envio", () => {
+    expect(PAINEL).toContain("<EmBreve");
+    expect(PAINEL).not.toContain("DashboardAIChat");
   });
 });

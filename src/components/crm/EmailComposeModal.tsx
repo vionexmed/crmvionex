@@ -15,10 +15,11 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { Send, FileText, Variable, Sparkles, Loader2 } from "lucide-react";
+import { Send, FileText, Variable, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEmailConnections } from "@/hooks/queries/useEmails";
 import { SeletorDeContato } from "@/components/crm/SeletorDeContato";
+import { EmBreve } from "@/components/layout/EmBreve";
 
 type Contact = { id: string; first_name: string; last_name: string | null; email: string | null; org_id: string };
 type Deal = { id: string; title: string; org_id: string; contact_id: string | null };
@@ -60,11 +61,6 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
   const [deals, setDeals] = useState<Deal[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [sending, setSending] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [aiTone, setAiTone] = useState("formal");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [showAiPanel, setShowAiPanel] = useState(false);
-  const [aiSubjects, setAiSubjects] = useState<string[]>([]);
   const [knownEmails, setKnownEmails] = useState<{ email: string; name?: string }[]>([]);
 
   useEffect(() => {
@@ -156,25 +152,6 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
 
   const insertVariable = (varKey: string) => {
     setBody((prev) => prev + varKey);
-  };
-
-  const generateWithAI = async () => {
-    if (!aiPrompt.trim()) { toast({ title: "Descreva o que deseja no email", variant: "destructive" }); return; }
-    setAiLoading(true);
-    try {
-      const contact = contacts.find((c) => c.id === contactId);
-      const contextStr = contact ? `Contato: ${contact.first_name} ${contact.last_name || ""}, Email: ${contact.email}` : "";
-      const { data, error } = await supabase.functions.invoke("ai-email", {
-        body: { prompt: aiPrompt, tone: aiTone, context: contextStr },
-      });
-      if (error) throw error;
-      if (data.error) { toast({ title: data.error, variant: "destructive" }); return; }
-      if (data.body) setBody(data.body);
-      if (data.subject_options?.length) setAiSubjects(data.subject_options);
-    } catch (e: any) {
-      toast({ title: "Erro ao gerar email", description: e.message, variant: "destructive" });
-    }
-    setAiLoading(false);
   };
 
   const handleSend = async () => {
@@ -374,58 +351,22 @@ export function EmailComposeModal({ open, onOpenChange, onSent, defaultTo, defau
               </PopoverContent>
             </Popover>
 
-            {/* AI Generate */}
-            <Button
-              variant={showAiPanel ? "default" : "outline"}
-              size="sm"
-              className="h-8 text-label ml-auto"
-              onClick={() => setShowAiPanel(!showAiPanel)}
-            >
-              <Sparkles className="mr-1 h-3 w-3" />Gerar com IA
-            </Button>
           </div>
 
-          {/* AI Panel */}
-          {showAiPanel && (
-            <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Ex: Email de follow-up após reunião sobre proposta..."
-                  className="h-8 text-xs flex-1"
-                />
-                <Select value={aiTone} onValueChange={setAiTone}>
-                  <SelectTrigger className="h-8 w-28 text-label"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="formal">Formal</SelectItem>
-                    <SelectItem value="casual">Casual</SelectItem>
-                    <SelectItem value="persuasive">Persuasivo</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="sm" className="h-8 text-xs" onClick={generateWithAI} disabled={aiLoading}>
-                  {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Gerar"}
-                </Button>
-              </div>
-              {aiSubjects.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-label text-muted-foreground font-medium">Sugestões de assunto:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {aiSubjects.map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setSubject(s)}
-                        className="text-label px-2 py-1 rounded border border-border hover:bg-accent transition-colors"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/*
+            O "GERAR COM IA" SAIU. Ele chamava a função `ai-email`, que exigia
+            uma chave da Lovable que este projeto não usa: o painel abria,
+            aceitava o texto e o tom, e no "Gerar" respondia erro de chave.
+
+            O vidro fica no lugar em vez de nada: o espaço estava reservado, e
+            some-lo faria a barra de ferramentas parecer incompleta para quem já
+            conhecia o botão.
+          */}
+          <EmBreve
+            titulo="Escrever com IA"
+            descricao="Descrever o e-mail em uma frase e receber assunto e corpo prontos, no tom que você escolher."
+            className="min-h-[120px] p-4"
+          />
 
           {/* Body */}
           <Textarea

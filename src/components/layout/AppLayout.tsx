@@ -11,7 +11,6 @@ import { MobileBottomNav } from "./MobileBottomNav";
  * login -- e traziam junto o que cada um importa:
  *
  *   CommandPalette   cmdk, 44 KB   abre só no ⌘K
- *   AICopilot        react-markdown, 117 KB   é um botão flutuante
  *   OnboardingModal  canvas-confetti, 11 KB   roda uma vez na vida da conta
  *
  * `lazy` adia o download até a primeira renderização de verdade. O
@@ -20,9 +19,6 @@ import { MobileBottomNav } from "./MobileBottomNav";
  */
 const CommandPalette = lazy(() =>
   import("@/components/CommandPalette").then((m) => ({ default: m.CommandPalette })),
-);
-const AICopilot = lazy(() =>
-  import("@/components/crm/AICopilot").then((m) => ({ default: m.AICopilot })),
 );
 const OnboardingModal = lazy(() =>
   import("@/components/onboarding/OnboardingModal").then((m) => ({ default: m.OnboardingModal })),
@@ -113,7 +109,6 @@ export function AppLayout() {
         {/* Só monta depois de aberto -- assim o cmdk nem é baixado antes do
             primeiro ⌘K. */}
         {searchOpen && <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />}
-        <AICopilot />
         {/* Configuração de empresa é do dono. Funcionário herda e nunca configura. */}
         {isAdmin && <OnboardingModal />}
       </Suspense>

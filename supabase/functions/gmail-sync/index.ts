@@ -7,7 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1";
 
 function decodeBase64Url(s: string): string {
@@ -83,17 +82,6 @@ function parseSingleAddr(s: string | null): string | null {
   return (m ? m[1] : s).trim();
 }
 
-async function connectorFetch(path: string, key: string, lovable: string) {
-  const res = await fetch(`${GATEWAY_URL}${path}`, {
-    headers: {
-      Authorization: `Bearer ${lovable}`,
-      "X-Connection-Api-Key": key,
-    },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`Gmail ${path} ${res.status}: ${JSON.stringify(data)}`);
-  return data;
-}
 
 async function oauthFetch(path: string, accessToken: string) {
   const res = await fetch(`${GMAIL_API}${path}`, {
@@ -398,25 +386,18 @@ serve(async (req) => {
     const cfg: any = cfgRow?.config ?? {};
     const mode: string = cfg.mode || "oauth_byok";
 
-    // ── Modo legado: conector Lovable (uma caixa única do projeto) ──
-    if (mode === "connector") {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      const GOOGLE_MAIL_API_KEY = Deno.env.get("GOOGLE_MAIL_API_KEY");
-      if (!LOVABLE_API_KEY || !GOOGLE_MAIL_API_KEY) {
-        return new Response(JSON.stringify({ error: "gmail_not_linked" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const synced = await syncMessages({
-        supabaseAdmin,
-        orgId: org_id,
-        fetcher: (path) => connectorFetch(path, GOOGLE_MAIL_API_KEY, LOVABLE_API_KEY),
-        max: Number(max) || 25,
-        syncedFrom: cfg.email ?? null,
-      });
-      return new Response(JSON.stringify({ ok: true, synced }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    /*
+      O MODO "connector" SAIU.
+
+      Era o caminho legado: uma caixa de e-mail única do projeto, servida pelo
+      gateway da Lovable com `LOVABLE_API_KEY`. Este CRM não usa a Lovable, e
+      sem a chave o ramo já respondia `gmail_not_linked` -- ou seja, quem
+      tivesse `mode: "connector"` gravado não sincronizava de jeito nenhum.
+
+      Removê-lo troca um erro por o caminho que funciona: o OAuth por conta, que
+      é o padrão (`oauth_byok`) e o único que a tela de Integrações configura.
+    */
+
     }
 
     // ── Modo OAuth: sincroniza todas as contas conectadas da org ──

@@ -136,22 +136,16 @@ serve(async (req) => {
 
     let accessToken = "";
     let fromEmail = "";
-    let useConnector = false;
-    let connectorApiKey = "";
-    let lovableApiKey = "";
     let connection: any = null;
 
-    if (mode === "connector") {
-      connectorApiKey = Deno.env.get("GOOGLE_MAIL_API_KEY") ?? "";
-      lovableApiKey = Deno.env.get("LOVABLE_API_KEY") ?? "";
-      if (!connectorApiKey || !lovableApiKey) {
-        return new Response(JSON.stringify({ error: "gmail_not_connected", message: "Conector Gmail não está vinculado ao projeto." }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      useConnector = true;
-      fromEmail = cfg.email || "";
-    } else {
+    /*
+      O MODO "connector" SAIU -- ver o mesmo comentário em gmail-sync.
+
+      Era o gateway da Lovable com `LOVABLE_API_KEY`, e sem a chave o envio já
+      respondia "Conector Gmail não está vinculado ao projeto". Sobra o OAuth
+      por conta, que é o padrão e o único que a tela configura.
+    */
+    {
       // 1º: a conta pessoal de quem está enviando. É o que faz o e-mail sair do
       // endereço da própria pessoa.
       const { data: minhaConta } = await supabaseAdmin
@@ -378,16 +372,11 @@ serve(async (req) => {
       text: finalText,
     });
 
-    const sendUrl = useConnector
-      ? "https://connector-gateway.lovable.dev/google_mail/gmail/v1/users/me/messages/send"
-      : "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
-    const sendHeaders: Record<string, string> = useConnector
-      ? {
-          Authorization: `Bearer ${lovableApiKey}`,
-          "X-Connection-Api-Key": connectorApiKey,
-          "Content-Type": "application/json",
-        }
-      : { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+    const sendUrl = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
+    const sendHeaders: Record<string, string> = {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    };
 
     const sendRes = await fetch(sendUrl, {
       method: "POST",

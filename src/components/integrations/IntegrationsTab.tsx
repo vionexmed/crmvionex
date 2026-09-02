@@ -231,47 +231,24 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
     fetchConfigs();
   };
 
-  const [slackConnecting, setSlackConnecting] = useState(false);
-  const [, setSlackChannels] = useState<{ id: string; name: string }[]>([]);
-  const [, setSlackWorkspace] = useState<string | null>(null);
   const [slackSetupGuide, setSlackSetupGuide] = useState(false);
 
-  const handleSlackConnect = async () => {
-    if (!orgId) return;
-    setSlackConnecting(true);
-    try {
-      const res = await supabase.functions.invoke("slack-connect", {
-        body: { org_id: orgId },
-      });
-      const motivo = await erroDaFuncao(res);
-      // `API_KEY` no motivo significa app do Slack não configurado: aí o guia
-      // ajuda mais que a mensagem crua. Antes só era detectado quando a função
-      // devolvia 200 com erro no corpo -- num 4xx caía no catch e virava a
-      // frase genérica.
-      if (motivo?.includes("API_KEY")) {
-        setSlackSetupGuide(true);
-        abrir("slack");
-        setSlackConnecting(false);
-        return;
-      }
-      // `res.data` e não `data`: o destructuring saiu quando o tratamento passou
-      // a usar `erroDaFuncao`, e a referência solta teria dado ReferenceError no
-      // caminho de SUCESSO -- o único que ninguém testa à mão.
-      const dados = res.data as { workspace_name?: string; channels?: { id: string; name: string }[] } | null;
-      if (dados?.workspace_name) {
-        setSlackWorkspace(dados.workspace_name);
-        setSlackChannels(dados.channels || []);
-        toast({ title: `Conectado ao workspace ${dados.workspace_name}` });
-        fetchConfigs();
-      } else {
-        setSlackSetupGuide(true);
-        abrir("slack");
-      }
-    } catch {
-      setSlackSetupGuide(true);
-      abrir("slack");
-    }
-    setSlackConnecting(false);
+  /*
+    O "CONECTAR" DO SLACK NÃO CHAMA MAIS FUNÇÃO NENHUMA.
+
+    Ele chamava `slack-connect`, que era inteiramente da Lovable: pedia
+    `LOVABLE_API_KEY`, falava com o gateway deles e, sem a chave, respondia erro
+    de API_KEY -- que a tela traduzia num guia mandando "acesse as configurações
+    do projeto no Lovable → Connectors". Instrução de uma plataforma que este
+    CRM não usa, para um menu que o dono do CRM não tem.
+
+    O caminho que funciona sempre foi o outro: um Incoming Webhook do próprio
+    Slack, colado no campo e validado de verdade por `validate-slack-webhook`,
+    que manda uma mensagem de teste antes de gravar. Conectar é abrir o painel.
+  */
+  const handleSlackConnect = () => {
+    setSlackSetupGuide(true);
+    abrir("slack");
   };
 
   const [metaConnecting, setMetaConnecting] = useState(false);
@@ -382,7 +359,6 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
       provider: "slack", name: "Slack", icon: LogoSlack,
       description: "Resumo do dia no canal, todo dia às 20h",
       connectAction: handleSlackConnect,
-      connectLoading: slackConnecting,
       // Os campos `notify_won` e `notify_lost` saíram: eram switches que NENHUM
       // arquivo lia. Ligar não fazia nada. `daily_summary` também não fazia —
       // agora faz, porque existe a function slack-daily-summary e o cron.
@@ -909,43 +885,52 @@ function ConteudoDeIntegracoes({ orgId, userId }: {
               <p className="text-xs font-semibold text-warning">
                 Não consegui conectar sozinho — siga os passos abaixo
               </p>
-      <div className="space-y-3">
-        <div className="flex gap-3 items-start">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-          <div>
-            <p className="text-sm font-medium">Acesse as configurações do projeto no Lovable</p>
-            <p className="text-xs text-muted-foreground">Clique no nome do projeto (canto superior esquerdo) → "Settings"</p>
-          </div>
-        </div>
+      {/*
+        OS PASSOS SÃO DO SLACK, e não do Lovable.
 
-        <div className="flex gap-3 items-start">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-          <div>
-            <p className="text-sm font-medium">Vá em "Connectors"</p>
-            <p className="text-xs text-muted-foreground">Na aba de conectores, procure por "Slack" e clique em "Connect"</p>
-          </div>
-        </div>
+        O guia mandava "acesse as configurações do projeto no Lovable →
+        Connectors" -- instrução de uma plataforma que este CRM não usa, para
+        uma tela que o dono do CRM não tem. Quem seguisse ia procurar um menu
+        que não existe.
 
-        <div className="flex gap-3 items-start">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
-          <div>
-            <p className="text-sm font-medium">Autorize o acesso ao seu workspace</p>
-            <p className="text-xs text-muted-foreground">Selecione o workspace do Slack e autorize as permissões necessárias (enviar mensagens, listar canais)</p>
-          </div>
-        </div>
-
-        <div className="flex gap-3 items-start">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
-          <div>
-            <p className="text-sm font-medium">Volte aqui e clique em "Conectar"</p>
-            <p className="text-xs text-muted-foreground">Após vincular o conector, o VIONEX detectará automaticamente seus canais</p>
-          </div>
-        </div>
-      </div>
+        O caminho real é o Incoming Webhook do próprio Slack, que é o que a
+        função `validate-slack-webhook` espera receber.
+      */}
+      <ol className="space-y-3">
+        {[
+          {
+            titulo: "Crie um app no Slack",
+            detalhe: 'Em api.slack.com/apps → "Create New App" → "From scratch". Escolha o workspace que vai receber o resumo.',
+          },
+          {
+            titulo: "Ative Incoming Webhooks",
+            detalhe: 'No menu do app → "Incoming Webhooks" → ligue a chave.',
+          },
+          {
+            titulo: "Adicione ao canal",
+            detalhe: '"Add New Webhook to Workspace" e escolha o canal. É ele que vai receber — o canal se define aqui, não no CRM.',
+          },
+          {
+            titulo: "Cole a URL aqui",
+            detalhe: "Copie a URL gerada (começa com hooks.slack.com) e cole no campo acima. Mandamos uma mensagem de teste antes de salvar.",
+          },
+        ].map((passo, i) => (
+          <li key={passo.titulo} className="flex items-start gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+              {i + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{passo.titulo}</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">{passo.detalhe}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
 
       <div className="rounded-lg border border-border bg-muted/50 p-3">
         <p className="text-xs text-muted-foreground">
-          <strong>Permissões necessárias:</strong> <code className="text-label bg-muted px-1 rounded">chat:write</code> <code className="text-label bg-muted px-1 rounded">channels:read</code> <code className="text-label bg-muted px-1 rounded">channels:history</code>
+          <strong>A URL do webhook é credencial:</strong> quem a tem posta no canal da
+          empresa. Por isso ela vai para um compartimento que o navegador não lê.
         </p>
       </div>
 

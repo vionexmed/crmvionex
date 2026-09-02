@@ -85,11 +85,13 @@ describe("as bibliotecas pesadas têm chunk próprio", () => {
 
 describe("as sobreposições globais não entram no primeiro acesso", () => {
   /**
-   * `AppLayout` monta as três em toda página autenticada, e importá-las
+   * `AppLayout` monta as duas em toda página autenticada, e importá-las
    * estaticamente colocava o grafo inteiro no pacote da entrada — inclusive na
    * tela de login, onde nenhuma delas existe.
    */
-  const adiadas = ["CommandPalette", "AICopilot", "OnboardingModal"];
+  // `AICopilot` saiu da lista com o próprio componente: ele puxava 117 kB de
+  // react-markdown e dependia de uma chave da Lovable que este projeto não usa.
+  const adiadas = ["CommandPalette", "OnboardingModal"];
 
   it.each(adiadas)("%s é carregado sob demanda", (nome) => {
     const codigo = semComentarios(LAYOUT);
