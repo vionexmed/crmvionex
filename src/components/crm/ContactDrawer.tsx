@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
+import { LinhaDeAtividade } from "@/components/crm/LinhaDeAtividade";
+import { useUpdateActivity, useDeleteActivities } from "@/hooks/queries/useActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent} from "@/components/ui/sheet";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -21,17 +23,17 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
-  AREAS_ATUACAO, PAISES, CADASTRO_FIELDS, getContactOrigin,
+  AREAS_ATUACAO, PAISES, CADASTRO_FIELDS, getContactOrigin, ORIGIN_OPTIONS,
   LIFECYCLE_LABELS, type LifecycleStage,
 } from "@/lib/contact-options";
 import {
-  ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_TIPOS_MANUAIS,
+  ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_TIPOS_MANUAIS,
 } from "@/lib/atividade-tipos";
 import type { Database } from "@/integrations/supabase/types";
 import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Activity, Handshake, LayoutList, StickyNote } from "lucide-react";
-import { formatarData, formatarDataCurta, formatarDataHoraCurta, formatarMoeda } from "@/lib/formato";
+import { formatarData, formatarMoeda } from "@/lib/formato";
 import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -61,9 +63,8 @@ const LIFECYCLE_BADGE: Record<LifecycleStage, string> = {
   customer: "bg-success/10 text-success",
   disqualified: "bg-destructive/10 text-destructive",
 };
-// Ícones e rótulos vêm de lib/atividade-tipos.ts, que é a fonte única.
-const activityIcons = ATIVIDADE_ICONE;
-const activityLabels = ATIVIDADE_ROTULO;
+// Ícone e rótulo de atividade agora moram em `LinhaDeAtividade`, que é quem
+// desenha a linha do histórico -- e continuam vindo de lib/atividade-tipos.ts.
 
 
 interface ContactDrawerProps {
@@ -108,11 +109,14 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const atualizarAtividade = useUpdateActivity();
+  const excluirAtividades = useDeleteActivities();
+
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Partial<Contact>>({});
   const [phoneValid, setPhoneValid] = useState(true);
   // Metadata fields (editable separately)
-  const [meta, setMeta] = useState({ pais: "", cidade: "", interesse: "", empresa_manual: "" });
+  const [meta, setMeta] = useState({ pais: "", cidade: "", interesse: "", empresa_manual: "", source: "" });
   const [activities, setActivities] = useState<Activity[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -167,6 +171,11 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
         cidade: m.cidade || "",
         interesse: m.interesse || "",
         empresa_manual: m.empresa_manual || "",
+        // A origem crua, não o rótulo. O selo do cabeçalho passa por
+        // `getContactOrigin`, que agrupa ("csv_import" vira "Importação"); se
+        // o campo guardasse o rótulo, salvar reescreveria o valor original e o
+        // nome da planilha de onde a pessoa veio se perderia.
+        source: m.source || "",
       });
       setEditing(false);
       setPhoneValid(true);
@@ -196,6 +205,10 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
         cidade: meta.cidade,
         interesse: meta.interesse,
         empresa_manual: meta.empresa_manual,
+        // Vazio apaga a chave em vez de gravar "": `getContactOrigin` trata
+        // ausência e string vazia igual ("Manual"), e uma chave vazia sobrando
+        // no JSON confunde quem for depurar.
+        source: meta.source || undefined,
       } as never,
     }).eq("id", contact.id);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
@@ -234,6 +247,22 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
     setActivityForm({ type: "note", title: "", body: "" });
     fetchRelated();
     toast({ title: "Atividade adicionada" });
+  };
+
+  /*
+    Corrigir e apagar pelos hooks, e não por `supabase` cru como o resto desta
+    gaveta faz: eles invalidam o cache de atividades E o de negócios. Sem isso,
+    apagar uma nota de teste aqui deixaria a tela de Atividades e a última
+    interação do card do kanban mostrando a linha apagada até alguém recarregar.
+  */
+  const salvarAtividade = async (id: string, patch: { title: string; body: string | null }) => {
+    await atualizarAtividade.mutateAsync({ id, activity: patch });
+    fetchRelated();
+  };
+
+  const excluirAtividade = async (id: string) => {
+    await excluirAtividades.mutateAsync([id]);
+    fetchRelated();
   };
 
   if (!contact) return null;
@@ -363,21 +392,57 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                 <div className="space-y-1"><Label className="text-xs">Produto / Interesse</Label>
                   <Input value={meta.interesse} onChange={(e) => setMeta({ ...meta, interesse: e.target.value })} placeholder="Ex: Likawave Pro, consultoria..." /></div>
 
-                {/* Ciclo de vida. Sem valor padrão inventado: cai em 'lead',
-                    que é o default da coluna, em vez de 'prospect'. */}
-                <div className="space-y-1">
-                  <Label className="text-xs">Ciclo de vida</Label>
-                  <Select
-                    value={form.lifecycle_stage ?? "lead"}
-                    onValueChange={(v) => setForm({ ...form, lifecycle_stage: v as LifecycleStage })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(LIFECYCLE_LABELS) as LifecycleStage[]).map((e) => (
-                        <SelectItem key={e} value={e}>{LIFECYCLE_LABELS[e]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* EM QUE PONTO ESTÁ e DE ONDE VEIO, lado a lado.
+                    É o par que o cabeçalho já mostra como dois selos vizinhos;
+                    empilhados no fim do formulário, a origem passava
+                    despercebida -- e foi o que aconteceu.
+
+                    Ciclo de vida sem valor padrão inventado: cai em 'lead', que
+                    é o default da coluna, e não 'prospect'. O CLAUDE.md registra
+                    por quê: escrever `status` faz o gatilho gravar
+                    'qualified' sem ninguém ter qualificado. */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Ciclo de vida</Label>
+                    <Select
+                      value={form.lifecycle_stage ?? "lead"}
+                      onValueChange={(v) => setForm({ ...form, lifecycle_stage: v as LifecycleStage })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(LIFECYCLE_LABELS) as LifecycleStage[]).map((e) => (
+                          <SelectItem key={e} value={e}>{LIFECYCLE_LABELS[e]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* A origem alimenta o filtro da lista e o gráfico de canais,
+                      e não tinha como ser corrigida: lead que chegou por
+                      indicação e entrou como "Manual" ficava assim para sempre.
+
+                      A opção crua aparece na lista quando não é uma das quatro
+                      conhecidas -- o nome da planilha importada, por exemplo --
+                      para que abrir e salvar a ficha não apague de onde a
+                      pessoa veio. */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Origem</Label>
+                    <Select
+                      value={meta.source || "__none__"}
+                      onValueChange={(v) => setMeta({ ...meta, source: v === "__none__" ? "" : v })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Não informada —</SelectItem>
+                        {ORIGIN_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                        {meta.source && !ORIGIN_OPTIONS.some((o) => o.value === meta.source) && (
+                          <SelectItem value={meta.source}>{meta.source}</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <Button onClick={handleSave} className="w-full"><Save className="mr-2 h-4 w-4" />Salvar alterações</Button>
@@ -529,26 +594,14 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
               <Button size="sm" onClick={addActivity} disabled={!activityForm.title}>Adicionar</Button>
             </div>
             <div className="space-y-2">
-              {activities.map((a) => {
-                const Icon = activityIcons[a.type];
-                return (
-                  <div key={a.id} className="flex gap-3 rounded-lg border border-border p-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-label font-medium text-muted-foreground uppercase">{activityLabels[a.type]}</span>
-                        <span className="text-label text-muted-foreground">
-                          {formatarDataHoraCurta(a.created_at!)}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium">{a.title}</p>
-                      {a.body && <p className="mt-0.5 text-xs text-muted-foreground">{a.body}</p>}
-                    </div>
-                  </div>
-                );
-              })}
+              {activities.map((a) => (
+                <LinhaDeAtividade
+                  key={a.id}
+                  atividade={a}
+                  aoSalvar={(patch) => salvarAtividade(a.id, patch)}
+                  aoExcluir={() => excluirAtividade(a.id)}
+                />
+              ))}
               {activities.length === 0 && <EstadoLista vazio="Nenhuma atividade" carregando={carregando} falhou={falhou} onTentarNovamente={fetchRelated} />}
             </div>
           </TabsContent>
@@ -586,15 +639,13 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
           {/* Notes */}
           <TabsContent value="notes" className="mt-4 space-y-2">
             {activities.filter((a) => a.type === "note").map((a) => (
-              <div key={a.id} className="rounded-lg border border-border p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-muted-foreground">
-                    {formatarDataCurta(a.created_at!)}
-                  </span>
-                </div>
-                <p className="text-sm font-medium">{a.title}</p>
-                {a.body && <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>}
-              </div>
+              <LinhaDeAtividade
+                key={a.id}
+                atividade={a}
+                mostrarTipo={false}
+                aoSalvar={(patch) => salvarAtividade(a.id, patch)}
+                aoExcluir={() => excluirAtividade(a.id)}
+              />
             ))}
             {activities.filter((a) => a.type === "note").length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-6">Nenhuma nota</p>

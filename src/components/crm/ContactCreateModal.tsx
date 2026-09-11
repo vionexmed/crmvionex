@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { AREAS_ATUACAO, PAISES } from "@/lib/contact-options";
+import { AREAS_ATUACAO, PAISES, ORIGIN_OPTIONS } from "@/lib/contact-options";
 import type { Database } from "@/integrations/supabase/types";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -41,12 +41,18 @@ export function ContactCreateModal({ open, onOpenChange, onCreated, companies }:
   const [cidade, setCidade] = useState("");
   const [areaAtuacao, setAreaAtuacao] = useState("");
   const [interesse, setInteresse] = useState("");
+  /* Origem, e o padrão continua sendo "manual" -- que é o que este formulário
+     gravava fixo. A diferença é que agora dá para dizer outra coisa: quem
+     cadastra à mão o lead que veio de indicação, de evento ou de campanha
+     sabe disso na hora, e era a única hora em que se sabia. Depois vira
+     arqueologia. */
+  const [origem, setOrigem] = useState("manual");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const reset = () => {
     setFullName(""); setEmail(""); setPhone(""); setPhoneValid(false);
     setCompanyId("none"); setCompanyName(""); setPais(""); setCidade("");
-    setAreaAtuacao(""); setInteresse(""); setErrors({});
+    setAreaAtuacao(""); setInteresse(""); setOrigem("manual"); setErrors({});
   };
 
   useEffect(() => {
@@ -92,7 +98,7 @@ export function ContactCreateModal({ open, onOpenChange, onCreated, companies }:
       owner_id: user?.id,
       company_id: resolvedCompanyId,
       metadata: {
-        source: "manual", // origem: cadastrado manualmente no CRM
+        source: origem || "manual",
         pais,
         cidade,
         area_atuacao: areaAtuacao,
@@ -191,6 +197,18 @@ export function ContactCreateModal({ open, onOpenChange, onCreated, companies }:
               onChange={(e) => setEmail(e.target.value)}
               placeholder="contato@email.com"
             />
+          </Field>
+
+          {/* Origem */}
+          <Field label="Origem">
+            <Select value={origem} onValueChange={setOrigem}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ORIGIN_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
 
           {/* Área de atuação */}

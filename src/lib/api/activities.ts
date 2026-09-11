@@ -78,19 +78,37 @@ export const activitiesApi = {
     return data;
   },
 
+  /*
+    Apagar CONFERINDO o que saiu.
+
+    O PostgREST não trata linha recusada pela RLS como erro: ele apaga zero
+    linhas e devolve sucesso. Sem o `.select()`, a tela mostrava "Atividade
+    excluída", recarregava a lista, e a nota continuava lá -- sem nada dizendo
+    por quê. É a mesma família de falha silenciosa que o CLAUDE.md registra em
+    filtro que para de filtrar.
+
+    Com o `.select()` sabemos quantas linhas realmente saíram, e a diferença
+    vira frase em vez de mistério.
+  */
   delete: async (id: string): Promise<void> => {
-    const { error } = await supabase
-      .from(TABLES.ACTIVITIES)
-      .delete()
-      .eq("id", id);
-    if (error) throw error;
+    await activitiesApi.deleteMany([id]);
   },
 
   deleteMany: async (ids: string[]): Promise<void> => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(TABLES.ACTIVITIES)
       .delete()
-      .in("id", ids);
+      .in("id", ids)
+      .select("id");
     if (error) throw error;
+
+    const saiu = data?.length ?? 0;
+    if (saiu < ids.length) {
+      throw new Error(
+        ids.length === 1
+          ? "Você não pode excluir esta atividade."
+          : `${ids.length - saiu} de ${ids.length} não puderam ser excluídas.`,
+      );
+    }
   },
 };
