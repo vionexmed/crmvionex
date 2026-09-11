@@ -18,7 +18,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { useAuth } from "@/contexts/AuthContext";
 import { SDR_PERIOD_LABELS, type SdrPeriod } from "@/hooks/useSdrMetrics";
 import {
   useSdrMetricLeads,
@@ -42,7 +41,6 @@ export function MetricLeadsSheet({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
 
   // Hooks não podem ser condicionais: a consulta fica parada por `enabled`
   // enquanto não há métrica, e "leadsRecebidos" é só um valor de repouso.
@@ -59,7 +57,6 @@ export function MetricLeadsSheet({
     total,
     linhas,
     limite: COMPLETO,
-    admin: isAdmin,
   });
 
   return (
@@ -71,9 +68,6 @@ export function MetricLeadsSheet({
               <SheetTitle className="font-heading text-base">{COPY[metric].titulo}</SheetTitle>
               <SheetDescription className="text-xs">
                 {[SDR_PERIOD_LABELS[period], nota].filter(Boolean).join(" · ")}
-                {/* Dito na cara: a lista de quem não é admin é a carteira dele,
-                    não a organização — senão o total do card parece errado. */}
-                {!isAdmin && " · somente a sua carteira"}
               </SheetDescription>
             </SheetHeader>
 

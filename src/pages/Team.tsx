@@ -38,15 +38,20 @@ const ROLES: Array<{ value: string; label: string }> = [
 ];
 
 // O que cada papel PODE fazer — reflete as políticas RLS reais do banco
-// (migration 20260702110000_rbac_comercial). Não é configurável na UI:
-// alterar exige mudança de política no banco.
+// (20260702110000_rbac_comercial, aberto para a organização em
+// 20260909120000_contatos_da_organizacao e 20260909140000_crm_da_organizacao).
+// Não é configurável na UI: alterar exige mudança de política no banco.
 const ROLE_CAPABILITIES: Array<{ label: string; owner: string; admin: string; member: string }> = [
-  { label: "Contatos, leads e negócios", owner: "Todos", admin: "Todos", member: "Só os próprios" },
-  { label: "Distribuir leads (mudar responsável)", owner: "Sim", admin: "Sim", member: "Não" },
+  { label: "Contatos, leads e negócios", owner: "Todos", admin: "Todos", member: "Todos" },
+  { label: "Atividades e histórico", owner: "Todos", admin: "Todos", member: "Todos" },
+  { label: "E-mails e conversas registrados", owner: "Todos", admin: "Todos", member: "Todos" },
+  { label: "Metas e Relatórios", owner: "Sim", admin: "Sim", member: "Sim" },
+  { label: "Mudar responsável", owner: "Sim", admin: "Sim", member: "Sim" },
   { label: "Excluir contatos/negócios", owner: "Sim", admin: "Sim", member: "Não" },
   { label: "Exportar dados", owner: "Sim", admin: "Sim", member: "Não" },
-  { label: "Metas e Relatórios", owner: "Sim", admin: "Sim", member: "Dos próprios dados" },
-  { label: "Caixa de e-mail, Conversas e Marketing", owner: "Sim", admin: "Sim", member: "Não" },
+  { label: "Conectar a própria caixa de e-mail", owner: "Sim", admin: "Sim", member: "Sim" },
+  { label: "Ver credenciais e chaves de integração", owner: "Não", admin: "Não", member: "Não" },
+  { label: "Marketing e Automações", owner: "Sim", admin: "Sim", member: "Não" },
   { label: "Automações, Templates e Sequências", owner: "Sim", admin: "Sim", member: "Não" },
   { label: "Configurações, Integrações e Equipe", owner: "Sim", admin: "Sim", member: "Não" },
   { label: "Alterar papéis de membros", owner: "Sim", admin: "Não", member: "Não" },
@@ -494,8 +499,11 @@ export default function Team() {
                 </Table>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                Comercial vê apenas os leads, contatos e negócios em que é o responsável.
-                Distribua leads na página Contatos (visão "Vendedor") ou pelo campo Responsável.
+                Todo o CRM é da organização: contato, negócio, atividade, e-mail e conversa
+                aparecem para a equipe inteira. O responsável continua gravado em cada registro —
+                serve para saber de quem é e para filtrar, não para esconder. O que ninguém lê pelo
+                app é credencial: token, chave e segredo de integração ficam fora do navegador,
+                inclusive para quem é dono da conta.
               </p>
             </CardContent>
           </Card>

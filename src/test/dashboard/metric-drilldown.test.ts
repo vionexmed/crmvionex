@@ -41,7 +41,6 @@ function resumo(over: Partial<Parameters<typeof resumoDrilldown>[0]> = {}) {
     total: 8,
     linhas: linhas(1, 1, 1),
     limite: 5,
-    admin: true,
     ...over,
   });
 }
@@ -78,23 +77,30 @@ describe("resumoDrilldown() — quando a conta fecha", () => {
 });
 
 describe("resumoDrilldown() — a diferença explicada", () => {
-  it("para admin, a diferença é toque sem lead vinculado", () => {
-    const r = resumo({ total: 8, linhas: linhas(1, 1, 1), admin: true });
+  /**
+   * A frase tinha DUAS versões, e a segunda saiu junto com o recorte por
+   * carteira (20260909140000): a lista era da carteira e o card da organização,
+   * então "de outros responsáveis" era metade da explicação. Hoje a lista conta
+   * a organização inteira, e o que ainda sobra é só o toque sem lead a que ser
+   * atribuído -- `contact_id` é anulável nas três tabelas de abordagem.
+   */
+  it("a diferença é toque sem lead vinculado, e é a única", () => {
+    const r = resumo({ total: 8, linhas: linhas(1, 1, 1) });
     expect(r.resto).toBe(5);
     expect(r.textoResto).toBe("+5 sem lead vinculado");
   });
 
-  it("para comercial, a diferença inclui carteira alheia", () => {
-    const r = resumo({ total: 8, linhas: linhas(1, 1, 1), admin: false });
-    expect(r.resto).toBe(5);
-    expect(r.textoResto).toBe("+5 de outros responsáveis ou sem lead vinculado");
+  it("não existe mais frase sobre carteira alheia", () => {
+    const fonte = readFileSync("src/hooks/useSdrMetricLeads.ts", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    expect(fonte).not.toContain("outros responsáveis");
   });
 });
 
 describe("resumoDrilldown() — lista truncada não é lista recortada", () => {
   it("calada quando a lista bateu no limite: a diferença ali é paginação", () => {
-    // 5 linhas com limite 5 → pode haver mais. Chamar isso de "outros
-    // responsáveis" seria mentira; o rodapé "ver a lista completa" resolve.
+    // 5 linhas com limite 5 → pode haver mais. Chamar a diferença de "sem lead
+    // vinculado" seria mentira; o rodapé "ver a lista completa" resolve.
     const r = resumo({ total: 40, linhas: linhas(1, 1, 1, 1, 1), limite: 5 });
     expect(r.truncado).toBe(true);
     expect(r.textoResto).toBeNull();
@@ -105,7 +111,7 @@ describe("resumoDrilldown() — lista truncada não é lista recortada", () => {
   });
 
   it("explica a diferença assim que a lista deixa de estar truncada", () => {
-    const r = resumo({ total: 8, linhas: linhas(1, 1, 1), limite: 5, admin: true });
+    const r = resumo({ total: 8, linhas: linhas(1, 1, 1), limite: 5 });
     expect(r.truncado).toBe(false);
     expect(r.textoResto).toBe("+5 sem lead vinculado");
   });
@@ -120,7 +126,6 @@ describe("resumoDrilldown() — taxa de resposta é percentual", () => {
       total: 8,
       linhas: linhas(1, 1),
       limite: 5,
-      admin: false,
     });
     expect(r.resto).toBe(0);
     expect(r.textoResto).toBeNull();
@@ -146,7 +151,13 @@ describe("o painel lateral e a prévia contam a mesma história", () => {
 });
 
 describe("abordagens são rastreáveis", () => {
-  const SQL = "supabase/migrations/20260826120000_rastrear_abordagens.sql";
+  /**
+   * A ÚLTIMA definição da função, e não a primeira. `sdr_metric_leads` já foi
+   * reescrita quatro vezes; ler a migração de origem faria este arquivo afirmar
+   * o contrário do que o banco executa hoje -- exatamente o defeito que o
+   * CLAUDE.md registra em teste que passa sobre verdade vencida.
+   */
+  const SQL = "supabase/migrations/20260909140000_crm_da_organizacao.sql";
   const sql = readFileSync(SQL, "utf8");
 
   it("a função devolve autor, canal e conteúdo", () => {
@@ -169,11 +180,17 @@ describe("abordagens são rastreáveis", () => {
     expect(ramo).toContain("LEFT JOIN public.contacts");
   });
 
-  it("quem não é admin vê a própria ação, mesmo em lead de outro", () => {
-    // Sem a segunda metade da condição, a pessoa não veria a abordagem que ela
-    // mesma fez a um lead que não é dela.
+  /**
+   * O ramo tinha um WHERE de três braços -- admin, dono do lead, autor do
+   * evento -- para que a pessoa ao menos visse a própria abordagem a um lead
+   * alheio. Ele existia porque a função é SECURITY DEFINER e repunha à mão o
+   * recorte da RLS. Com o CRM aberto (20260909140000), repor recorte aqui faria
+   * a lista contradizer o card que ela explica.
+   */
+  it("o ramo de abordagens não recorta por pessoa", () => {
     const ramo = sql.slice(sql.indexOf("ELSIF _metric = 'abordagens'"), sql.indexOf("ELSIF _metric = 'taxaResposta'"));
-    expect(ramo).toContain("ev.user_id = auth.uid()");
+    expect(ramo).not.toContain("auth.uid()");
+    expect(sql, "a variável do recorte não deve voltar").not.toContain("v_admin");
   });
 
   it("a interface desenha o canal e o autor", () => {

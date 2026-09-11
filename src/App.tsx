@@ -200,8 +200,10 @@ const App = () => (
                 <Route path="/reports" element={<SuspenseRoute><Reports /></SuspenseRoute>} />
                 <Route path="/sales-goals" element={<SuspenseRoute><SalesGoals /></SuspenseRoute>} />
 
-                {/* Cada pessoa tem a própria conta de e-mail e a própria caixa.
-                    A RLS garante que ninguém vê o e-mail nem a conversa do outro. */}
+                {/* Cada pessoa CONECTA a própria conta -- a credencial e a
+                    conexão seguem privadas. As mensagens, não: desde
+                    20260909140000 o histórico de e-mail e de conversa é da
+                    organização, como o resto do CRM. */}
                 <Route path="/settings/email" element={<SuspenseRoute><MyEmail /></SuspenseRoute>} />
                 <Route path="/inbox" element={<SuspenseRoute><Inbox /></SuspenseRoute>} />
                 {/* Um canal por rota. O componente é o mesmo; o que muda é o

@@ -11,11 +11,9 @@ import type { SdrCharts } from "@/hooks/useSdrCharts";
 export default function SdrChartsPanel({
   charts,
   carregando,
-  isAdmin,
 }: {
   charts: SdrCharts | undefined;
   carregando: boolean;
-  isAdmin: boolean;
 }) {
   // Esqueleto enquanto a consulta de agregação não volta. Antes morava em
   // arquivo próprio, para o import estático do fallback não arrastar o recharts.
@@ -81,9 +79,9 @@ export default function SdrChartsPanel({
 
       <GraficoFunil dados={charts?.funil ?? []} className={AREA.funil} />
 
-      {/* Desempenho individual é restrito: mostrar a todos contradiria a
-          privacidade entre pares. A função no banco também recusa não-admin. */}
-      {isAdmin && charts?.pessoas && charts.pessoas.length > 0 && (
+      {/* Deixou de ser restrito a admin junto com o resto do CRM: os eventos
+          que compõem o número da pessoa já estão à vista da equipe. */}
+      {charts?.pessoas && charts.pessoas.length > 0 && (
         <GraficoPessoas dados={charts.pessoas} className={AREA.pessoas} />
       )}
 

@@ -23,7 +23,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrg } from "@/hooks/useOrg";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   useSdrMetrics, sdrMetricsKeys, SDR_PERIOD_LABELS,
   type SdrPeriod, type MetricKey,
@@ -164,7 +163,6 @@ const TENDENCIA: Partial<Record<MetricKey, "leads" | "abordagens" | "respostas">
 
 export default function Dashboard() {
   const { orgId } = useOrg();
-  const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState<SdrPeriod>("this_month");
   /** Métrica com o painel lateral aberto. Um painel serve os quatro tiles. */
@@ -319,7 +317,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <SdrChartsPanel charts={charts} carregando={loadingCharts} isAdmin={isAdmin} />
+          <SdrChartsPanel charts={charts} carregando={loadingCharts} />
 
           <MetricLeadsSheet
             metric={painelDe}

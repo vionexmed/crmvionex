@@ -3435,6 +3435,13 @@ export type Database = {
         Args: { _estagio: Database["public"]["Enums"]["lifecycle_stage"] }
         Returns: number
       }
+      canais_do_atendimento: {
+        Args: { _org_id: string }
+        Returns: {
+          instagram: boolean
+          whatsapp: boolean
+        }[]
+      }
       origens_de_contato: {
         Args: { _org_id: string }
         Returns: {

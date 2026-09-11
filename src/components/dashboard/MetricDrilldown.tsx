@@ -11,16 +11,15 @@
  * então o destino ignoraria o recorte que o usuário está olhando e mostraria
  * tudo. Sair do painel para ver menos contexto não ajuda.
  *
- * Sobre o recorte da lista, ver useSdrMetricLeads: admin vê a organização, os
- * demais só a própria carteira — e a diferença contra o número do card é dita
- * na tela, não escondida.
+ * A lista é da organização, igual ao card (era recortada por carteira até
+ * 20260909140000). O que ainda pode sobrar contra o número do card é toque sem
+ * lead vinculado, e isso é dito na tela em vez de escondido.
  */
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/contexts/AuthContext";
 import { SDR_PERIOD_LABELS, type SdrPeriod } from "@/hooks/useSdrMetrics";
 import {
   useSdrMetricLeads,
@@ -101,7 +100,6 @@ export function MetricDrilldown({
   children: React.ReactNode;
 }) {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
   const [aberto, setAberto] = useState(false);
 
   // `aberto` mantém a consulta parada até o hover. Sem isso, os quatro tiles em
@@ -110,7 +108,7 @@ export function MetricDrilldown({
   const previa = useSdrMetricLeads(metric, period, PREVIA, aberto);
 
   const linhas = previa.data ?? [];
-  const resumo = resumoDrilldown({ metric, total, linhas, limite: PREVIA, admin: isAdmin });
+  const resumo = resumoDrilldown({ metric, total, linhas, limite: PREVIA });
   const nota = COPY[metric].nota;
 
   return (
@@ -148,7 +146,7 @@ export function MetricDrilldown({
         {(resumo.textoResto || resumo.truncado) && (
           <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
             {/* Só aparece com a lista NÃO truncada: cortada no limite, a
-                diferença é paginação, e chamá-la de carteira alheia mentiria. */}
+                diferença é paginação, e nomeá-la de outra coisa mentiria. */}
             <span className="text-label text-muted-foreground">{resumo.textoResto}</span>
             {resumo.truncado && (
               <button

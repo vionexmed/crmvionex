@@ -399,10 +399,10 @@ export default function Contacts() {
             opcoes={[
               { valor: "table" as const, rotulo: "Tabela", icone: List },
               { valor: "cards" as const, rotulo: "Cartões", icone: LayoutGrid },
-              // Distribuição por vendedor é ação de gestor
-              ...(isAdmin
-                ? [{ valor: "owner" as const, rotulo: "Vendedor", icone: Users }]
-                : []),
+              // Aberta para todo mundo desde que a base virou da organização:
+              // era aqui que se via de quem é cada contato, e sem isso a lista
+              // de 800 pessoas não responde mais "quais são os meus?".
+              { valor: "owner" as const, rotulo: "Vendedor", icone: Users },
             ]}
           />
           <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
@@ -475,18 +475,18 @@ export default function Contacts() {
               </SelectContent>
             </Select>
           </div>
-          {isAdmin && (
-            <div className="space-y-1">
-              <Label className="text-xs">Responsável</Label>
-              <Select value={filters.ownerId || "all"} onValueChange={(v) => setFilters({ ...filters, ownerId: v === "all" ? undefined : v })}>
-                <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {/* Filtrar por responsável é o que devolve a carteira de cada um
+              depois que a base passou a ser da organização inteira. */}
+          <div className="space-y-1">
+            <Label className="text-xs">Responsável</Label>
+            <Select value={filters.ownerId || "all"} onValueChange={(v) => setFilters({ ...filters, ownerId: v === "all" ? undefined : v })}>
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1">
             <Label className="text-xs">Empresa</Label>
             <Select value={filters.companyId || "all"} onValueChange={(v) => setFilters({ ...filters, companyId: v === "all" ? undefined : v })}>
@@ -723,7 +723,7 @@ export default function Contacts() {
         </div>
       )}
 
-      {viewMode === "owner" && isAdmin && (
+      {viewMode === "owner" && (
         <ContactsKanbanByOwner
           contacts={allContactsForKanban}
           companies={companies}

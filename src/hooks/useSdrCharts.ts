@@ -11,7 +11,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
-import { useAuth } from "@/contexts/AuthContext";
 import { getSdrRanges, type SdrPeriod } from "@/hooks/useSdrMetrics";
 
 export type PontoSerie = { dia: string; leads: number; abordagens: number; respostas: number };
@@ -25,22 +24,21 @@ export type SdrCharts = {
   serie: PontoSerie[];
   funil: EtapaFunil[];
   canais: FatiaCanal[];
-  /** null quando quem está olhando não é admin — desempenho individual é restrito. */
+  /** null só quando a consulta falha; o gráfico não é mais restrito a admin. */
   pessoas: LinhaPessoa[] | null;
 };
 
 export const sdrChartsKeys = {
   all: (orgId: string) => ["sdr-charts", orgId] as const,
-  period: (orgId: string, period: SdrPeriod, admin: boolean) =>
-    ["sdr-charts", orgId, period, admin] as const,
+  period: (orgId: string, period: SdrPeriod) =>
+    ["sdr-charts", orgId, period] as const,
 };
 
 export function useSdrCharts(period: SdrPeriod) {
   const { orgId } = useOrg();
-  const { isAdmin } = useAuth();
 
   return useQuery<SdrCharts>({
-    queryKey: sdrChartsKeys.period(orgId ?? "", period, isAdmin),
+    queryKey: sdrChartsKeys.period(orgId ?? "", period),
     enabled: !!orgId,
     /**
      * SEMPRE revalida ao abrir o painel.
@@ -67,7 +65,7 @@ export function useSdrCharts(period: SdrPeriod) {
         supabase.rpc("sdr_series", args),
         supabase.rpc("sdr_funnel", args),
         supabase.rpc("sdr_by_channel", args),
-        isAdmin ? supabase.rpc("sdr_by_owner", args) : Promise.resolve({ data: null, error: null }),
+        supabase.rpc("sdr_by_owner", args),
       ]);
 
       if (serie.error) throw serie.error;

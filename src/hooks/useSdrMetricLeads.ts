@@ -7,8 +7,8 @@
  *
  * Aqui a identidade sai, então quem chama precisa saber de duas coisas:
  *
- *  1. A lista é recortada pela carteira. Admin recebe a organização; os demais,
- *     só os próprios leads. Logo a lista pode somar MENOS que o card.
+ *  1. A lista é da organização inteira, igual ao card. Foi recortada por
+ *     carteira até 20260909140000, e a tela dizia isso; hoje não recorta mais.
  *  2. "Abordagens" conta evento, não lead — 8 abordagens podem ser 3 leads.
  *     Por isso cada linha traz `toques`, e a diferença contra o total do card é
  *     explicada na tela por resumoDrilldown() em vez de ficar calada.
@@ -105,18 +105,20 @@ export type ResumoDrilldown = {
  * O total já está no card, então nada disso custa consulta extra.
  *
  * A distinção que importa: lista que bateu no limite está TRUNCADA — a
- * diferença é só paginação, e o rodapé "ver todos" já dá conta. Dizer
- * "de outros responsáveis" nesse caso seria mentira. Só quando veio tudo o que
- * é visível é que a diferença significa carteira alheia ou toque sem lead.
+ * diferença é só paginação, e o rodapé "ver todos" já dá conta. Só quando veio
+ * tudo é que a diferença significa o que a frase diz.
+ *
+ * Havia um terceiro caso, e ele sumiu: "de outros responsáveis". A lista era
+ * recortada por carteira e o card não, então sobrava diferença a explicar. Com
+ * o CRM aberto para a organização, sobra só o toque sem lead vinculado.
  */
 export function resumoDrilldown(args: {
   metric: MetricDrilldownKey;
   total: number | null;
   linhas: LinhaDrilldown[];
   limite: number;
-  admin: boolean;
 }): ResumoDrilldown {
-  const { metric, total, linhas, limite, admin } = args;
+  const { metric, total, linhas, limite } = args;
 
   const visivel = linhas.reduce((soma, l) => soma + (l.toques || 0), 0);
   const truncado = linhas.length >= limite;
@@ -134,11 +136,9 @@ export function resumoDrilldown(args: {
   const resto = Math.max(0, total - visivel);
   if (resto === 0) return { visivel, resto: 0, textoResto: null, truncado };
 
-  // contact_id é anulável nas três tabelas de abordagem, então mesmo o admin
-  // pode ter toque sem lead a que atribuir.
-  const textoResto = admin
-    ? `+${resto} sem lead vinculado`
-    : `+${resto} de outros responsáveis ou sem lead vinculado`;
+  // contact_id é anulável nas três tabelas de abordagem: sobra o toque que não
+  // tem lead a que ser atribuído.
+  const textoResto = `+${resto} sem lead vinculado`;
 
   return { visivel, resto, textoResto, truncado };
 }

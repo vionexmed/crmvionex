@@ -179,13 +179,24 @@ export default function Conversations({ canal }: { canal: Canal }) {
   useEffect(() => {
     if (!orgId) return;
     void (async () => {
-      const [wa, ig] = await Promise.all([
-        supabase.from("whatsapp_config").select("id").eq("org_id", orgId).maybeSingle(),
-        supabase.from("instagram_connections").select("id")
-          .eq("org_id", orgId).eq("is_active", true).limit(1).maybeSingle(),
-      ]);
-      setTemWhatsapp(!!wa.data);
-      setTemInstagram(!!ig.data);
+      /*
+        Uma função, e não duas consultas às tabelas de configuração.
+
+        `whatsapp_config` guarda `webhook_verify_token`, então não pode ser
+        legível por membro -- e enquanto foi consultada aqui, quem não era admin
+        recebia vazio e a tela concluía "WhatsApp ainda não está conectado",
+        com link para uma página de administrador. Mentira, e sem saída.
+
+        `canais_do_atendimento` devolve dois booleanos e mais nada.
+      */
+      const { data, error } = await supabase.rpc("canais_do_atendimento", { _org_id: orgId });
+      if (error) {
+        console.warn("[Conversations] não consegui saber quais canais existem", error);
+        return;
+      }
+      const canais = data?.[0];
+      setTemWhatsapp(!!canais?.whatsapp);
+      setTemInstagram(!!canais?.instagram);
     })();
   }, [orgId]);
 

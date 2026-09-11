@@ -77,8 +77,9 @@ export function NotificationBell() {
       // sininho gritar por um trabalho que a própria pessoa acabou de fazer, e
       // enterraria o lead que chegou de verdade.
       //
-      // A RLS de `contacts` já recorta por dono: admin vê a organização, o
-      // comercial vê só a carteira dele. Nada a fazer aqui.
+      // A base de contatos é da organização inteira (20260909120000), então o
+      // sininho anuncia lead novo para todo mundo -- inclusive o que caiu na
+      // mão de outra pessoa. É o ponto: a equipe fica sabendo que entrou.
       supabase
         .from("contacts")
         .select("id, first_name, last_name, created_at")

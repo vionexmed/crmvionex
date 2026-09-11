@@ -674,18 +674,19 @@ export default function Deals() {
                 </SelectContent>
               </Select>
             </div>
-            {isAdmin && (
-              <div className="space-y-2">
-                <Label>Responsável</Label>
-                <Select value={form.owner_id || "none"} onValueChange={(v) => setForm({ ...form, owner_id: v === "none" ? null : v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar responsável" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Escolher o responsável deixou de ser de admin quando o CRM
+                passou a ser da organização: o campo diz de quem é o negócio, e
+                quem monta o negócio é quem sabe. */}
+            <div className="space-y-2">
+              <Label>Responsável</Label>
+              <Select value={form.owner_id || "none"} onValueChange={(v) => setForm({ ...form, owner_id: v === "none" ? null : v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar responsável" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {members.map((m) => <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Probabilidade (%)</Label>
