@@ -80,50 +80,62 @@ describe("apagar não pode devolver sucesso sem apagar", () => {
 });
 
 describe("a origem do contato deixou de ser só leitura", () => {
+  const SELETOR = ler("src/components/crm/SeletorDeOrigem.tsx");
+
   /**
-   * O selo do cabeçalho já mostrava de onde a pessoa veio e não havia como
+   * O selo do cabeçalho mostrava de onde a pessoa veio e não havia como
    * corrigir: lead que chegou por indicação e entrou como "Manual" ficava assim
    * para sempre -- e a origem alimenta o filtro da lista e o gráfico de canais.
    */
-  it("existe um campo de origem na edição", () => {
-    expect(GAVETA).toContain('<Label className="text-xs">Origem</Label>');
-    expect(GAVETA).toContain("ORIGIN_OPTIONS.map");
+  it("os dois lugares usam o MESMO seletor", () => {
+    expect(GAVETA).toContain("<SeletorDeOrigem");
+    expect(CADASTRO).toContain("<SeletorDeOrigem");
   });
 
   /**
-   * O valor CRU, não o rótulo. `getContactOrigin` agrupa -- "csv_import" vira
-   * "Importação" --, então gravar o rótulo apagaria o nome da planilha de onde
-   * a pessoa veio. Por isso a opção crua também aparece na lista quando não é
-   * uma das quatro conhecidas.
+   * A lista tinha só os quatro grupos conhecidos, e a base tem muito mais: nome
+   * de planilha, campanha, evento. Sem as origens reais, não havia como
+   * reaproveitar uma que já existe -- e a mesma origem escrita de dois jeitos
+   * vira duas fatias no gráfico de canais e dois itens no filtro.
    */
-  it("origem fora da lista conhecida sobrevive a abrir e salvar", () => {
-    expect(GAVETA).toMatch(/!ORIGIN_OPTIONS\.some\(\(o\) => o\.value === meta\.source\)/);
+  it("oferece as origens que a base já usa", () => {
+    expect(SELETOR).toContain("useOrigensDeContato");
+    expect(SELETOR).toMatch(/\{o\.origem\} \(\{o\.contatos\}\)/);
   });
 
-  /** `metadata` é um JSON com mais coisa dentro (cidade, país, marca de
-   *  importação). Gravar só `source` apagaria o resto. */
-  it("salvar mescla o metadata em vez de trocá-lo", () => {
-    // Até a próxima função, e não até o primeiro `};`: um `toast({...});` no
-    // meio fecharia a fatia cedo demais e o teste passaria sobre nada.
-    const i = GAVETA.indexOf("const handleSave");
-    const corpo = GAVETA.slice(i, GAVETA.indexOf("const addActivity", i));
-    expect(corpo).toContain("...existingMeta");
-    expect(corpo).toContain("source: meta.source || undefined");
+  /** Digitar é o único jeito de a PRIMEIRA ocorrência de uma origem nova
+   *  existir: ela não está na base porque ninguém a usou ainda. */
+  it("deixa digitar uma origem nova", () => {
+    expect(SELETOR).toContain('aria-label="Nova origem"');
+    expect(SELETOR).toContain("Digitar uma nova…");
   });
-});
 
-describe("a origem é escolhida na hora do cadastro", () => {
+  /**
+   * Sem a remoção, um contato com `source: "manual"` faria "Manual" aparecer
+   * duas vezes -- uma como grupo e outra como valor real da base --, e as duas
+   * gravariam exatamente a mesma coisa.
+   */
+  it("não repete o que já está entre os grupos conhecidos", () => {
+    expect(SELETOR).toMatch(/!grupos\.includes\(o\.origem\)/);
+  });
+
+  /**
+   * O valor CRU, não o rótulo. Se a consulta das origens falhar, ou se o valor
+   * acabou de ser digitado, ele não está em lista nenhuma -- e sem esta opção
+   * abrir e salvar a ficha apagaria de onde a pessoa veio.
+   */
+  it("a origem atual continua selecionável mesmo fora das listas", () => {
+    expect(SELETOR).toMatch(/soltaNaLista/);
+    expect(SELETOR).toMatch(/!daBase\.some\(\(o\) => o\.origem === valor\)/);
+  });
+
   /**
    * O formulário manual gravava `source: "manual"` FIXO. Quem cadastrava à mão
-   * o lead que veio de indicação, de evento ou de campanha sabia disso na hora
-   * -- e era a única hora em que se sabia. Depois vira arqueologia: ninguém
-   * lembra de onde veio o contato de três meses atrás.
+   * o lead vindo de indicação, de evento ou de campanha sabia disso na hora --
+   * e era a única hora em que se sabia. Depois vira arqueologia.
    */
-  it("o cadastro manual oferece a origem, e não a fixa", () => {
-    expect(CADASTRO).toContain('<Field label="Origem">');
-    expect(CADASTRO).toContain("ORIGIN_OPTIONS.map");
+  it("o cadastro manual não fixa mais a origem", () => {
     expect(CADASTRO, "gravar fixo é o defeito").not.toMatch(/source: "manual",/);
-    // "manual" continua como PADRÃO, que é o que o formulário sempre gravou.
     expect(CADASTRO).toMatch(/source: origem \|\| "manual"/);
     expect(CADASTRO).toMatch(/useState\("manual"\)/);
   });
@@ -135,6 +147,15 @@ describe("a origem é escolhida na hora do cadastro", () => {
     expect(CADASTRO.slice(i, i + 300)).toContain('setOrigem("manual")');
   });
 
+  /** `metadata` é um JSON com mais coisa dentro (cidade, país, marca de
+   *  importação). Gravar só `source` apagaria o resto. */
+  it("salvar mescla o metadata em vez de trocá-lo", () => {
+    const i = GAVETA.indexOf("const handleSave");
+    const corpo = GAVETA.slice(i, GAVETA.indexOf("const addActivity", i));
+    expect(corpo).toContain("...existingMeta");
+    expect(corpo).toContain("source: meta.source || undefined");
+  });
+
   /** O par que o cabeçalho mostra como dois selos vizinhos. Empilhados no fim
    *  do formulário, a origem passava despercebida -- e passou. */
   it("na ficha, origem fica ao lado do ciclo de vida", () => {
@@ -144,5 +165,11 @@ describe("a origem é escolhida na hora do cadastro", () => {
     expect(j).toBeGreaterThan(i);
     expect(GAVETA.slice(i - 200, i), "os dois numa grade de duas colunas")
       .toContain('grid grid-cols-2 gap-3');
+  });
+
+  /** Uma consulta só para o filtro da lista e para os dois seletores: com dois
+   *  carregadores, uma tela oferece origem que a outra não tem. */
+  it("filtro e seletor leem a mesma lista", () => {
+    expect(ler("src/pages/Contacts.tsx")).toContain("useOrigensDeContato");
   });
 });

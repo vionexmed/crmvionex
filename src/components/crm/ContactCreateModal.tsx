@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { AREAS_ATUACAO, PAISES, ORIGIN_OPTIONS } from "@/lib/contact-options";
+import { AREAS_ATUACAO, PAISES } from "@/lib/contact-options";
+import { SeletorDeOrigem } from "@/components/crm/SeletorDeOrigem";
 import type { Database } from "@/integrations/supabase/types";
 
 type Company = Database["public"]["Tables"]["companies"]["Row"];
@@ -201,14 +202,7 @@ export function ContactCreateModal({ open, onOpenChange, onCreated, companies }:
 
           {/* Origem */}
           <Field label="Origem">
-            <Select value={origem} onValueChange={setOrigem}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ORIGIN_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SeletorDeOrigem valor={origem} aoMudar={setOrigem} permitirVazio={false} />
           </Field>
 
           {/* Área de atuação */}

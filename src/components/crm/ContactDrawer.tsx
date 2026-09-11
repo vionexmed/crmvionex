@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/useOrg";
 import { LinhaDeAtividade } from "@/components/crm/LinhaDeAtividade";
+import { SeletorDeOrigem } from "@/components/crm/SeletorDeOrigem";
 import { useUpdateActivity, useDeleteActivities } from "@/hooks/queries/useActivities";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent} from "@/components/ui/sheet";
@@ -23,7 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
-  AREAS_ATUACAO, PAISES, CADASTRO_FIELDS, getContactOrigin, ORIGIN_OPTIONS,
+  AREAS_ATUACAO, PAISES, CADASTRO_FIELDS, getContactOrigin,
   LIFECYCLE_LABELS, type LifecycleStage,
 } from "@/lib/contact-options";
 import {
@@ -427,21 +428,10 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                       pessoa veio. */}
                   <div className="space-y-1">
                     <Label className="text-xs">Origem</Label>
-                    <Select
-                      value={meta.source || "__none__"}
-                      onValueChange={(v) => setMeta({ ...meta, source: v === "__none__" ? "" : v })}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">— Não informada —</SelectItem>
-                        {ORIGIN_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                        {meta.source && !ORIGIN_OPTIONS.some((o) => o.value === meta.source) && (
-                          <SelectItem value={meta.source}>{meta.source}</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <SeletorDeOrigem
+                      valor={meta.source}
+                      aoMudar={(v) => setMeta({ ...meta, source: v })}
+                    />
                   </div>
                 </div>
 

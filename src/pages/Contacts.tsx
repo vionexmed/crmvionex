@@ -59,6 +59,7 @@ import { SortHeader, useOrdenacao } from "@/components/layout/SortHeader";
 import { SemOrganizacao } from "@/components/layout/SemOrganizacao";
 import { exportarCSV } from "@/lib/csv";
 import { PREFIXO_ORIGEM_EXATA } from "@/lib/api/contacts";
+import { useOrigensDeContato } from "@/hooks/queries/useOrigensDeContato";
 import { invalidarPainel } from "@/lib/invalidar-painel";
 import { formatarEmail, formatarTelefone, nomeDoContato } from "@/lib/contato-formato";
 import { BarraDeFiltros, BarraDeSelecao } from "@/components/layout/BarraDeAcoes";
@@ -148,8 +149,12 @@ export default function Contacts() {
    * ("NEXMED 2026", "APROXIMA MED"), o selo da lista mostrava um valor que o
    * filtro não oferecia -- dava para ver a origem e não dava para filtrar por
    * ela, o pior dos dois mundos.
+   *
+   * A mesma consulta alimenta o seletor de origem da ficha e do cadastro. Em
+   * cache: abrir uma ficha não pede a lista de novo, e as duas telas nunca
+   * oferecem listas diferentes.
    */
-  const [origensReais, setOrigensReais] = useState<{ origem: string; contatos: number }[]>([]);
+  const { data: origensReais = [] } = useOrigensDeContato();
 
   // Debounce search to avoid a query on every keystroke
   const debouncedSearch = useDebounce(search, 300);
@@ -181,17 +186,6 @@ export default function Contacts() {
    * Diferente do `action=new`, o parâmetro NÃO é apagado da URL: apagá-lo faria
    * um F5 perder o filtro, e o link salvo deixaria de significar o que dizia.
    */
-  useEffect(() => {
-    if (!orgId) return;
-    let vivo = true;
-    contactsApi.listarOrigens(orgId)
-      .then((r) => { if (vivo) setOrigensReais(r); })
-      // Falhar aqui não pode derrubar a tela: sem a lista dinâmica o filtro
-      // volta a ter só os quatro grupos, que é o comportamento anterior.
-      .catch(() => { if (vivo) setOrigensReais([]); });
-    return () => { vivo = false; };
-  }, [orgId]);
-
   useEffect(() => {
     const estagio = searchParams.get("estagio");
     if (!estagio) return;
