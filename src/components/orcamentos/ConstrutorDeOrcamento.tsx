@@ -269,6 +269,10 @@ export function ConstrutorDeOrcamento({
                                   ...l,
                                   {
                                     ...novo,
+                                    // `ItemNovo.descricao` e opcional; aqui ela
+                                    // e obrigatoria. Espalhar sem isto deixa a
+                                    // chave ausente em vez de nula.
+                                    descricao: novo.descricao ?? null,
                                     preco_unit: String(novo.preco_unit),
                                     quantidade: String(novo.quantidade),
                                     desconto: "",
