@@ -465,7 +465,6 @@ export type Database = {
           disqualified_at: string | null
           email: string | null
           equipamento_atual: string | null
-          especialidade: string | null
           first_name: string
           id: string
           instagram_igsid: string | null
@@ -500,7 +499,6 @@ export type Database = {
           disqualified_at?: string | null
           email?: string | null
           equipamento_atual?: string | null
-          especialidade?: string | null
           first_name: string
           id?: string
           instagram_igsid?: string | null
@@ -535,7 +533,6 @@ export type Database = {
           disqualified_at?: string | null
           email?: string | null
           equipamento_atual?: string | null
-          especialidade?: string | null
           first_name?: string
           id?: string
           instagram_igsid?: string | null

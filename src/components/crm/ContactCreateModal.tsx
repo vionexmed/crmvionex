@@ -205,8 +205,9 @@ export function ContactCreateModal({ open, onOpenChange, onCreated, companies }:
             <SeletorDeOrigem valor={origem} aoMudar={setOrigem} permitirVazio={false} />
           </Field>
 
-          {/* Área de atuação */}
-          <Field label="Área de atuação (opcional)">
+          {/* Mesmo campo (`title`) que a lista de Contatos rotula
+              "Especialidade" -- um termo por conceito. */}
+          <Field label="Especialidade (opcional)">
             <Select value={areaAtuacao || "__none__"} onValueChange={(v) => setAreaAtuacao(v === "__none__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="Selecione ou deixe em branco" /></SelectTrigger>
               <SelectContent>
