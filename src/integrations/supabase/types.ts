@@ -670,6 +670,7 @@ export type Database = {
           currency: string | null
           id: string
           loss_reason: string | null
+          loss_reason_id: string | null
           org_id: string
           owner_id: string | null
           probability: number | null
@@ -689,6 +690,7 @@ export type Database = {
           currency?: string | null
           id?: string
           loss_reason?: string | null
+          loss_reason_id?: string | null
           org_id: string
           owner_id?: string | null
           probability?: number | null
@@ -708,6 +710,7 @@ export type Database = {
           currency?: string | null
           id?: string
           loss_reason?: string | null
+          loss_reason_id?: string | null
           org_id?: string
           owner_id?: string | null
           probability?: number | null
@@ -732,6 +735,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_loss_reason_id_fkey"
+            columns: ["loss_reason_id"]
+            isOneToOne: false
+            referencedRelation: "loss_reasons"
             referencedColumns: ["id"]
           },
           {
