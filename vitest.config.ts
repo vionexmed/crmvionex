@@ -19,6 +19,17 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // `client.ts` chama `createClient` no topo do módulo, que LANÇA se a URL
+    // vier vazia. Qualquer teste que importe (mesmo indiretamente, via um
+    // hook) morria na coleta com "supabaseUrl is required" -- a suíte só
+    // passava em quem tivesse um `.env` local, nunca em clone limpo nem em CI.
+    //
+    // Valores de fachada: nenhum teste vai à rede, só precisam ser aceitos
+    // pelo validador de URL do supabase-js.
+    env: {
+      VITE_SUPABASE_URL: "http://localhost:54321",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "chave-de-teste",
+    },
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
