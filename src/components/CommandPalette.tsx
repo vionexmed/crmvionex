@@ -20,8 +20,11 @@ const pages = [
   { label: "Negócios", icon: Handshake, path: "/deals" },
   { label: "Atividades", icon: Activity, path: "/activities" },
   { label: "Atividades", icon: Activity, path: "/activities" },
-  { label: "E-mail", icon: Inbox, path: "/inbox" },
-  { label: "WhatsApp", icon: MessageSquare, path: "/conversations" },
+  // Um destino para os três canais. A caixa de e-mail completa (pastas, spam,
+  // anexos) continua alcançável, e por isso segue na paleta como entrada
+  // própria -- ela não é mais o destino de "e-mail", é o de "gerenciar caixa".
+  { label: "Atendimento", icon: MessageSquare, path: "/atendimento" },
+  { label: "Caixa de e-mail", icon: Inbox, path: "/inbox" },
   { label: "Templates de Email", icon: FileText, path: "/email-templates" },
   { label: "Sequências", icon: Zap, path: "/email-sequences" },
   { label: "Lead Scoring", icon: Target, path: "/lead-scoring" },

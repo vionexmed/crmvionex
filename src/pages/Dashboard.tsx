@@ -100,7 +100,7 @@ const GROUPS: Group[] = [
         hint: "Leads que responderam depois de serem abordados, sobre os abordados no período — por WhatsApp. Resposta que chega fora da janela do período não é contada.",
       },
       {
-        key: "conversasIniciadas", label: "Conversas iniciadas", icon: MessagesSquare, accent: "primary", href: "/conversations",
+        key: "conversasIniciadas", label: "Conversas iniciadas", icon: MessagesSquare, accent: "primary", href: "/atendimento?canal=whatsapp",
         hint: "Contatos distintos com pelo menos uma mensagem de WhatsApp no período. Não existe entidade de conversa no banco — é derivado por contato.",
       },
     ],

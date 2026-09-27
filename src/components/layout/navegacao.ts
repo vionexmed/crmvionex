@@ -5,8 +5,6 @@ import {
   Building2,
   FileText,
   Handshake,
-  Inbox,
-  Instagram,
   LayoutDashboard,
   Mail,
   Megaphone,
@@ -84,17 +82,26 @@ export const NAV_GRUPOS: GrupoNav[] = [
   {
     label: "Atendimento",
     items: [
-      // Os CANAIS, em paralelo. Cada pessoa vê só a própria caixa — a RLS
-      // impede ver a do colega.
+      // UM destino para os três canais, e era três.
       //
-      // Um item por canal, e não um item "Atendimento" com filtro dentro: é a
-      // barra lateral que troca de canal, e é assim que a pessoa pensa. Duas
-      // ROTAS e não `?canal=`, porque `isActive` compara por
-      // `pathname.startsWith` -- com query string os dois itens ficariam
-      // apagados, já que o pathname seria o mesmo para ambos.
-      { title: "WhatsApp", url: "/conversations", icon: MessageSquare },
-      { title: "Instagram", url: "/instagram", icon: Instagram },
-      { title: "E-mail", url: "/inbox", icon: Inbox },
+      // O argumento anterior era que a barra lateral é que devia trocar de
+      // canal, "porque é assim que a pessoa pensa" -- e por isso havia duas
+      // ROTAS em vez de `?canal=`, já que o `isActive` compara por
+      // `pathname.startsWith` e a query string deixaria os dois itens apagados.
+      //
+      // Não se sustentou: quem atende pensa em QUEM está esperando resposta,
+      // não no aplicativo por onde a pergunta chegou. Com três itens, a mesma
+      // pessoa escrevendo por dois canais virava dois atendimentos em telas
+      // diferentes, e nenhuma delas dizia que a outra existia.
+      //
+      // O canal virou filtro DENTRO da tela, e com um item só o `isActive`
+      // volta a funcionar: o pathname é único. `/conversations` e `/instagram`
+      // seguem atendendo, redirecionadas com o filtro aplicado.
+      //
+      // `/inbox` continua sendo uma rota de verdade -- é a caixa de e-mail
+      // completa, com pastas, spam e anexos -- mas saiu do menu: o cabeçalho de
+      // Atendimento é quem leva até ela.
+      { title: "Atendimento", url: "/atendimento", icon: MessageSquare },
       { title: "Templates", url: "/email-templates", icon: FileText, adminOnly: true },
       { title: "Sequências", url: "/email-sequences", icon: Zap, adminOnly: true },
     ],

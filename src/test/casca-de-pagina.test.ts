@@ -57,7 +57,9 @@ const SEM_CASCA: Record<string, string> = {
   // Altura cheia: `h-[calc(100vh-3.5rem)]` com rolagem interna. O `space-y-4`
   // da casca quebraria o flex.
   "src/pages/Inbox.tsx": "altura cheia",
-  "src/pages/Conversations.tsx": "altura cheia",
+  // Era `Conversations.tsx`. A tela de um canal virou a dos três, com o mesmo
+  // motivo para ficar fora da casca: lista e thread rolam por dentro.
+  "src/pages/Atendimento.tsx": "altura cheia",
 
   // Título editável no lugar: clicar no nome do negócio abre o campo. Não é
   // cabeçalho de página, é um controle.
@@ -165,7 +167,9 @@ describe("o PageHeader não carrega prop morta", () => {
 
   it.each([
     "src/pages/Reports.tsx",
-    "src/pages/Conversations.tsx",
+    // Era `Conversations.tsx`, a tela de UM canal. Os três canais viraram
+    // `Atendimento.tsx`, e é ela quem herda o cabeçalho -- e a regra.
+    "src/pages/Atendimento.tsx",
     "src/pages/Activities.tsx",
     "src/pages/Companies.tsx",
   ])("%s não passa mais pattern", (arquivo) => {
