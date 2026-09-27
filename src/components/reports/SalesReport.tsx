@@ -19,12 +19,36 @@ import {
   fmt, pct, CHART_COLORS, MONTHS_PT,
   downloadCSV,
 } from "@/components/reports/types";
+import { useLossReasons } from "@/hooks/queries/useLossReasons";
+
+/**
+ * `loss_reason_id` não está no tipo `Deal` de relatórios (esse tipo é
+ * propriedade de `reports/types.ts`, fora do escopo desta mudança), mas a
+ * consulta em Reports.tsx já faz `select("*")` -- a coluna chega em tempo de
+ * execução mesmo sem o campo declarado. `Deal` continua atribuível a este tipo
+ * porque o campo extra é opcional.
+ */
+type DealComMotivo = Deal & { loss_reason_id?: string | null };
 
 export function SalesReport({ deals, stages, members, companies }: {
-  deals: Deal[]; stages: Stage[]; members: Profile[]; companies: Company[];
+  deals: DealComMotivo[]; stages: Stage[]; members: Profile[]; companies: Company[];
 }) {
   const [groupBy, setGroupBy] = useState<"stage" | "owner" | "company" | "month">("stage");
   const { toast } = useToast();
+  // Catálogo INTEIRO (inclui desativados): um negócio perdido pode referenciar
+  // um motivo que a organização desativou depois -- desativar não apaga o
+  // vínculo do negócio, só tira o motivo da lista oferecida a negócios novos.
+  const { data: catalogoMotivos = [] } = useLossReasons(false);
+  /**
+   * Prefere o rótulo do catálogo (via FK); cai no texto legado para negócios
+   * perdidos antes da migração que criou `loss_reason_id` (nunca backfilled).
+   * Nenhum dos dois é descartado -- é a mesma regra de exibição de DealDetail.
+   */
+  const rotuloMotivo = useMemo(() => {
+    const porId = new Map(catalogoMotivos.map((r) => [r.id, r.label]));
+    return (d: DealComMotivo) =>
+      (d.loss_reason_id && porId.get(d.loss_reason_id)) || d.loss_reason?.trim() || "Não informado";
+  }, [catalogoMotivos]);
 
   const wonDeals = deals.filter((d) => d.status === "won");
   const lostDeals = deals.filter((d) => d.status === "lost");
@@ -58,12 +82,15 @@ export function SalesReport({ deals, stages, members, companies }: {
     { name: "Perdidos", value: lostDeals.length, fill: "hsl(var(--destructive))" },
   ], [openDeals, wonDeals, lostDeals]);
 
-  // Loss reasons
+  // Loss reasons -- agrupa pela CATEGORIA do catálogo, não pelo texto livre.
+  // Era o texto inteiro (categoria + nota concatenadas) que virava a chave do
+  // Map: cada observação digitada criava um grupo novo, e "por que perdemos?"
+  // não tinha resposta -- ver dealsApi.updateStatus.
   const lossReasons = useMemo(() => {
     const map = new Map<string, number>();
-    lostDeals.forEach((d) => { const r = d.loss_reason?.trim() || "Não informado"; map.set(r, (map.get(r) || 0) + 1); });
+    lostDeals.forEach((d) => { const r = rotuloMotivo(d); map.set(r, (map.get(r) || 0) + 1); });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
-  }, [lostDeals]);
+  }, [lostDeals, rotuloMotivo]);
 
   // Grouped table
   const groupedData = useMemo(() => {
@@ -132,7 +159,7 @@ export function SalesReport({ deals, stages, members, companies }: {
       Etapa: stages.find((s) => s.id === d.stage_id)?.name || "",
       Dono: members.find((m) => m.id === d.owner_id)?.name || "",
       Probabilidade: d.probability, "Data Fechamento": d.close_date,
-      "Motivo Perda": d.loss_reason || "", Criado: d.created_at,
+      "Motivo Perda": d.status === "lost" ? rotuloMotivo(d) : "", Criado: d.created_at,
     })), "relatorio-vendas");
     toast({ title: "CSV exportado!" });
   };

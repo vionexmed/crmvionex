@@ -206,14 +206,30 @@ const Sidebar = React.forwardRef<
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            // A borda saiu DAQUI e foi para o painel interno, onde usa
+            // `--sidebar-border` em vez de `--border`. Mantida nos dois
+            // lugares, a lateral ficava com duas linhas encostadas, de cores
+            // diferentes.
+            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
           className,
         )}
         {...props}
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+          /*
+            A LATERAL SE SEPARA POR UMA LINHA, NÃO POR SOMBRA.
+
+            A borda vinha do wrapper de fora (`group-data-[side=left]:border-r`),
+            que usa `--border` -- o token do CONTEÚDO. Então a parede terminava
+            numa linha da cor da página, e não na sua própria: no tema escuro,
+            onde a lateral é mais clara que o conteúdo, isso desenhava um vinco
+            escuro entre as duas superfícies.
+
+            `border-sidebar-border` aqui dentro faz a linha pertencer à lateral,
+            que é de quem ela é.
+          */
+          className="flex h-full w-full flex-col border-r border-sidebar-border bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-[var(--shadow-md)]"
         >
           {children}
         </div>
@@ -368,7 +384,10 @@ const SidebarGroupLabel = React.forwardRef<HTMLDivElement, React.ComponentProps<
         ref={ref}
         data-sidebar="group-label"
         className={cn(
-          "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+          // Caixa alta de 11px com tracking aberto, a mesma etiqueta do cabeçalho
+          // de tabela e do olho-de-boi acima do título da página. É o que dá à
+          // lateral a leitura de índice, e não de lista de links.
+          "flex h-7 shrink-0 items-center rounded-md px-2 text-label font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/65 outline-none ring-sidebar-ring transition-[margin,opa] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-3.5 [&>svg]:shrink-0",
           "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
           className,
         )}
@@ -419,7 +438,7 @@ const SidebarMenuItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li
 SidebarMenuItem.displayName = "SidebarMenuItem";
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:[&>svg]:size-5 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-1.5 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:[&>svg]:size-5 [&>span:last-child]:truncate [&>svg]:size-[17px] [&>svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -428,7 +447,10 @@ const sidebarMenuButtonVariants = cva(
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "h-8 text-sm",
+        // 34px em vez de 32: a lateral tem doze a quinze destinos, e dois
+        // pixels por linha é o que separa uma lista apertada de uma lista que
+        // se lê de relance. Não chega a custar um item de rolagem.
+        default: "h-[34px] text-sm",
         sm: "h-7 text-xs",
         lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
       },

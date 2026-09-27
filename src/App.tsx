@@ -94,7 +94,7 @@ const DealDetail       = lazyChunk(() => import("./pages/DealDetail"));
 const Activities       = lazyChunk(() => import("./pages/Activities"));
 const Inbox            = lazyChunk(() => import("./pages/Inbox"));
 const MyEmail          = lazyChunk(() => import("./pages/MyEmail"));
-const Conversations    = lazyChunk(() => import("./pages/Conversations"));
+const Atendimento      = lazyChunk(() => import("./pages/Atendimento"));
 const EmailTemplates   = lazyChunk(() => import("./pages/EmailTemplates"));
 const EmailSequences   = lazyChunk(() => import("./pages/EmailSequences"));
 const LeadScoring      = lazyChunk(() => import("./pages/LeadScoring"));
@@ -205,12 +205,23 @@ const App = () => (
                     20260909140000 o histórico de e-mail e de conversa é da
                     organização, como o resto do CRM. */}
                 <Route path="/settings/email" element={<SuspenseRoute><MyEmail /></SuspenseRoute>} />
+
+                {/* UMA tela para os três canais. Eram três destinos, e quem
+                    atende tinha de adivinhar em qual deles a conversa estava. */}
+                <Route path="/atendimento" element={<SuspenseRoute><Atendimento /></SuspenseRoute>} />
+                {/* As rotas de canal viram redirecionamento COM O FILTRO já
+                    aplicado: link salvo e favorito continuam chegando à mesma
+                    conversa, agora ao lado das dos outros canais. `replace` para
+                    o botão Voltar não cair de novo aqui. */}
+                <Route path="/conversations" element={<Navigate to="/atendimento?canal=whatsapp" replace />} />
+                <Route path="/instagram" element={<Navigate to="/atendimento?canal=instagram" replace />} />
+
+                {/* A CAIXA COMPLETA FICA, e não é teimosia: `/inbox` tem pastas
+                    do Gmail, rótulos, spam, lixeira, adiar e anexos -- gestão de
+                    caixa, que não cabe numa lista de conversas e que virar
+                    redirecionamento APAGARIA. Saiu da barra lateral; o cabeçalho
+                    de Atendimento leva até ela, e o link salvo continua valendo. */}
                 <Route path="/inbox" element={<SuspenseRoute><Inbox /></SuspenseRoute>} />
-                {/* Um canal por rota. O componente é o mesmo; o que muda é o
-                    canal, que vem daqui e não de query string -- ver o comentário
-                    em `navegacao.ts` sobre o `isActive`. */}
-                <Route path="/conversations" element={<SuspenseRoute><Conversations canal="whatsapp" /></SuspenseRoute>} />
-                <Route path="/instagram" element={<SuspenseRoute><Conversations canal="instagram" /></SuspenseRoute>} />
 
                 {/* Todo mundo vê quem é da equipe. As ações (trocar papel, remover,
                     convidar) já são protegidas por isAdmin dentro da própria página. */}

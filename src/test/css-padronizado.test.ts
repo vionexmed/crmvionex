@@ -59,12 +59,45 @@ describe("a cor de destaque continua trocável", () => {
    * tempo de execução. Cor cravada em hex ignora a escolha do usuário -- e a
    * navegação ativa fazia exatamente isso, com `rgba(0, 164, 181, 0.14)`, o
    * teal. Escolher roxo deixava o item ativo teal, sem explicação.
+   *
+   * ─────────────────────────────────────────────────────────────────────────
+   * ESTE TESTE ESTAVA PASSANDO POR CAUSA DE UM COMENTÁRIO.
+   *
+   * Ele lia o bloco CRU de `.vx-nav-active`, e dentro do bloco havia um
+   * comentário narrando a versão anterior da regra ("era `--sidebar-primary /
+   * 18%` com texto teal"). A string que o teste procurava estava ali, na
+   * PROSA -- a declaração em si não tinha token de destaque nenhum, porque a
+   * pastilha do item ativo é neutra de propósito.
+   *
+   * Ou seja: o teste teria continuado verde com a regra apagada, e ficava
+   * vermelho se alguém reescrevesse o comentário. É exatamente a armadilha que
+   * o CLAUDE.md registra -- varredura que lê comentário não está lendo código.
+   *
+   * Duas correções:
+   *
+   *  1. tira os comentários antes de ler, como todas as outras varreduras
+   *     deste arquivo já faziam;
+   *  2. lê a FAMÍLIA `.vx-nav-active` (a regra e a do `svg` dentro dela), não
+   *     só o primeiro bloco. O acento vive na regra do ícone, que é onde ele
+   *     deve viver: o fundo da pastilha é cinza porque "você está aqui" é
+   *     orientação, e só o ícone recebe a cor de destaque, para separar o
+   *     item ativo do item sob o cursor.
+   *
+   * O que continua sendo cobrado é o que importa: a cor sai de um token
+   * `--sidebar-*`, e não há hex nem rgb cravado.
    */
   it("a navegação ativa deriva do token, não do teal", () => {
-    const i = CSS.indexOf(".vx-nav-active {");
-    const bloco = CSS.slice(i, CSS.indexOf("}", i));
-    expect(bloco).not.toMatch(/rgba?\(/);
-    expect(bloco).toContain("--sidebar-primary");
+    const i = CSS_LIMPO.indexOf(".vx-nav-active {");
+    expect(i, "regra .vx-nav-active não encontrada").toBeGreaterThan(-1);
+    const familia = CSS_LIMPO.slice(i, CSS_LIMPO.indexOf(".vx-nav-item {", i));
+
+    expect(familia).not.toMatch(/rgba?\(/);
+    expect(familia).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(familia, "a pastilha do item ativo não deriva de token de lateral")
+      .toContain("--sidebar-");
+    // O destaque tem de vir do token que o ThemeContext troca, e não de uma
+    // segunda declaração do teal.
+    expect(familia).toContain("--sidebar-primary");
   });
 
   /**

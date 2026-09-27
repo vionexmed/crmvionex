@@ -50,7 +50,17 @@ export function AppHeader({ onOpenSearch, actions }: AppHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 sm:gap-4 border-b border-border bg-background/80 px-3 sm:px-4 backdrop-blur-sm" role="banner">
+    // 48px e não 56: a barra não tem conteúdo próprio -- caminho, busca e
+    // avisos --, e oito pixels de altura ali são oito pixels a menos de lista.
+    //
+    // `bg-card` em vez de `bg-background/80`: a barra é a continuação da
+    // parede da lateral, o plano em que a interface se apoia, e não um véu
+    // por cima da página. O `backdrop-blur` fica porque o conteúdo rola por
+    // baixo dela.
+    <header
+      className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-card/85 px-3 backdrop-blur-md sm:gap-4 sm:px-4"
+      role="banner"
+    >
       <SidebarTrigger className="-ml-1" aria-label="Alternar sidebar" />
 
       <Breadcrumb className="flex-1 hidden sm:flex">

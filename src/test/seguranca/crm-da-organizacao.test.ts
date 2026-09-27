@@ -266,7 +266,14 @@ describe("o painel mostra o desempenho de todos", () => {
 });
 
 describe("saber que o canal existe não é ler a credencial", () => {
-  const CONVERSAS = readFileSync("src/pages/Conversations.tsx", "utf8")
+  /**
+   * Era `src/pages/Conversations.tsx`. As três telas de canal viraram uma
+   * (`/atendimento`), e a leitura dos canais desceu para `lib/api/atendimento`
+   * -- que é quem chama a função agora. A regra é a mesma; mudou o arquivo.
+   */
+  const CONVERSAS = ["src/lib/api/atendimento.ts", "src/pages/Atendimento.tsx"]
+    .map((f) => readFileSync(f, "utf8"))
+    .join("\n")
     .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
   /**

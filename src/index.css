@@ -4,52 +4,118 @@
 
 @layer base {
   :root {
-    /* === VIONEX OFFICIAL PALETTE === */
-    /* Surfaces */
-    /* Cinza claro, e é ele que faz o cartão branco LEVANTAR.
-       
-       Cheguei a clarear para quase branco, na direção "editorial", e ali o
-       cartão só existia pela borda. No estilo escolhido -- painel de comando --
-       o cartão é um plano acima do fundo, e um plano precisa de algo de onde se
-       levantar. */
-    --background: 220 14% 97%;
-    --foreground: 213 41% 10%;         /* #0F1923 text-1 */
+    /*
+     * ===================================================================
+     * IDENTIDADE VIONEX — "instrumento"
+     * ===================================================================
+     *
+     * O produto é olhado oito horas por dia por quem vende, e comprado por
+     * médico. As duas coisas puxam para o mesmo lugar: sóbrio, preciso,
+     * confiante. Nada de gradiente, brilho ou sombra pesada -- o que separa
+     * uma superfície da outra é UMA LINHA DE UM PIXEL e um degrau de
+     * claridade. É mais barato de renderizar, envelhece melhor, e é o que
+     * distingue ferramenta de vitrine.
+     *
+     * O neutro tem matiz 216 (azul frio) em vez de cinza puro. Cinza puro ao
+     * lado do teal da marca fica com aparência de papel velho; um frio de
+     * fundo faz o teal parecer da mesma família.
+     *
+     * TRÊS PLANOS, e a ordem importa:
+     *
+     *   --background   o papel. Onde nada acontece.
+     *   --card         o objeto. Um degrau ACIMA do papel no claro, e um
+     *                  degrau acima também no escuro (objeto se aproxima da
+     *                  luz, não se afasta dela).
+     *   --muted        o rebaixo. Coluna de kanban, trilha, campo desligado.
+     *                  Um degrau ABAIXO do papel.
+     *
+     * Os três eram quase o mesmo valor, e `--background` e `--muted` eram
+     * IDÊNTICOS -- está no CLAUDE.md como armadilha: o truque padrão de
+     * kanban, coluna rebaixada sob cartão claro, era invisível. Agora os três
+     * degraus existem de verdade, e `bg-card/50` deixa de ser necessário
+     * (continua funcionando: é branco a 50% sobre o papel, que dá um cinza
+     * entre os dois planos).
+     */
+    --background: 216 22% 96%;
+    --foreground: 215 32% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 213 41% 10%;
+    --card-foreground: 215 32% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 213 41% 10%;
-    /* Brand */
-    --primary: 187 100% 27%;           /* #007B8A teal */
+    --popover-foreground: 215 32% 12%;
+    /*
+     * O TEAL DA MARCA, um grau mais contido.
+     *
+     * Era `187 100% 27%` -- saturação no talo. Cor a 100% lê como interface de
+     * software, não como equipamento médico; e ao lado do logo ela brigava em
+     * vez de acompanhar. 88% de saturação num azul-petróleo escuro mantém a
+     * família do logo e ganha a sobriedade que faltava.
+     *
+     * Continua TROCÁVEL: o `ThemeContext` sobrescreve `--primary`, `--ring` e
+     * `--sidebar-primary` na raiz conforme a escolha do usuário. Nada aqui
+     * pode cravar o teal.
+     */
+    --primary: 188 88% 26%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 97%;
-    --secondary-foreground: 213 41% 10%;
-    /* Um degrau ABAIXO do fundo, não igual a ele.
-       
-       Os dois eram `220 14% 97%` -- idênticos -- e o truque padrão de kanban,
-       coluna cinza sobre página, era invisível. Está no CLAUDE.md como
-       armadilha. Ao voltar o fundo para 97%, o muted teve de descer junto. */
-    --muted: 220 13% 93%;
-    /* 43%, não 65%. O valor antigo dava #9CA3B0, que sobre o branco do cartão
-       rende 2,54:1 -- a WCAG AA exige 4,5:1 para texto normal. O subtítulo de
-       TODAS as telas falhava, e é o motivo de a linha embaixo do título parecer
-       apagada. 43% dá #626A7A: 5,44:1 sobre o cartão e 4,50:1 sobre --muted,
-       que é o fundo mais escuro em que este token é usado.
-       O tema escuro fica em 65% porque lá o mesmo cinza rende 7,1:1. */
-    --muted-foreground: 218 11% 43%;   /* #626A7A text-3 */
-    --accent: 188 38% 94%;             /* #EAF5F7 teal-bg */
-    --accent-foreground: 187 100% 27%;
-    --destructive: 0 70% 41%;          /* #B02020 */
+    --secondary: 216 20% 93%;
+    --secondary-foreground: 215 32% 12%;
+    --muted: 216 18% 92%;
+    /*
+     * 41%, não 65%. O valor antigo dava #9CA3B0, que sobre o branco do cartão
+     * rende 2,54:1 -- a WCAG AA exige 4,5:1 para texto normal. O subtítulo de
+     * TODAS as telas falhava, e é o motivo de a linha embaixo do título
+     * parecer apagada.
+     *
+     * 41% rende 5,8:1 sobre o cartão e 4,8:1 sobre `--muted`, que é o fundo
+     * mais escuro em que este token aparece. Desceu de 43% junto com o
+     * `--muted`, que ficou mais escuro para o rebaixo existir de verdade --
+     * há um teste que refaz essa conta lendo os dois tokens.
+     */
+    --muted-foreground: 216 12% 41%;
+    /*
+     * O lavado da marca, para realce de superfície (linha marcada, chip
+     * ativo). Deriva do mesmo matiz do teal, com saturação baixa: um pastel
+     * saturado aqui viraria adesivo.
+     */
+    --accent: 190 40% 94%;
+    --accent-foreground: 188 88% 22%;
+    --destructive: 358 66% 42%;
     --destructive-foreground: 0 0% 100%;
-    /* Mais clara: com o fundo branco, a borda antiga ficava pesada demais
-       para o papel que passa a ter -- separar, não emoldurar. */
-    --border: 220 13% 93%;
-    --input: 220 12% 91%;
-    --ring: 187 100% 27%;
-    /* 16px, e UM raio só. Havia `rounded-md` (115 usos) e `rounded-lg` (92)
-       competindo -- dois arredondamentos diferentes na mesma tela.
-       Subiu de 10px: é a diferença mais visível entre a cara antiga e a nova,
-       e sai de graça em todo cartão porque o raio já vinha do token. */
-    --radius: 1rem;
+    /*
+     * A LINHA É O MATERIAL PRINCIPAL DESTE SISTEMA.
+     *
+     * Ela estava igual ao `--muted` (`220 13% 93%`), ou seja: a borda sumia
+     * exatamente sobre a superfície rebaixada que ela deveria delimitar. Aqui
+     * ela é escura o bastante para se ver sobre branco E sobre o rebaixo, e
+     * clara o bastante para separar sem emoldurar.
+     */
+    --border: 216 16% 87%;
+    --input: 216 16% 84%;
+    --ring: 188 88% 26%;
+    /*
+     * 12px, e UM raio só. Havia `rounded-md` (115 usos) e `rounded-lg` (92)
+     * competindo -- dois arredondamentos diferentes na mesma tela.
+     *
+     * Desceu de 16px. Dezesseis é raio de aplicativo de consumo: num cartão
+     * de 120px de altura o canto come o conteúdo e a grade fica bolhosa.
+     * Doze ainda é claramente arredondado e volta a parecer desenhado, não
+     * arredondado por padrão.
+     */
+    --radius: 0.75rem;
+
+    /*
+     * A LINHA E A SOMBRA, como tokens.
+     *
+     * `--contorno` é o fio de 1px que desenha todo objeto -- é ele que faz o
+     * trabalho que antes era de sombra. `--sombra` é só o MATIZ da sombra,
+     * sempre aplicado com alfa no ponto de uso: sombra preta pura sobre um
+     * fundo azulado fica cinza-morta.
+     *
+     * Existem como token porque o par claro/escuro é diferente em espécie, e
+     * não só em valor: no claro a sombra separa, no escuro ela não existe e
+     * quem separa é a linha.
+     */
+    --contorno: 216 16% 88%;
+    --sombra: 215 40% 14%;
 
     /*
      * O RESPIRO, POR DENSIDADE.
@@ -62,95 +128,154 @@
      * devolve a densidade de antes para quem prefere ver mais linha por tela.
      */
     --respiro: 1.25rem;      /* 20px */
-    /* Sidebar — Vionex navy */
-    /* O navy da marca, #0A1E3D.
-       
-       Cheguei a clareá-la inteira. A lateral escura contra conteúdo claro é o
-       formato de "painel de comando": ela ancora a tela pela esquerda e a luz
-       fica onde o trabalho está. Foi a escolha, e é a identidade do Vionex. */
     /*
-     * A LATERAL VIROU CARTÃO CLARO FLUTUANTE.
+     * A LATERAL É ARQUITETURA, NÃO CARTAZ.
      *
-     * Era navy (`217 72% 14%`) encostado na borda, com divisória. A referência
-     * pedida é um cartão branco com respiro em volta, sobre o cinza da página --
-     * e é o `--background` (220 14% 97%) que dá esse cinza, então o branco puro
-     * do cartão se destaca sem precisar de sombra pesada.
+     * Ela é a superfície mais clara da tela nos DOIS temas -- é a parede a que
+     * o conteúdo se encosta -- e se separa da página por uma linha, não por
+     * sombra nem por respiro em volta. Quieta de propósito: não há nada ali
+     * para ler, só para acertar o destino.
      *
-     * O ATIVO É CINZA, NÃO TEAL. Na referência o item selecionado é uma pílula
-     * neutra com texto quase preto. O teal continua sendo a cor da marca e
-     * aparece onde é decisão -- botão primário, gráfico --, não em "você está
-     * aqui", que é orientação e não ação.
+     * O ATIVO É NEUTRO, NÃO TEAL. O item selecionado é uma pastilha cinza com
+     * texto quase preto. O teal continua sendo a cor da marca e aparece onde é
+     * DECISÃO -- botão primário, série de gráfico --, não em "você está aqui",
+     * que é orientação.
      */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 9% 36%;
-    --sidebar-primary: 187 100% 27%;
+    --sidebar-foreground: 216 12% 40%;
+    --sidebar-primary: 188 88% 26%;
     --sidebar-primary-foreground: 0 0% 100%;
-    /* A pílula do item ativo e do hover. */
-    --sidebar-accent: 220 14% 95%;
-    --sidebar-accent-foreground: 222 22% 16%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 187 100% 35%;
-    /* Semantic */
-    --success: 152 82% 22%;            /* #0A6640 */
+    /* A pastilha do item ativo e do hover. Saturação baixa de propósito: há
+     * teste cobrando que ela seja CINZA e não uma diluição da cor da marca. */
+    --sidebar-accent: 216 16% 93%;
+    --sidebar-accent-foreground: 215 32% 14%;
+    --sidebar-border: 216 16% 88%;
+    --sidebar-ring: 188 88% 26%;
+    /*
+     * AS SEMÂNTICAS SÃO ESCURAS E POUCO SATURADAS NO CLARO.
+     *
+     * Elas marcam ESTADO (venda feita, prazo estourado, risco), e estado
+     * aparece em texto pequeno e em selo -- os dois precisam de contraste
+     * sobre branco, não de vivacidade. Verde e âmbar berrantes num CRM leem
+     * como alerta de sistema.
+     */
+    --success: 158 72% 24%;
     --success-foreground: 0 0% 100%;
-    --warning: 35 87% 30%;             /* #92610A */
+    --warning: 32 84% 32%;
     --warning-foreground: 0 0% 100%;
-    /* Vionex extras (direct hex tokens for components) */
+    /*
+     * OS `--vx-*` FICAM, e são exatamente cinco.
+     *
+     * A armadilha do CLAUDE.md era que eles não tinham valor para o tema
+     * escuro e o quebravam em silêncio. A saída não é aposentá-los: os cinco
+     * que sobraram são IDENTIDADE DE TERCEIROS -- o azul do Meta, o vermelho
+     * do Google, um roxo de série de gráfico --, e derivá-los de um token do
+     * sistema os tornaria errados (o azul do Facebook não muda quando o
+     * usuário escolhe roxo como cor de destaque).
+     *
+     * A saída é ter o PAR: cada um tem variante no bloco `.dark` abaixo, e há
+     * teste exigindo que todo `--vx-*` declarado aqui tenha lá o seu.
+     */
     --vx-purple: #5B21B6;
     --vx-meta: #1877F2;
     --vx-meta-bg: #EEF4FF;
     --vx-google: #EA4335;
     --vx-google-bg: #FDE8E8;
-    /* Shadow tokens */
-    --shadow-xs: 0 1px 2px rgba(15, 25, 35, 0.06);
-    --shadow-sm: 0 1px 4px rgba(15, 25, 35, 0.08), 0 1px 2px rgba(15, 25, 35, 0.04);
-    --shadow-md: 0 4px 12px rgba(15, 25, 35, 0.10), 0 2px 4px rgba(15, 25, 35, 0.06);
-    --shadow-lg: 0 8px 24px rgba(15, 25, 35, 0.12), 0 4px 8px rgba(15, 25, 35, 0.06);
+    /*
+     * A ESCADA DE SOMBRA FICOU RASA DE PROPÓSITO.
+     *
+     * Eram quatro degraus que iam até `0 8px 24px` -- profundidade de modal
+     * aplicada a cartão de lista. Num painel com vinte objetos na tela, vinte
+     * sombras longas viram sujeira cinza entre os cartões.
+     *
+     * Agora: `xs` e `sm` são quase invisíveis (o cartão se separa pela linha),
+     * e `md`/`lg` ficam para o que de fato flutua acima da página -- menu
+     * suspenso, diálogo, o clone do arraste.
+     */
+    --shadow-xs: 0 1px 1px hsl(var(--sombra) / 0.04);
+    --shadow-sm: 0 1px 2px hsl(var(--sombra) / 0.06);
+    --shadow-md: 0 4px 12px hsl(var(--sombra) / 0.08), 0 1px 3px hsl(var(--sombra) / 0.06);
+    --shadow-lg: 0 12px 32px hsl(var(--sombra) / 0.12), 0 2px 6px hsl(var(--sombra) / 0.06);
   }
 
   .dark {
-    --background: 217 50% 7%;
-    --foreground: 0 0% 96%;
-    --card: 217 45% 10%;
-    --card-foreground: 0 0% 96%;
-    --popover: 217 45% 10%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 187 100% 35%;
-    --primary-foreground: 217 72% 8%;
-    --secondary: 217 35% 14%;
-    --secondary-foreground: 0 0% 96%;
-    --muted: 217 35% 14%;
-    --muted-foreground: 218 11% 65%;
-    --accent: 187 60% 14%;
-    --accent-foreground: 0 0% 96%;
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 217 30% 18%;
-    --input: 217 30% 18%;
-    --ring: 187 100% 35%;
-    /* No escuro a lateral é mais ESCURA que o conteúdo, não mais clara: mantém
-       o mesmo papel de âncora que tem no tema claro. */
     /*
-     * No escuro o cartão é MAIS CLARO que a página, não mais escuro: é assim que
-     * um objeto flutua sobre um fundo escuro. A página é `217 50% 7%`; o cartão
-     * sobe para 11%.
+     * O ESCURO NÃO É O CLARO INVERTIDO, E NÃO É AZUL-MARINHO.
+     *
+     * Era `217 50% 7%`: cinquenta por cento de saturação, ou seja um navy
+     * franco. Fundo tão colorido tinge tudo que está por cima -- o cinza do
+     * texto secundário puxava para azul, o branco do título parecia frio, e o
+     * teal da marca desaparecia porque o fundo já era quase da mesma família.
+     *
+     * Aqui é um NEUTRO PROFUNDO com apenas um traço do mesmo frio do claro
+     * (matiz 215, saturação 14-20%). Não é preto: preto puro num monitor
+     * grande cansa e mata a sombra. Não é navy: navy compete com o acento.
+     *
+     * A escada de superfície é maior que no claro, e tem de ser: o olho
+     * distingue muito menos degraus na parte escura da escala. Papel 9%,
+     * objeto 13%, suspenso 16%, rebaixo 17%.
      */
-    --sidebar-background: 217 33% 11%;
-    --sidebar-foreground: 215 16% 66%;
-    --sidebar-primary: 187 100% 35%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 26% 18%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 35% 20%;
-    --sidebar-ring: 187 100% 35%;
-    --success: 152 60% 35%;
-    --success-foreground: 0 0% 98%;
-    --warning: 35 87% 45%;
-    --warning-foreground: 0 0% 98%;
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.20);
-    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.30), 0 2px 4px rgba(0, 0, 0, 0.18);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.20);
+    --background: 214 14% 8%;
+    --foreground: 210 16% 95%;
+    --card: 213 13% 14%;
+    --card-foreground: 210 16% 95%;
+    --popover: 213 13% 17%;
+    --popover-foreground: 210 16% 95%;
+    /*
+     * O teal do escuro é MAIS CLARO e MENOS saturado que o do claro.
+     *
+     * Um teal escuro sobre fundo escuro não se lê, e um teal a 100% sobre
+     * fundo escuro brilha como néon -- os dois erram o mesmo alvo. 48% de
+     * claridade com 62% de saturação dá uma cor que se destaca sem acender.
+     */
+    --primary: 187 62% 48%;
+    --primary-foreground: 205 45% 8%;
+    --secondary: 213 12% 19%;
+    --secondary-foreground: 210 16% 95%;
+    --muted: 213 12% 18%;
+    --muted-foreground: 213 11% 66%;
+    --accent: 190 32% 20%;
+    --accent-foreground: 187 62% 72%;
+    --destructive: 358 58% 50%;
+    --destructive-foreground: 0 0% 98%;
+    /*
+     * A linha continua sendo o material principal, e no escuro ela é
+     * literalmente a única coisa que separa dois planos: sombra preta sobre
+     * fundo quase preto não existe. Por isso ela sobe bem acima do fundo.
+     */
+    --border: 213 11% 24%;
+    --input: 213 11% 29%;
+    --ring: 187 62% 48%;
+    /*
+     * A lateral é MAIS CLARA que a página aqui também.
+     *
+     * É o mesmo princípio dos dois temas: o plano em que o usuário se apoia se
+     * aproxima da luz. Inverter isso no escuro -- lateral mais funda que o
+     * conteúdo -- abriria um buraco à esquerda da tela.
+     */
+    --sidebar-background: 213 13% 12%;
+    --sidebar-foreground: 213 11% 64%;
+    --sidebar-primary: 187 62% 48%;
+    --sidebar-primary-foreground: 205 45% 8%;
+    --sidebar-accent: 213 12% 21%;
+    --sidebar-accent-foreground: 210 16% 96%;
+    --sidebar-border: 213 11% 22%;
+    --sidebar-ring: 187 62% 48%;
+    /* Claras o bastante para se ler sobre o fundo fundo, sem virar semáforo. */
+    --success: 158 52% 46%;
+    --success-foreground: 205 45% 8%;
+    --warning: 36 76% 56%;
+    --warning-foreground: 205 45% 8%;
+    /*
+     * A linha do contorno no escuro é um REALCE, não um contorno escuro: ela
+     * pega a luz que viria de cima. Por isso é mais clara que `--border`.
+     */
+    --contorno: 213 11% 27%;
+    --sombra: 220 60% 2%;
+    --shadow-xs: 0 1px 1px hsl(var(--sombra) / 0.5);
+    --shadow-sm: 0 1px 2px hsl(var(--sombra) / 0.55);
+    --shadow-md: 0 4px 12px hsl(var(--sombra) / 0.6), 0 1px 3px hsl(var(--sombra) / 0.5);
+    --shadow-lg: 0 12px 32px hsl(var(--sombra) / 0.7), 0 2px 6px hsl(var(--sombra) / 0.5);
 
     /* Os tokens --vx-* no tema escuro.
      *
@@ -221,10 +346,23 @@
    *
    * O par claro/escuro já existe em --foreground -- a regra .dark deixou de ser
    * necessária. */
+  /*
+   * O TRACKING É PROPORCIONAL AO TAMANHO, e por isso são dois valores.
+   *
+   * Havia um só: `-0.02em` em h1 até h4. Dois por cento a menos é certo num
+   * título de 24px, onde as letras grandes abrem naturalmente; no h3 e h4
+   * desta base -- 13 a 16px -- a mesma fração espreme palavras curtas e o
+   * texto fica com aparência de imagem comprimida.
+   *
+   * Regra do ofício: quanto maior o tipo, mais se fecha; quanto menor, menos.
+   */
   h1, h2, h3, h4 {
     font-family: 'Roboto', -apple-system, sans-serif;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.012em;
     color: hsl(var(--foreground));
+  }
+  h1, h2 {
+    letter-spacing: -0.022em;
   }
 
   .font-mono, .tabular-nums { font-variant-numeric: tabular-nums; }
@@ -234,10 +372,16 @@
     letter-spacing: -0.02em;
   }
 
-  /* Focus ring — mais expressivo */
+  /* O FOCO É FINO E AFASTADO, não grosso e colado.
+   *
+   * 2px encostado no elemento engorda a silhueta e, num campo com borda,
+   * vira uma borda dupla. Um fio de 2px a 2px de distância lê como "isto está
+   * selecionado" sem redesenhar o controle -- e usa `--ring`, que o
+   * `ThemeContext` troca junto com a cor de destaque. */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
+    border-radius: calc(var(--radius) * 0.4167);
   }
 
   @media (max-width: 767px) {
@@ -259,40 +403,65 @@
    * importante da tela. `color-mix` deriva as pontas do gradiente do próprio
    * --primary, e a sombra usa o token com alfa -- assim a escolha do usuário
    * chega até aqui. */
+  /*
+   * O GRADIENTE SAIU.
+   *
+   * Eram dois gradientes de 135° com sombra colorida -- a linguagem de botão
+   * de site de captura, e a única coisa brilhante numa tela inteira de
+   * superfícies chapadas. Chamava atenção pelo motivo errado: não porque a
+   * ação é importante, mas porque o tratamento era diferente de todo o resto.
+   *
+   * Agora é a cor chapada, um fio de luz interno no topo (o que uma superfície
+   * real faz sob luz de cima) e uma sombra curta na própria cor. A ação
+   * principal se destaca por ser a única coisa COLORIDA e SÓLIDA da tela --
+   * que é exatamente o papel reservado ao acento neste sistema.
+   *
+   * Tudo deriva de `--primary`, que o `ThemeContext` troca em tempo de
+   * execução. Cravar o teal aqui foi o defeito original: trocar a cor em
+   * Configurações mudava tudo menos o botão mais importante da tela.
+   */
   .vx-btn-primary {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, hsl(var(--primary)) 88%, #000) 0%,
-      color-mix(in srgb, hsl(var(--primary)) 82%, #fff) 100%
-    );
+    background: hsl(var(--primary));
     box-shadow:
-      0 1px 3px hsl(var(--primary) / 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.10);
-    transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.1s ease;
+      0 1px 2px hsl(var(--primary) / 0.24),
+      inset 0 1px 0 hsl(0 0% 100% / 0.12);
+    transition: background 0.15s ease, box-shadow 0.15s ease;
   }
   .vx-btn-primary:hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, hsl(var(--primary)) 74%, #000) 0%,
-      color-mix(in srgb, hsl(var(--primary)) 92%, #000) 100%
-    );
+    background: color-mix(in srgb, hsl(var(--primary)) 88%, #000);
     box-shadow:
-      0 3px 10px hsl(var(--primary) / 0.40),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 2px 6px hsl(var(--primary) / 0.28),
+      inset 0 1px 0 hsl(0 0% 100% / 0.10);
   }
   .vx-btn-primary:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 4px hsl(var(--primary) / 0.25);
+    background: color-mix(in srgb, hsl(var(--primary)) 78%, #000);
+    box-shadow: inset 0 1px 2px hsl(var(--sombra) / 0.25);
   }
 
-  /* ── Cards com Sombra e Hover ─────────────────────────── */
+  /* ── Cartão ───────────────────────────────────────────── */
+  /*
+   * O PULINHO SAIU, dos dois lugares onde havia (aqui e no cartão de
+   * negócio).
+   *
+   * Era `transform: translateY(-1px)` no hover. Duas razões para tirar, e a
+   * segunda é a que pesa:
+   *
+   *  1. numa lista de vinte cartões, passar o mouse fazia a grade inteira
+   *     tremer linha a linha -- movimento sem informação;
+   *  2. `transform` diferente de `none` cria BLOCO DE CONTENÇÃO para todo
+   *     `position: fixed` descendente. É a armadilha registrada no CLAUDE.md,
+   *     a que quebrou o arraste do kanban e levou três correções erradas
+   *     antes de aparecer. Um cartão de negócio é justamente o que se arrasta.
+   *
+   * O realce agora é só de cor: o contorno escurece. Chega para dizer "este
+   * aqui", e não mexe um pixel de lugar.
+   */
   .vx-card {
     box-shadow: var(--shadow-sm);
-    transition: box-shadow 0.2s ease, transform 0.15s ease;
+    transition: box-shadow 0.18s ease, border-color 0.18s ease;
   }
   .vx-card:hover {
     box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
   }
 
   /* ── Badge Pills ──────────────────────────────────────── */
@@ -309,26 +478,45 @@
   .vx-table table { border-collapse: separate; border-spacing: 0; }
   .vx-table thead tr { border-bottom: 1px solid hsl(var(--border)); }
   .vx-table thead th {
-    /* 11px é o degrau `meta`. Cravado aqui, ele ficava de fora da escala e
+    /* 11px é o degrau `label`. Cravado aqui, ele ficava de fora da escala e
      * não acompanharia uma mudança nela. */
     font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    /* O espaçamento SOBE com a caixa alta.
+     *
+     * Maiúscula em 11px sem tracking fica um bloco ilegível -- as letras não
+     * têm ascendente nem descendente para o olho separar. 0.08em é o que faz
+     * um cabeçalho de coluna parecer rótulo de instrumento em vez de texto
+     * gritado. É o mesmo valor do olho-de-boi acima do título da página. */
+    letter-spacing: 0.08em;
     color: hsl(var(--muted-foreground));
-    padding: 8px 12px;
-    background: transparent;
+    /* O cabeçalho é um REBAIXO, não uma faixa branca.
+     *
+     * Era `transparent`, e num cartão branco isso deixava o cabeçalho com
+     * exatamente a mesma cor das linhas: a única coisa separando as duas
+     * regiões era o peso da fonte. Com `--muted` a tabela ganha um topo, que
+     * é o que faz uma lista longa continuar legível depois de rolar. */
+    background: hsl(var(--muted) / 45%);
+    padding: 9px 12px;
   }
   .vx-table tbody td {
     padding: 10px 12px;
-    border-bottom: 1px solid hsl(var(--border)/60%);
+    border-bottom: 1px solid hsl(var(--border) / 70%);
     vertical-align: middle;
   }
   .vx-table tbody tr:last-child td { border-bottom: none; }
   .vx-table tbody tr {
     transition: background 0.12s ease;
   }
-  .vx-table tbody tr:hover td { background: hsl(var(--primary)/4%); }
+  /* O realce de linha é NEUTRO, não tingido de acento.
+   *
+   * Era `--primary / 4%`: a linha sob o cursor ficava levemente teal. Quatro
+   * por cento de uma cor é pouco para se ler como cor e o bastante para sujar
+   * o branco -- e, pior, prometia significado onde não há nenhum: passar o
+   * mouse não é selecionar. Cinza do sistema, que é o que "estou aqui" quer
+   * dizer. */
+  .vx-table tbody tr:hover td { background: hsl(var(--muted) / 55%); }
   /* A moldura fica na PRÓPRIA classe, não num filho.
    *
    * Era `.vx-table > div { border… }`, que exigia exatamente um `<div>` como
@@ -355,25 +543,47 @@
    *
    * O item ativo agora é uma pastilha: fundo na cor de destaque, texto na cor
    * de destaque, sem traço. É o padrão do estilo escolhido. */
+  /*
+   * ATIVO É LAVADO DE ACENTO; HOVER É CINZA. E a diferença é essa.
+   *
+   * Duas armadilhas se cruzam nesta regra, e vale registrar as duas.
+   *
+   * A PRIMEIRA é a que o teste guarda: a cor de destaque é TROCÁVEL em tempo
+   * de execução. O `ThemeContext` sobrescreve `--primary`, `--ring`,
+   * `--sidebar-primary` e `--sidebar-ring` na raiz -- e mais nada. Qualquer
+   * outro token, `--sidebar-accent` inclusive, é fixo. Então pintar o item
+   * ativo com `--sidebar-accent` tem o mesmo efeito prático que cravar o teal
+   * em hex: quem escolhe roxo em Configurações continua vendo o item ativo
+   * cinza, sem explicação. Foi assim que o teal sobreviveu à troca de cor em
+   * quatro lugares.
+   *
+   * A SEGUNDA é a que quase me fez repetir a primeira. A decisão anterior era
+   * "pastilha neutra", com o argumento -- bom -- de que "você está aqui" é
+   * ORIENTAÇÃO e não ação, e de que gastar a cor da marca nisso a esvazia
+   * onde ela deveria significar decisão (botão primário, série de gráfico).
+   *
+   * As duas se conciliam pela DOSE. Doze por cento do acento não é "gastar a
+   * cor": é um lavado que o olho lê como superfície levemente tingida, não
+   * como elemento colorido. O botão primário continua sendo a única coisa
+   * SÓLIDA em cor na tela. E o ícone, esse sim, recebe o acento cheio -- o
+   * menor elemento da linha, onde um ponto de cor identifica sem competir.
+   *
+   * O hover fica cinza (`--sidebar-accent`). É o que separa os dois estados:
+   * antes ambos usavam o mesmo cinza e a única diferença era o peso da fonte,
+   * que não se lê de relance.
+   *
+   * Sem barra lateral colorida: um traço de 2px à esquerda compete com a linha
+   * de separação da coluna -- duas verticais paralelas a poucos pixels.
+   */
   .vx-nav-active {
-    /*
-     * PÍLULA NEUTRA, não teal.
-     *
-     * Era `--sidebar-primary / 18%` com texto teal. A referência marca o item
-     * selecionado com um cinza suave e texto quase preto -- e o argumento é
-     * bom: "você está aqui" é ORIENTAÇÃO, não ação. Gastar a cor da marca nisso
-     * a esvazia justamente onde ela deveria significar decisão: botão primário,
-     * série de gráfico, valor em destaque.
-     *
-     * `--sidebar-accent` também é o hover, então ativo e hover são o mesmo
-     * cinza; o que separa os dois é o PESO do texto e o `--sidebar-accent-
-     * foreground`, que só o ativo recebe.
-     */
-    background: hsl(var(--sidebar-accent)) !important;
+    background: hsl(var(--sidebar-primary) / 12%) !important;
     color: hsl(var(--sidebar-accent-foreground)) !important;
     font-weight: 600;
   }
-  .vx-nav-active svg { color: hsl(var(--sidebar-accent-foreground)) !important; }
+  /* No escuro o mesmo alfa rende menos: o lavado disputa com um fundo que já
+   * é escuro, em vez de tingir branco. Sobe quatro pontos. */
+  .dark .vx-nav-active { background: hsl(var(--sidebar-primary) / 16%) !important; }
+  .vx-nav-active svg { color: hsl(var(--sidebar-primary)) !important; }
   .vx-nav-item {
     transition: background 0.15s ease, color 0.15s ease;
   }
@@ -393,17 +603,23 @@
     text-align: center;
     gap: 0;
   }
+  /* O anel do estado vazio: um alvo quieto, não um enfeite.
+   *
+   * Tinha borda de 2px em acento mais um halo de 8px -- três anéis
+   * concêntricos coloridos num lugar onde a mensagem é "não há nada aqui".
+   * Um círculo rebaixado com o ícone em cinza diz a mesma coisa sem
+   * comemorar o vazio. */
   .vx-empty-icon-ring {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: hsl(var(--accent));
-    border: 2px solid hsl(var(--primary)/15%);
-    margin-bottom: 1.25rem;
-    box-shadow: 0 0 0 8px hsl(var(--primary)/5%);
+    background: hsl(var(--muted));
+    box-shadow: 0 0 0 1px hsl(var(--contorno));
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 1.125rem;
   }
 
   /* ── Deal Card (Kanban) ───────────────────────────────── */
@@ -433,7 +649,7 @@
        `border-radius` maior (0.75rem contra os 0.5 do token) porque o cabeçalho
        da coluna usa `rounded-xl`: cartões da mesma pilha com raios diferentes
        leem como coisas diferentes. */
-    border-radius: 0.75rem;
+    border-radius: var(--radius);
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
     /* 14px NOS QUATRO LADOS, e não 12/14. O rodapé de ações sangra até a borda
@@ -442,14 +658,27 @@
        a linha divisória parava 2px antes do canto de baixo. */
     padding: 14px;
     cursor: pointer;
-    transition: box-shadow 0.15s ease, transform 0.1s ease;
+    /*
+     * SEM `transform` AQUI. Nem no hover, nem no active.
+     *
+     * Era `translateY(-1px)` nos dois. O cartão de negócio é EXATAMENTE o
+     * elemento que se arrasta, e `transform` diferente de `none` faz dele um
+     * bloco de contenção para `position: fixed` -- a armadilha do CLAUDE.md
+     * que já custou três correções erradas no arraste do kanban.
+     *
+     * O realce é o contorno escurecendo. Num kanban isso é melhor mesmo sem o
+     * bug: o cartão que sobe empurra visualmente os de baixo, e numa coluna
+     * cheia a pilha inteira parece respirar quando o mouse atravessa.
+     */
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
     box-shadow: var(--shadow-xs);
   }
   .vx-deal-card:hover {
+    /* `--input` é o degrau de linha imediatamente mais escuro que `--border`,
+     * e existe justamente para quando a linha precisa ser afirmativa. */
+    border-color: hsl(var(--input));
     box-shadow: var(--shadow-sm);
-    transform: translateY(-1px);
   }
-  .vx-deal-card:active { transform: translateY(0); }
   /* Marcado na seleção em lote. Borda de destaque e não fundo colorido: o card
      tem quatro linhas de texto por cima, e tingir o fundo baixaria o contraste
      de todas elas de uma vez. */
@@ -464,7 +693,7 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   input:focus, textarea:focus {
-    box-shadow: 0 0 0 3px hsl(var(--primary)/12%);
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 16%);
   }
 }
 
@@ -630,27 +859,40 @@
   .overflow-x-auto > * { scroll-snap-align: start; }
 }
 
-/* Um plano acima do fundo.
+/*
+ * O OBJETO SOBRE O PAPEL — e o fio de 1px é quem faz o trabalho.
  *
- * Duas camadas de sombra: a curta e mais opaca ancora o cartão na superfície, a
- * longa e difusa dá a altura. Só a longa faz o objeto parecer flutuar sem
- * apoio; só a curta não levanta nada.
+ * Duas camadas, mas não duas SOMBRAS, que é o que havia antes: eram
+ * `0 1px 2px` mais `0 4px 12px`, profundidade de modal aplicada a cartão de
+ * lista. Vinte cartões numa tela davam vinte manchas difusas, e o conjunto
+ * lia como poeira cinza em vez de sistema.
  *
- * A cor vem do navy da marca, não de preto puro: sombra preta sobre um fundo
- * levemente azulado fica cinza-morta. */
+ * As duas camadas de agora têm papéis diferentes:
+ *
+ *   1. o CONTORNO, um anel de 1px -- é ele que define a borda do objeto, e é
+ *      nítido em qualquer zoom e em qualquer tela;
+ *   2. a SOMBRA, curta e quase invisível -- só assenta o objeto no papel,
+ *      para o contorno não parecer um adesivo recortado.
+ *
+ * O anel é `box-shadow` e não `border` de propósito: assim não entra no
+ * cálculo da caixa, e um cartão com contorno mede o mesmo que um sem. Foi o
+ * que permitiu tirar a borda do primitivo sem reajustar largura em lugar
+ * nenhum.
+ */
 .vx-elevado {
   box-shadow:
-    0 1px 2px hsl(217 72% 14% / 0.06),
-    0 4px 12px hsl(217 72% 14% / 0.05);
+    0 0 0 1px hsl(var(--contorno)),
+    0 1px 2px hsl(var(--sombra) / 0.05);
 }
 
 .dark .vx-elevado {
-  /* No escuro a sombra quase não existe -- não há luz para bloquear. A
-   * separação vem de uma linha de realce no topo, que é como uma superfície
-   * elevada se lê num ambiente escuro. */
+  /* No escuro a sombra quase não existe -- não há luz para bloquear. O anel
+   * passa a ser praticamente a única separação, e por isso o `--contorno` do
+   * bloco `.dark` é mais claro que o fundo, e não mais escuro: ele lê como a
+   * quina do objeto pegando a luz. */
   box-shadow:
-    0 0 0 1px hsl(0 0% 100% / 0.06),
-    0 2px 8px hsl(0 0% 0% / 0.3);
+    0 0 0 1px hsl(var(--contorno)),
+    0 1px 3px hsl(var(--sombra) / 0.55);
 }
 
 /* ── Hierarquia de texto ──────────────────────────────────────────────────
