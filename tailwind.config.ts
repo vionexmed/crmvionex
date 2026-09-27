@@ -127,12 +127,17 @@ export default {
        * bolha -- justamente o que `visual-do-painel.test.ts` proíbe. O teste
        * continuava passando porque confere o NOME da classe, não o valor.
        *
-       * Com fator, os três acompanham o cartão sem se achatar: 16 / 10 / 6.
+       * Com fator, os três acompanham o cartão sem se achatar.
+       *
+       * O token desceu de 16px para 12px -- dezesseis é raio de aplicativo de
+       * consumo, e num cartão de lista o canto come o conteúdo. Como os
+       * degraus são proporcionais, a escala inteira acompanhou sozinha:
+       * 12 / 8 / 5.
        */
       borderRadius: {
-        lg: "var(--radius)",                 /* 16px — cartão, painel */
-        md: "calc(var(--radius) * 0.625)",   /* 10px — botão, campo */
-        sm: "calc(var(--radius) * 0.375)",   /*  6px — selo, caixa de seleção */
+        lg: "var(--radius)",                  /* 12px — cartão, painel, diálogo */
+        md: "calc(var(--radius) * 0.6667)",   /*  8px — botão, campo, menu */
+        sm: "calc(var(--radius) * 0.4167)",   /*  5px — selo, caixa de seleção */
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },

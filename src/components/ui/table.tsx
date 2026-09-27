@@ -34,7 +34,13 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50", className)}
+      // O realce de linha é NEUTRO. Selecionada é um degrau mais firme que
+      // sob o cursor -- os dois estados existem ao mesmo tempo numa seleção em
+      // lote, e precisam continuar distinguíveis.
+      className={cn(
+        "border-b border-border/70 transition-colors data-[state=selected]:bg-muted hover:bg-muted/55",
+        className,
+      )}
       {...props}
     />
   ),
@@ -50,7 +56,10 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
         // a base é 13px e o cabeçalho fica desproporcional -- quase o dobro da
         // altura da linha de dado. `.vx-table` já define padding próprio para
         // as 18 tabelas do projeto; esta altura é o piso para quem não usa.
-        "h-9 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        // Caixa alta em 11px com tracking aberto: é o rótulo de instrumento
+        // que `.vx-table thead th` já aplica, trazido para o primitivo para
+        // que as tabelas fora da classe não fiquem com outro cabeçalho.
+        "h-9 px-3 text-left align-middle text-label font-semibold uppercase tracking-[0.08em] text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -61,7 +70,12 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
+    // `p-4` (16px em todos os lados) era o default do shadcn, calibrado para
+    // corpo de 16px. Aqui a base é 13px: dezesseis pixels acima e abaixo de uma
+    // linha de 18px de altura davam 50px por linha, e uma lista de contatos
+    // cabia em nove registros na tela. `.vx-table` já ajusta as 18 tabelas do
+    // projeto; este é o piso para quem não usa a classe.
+    <td ref={ref} className={cn("px-3 py-2.5 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
   ),
 );
 TableCell.displayName = "TableCell";

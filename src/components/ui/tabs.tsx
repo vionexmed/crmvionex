@@ -12,7 +12,11 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
+      // A trilha é o REBAIXO com um fio em volta, e mede 34px em vez de 40.
+      // Sem o fio, um `bg-muted` claro sobre `bg-card` branco flutua sem
+      // limite definido -- e sobre a própria página, que agora é do mesmo
+      // lado da escala, ele sumia por completo.
+      "inline-flex h-[34px] items-center justify-center rounded-md border border-border bg-muted p-[3px] text-muted-foreground",
       className,
     )}
     {...props}
@@ -27,7 +31,11 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+      // A aba ativa é a superfície do CARTÃO (`bg-card`), não a da página:
+      // dentro de uma trilha rebaixada, o que sobe tem de ser o plano do
+      // objeto. Com `bg-background` a aba ativa ficava da mesma cor da
+      // página e a pastilha só existia pela sombra.
+      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium ring-offset-background transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-[var(--shadow-xs)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
       className,
     )}
     {...props}

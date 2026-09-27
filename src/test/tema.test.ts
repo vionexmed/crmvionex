@@ -10,6 +10,16 @@ import { readFileSync, existsSync } from "node:fs";
 
 const ler = (p: string) => readFileSync(p, "utf8");
 const CSS = ler("src/index.css");
+/**
+ * Sem comentários.
+ *
+ * Duas regras deste arquivo liam o CSS cru e acabaram medindo a PROSA dentro
+ * dos blocos em vez das declarações -- uma delas passou meses verde guardando
+ * uma regra que já não existia. É a armadilha que o CLAUDE.md registra como
+ * regra de como escrever teste aqui: varredura tem de apagar o comentário
+ * antes de procurar.
+ */
+const CSS_LIMPO = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 const HTML = ler("index.html");
 
 describe("um sistema de aviso só", () => {
@@ -197,14 +207,19 @@ describe("a lateral ancora a tela", () => {
   });
 
   /**
-   * O ATIVO É NEUTRO, não teal.
+   * O REALCE DE PASSAGEM É NEUTRO.
    *
-   * "Você está aqui" é orientação, não ação. Gastar a cor da marca nisso a
-   * esvazia onde ela deveria significar decisão -- botão primário, série de
-   * gráfico. A pílula do item ativo é `--sidebar-accent`, e este teste garante
-   * que ela não seja uma variação do destaque.
+   * `--sidebar-accent` era a pastilha do item ATIVO; hoje é o realce do item
+   * sob o cursor, e o ativo passou a ser um lavado de `--sidebar-primary` (ver
+   * o teste do item ativo mais abaixo). O token trocou de papel, e o teste
+   * acompanha -- mas a regra que ele guarda é a mesma, e continua valendo com
+   * mais força ainda: passar o mouse não significa nada, e tingir isso com a
+   * cor da marca esvazia o acento onde ele deveria significar decisão.
+   *
+   * Além disso `--sidebar-accent` NÃO é sobrescrito pelo `ThemeContext`: se
+   * alguém o aproximar do teal, ele fica teal para quem escolheu roxo.
    */
-  it("a pílula do item ativo é cinza, não a cor da marca", () => {
+  it("o realce de passagem é cinza, não a cor da marca", () => {
     const acento = valor(":root {", "--sidebar-accent");
     const [matiz, sat] = acento!.split(" ");
     // Teal vive perto de 187. Cinza levemente azulado, perto de 220, com
@@ -239,17 +254,72 @@ describe("a lateral ancora a tela", () => {
   });
 
   /**
-   * A pastilha do item ativo é 18% da cor de destaque. Chegou a ser 10%,
-   * calibrado para a lateral clara — contra o navy, dez por cento quase não
-   * aparece.
+   * O ITEM ATIVO SE DISTINGUE DO ITEM SOB O CURSOR.
+   *
+   * ─────────────────────────────────────────────────────────────────────────
+   * A VERSÃO ANTERIOR DESTE TESTE ESTAVA MEDINDO PROSA.
+   *
+   * Ela exigia `--sidebar-primary` e `/ 18%` dentro do bloco cru de
+   * `.vx-nav-active`, e passava porque um COMENTÁRIO dentro do bloco narrava a
+   * regra antiga ("era `--sidebar-primary / 18%` com texto teal"). A
+   * declaração real não tinha nem o token nem a porcentagem: a pastilha virou
+   * cinza quando a lateral deixou de ser navy, e o teste não percebeu.
+   *
+   * O nome também tinha envelhecido -- "aparece contra o navy". Não há navy:
+   * a lateral é a superfície mais CLARA da tela nos dois temas.
+   *
+   * O que este teste guarda agora é a regra viva, e ela tem duas metades:
+   *
+   *   ATIVO SEGUE O ACENTO   o fundo é `--sidebar-primary` com alfa baixo. O
+   *                          `ThemeContext` só sobrescreve `--primary`,
+   *                          `--ring`, `--sidebar-primary` e `--sidebar-ring`
+   *                          -- qualquer outro token é FIXO. Pintar o item
+   *                          ativo de `--sidebar-accent` tem na prática o
+   *                          mesmo efeito de cravar o teal em hex: quem
+   *                          escolhe roxo continua vendo cinza.
+   *
+   *   HOVER FICA NEUTRO      é o que separa os dois estados. Antes ambos eram
+   *                          o mesmo cinza e a única diferença era o peso da
+   *                          fonte, que não se lê de relance.
+   *
+   *   A DOSE É BAIXA         doze por cento é lavado, não cor. O argumento
+   *                          antigo ("você está aqui" é orientação, não ação,
+   *                          e gastar a marca nisso a esvazia onde ela
+   *                          significa decisão) continua valendo -- o botão
+   *                          primário segue sendo a única coisa SÓLIDA em cor
+   *                          na tela. Por isso o teste cobra o alfa, e não só
+   *                          a presença do token.
+   *
+   * Lido sem comentários, e sobre a família inteira da classe -- a regra, a
+   * variante do tema escuro e a do `svg`.
    */
-  it("o item ativo aparece contra o navy", () => {
-    const b = bloco(".vx-nav-active {");
-    expect(b).toContain("--sidebar-primary");
-    expect(b).toMatch(/\/ 18%/);
+  it("o item ativo segue a cor de destaque e se separa do hover", () => {
+    const i = CSS_LIMPO.indexOf(".vx-nav-active {");
+    expect(i, "regra .vx-nav-active não encontrada").toBeGreaterThan(-1);
+    const familia = CSS_LIMPO.slice(i, CSS_LIMPO.indexOf(".vx-nav-item {", i));
+
+    // O fundo deriva do token que o ThemeContext troca...
+    const fundo = familia.match(/\.vx-nav-active \{[^}]*background:\s*([^;]+);/)?.[1];
+    expect(fundo, "o fundo do item ativo não deriva de --sidebar-primary")
+      .toMatch(/hsl\(var\(--sidebar-primary\)\s*\/\s*\d+%\)/);
+
+    // ...mas em dose de LAVADO: acima de ~25% deixa de ser superfície tingida
+    // e vira elemento colorido, que é o papel reservado ao botão primário.
+    const alfa = Number(fundo!.match(/\/\s*(\d+)%/)?.[1]);
+    expect(alfa, `o lavado do item ativo está forte demais: ${alfa}%`).toBeLessThanOrEqual(25);
+    expect(alfa, `o lavado do item ativo não aparece: ${alfa}%`).toBeGreaterThanOrEqual(8);
+
+    // O hover continua neutro -- é o que distingue os dois estados.
+    const hover = CSS_LIMPO.match(/\.vx-nav-item:hover \{[^}]*background:\s*([^;]+);/)?.[1];
+    expect(hover, "hover e ativo voltaram a ser o mesmo tratamento")
+      .toContain("--sidebar-accent");
+
+    // E o ícone leva o acento cheio: o menor elemento da linha.
+    expect(familia).toMatch(/svg\s*\{\s*color:\s*hsl\(var\(--sidebar-primary\)\)/);
+
     // Sem barra lateral colorida: era um traço de 2px competindo com a linha
-    // de separação da coluna.
-    expect(b).not.toContain("border-left");
+    // de separação da coluna -- duas verticais paralelas a dois pixels.
+    expect(familia).not.toContain("border-left");
   });
 
   /**

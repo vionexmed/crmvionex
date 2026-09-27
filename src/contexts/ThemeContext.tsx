@@ -23,14 +23,31 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export const useTheme = () => useContext(ThemeContext);
 
-const ACCENT_COLORS: Record<string, { light: string; dark: string; ring: string }> = {
-  // Vionex official teal
-  teal: { light: "187 100% 27%", dark: "187 100% 35%", ring: "187 100% 27%" },
-  blue: { light: "221 83% 53%", dark: "217 91% 60%", ring: "221 83% 53%" },
-  violet: { light: "262 83% 58%", dark: "263 70% 50%", ring: "262 83% 58%" },
-  emerald: { light: "160 84% 39%", dark: "160 84% 39%", ring: "160 84% 39%" },
-  orange: { light: "25 95% 53%", dark: "25 95% 53%", ring: "25 95% 53%" },
-  rose: { light: "347 77% 50%", dark: "347 77% 50%", ring: "347 77% 50%" },
+/**
+ * AS SEIS CORES DE DESTAQUE, CADA UMA COM UM PAR CLARO/ESCURO.
+ *
+ * O par não é decoração: uma cor que se lê sobre branco é escura e saturada, e
+ * essa mesma cor sobre um fundo de 9% de claridade vira um borrão. No escuro
+ * ela precisa SUBIR de claridade e DESCER de saturação -- subir para se
+ * destacar do fundo, descer para não acender como néon.
+ *
+ * Quatro das seis (`emerald`, `orange`, `rose`, e o `teal` antigo) usavam o
+ * MESMO valor nos dois temas, ou um valor mais saturado ainda no escuro. Era o
+ * que deixava o tema escuro com cara de fluorescente. Agora as seis seguem a
+ * regra.
+ *
+ * Estes valores são escritos na RAIZ em tempo de execução, por cima de
+ * `--primary` / `--ring` / `--sidebar-primary`. Por isso nenhum lugar do CSS
+ * pode cravar o teal: quem escolher roxo tem de ver roxo em tudo.
+ */
+const ACCENT_COLORS: Record<string, { light: string; dark: string }> = {
+  // O teal do logo Vionex — o padrão, e a identidade da marca.
+  teal: { light: "188 88% 26%", dark: "187 62% 48%" },
+  blue: { light: "221 76% 46%", dark: "215 80% 62%" },
+  violet: { light: "262 83% 58%", dark: "258 72% 68%" },
+  emerald: { light: "160 78% 28%", dark: "158 56% 48%" },
+  orange: { light: "24 82% 40%", dark: "28 82% 58%" },
+  rose: { light: "347 72% 43%", dark: "348 70% 62%" },
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -71,9 +88,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const palette = ACCENT_COLORS[color] || ACCENT_COLORS.teal;
     const val = isDark ? palette.dark : palette.light;
     root.style.setProperty("--primary", val);
-    root.style.setProperty("--ring", palette.ring);
+    /*
+     * O ANEL DE FOCO SEGUE O TEMA, não só a cor escolhida.
+     *
+     * Havia um terceiro valor, `ring`, que era sempre o da variante CLARA --
+     * então no tema escuro o anel de foco saía numa cor escura sobre fundo
+     * escuro, praticamente invisível. Era um problema de acessibilidade, e
+     * silencioso: ninguém navega por teclado ao revisar.
+     *
+     * O anel é a mesma cor do acento. Não havia motivo para ser outra.
+     */
+    root.style.setProperty("--ring", val);
     root.style.setProperty("--sidebar-primary", val);
-    root.style.setProperty("--sidebar-ring", palette.ring);
+    root.style.setProperty("--sidebar-ring", val);
   };
 
   useEffect(() => {
