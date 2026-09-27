@@ -114,7 +114,19 @@
      * não só em valor: no claro a sombra separa, no escuro ela não existe e
      * quem separa é a linha.
      */
-    --contorno: 216 16% 88%;
+    /*
+     * O CONTORNO É MAIS CLARO QUE `--border`, e a diferença tem papel.
+     *
+     * Era 88%, o mesmo degrau de `--border` (87%) -- então o fio EXTERNO do
+     * cartão tinha o mesmo peso das divisórias INTERNAS dele, e o cartão lia
+     * como caixa: uma moldura desenhada com a mesma caneta do conteúdo.
+     *
+     * A 91% ele é a quina do objeto pegando a luz, não um traço em volta. As
+     * linhas que separam dado de dado (linha de tabela, divisória de seção)
+     * continuam em `--border` e ficam sendo as mais firmes -- que é a ordem
+     * certa: a estrutura interna importa mais que o recorte externo.
+     */
+    --contorno: 216 16% 91%;
     --sombra: 215 40% 14%;
 
     /*
@@ -497,12 +509,50 @@
      * exatamente a mesma cor das linhas: a única coisa separando as duas
      * regiões era o peso da fonte. Com `--muted` a tabela ganha um topo, que
      * é o que faz uma lista longa continuar legível depois de rolar. */
-    background: hsl(var(--muted) / 45%);
-    padding: 9px 12px;
+    background: hsl(var(--muted) / 40%);
+    padding: 8px 12px;
+    white-space: nowrap;
   }
+  /*
+   * O CABEÇALHO ORDENÁVEL NÃO HERDAVA A CAIXA ALTA.
+   *
+   * Em Contatos, quatro colunas saíam "Contato / Especialidade / Situação /
+   * Criado em" e três saíam "EMPRESA / TELEFONE / ORIGEM" -- na mesma linha. O
+   * motivo não está em nenhum arquivo do projeto: `text-transform` é herdada,
+   * MAS o navegador declara `text-transform: none` para controles de
+   * formulário, e o rótulo ordenável é um `<button>` dentro do `<th>`. A folha
+   * do navegador vencia a herança, em silêncio.
+   *
+   * Nenhuma tela precisa saber disso: a regra devolve a herança aqui, para
+   * TODA coluna ordenável do projeto de uma vez.
+   */
+  .vx-table thead th button {
+    text-transform: inherit;
+    letter-spacing: inherit;
+    font-weight: inherit;
+  }
+  /* A primeira e a última coluna alinham com a margem do cartão. Sem isto o
+   * dado começa 12px depois da linha da moldura, e o título da tela, o corpo
+   * do cartão e a tabela abrem em três posições diferentes. */
+  .vx-table thead th:first-child,
+  .vx-table tbody td:first-child { padding-left: 16px; }
+  .vx-table thead th:last-child,
+  .vx-table tbody td:last-child { padding-right: 16px; }
   .vx-table tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid hsl(var(--border) / 70%);
+    /*
+     * A LINHA DE SEPARAÇÃO RECUOU, e a altura da linha subiu.
+     *
+     * Era `--border / 70%` em CADA linha: com dez registros na tela são dez
+     * traços firmes atravessando a largura toda, e a leitura vira de livro
+     * contábil -- o olho percorre as réguas em vez dos nomes. A 45% o fio ainda
+     * guia a leitura horizontal numa tabela de oito colunas, sem desenhar a
+     * grade.
+     *
+     * Os 11px verticais compensam: quando a régua enfraquece, quem separa uma
+     * linha da outra passa a ser o respiro.
+     */
+    padding: 11px 12px;
+    border-bottom: 1px solid hsl(var(--border) / 45%);
     vertical-align: middle;
   }
   .vx-table tbody tr:last-child td { border-bottom: none; }
@@ -524,8 +574,19 @@
    * nenhuma e não entendia por quê -- e é parte da razão de quinze tabelas
    * terem montado a moldura à mão em cinco formatos diferentes. */
   .vx-table {
-    border: 1px solid hsl(var(--border));
+    /*
+     * A MOLDURA É A MESMA DO CARTÃO, e a superfície também.
+     *
+     * A tabela desenhava a borda com `--border`, o token das divisórias
+     * INTERNAS, e não declarava fundo -- então ela era um retângulo de linha
+     * firme, mais marcado que qualquer cartão ao lado, apoiado no que quer que
+     * estivesse atrás. Com `--contorno` e `--card` ela passa a ser um objeto da
+     * mesma família: mesma quina, mesmo plano, mesma sombra rasa.
+     */
+    border: 1px solid hsl(var(--contorno));
     border-radius: var(--radius);
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-xs);
     overflow-x: auto;
   }
 
@@ -585,11 +646,94 @@
   .dark .vx-nav-active { background: hsl(var(--sidebar-primary) / 16%) !important; }
   .vx-nav-active svg { color: hsl(var(--sidebar-primary)) !important; }
   .vx-nav-item {
+    /*
+     * 8px, e não os 12 do cartão. `rounded-lg` numa linha de 34px de altura
+     * deixa o canto com um terço da altura: a pastilha vira cápsula, e catorze
+     * cápsulas empilhadas leem como lista de botões, não como índice.
+     */
+    border-radius: calc(var(--radius) * 0.6667);
     transition: background 0.15s ease, color 0.15s ease;
   }
+  /*
+   * O ÍCONE PESAVA MAIS QUE A PALAVRA QUE ELE ILUSTRA.
+   *
+   * Eram 18px ao lado de um rótulo de 13px -- o desenho maior que o texto, numa
+   * coluna em que o texto é o que se lê. 16px com um véu de opacidade devolve a
+   * ordem: o rótulo diz para onde se vai, o ícone só o ajuda a ser encontrado
+   * de relance.
+   *
+   * SÓ TAMANHO E OPACIDADE, nunca `color`: o ícone de "Em Risco" é
+   * `text-warning`, e cor semântica não pode ser apagada por regra de
+   * apresentação. No item ativo o véu sai, para o acento chegar cheio.
+   */
+  /* `stroke-width: 1.75` e não os 2 que o lucide traz: a 16px o traço de 2
+   * fecha os contornos internos (o prédio de "Empresas", a caixa de
+   * "Produtos") e os ícones viram manchas. Um quarto de pixel a menos devolve
+   * o desenho. A propriedade CSS vence o atributo do SVG, então isso vale para
+   * todos sem tocar em nenhum. */
+  .vx-nav-item svg { width: 16px; height: 16px; stroke-width: 1.75; opacity: 0.8; }
+  .vx-nav-active svg { opacity: 1; }
   /* Era `rgba(255,255,255,0.06)`: branco fixo, que assume barra lateral
    * escura. No tema claro o realce simplesmente não aparecia. */
   .vx-nav-item:hover { background: hsl(var(--sidebar-accent) / 70%) !important; }
+  .vx-nav-item:hover svg { opacity: 1; }
+
+  /*
+   * O RÓTULO DE GRUPO É DO PAINEL, NÃO DO CONTEÚDO.
+   *
+   * Ele é o botão de recolher de cada seção da lateral, e vinha em caixa baixa,
+   * com peso semibold e um chevron de 14px à esquerda -- ou seja, com quase o
+   * mesmo peso visual dos destinos abaixo dele. Três níveis (grupo, destino,
+   * destino ativo) em dois pesos é o que faz a coluna ler como lista plana.
+   *
+   * Em caixa alta e apagado ele deixa de competir e passa a ser régua: a mesma
+   * `.vx-etiqueta` do olho-de-boi da página e do cabeçalho de tabela, que é o
+   * que dá à lateral leitura de índice. O chevron recua para um sinal de 12px,
+   * e só acende sob o cursor -- recolher uma seção é recurso, não decoração.
+   *
+   * O seletor é estrutural porque o tratamento pertence à LATERAL: é o único
+   * botão com `aria-expanded` dentro dela, e a regra fica ao lado da pastilha
+   * do item ativo, que é a outra metade da mesma decisão.
+   */
+  [data-sidebar="content"] button[aria-expanded] {
+    margin: 0.5rem 0 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: hsl(var(--sidebar-foreground) / 0.55);
+  }
+  [data-sidebar="content"] button[aria-expanded]:hover { color: hsl(var(--sidebar-foreground) / 0.9); }
+  [data-sidebar="content"] button[aria-expanded] svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0.35;
+    transition: opacity 0.15s ease;
+  }
+  [data-sidebar="content"] button[aria-expanded]:hover svg { opacity: 0.9; }
+
+  /*
+   * A PAREDE, E COMO ELA ENCOSTA NO CONTEÚDO.
+   *
+   * A lateral se separava da página por UM fio de 1px, e só. Um fio sozinho
+   * entre duas superfícies quase iguais não diz qual das duas está na frente:
+   * lê como emenda de duas folhas, não como parede e papel.
+   *
+   * São duas camadas, e a segunda é a que resolve:
+   *
+   *   1. o FIO, que define a quina -- nítido em qualquer zoom;
+   *   2. uma QUEDA DE LUZ curta para dentro do conteúdo. A lateral é a
+   *      superfície mais clara da tela nos dois temas; o que está mais perto da
+   *      luz projeta sobre o que está atrás. Dezoito pixels de sombra muito
+   *      diluída bastam para o conteúdo passar a ficar ATRÁS da parede em vez
+   *      de ao lado dela.
+   *
+   * `box-shadow` e não `border-right`: assim a queda de luz não entra no
+   * cálculo da caixa e o painel mede o mesmo com e sem ela.
+   */
+  .vx-parede {
+    box-shadow:
+      1px 0 0 hsl(var(--sidebar-border)),
+      6px 0 18px -12px hsl(var(--sombra) / 0.28);
+  }
 
   /* ── KPI Card Variants ────────────────────────────────── */
 
@@ -635,6 +779,47 @@
    * o lado que precisam, mesmo sendo a mesma especificidade.
    */
   .vx-respiro { padding: var(--respiro); }
+
+  /*
+   * O CARTÃO NÃO RESPIRA IGUAL NOS QUATRO LADOS -- e é isso que o tira da
+   * leitura de caixa.
+   *
+   * Antes eram `vx-respiro` no cabeçalho e `vx-respiro pt-0` no corpo: 20px
+   * iguais em cima, dos lados e embaixo, com o corpo colado no cabeçalho por
+   * um `pb-2` solto. Resultado: um retângulo com texto centrado num vão
+   * uniforme, igual em tile de métrica e em painel de gráfico.
+   *
+   * Os três derivados abaixo mantêm o que o token existe para garantir -- a
+   * densidade escolhida em Configurações continua mandando, porque tudo é
+   * fração de `--respiro` -- e acrescentam a proporção:
+   *
+   *   LATERAL CHEIA          a medida horizontal é a margem do cartão, e é ela
+   *                          que alinha título, corpo e rodapé numa coluna só.
+   *   TOPO UM POUCO MENOR    texto tem entrelinha própria; 20px em cima de uma
+   *                          linha de 14px lê como mais que 20 dos lados.
+   *   VÃO INTERNO MENOR      o espaço entre o cabeçalho e o corpo é METADE da
+   *                          margem externa. É a regra de proximidade: o que
+   *                          está dentro do mesmo objeto se agrupa, e o vão
+   *                          que separa o objeto do mundo é o maior deles.
+   */
+  .vx-cabeca-cartao { padding: calc(var(--respiro) * 0.8) var(--respiro) calc(var(--respiro) * 0.5); }
+  .vx-corpo-cartao { padding: 0 var(--respiro) calc(var(--respiro) * 0.8); }
+
+  /*
+   * A ETIQUETA, UMA SÓ.
+   *
+   * O mesmo rótulo em caixa alta aparecia em quatro papéis -- o olho-de-boi
+   * acima do título da página, o cabeçalho de coluna da tabela, o rótulo de
+   * grupo da lateral e a unidade da contagem -- e cada um trazia a própria
+   * combinação de tamanho, peso, cor e tracking, escrita à mão no lugar de uso.
+   * São o MESMO elemento em contextos diferentes; agora há uma definição.
+   *
+   * 0.08em não é gosto: maiúscula em 11px sem tracking vira um bloco sem
+   * ascendente nem descendente para o olho separar.
+   */
+  .vx-etiqueta {
+    @apply text-label font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  }
 
   .vx-deal-card {
     /* Maior, e ainda retangular -- o pedido foi "um pouco maior", não outro

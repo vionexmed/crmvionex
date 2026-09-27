@@ -12,7 +12,13 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, ...props }, ref) => <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />,
+  // O cabeçalho é um REBAIXO com uma linha firme embaixo: as réguas entre
+  // linhas de dado enfraqueceram, e se a do cabeçalho enfraquecesse junto a
+  // tabela perderia o topo -- que é o que mantém uma lista longa legível depois
+  // de rolar. Mesmo tratamento que a `.vx-table` dá às tabelas do projeto.
+  ({ className, ...props }, ref) => (
+    <thead ref={ref} className={cn("bg-muted/40 [&_tr]:border-b [&_tr]:border-border", className)} {...props} />
+  ),
 );
 TableHeader.displayName = "TableHeader";
 
@@ -37,8 +43,13 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
       // O realce de linha é NEUTRO. Selecionada é um degrau mais firme que
       // sob o cursor -- os dois estados existem ao mesmo tempo numa seleção em
       // lote, e precisam continuar distinguíveis.
+      // A régua recuou de 70% para 45%, e é a mesma decisão que a `.vx-table`
+      // toma para as 18 tabelas do projeto: dez traços firmes atravessando a
+      // largura inteira fazem a lista ler como livro contábil, e o olho
+      // percorre as linhas em vez dos nomes. Quem separa passa a ser o respiro
+      // da célula; o fio só guia a leitura horizontal.
       className={cn(
-        "border-b border-border/70 transition-colors data-[state=selected]:bg-muted hover:bg-muted/55",
+        "border-b border-border/45 transition-colors data-[state=selected]:bg-muted hover:bg-muted/55",
         className,
       )}
       {...props}
@@ -59,7 +70,13 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
         // Caixa alta em 11px com tracking aberto: é o rótulo de instrumento
         // que `.vx-table thead th` já aplica, trazido para o primitivo para
         // que as tabelas fora da classe não fiquem com outro cabeçalho.
-        "h-9 px-3 text-left align-middle text-label font-semibold uppercase tracking-[0.08em] text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        // `[&_button]:uppercase`: o rótulo de coluna ordenável é um `<button>`
+        // dentro do `<th>`, e a folha do NAVEGADOR declara
+        // `text-transform: none` para controle de formulário -- ela vence a
+        // herança do `uppercase` daqui. Em Contatos isso deixava quatro colunas
+        // em caixa baixa e três em caixa alta na mesma linha, sem que nada no
+        // projeto pedisse a diferença.
+        "h-9 px-3 text-left align-middle text-label font-semibold uppercase tracking-[0.08em] text-muted-foreground [&_button]:uppercase [&_button]:tracking-[0.08em] [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -75,7 +92,7 @@ const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<
     // linha de 18px de altura davam 50px por linha, e uma lista de contatos
     // cabia em nove registros na tela. `.vx-table` já ajusta as 18 tabelas do
     // projeto; este é o piso para quem não usa a classe.
-    <td ref={ref} className={cn("px-3 py-2.5 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
+    <td ref={ref} className={cn("px-3 py-[11px] align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
   ),
 );
 TableCell.displayName = "TableCell";

@@ -57,48 +57,64 @@ export function PageHeader({
   return (
     // Sem cartão, sem gradiente, sem ladrilho de ícone: a separação do conteúdo
     // vem da régua abaixo. Eram 126px antes de qualquer conteúdo, em 19 telas.
-    <div className="border-b border-border pb-3.5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="border-b border-border pb-4">
+      {/*
+        A LINHA DE AÇÃO ALINHA COM O TÍTULO, NÃO COM O FIM DA COLUNA.
+
+        Era `sm:items-end`: os botões desciam até a base do bloco da esquerda --
+        ou seja, abaixo da descrição e da linha de meta. No Painel isso deixava
+        o seletor de período sozinho a 50px do título, alinhado com nada. O
+        cabeçalho não estava composto, estava empilhado: dois blocos amarrados
+        pelo ponto mais baixo de um deles.
+
+        Com `items-start` mais um recuo do tamanho do olho-de-boi, a fileira de
+        ações passa a dividir a MESMA faixa horizontal do título. O par
+        título+ações lê como uma linha só; descrição e meta ficam embaixo, que é
+        onde subordinado deve ficar.
+      */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0">
-          {rotulo && (
-            // 0.08em e não 0.14em, e este é o MESMO valor do cabeçalho de
-            // tabela e do rótulo de grupo da lateral -- os três são a mesma
-            // etiqueta em papéis diferentes, e cada um tinha o seu tracking.
-            // Catorze centésimos separam tanto as letras que a palavra deixa
-            // de se ler como palavra.
-            <p className="mb-0.5 text-label font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              {rotulo}
-            </p>
-          )}
+          {/* A `.vx-etiqueta` é a mesma do cabeçalho de coluna da tabela, do
+              rótulo de grupo da lateral e da unidade da contagem: os quatro são
+              o mesmo elemento em papéis diferentes, e cada um trazia o próprio
+              tamanho, peso e tracking escritos à mão. */}
+          {rotulo && <p className="vx-etiqueta mb-1 block">{rotulo}</p>}
           {/* A classe, não as utilidades soltas: assim o nível existe em UM
               lugar, e as telas sem casca (entrada, wizard, erro) usam o mesmo. */}
           <h1 className="vx-titulo-tela truncate">{title}</h1>
-          {description && <p className="vx-subtitulo-tela">{description}</p>}
+          {description && <p className="vx-subtitulo-tela max-w-[68ch]">{description}</p>}
           {meta && <div className="mt-2">{meta}</div>}
         </div>
 
-        <div className="flex items-end gap-3 shrink-0">
+        {/* `sm:pt-[18px]` desce a fileira pela altura do olho-de-boi (11px de
+            linha + 4px de vão), de modo que o centro dos botões caia no centro
+            do título. Sem isso eles nascem alinhados com o rótulo pequeno. */}
+        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 sm:justify-end sm:pt-[18px]">
           {contagem && (
             // `tabular-nums` porque o número muda sob os olhos — sem largura fixa
             // de dígito, o total "pula" de lugar a cada filtro aplicado.
-            // O NÚMERO DEIXOU DE SER COLORIDO.
             //
-            // Era `text-primary`: a contagem de registros pintada com a cor da
-            // marca, na mesma tela em que o botão de ação principal é a única
-            // outra coisa colorida. Duas coisas na cor do acento competem, e a
-            // que não é clicável ganha por ser maior.
+            // O NÚMERO DEIXOU DE SER COLORIDO, e continua não sendo: neste
+            // sistema a cor é reservada para AÇÃO e para ESTADO. Um total é
+            // dado, e se destaca por tamanho e peso.
             //
-            // Neste sistema a cor é reservada para AÇÃO e para ESTADO. Um
-            // total é dado: ele se destaca por tamanho e por peso, que é o que
-            // hierarquia tipográfica faz.
-            <div className="border-r border-border pr-3.5 text-right leading-none">
-              <p className="font-heading text-2xl font-bold tabular-nums tracking-tight text-foreground">
+            // O QUE MUDOU É O ARRANJO. Ele era um bloco de duas linhas --
+            // número em 24px, unidade embaixo -- separado das ações por uma
+            // barra vertical de 24px. Três problemas de uma vez: 24px é
+            // exatamente o tamanho do `<h1>`, então a contagem competia com o
+            // nome da tela; empilhado em dois andares ele virava um segundo
+            // título; e a barrinha era uma divisória avulsa, a única da tela,
+            // desenhada porque os dois blocos não tinham relação nenhuma.
+            //
+            // Numa linha só, com a unidade em `.vx-etiqueta` sentada na mesma
+            // base do número, vira uma anotação: menor que o título, do lado
+            // das ações, sem precisar de divisória para existir.
+            <p className="flex items-baseline gap-1.5 whitespace-nowrap">
+              <span className="font-heading text-[18px] font-semibold tabular-nums leading-none tracking-tight text-foreground">
                 {formatarNumero(contagem.valor)}
-              </p>
-              <p className="mt-1.5 text-label uppercase tracking-[0.08em] text-muted-foreground">
-                {unidade}
-              </p>
-            </div>
+              </span>
+              <span className="vx-etiqueta">{unidade}</span>
+            </p>
           )}
           {actions && (
             <div className="flex flex-wrap items-center gap-2">{actions}</div>

@@ -139,6 +139,33 @@ export default {
         md: "calc(var(--radius) * 0.6667)",   /*  8px — botão, campo, menu */
         sm: "calc(var(--radius) * 0.4167)",   /*  5px — selo, caixa de seleção */
       },
+      /*
+       * A SOMBRA VIRA TOKEN, e `shadow-md` deixa de ser a do Tailwind.
+       *
+       * O `index.css` declara uma escada própria (`--shadow-xs` a `--shadow-lg`)
+       * derivada de `--sombra` -- um matiz frio, com alfas calibrados para cada
+       * tema: no claro ela separa, no escuro ela quase não existe e quem separa
+       * é a linha. Só que nenhum menu, diálogo, tooltip ou aviso a usava: todos
+       * escreviam `shadow-md`/`shadow-lg`, que são as do Tailwind -- preto puro,
+       * em quatro camadas, calibradas para fundo branco.
+       *
+       * O resultado aparecia no tema escuro: um menu suspenso com sombra preta
+       * sobre fundo quase preto não se separava de nada, e no claro ele era a
+       * única mancha cinza-morta de uma tela inteira de sombras frias.
+       *
+       * Redefinir os NOMES aqui liga os dois mundos sem tocar em um único
+       * componente: quem escreve `shadow-lg` passa a receber a escada do
+       * projeto, nos dois temas.
+       */
+      boxShadow: {
+        xs: "var(--shadow-xs)",
+        sm: "var(--shadow-sm)",
+        DEFAULT: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        xl: "var(--shadow-lg)",
+        none: "none",
+      },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
         "accordion-up": { from: { height: "var(--radix-accordion-content-height)" }, to: { height: "0" } },

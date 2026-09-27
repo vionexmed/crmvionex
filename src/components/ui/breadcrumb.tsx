@@ -16,8 +16,11 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
   ({ className, ...props }, ref) => (
     <ol
       ref={ref}
+      // 12px e vão de 6px, não 13px e 10px. O caminho é uma referência de
+      // posição, não uma frase: no tamanho do corpo ele disputa com o título da
+      // tela, que está 40px abaixo dizendo a mesma coisa maior e melhor.
       className={cn(
-        "flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5",
+        "flex flex-wrap items-center gap-1.5 break-words text-xs text-muted-foreground",
         className,
       )}
       {...props}
@@ -52,7 +55,10 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWit
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("font-normal text-foreground", className)}
+      // O elo final é o único com peso: é onde a pessoa está. Os anteriores
+      // ficam apagados e são os únicos clicáveis -- cor e peso dizendo a mesma
+      // coisa que o `aria-current`.
+      className={cn("font-medium text-foreground", className)}
       {...props}
     />
   ),
@@ -60,7 +66,9 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWit
 BreadcrumbPage.displayName = "BreadcrumbPage";
 
 const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<"li">) => (
-  <li role="presentation" aria-hidden="true" className={cn("[&>svg]:size-3.5", className)} {...props}>
+  // 12px e meio apagado: o separador é pontuação, e pontuação no mesmo peso do
+  // texto vira elemento.
+  <li role="presentation" aria-hidden="true" className={cn("opacity-50 [&>svg]:size-3", className)} {...props}>
     {children ?? <ChevronRight />}
   </li>
 );

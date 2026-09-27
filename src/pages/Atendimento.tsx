@@ -431,6 +431,13 @@ export default function Atendimento() {
             `--background`, então a coluna cinza seria invisível no tema claro. */}
         <aside className="flex min-h-0 flex-col border-r bg-card/50">
           <div className="space-y-2 border-b p-3">
+            {/* Sem ícone de propósito. Quatro canais dividem uma coluna de
+                330px, e ícone + rótulo não cabem: os ícones custam ~56px mais
+                os vãos, e o grupo ou vazava ou truncava para "Whats…".
+                Aqui o ícone não carrega informação -- é um filtro, o rótulo
+                já diz tudo. Quem PRECISA do ícone é a linha da conversa, onde
+                o canal é dado e não controle, e lá ele continua ao lado do
+                rótulo (nunca cor sozinha). */}
             <SegmentedControl<Filtro>
               rotuloGrupo="Canal"
               valor={filtro}
@@ -438,10 +445,10 @@ export default function Atendimento() {
               compactoNoCelular={false}
               className="w-full"
               opcoes={[
-                { valor: "todos", rotulo: "Todos", icone: Inbox },
-                { valor: "email", rotulo: "E-mail", icone: Mail },
-                { valor: "whatsapp", rotulo: "WhatsApp", icone: MessageSquare },
-                { valor: "instagram", rotulo: "Instagram", icone: Instagram },
+                { valor: "todos", rotulo: "Todos" },
+                { valor: "email", rotulo: "E-mail" },
+                { valor: "whatsapp", rotulo: "WhatsApp" },
+                { valor: "instagram", rotulo: "Instagram" },
               ]}
             />
             <div className="relative">

@@ -33,9 +33,18 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
       // é 13px, não os 16px que o Tailwind assume, então 24px de respiro é
       // proporcionalmente exagerado.
       //
-      // `pb-2` porque é o que 27 dos 42 já escreviam: o subtítulo fica colado
-      // no título, e o vão maior vem do conteúdo abaixo.
-      className={cn("flex flex-col space-y-1.5 vx-respiro pb-2", className)}
+      // O CABEÇALHO É UM PAR, NÃO DUAS LINHAS EMPILHADAS.
+      //
+      // Era `space-y-1.5` (6px) entre o título de 14px e o subtítulo de 11px,
+      // e `pb-2` (8px) até o corpo -- ou seja, o vão DENTRO do par era quase o
+      // mesmo que o vão que o separa do resto do cartão. Sem diferença de
+      // proximidade não há par: são três blocos soltos à mesma distância.
+      //
+      // Agora 2px entre título e subtítulo (eles se leem como uma unidade) e
+      // metade do respiro até o corpo, pela `.vx-cabeca-cartao`. O padding
+      // continua saindo de `--respiro`, então a densidade escolhida em
+      // Configurações continua mandando.
+      className={cn("flex flex-col space-y-0.5 vx-cabeca-cartao", className)}
       {...props}
     />
   ),
@@ -49,7 +58,10 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
       // `text-2xl` era o default e NUNCA era o que se queria: 81 dos 86 usos
       // sobrescreviam, 66 deles para `text-sm`. O default agora é o caso comum
       // -- título de seção dentro de um cartão -- e quem quer maior declara.
-      className={cn("text-sm font-semibold leading-none tracking-tight", className)}
+      // `leading-tight` e não `leading-none`: com entrelinha 1 um título que
+      // quebra em duas linhas encosta uma na outra, e as descidas do "g" e do
+      // "ç" batem na linha de baixo. Em português isso acontece o tempo todo.
+      className={cn("text-sm font-semibold leading-tight tracking-tight", className)}
       {...props}
     />
   ),
@@ -64,7 +76,10 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
       // lugares e 11px em 6; 10px ao lado de um título de 14 abre um vão de
       // quatro degraus e o texto some. Onze ainda é claramente secundário e se
       // lê.
-      className={cn("text-label text-muted-foreground", className)}
+      // `leading-[1.5]`: o subtítulo é a única linha do cartão que costuma
+      // quebrar, e 11px com entrelinha de 16px (o default do degrau `label`)
+      // fica denso demais quando são duas ou três linhas de explicação.
+      className={cn("text-label text-muted-foreground leading-[1.5]", className)}
       {...props}
     />
   ),
@@ -84,7 +99,12 @@ const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
       //               todos em contêiner apertado, e apertar ali é o certo.
       //
       // O que não existe é um terceiro valor por acidente.
-      className={cn("vx-respiro pt-0", className)}
+      //
+      // `.vx-corpo-cartao` é `0 var(--respiro) calc(var(--respiro) * .8)`: a
+      // margem lateral continua inteira -- é ela que alinha cabeçalho, corpo e
+      // rodapé numa coluna só -- e o pé fecha um pouco mais curto, porque não
+      // há linha de texto embaixo empurrando o olho para fora.
+      className={cn("vx-corpo-cartao", className)}
       {...props}
     />
   ),
@@ -93,7 +113,7 @@ CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center vx-respiro pt-0", className)} {...props} />
+    <div ref={ref} className={cn("flex items-center gap-2 vx-corpo-cartao", className)} {...props} />
   ),
 );
 CardFooter.displayName = "CardFooter";

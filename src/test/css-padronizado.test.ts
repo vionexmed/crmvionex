@@ -187,15 +187,43 @@ describe("os cartões respiram igual", () => {
   it("o default vem do token de respiro, não de px cravado", () => {
     expect(CARD).not.toMatch(/cn\("[^"]*\bp-6\b/);
     expect(CARD).not.toMatch(/cn\("[^"]*\bp-4\b/);
-    expect(CARD).toMatch(/CardContent[\s\S]*?cn\("vx-respiro pt-0"/);
+    expect(CARD).toMatch(/CardContent[\s\S]*?cn\("vx-corpo-cartao"/);
   });
 
   /**
    * `pb-2` porque é o que 27 dos 42 cabeçalhos já escreviam: o subtítulo fica
    * colado no título, e o vão maior vem do conteúdo abaixo.
    */
-  it("o cabeçalho fecha com pb-2", () => {
-    expect(CARD).toMatch(/CardHeader[\s\S]*?cn\("flex flex-col space-y-1\.5 vx-respiro pb-2"/);
+  /**
+   * O `pb-2` SOLTO SAIU, e o que ele tentava fazer virou proporção.
+   *
+   * Oito pixels era um número escolhido por frequência, não por relação -- e
+   * ficava ao lado de um `space-y-1.5` (6px) entre título e subtítulo. Dois
+   * vãos quase iguais dentro do mesmo bloco não formam par: o subtítulo ficava
+   * tão perto do corpo quanto do próprio título, e o cabeçalho lia como três
+   * linhas soltas.
+   *
+   * Agora são duas medidas com papéis opostos, e ambas derivam de `--respiro`:
+   * 2px entre título e subtítulo (uma unidade) e metade do respiro até o corpo
+   * (separação). O teste guarda a RELAÇÃO -- o vão interno do par tem de ser
+   * menor que o vão que o separa do corpo --, não mais o número.
+   */
+  it("o cabeçalho é um par, e o vão até o corpo é maior que o vão interno", () => {
+    expect(CARD).toMatch(/CardHeader[\s\S]*?cn\("flex flex-col space-y-0\.5 vx-cabeca-cartao"/);
+
+    const bloco = (classe: string) => {
+      const i = CSS.indexOf(`.${classe} {`);
+      expect(i, `.${classe} não está declarada`).toBeGreaterThan(-1);
+      return CSS.slice(i, CSS.indexOf("}", i));
+    };
+    // O pé do cabeçalho é fração do respiro -- não um px solto, e não o respiro
+    // inteiro (aí o cabeçalho voltaria a flutuar longe do que ele intitula).
+    const fator = Number(bloco("vx-cabeca-cartao").match(/calc\(var\(--respiro\) \* ([\d.]+)\)\s*;/)?.[1]);
+    expect(fator, "o pé do cabeçalho não é uma fração de --respiro").toBeGreaterThan(0);
+    expect(fator, "o cabeçalho voltou a respirar o mesmo embaixo e dos lados").toBeLessThan(1);
+    // E o corpo mantém a margem LATERAL cheia: é ela que alinha título,
+    // conteúdo e rodapé numa coluna só.
+    expect(bloco("vx-corpo-cartao")).toMatch(/padding:\s*0 var\(--respiro\)/);
   });
 
   /**

@@ -64,10 +64,34 @@ describe("a densidade deixou de ser controle morto", () => {
 
   /** O respiro do cartão tem de VIR do token, senão a densidade muda o token e
    *  o cartão continua igual — o controle volta a ser enfeite. */
+  /**
+   * O CARTÃO PASSOU A TER TRÊS MEDIDAS, E O TESTE MUDOU JUNTO.
+   *
+   * Ele cobrava a string `vx-respiro` dentro do primitivo. Isso era um proxy
+   * para o invariante que interessa -- "a densidade escolhida em Configurações
+   * chega ao cartão" --, e o proxy ficou errado quando o cabeçalho e o corpo
+   * ganharam proporções próprias (`.vx-cabeca-cartao` e `.vx-corpo-cartao`):
+   * lateral cheia, topo um pouco menor, vão interno pela metade. Um retângulo
+   * com 20px iguais nos quatro lados é o que fazia todo cartão ler como caixa.
+   *
+   * Agora o teste cobra o invariante DIRETO, e por isso ficou mais forte: seja
+   * qual for a classe de respiro que o primitivo use, ela tem de estar
+   * declarada em função de `var(--respiro)`. Cravar `padding: 20px` numa delas
+   * passava no teste antigo (a string `vx-respiro` continuaria lá, no corpo) e
+   * reprova neste.
+   */
   it("o cartão respira pelo token, não por px cravado", () => {
     expect(CSS).toContain("--respiro:");
     expect(CSS).toContain(".vx-respiro { padding: var(--respiro); }");
-    expect(CARD).toContain("vx-respiro");
+
+    const classes = [...new Set([...CARD.matchAll(/\bvx-(?:respiro|[a-z-]*cartao)\b/g)].map((m) => m[0]))];
+    expect(classes.length, "o primitivo não usa nenhuma classe de respiro").toBeGreaterThan(0);
+    for (const classe of classes) {
+      const i = CSS.indexOf(`.${classe} {`);
+      expect(i, `.${classe} não está declarada no CSS`).toBeGreaterThan(-1);
+      expect(CSS.slice(i, CSS.indexOf("}", i)), `.${classe} não deriva de --respiro`)
+        .toContain("var(--respiro)");
+    }
     expect(CARD).not.toMatch(/cn\("[^"]*\bp-4\b/);
   });
 

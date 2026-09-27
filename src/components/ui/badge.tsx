@@ -28,7 +28,18 @@ const badgeVariants = cva(
         // Com o fio ele existe sobre qualquer um dos três planos.
         secondary: "border-border bg-secondary text-secondary-foreground hover:bg-muted",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border-border text-foreground",
+        // O SELO CONTORNADO É UMA ANOTAÇÃO, NÃO UM DADO.
+        //
+        // São 24 usos, e quase todos marcam procedência ou categoria -- a
+        // coluna "Origem" de Contatos diz "Manual" em toda linha. Em
+        // `text-foreground` ele tinha o MESMO peso do nome do contato ao lado:
+        // dez etiquetas pretas repetindo a mesma palavra, competindo com o
+        // dado que a pessoa veio ler.
+        //
+        // Em cor secundária ele continua legível (5,8:1 sobre o cartão) e volta
+        // ao seu lugar. Quando o selo carrega estado -- e aí a cor SIGNIFICA --
+        // quem chama passa a classe semântica, que vence esta.
+        outline: "border-border text-muted-foreground",
       },
     },
     defaultVariants: {

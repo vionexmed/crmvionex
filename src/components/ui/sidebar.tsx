@@ -14,7 +14,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "16rem";
+/*
+ * 15rem (240px), e não 16.
+ *
+ * O destino mais longo da navegação é "Orçamentos"; com 256px sobravam ~60px de
+ * vazio à direita de todo rótulo, e uma coluna cuja metade direita é vazia lê
+ * como espaço sobrando, não como respiro. Dezesseis pixels a menos aproximam a
+ * borda da parede do texto e devolvem a largura a quem precisa dela -- uma
+ * tabela de oito colunas.
+ */
+const SIDEBAR_WIDTH = "15rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 /*
  * 4rem (64px), e não os 3rem que vêm do shadcn.
@@ -192,9 +201,7 @@ const Sidebar = React.forwardRef<
           "relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
-          variant === "floating" || variant === "inset"
-            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
+          "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
         )}
       />
       <div
@@ -203,14 +210,7 @@ const Sidebar = React.forwardRef<
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-          // Adjust the padding for floating and inset variants.
-          variant === "floating" || variant === "inset"
-            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-            // A borda saiu DAQUI e foi para o painel interno, onde usa
-            // `--sidebar-border` em vez de `--border`. Mantida nos dois
-            // lugares, a lateral ficava com duas linhas encostadas, de cores
-            // diferentes.
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
+          "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
           className,
         )}
         {...props}
@@ -218,18 +218,30 @@ const Sidebar = React.forwardRef<
         <div
           data-sidebar="sidebar"
           /*
-            A LATERAL SE SEPARA POR UMA LINHA, NÃO POR SOMBRA.
+            A LATERAL DEIXOU DE SER UM CARTÃO FLUTUANTE.
 
-            A borda vinha do wrapper de fora (`group-data-[side=left]:border-r`),
-            que usa `--border` -- o token do CONTEÚDO. Então a parede terminava
-            numa linha da cor da página, e não na sua própria: no tema escuro,
-            onde a lateral é mais clara que o conteúdo, isso desenhava um vinco
-            escuro entre as duas superfícies.
+            Ela vinha com o tratamento `floating` do shadcn: 8px de folga em
+            volta, cantos arredondados e `--shadow-md`. Duas coisas não fechavam.
 
-            `border-sidebar-border` aqui dentro faz a linha pertencer à lateral,
-            que é de quem ela é.
+            A primeira é medida: 8px de folga entre duas superfícies que diferem
+            em quatro por cento de claridade não se lê como folga -- lê como
+            defeito de alinhamento. Ou a folga é grande o bastante para ser
+            evidentemente intencional, ou não deve existir.
+
+            A segunda é de papel, e é a que decide. O `index.css` já dizia o que
+            esta superfície é: "a lateral é ARQUITETURA, não cartaz -- a parede a
+            que o conteúdo se encosta". Parede não flutua, e não tem canto
+            arredondado no encontro com o chão. Um cartão flutuante diz o
+            contrário: que a navegação é um objeto que se move, como um cartão de
+            negócio ou um diálogo.
+
+            Agora ela vai de topo a base, encostada na borda da tela, e encontra
+            o conteúdo pela `.vx-parede` -- o fio de 1px mais uma queda de luz
+            curta, que é o que faltava para o conteúdo ficar ATRÁS dela em vez de
+            ao lado. A variante `floating` do primitivo passou a significar isto,
+            e é a única que este projeto usa.
           */
-          className="flex h-full w-full flex-col border-r border-sidebar-border bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-[var(--shadow-md)]"
+          className="vx-parede flex h-full w-full flex-col bg-sidebar"
         >
           {children}
         </div>
@@ -325,7 +337,41 @@ const SidebarInput = React.forwardRef<React.ElementRef<typeof Input>, React.Comp
 SidebarInput.displayName = "SidebarInput";
 
 const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-2", className)} {...props} />;
+  return (
+    <div
+      ref={ref}
+      data-sidebar="header"
+      /*
+        O TOPO DA LATERAL E O CABEÇALHO DA PÁGINA COMPARTILHAM UMA LINHA.
+
+        A marca ficava num bloco de 68px de altura e o cabeçalho da página tem
+        48: as duas linhas horizontais do alto da tela caíam em alturas
+        diferentes, a 20px uma da outra, e o encontro da parede com o cabeçalho
+        virava um degrau. É o mesmo tipo de desalinhamento que faz uma fachada
+        parecer mal construída.
+
+        `h-12` mais o fio de baixo dá exatamente a altura do `<AppHeader>`: uma
+        régua horizontal só, atravessando a tela inteira, com a marca de um lado
+        e o caminho do outro. O `!py-0` é para vencer o respiro vertical que a
+        `AppSidebar` declara -- a medida aqui não é de gosto, é de alinhamento
+        com outro componente, e por isso pertence ao primitivo.
+      */
+      // `[&_img]:h-8`: a marca vinha em 44px de altura dentro de uma faixa de
+      // 48 -- encostada em cima e embaixo, sem ar nenhum. Num topo de lateral a
+      // marca precisa estar presente, não ocupar a faixa inteira; 32px deixa
+      // 8px de respiro de cada lado e é o mesmo alto do avatar do rodapé, que é
+      // o outro objeto fixo desta coluna.
+      className={cn(
+        // No trilho recolhido a largura acompanha: a marca é recortada ali (o
+        // arquivo é horizontal, e `object-cover` mostra só o símbolo), então
+        // mudar a altura sem mudar a largura abre a janela do recorte e deixa
+        // aparecer o começo da palavra.
+        "flex h-12 shrink-0 flex-col justify-center gap-2 border-b border-sidebar-border/80 p-2 !py-0 [&_img]:h-8 group-data-[collapsible=icon]:[&_img]:w-8",
+        className,
+      )}
+      {...props}
+    />
+  );
 });
 SidebarHeader.displayName = "SidebarHeader";
 

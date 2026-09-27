@@ -16,14 +16,28 @@ const buttonVariants = cva(
         // sombra na cor do acento, e as duas somadas davam uma borda cinza
         // por baixo do botão colorido.
         default: "vx-btn-primary text-primary-foreground",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        // A única outra ação SÓLIDA em cor, e por isso ela carrega o mesmo
+        // tratamento do primário -- fio de luz no topo, sombra curta na própria
+        // cor. Antes era cor chapada e nada mais: ao lado do primário ela
+        // parecia de outro sistema, e a diferença entre as duas lia como
+        // descuido em vez de gravidade.
+        destructive:
+          "bg-destructive text-destructive-foreground shadow-[0_1px_2px_hsl(var(--destructive)/0.24),inset_0_1px_0_hsl(0_0%_100%/0.12)] hover:bg-destructive/90",
         // A linha é `--border` e não `--input`: `--input` é o degrau de campo,
         // mais escuro, e num botão ele lê como caixa de texto. O fundo é o do
         // CARTÃO e não o da página -- botão contornado quase sempre aparece
         // dentro de um cartão, e `bg-background` ali abria um buraco cinza.
-        outline: "border border-border bg-card hover:bg-muted hover:text-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-muted",
-        ghost: "hover:bg-muted hover:text-foreground",
+        //
+        // OS TRÊS NEUTROS PRECISAVAM SER TRÊS COISAS, e eram quase a mesma.
+        // `outline` e `secondary` chegavam ao mesmo cinza no hover, e o
+        // `ghost` também: numa barra de ações com cinco botões, passar o mouse
+        // apagava a diferença entre eles. Agora a distinção é de SUPERFÍCIE --
+        // contornado é objeto (fio + plano do cartão + sombra rasa), sólido é
+        // preenchido, fantasma não é nada até ser tocado.
+        outline:
+          "border border-border bg-card shadow-xs hover:border-input hover:bg-muted/50 hover:text-foreground active:bg-muted",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/70 active:bg-muted",
+        ghost: "text-muted-foreground hover:bg-muted/60 hover:text-foreground active:bg-muted",
         link: "text-primary underline-offset-4 hover:underline",
       },
       /*

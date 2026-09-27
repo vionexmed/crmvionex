@@ -68,7 +68,12 @@ export function SegmentedControl<T extends string>({
             aria-pressed={ativo}
             aria-label={`${rotuloGrupo} ${rotulo}`}
             className={cn(
-              "flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:px-3",
+              // `min-w-0` é o que permite o botão encolher: sem ele, filho de
+              // flex tem largura mínima igual ao conteúdo e o grupo VAZA da
+              // coluna em vez de se ajustar. Acontecia no Atendimento, onde
+              // quatro canais dividem uma coluna de 330px: "E-mail" quebrava
+              // em duas linhas e "Instagram" saía cortado.
+              "flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:px-3",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               ativo
                 ? "bg-background shadow-sm"
@@ -78,7 +83,7 @@ export function SegmentedControl<T extends string>({
             style={ativo && corAtiva ? { color: corAtiva } : undefined}
           >
             {Icone && <Icone className="h-3.5 w-3.5 shrink-0" />}
-            <span className={compactoNoCelular ? "hidden sm:inline" : undefined}>
+            <span className={cn("truncate", compactoNoCelular && "hidden sm:inline")}>
               {rotulo}
             </span>
           </button>
