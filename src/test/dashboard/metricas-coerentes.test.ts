@@ -14,7 +14,7 @@
  * função para trás.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 const ler = (p: string) => readFileSync(p, "utf8");
 const semComentarios = (s: string) =>
@@ -61,6 +61,94 @@ describe("todas as funções usam o mesmo critério de abordagem", () => {
     const reuniao = bloco.slice(bloco.indexOf("a.type = 'meeting'"));
     expect(reuniao.slice(0, 300)).toContain("a.completed_at IS NOT NULL");
     expect(reuniao.slice(0, 300)).not.toMatch(/a\.created_at >= _from/);
+  });
+});
+
+/**
+ * Venda ganha: o card e o gráfico logo abaixo dele contavam diferente.
+ *
+ * `sdr_metrics.vendas_sdr` sempre exigiu `contact_id IS NOT NULL` — a métrica é
+ * venda ORIGINADA pelo SDR, e sem contato vinculado não há a quem atribuir. A
+ * CTE `ganhos` de `sdr_by_owner` filtrava só `status = 'won'`, então um negócio
+ * ganho criado direto no quadro, sem contato, entrava no gráfico e não entrava
+ * no card. Dois totais vizinhos para o mesmo mês, sem nada explicando.
+ *
+ * Os testes acima travam o critério de ABORDAGEM. Este trava o ramo de `deals`,
+ * que passou despercebido, e lê a definição VIGENTE de cada função — não a
+ * migração em que ela nasceu — porque é a última que manda no banco.
+ */
+describe("venda ganha tem o mesmo critério no card e no gráfico", () => {
+  const CORRECAO = "20260927120200_criterio_vendas_sdr.sql";
+  const DIR = "supabase/migrations";
+  const ARQUIVOS = readdirSync(DIR).filter((f) => f.endsWith(".sql")).sort();
+
+  /**
+   * O corpo da função como a ÚLTIMA migração que a declara deixou — é essa que
+   * manda no banco depois de aplicar tudo. Apontar para um arquivo fixo faria o
+   * teste passar a conferir uma definição que já foi substituída.
+   */
+  const vigente = (fn: string) => {
+    const marca = `FUNCTION public.${fn}(`;
+    const arquivo = [...ARQUIVOS].reverse().find((f) => ler(`${DIR}/${f}`).includes(marca));
+    if (!arquivo) throw new Error(`nenhuma migração declara ${fn}`);
+    const sql = semComentarios(ler(`${DIR}/${arquivo}`));
+    const i = sql.indexOf(marca);
+    const resto = sql.slice(i + marca.length);
+    const prox = resto.indexOf("FUNCTION public.");
+    return prox < 0 ? sql.slice(i) : sql.slice(i, i + marca.length + prox);
+  };
+
+  const BY_OWNER = vigente("sdr_by_owner");
+  const METRICS = vigente("sdr_metrics");
+
+  /** O ramo de venda de cada função, isolado pelo filtro de ganho. */
+  const ramoDeVenda = (bloco: string) => {
+    const i = bloco.indexOf("d.status = 'won'");
+    if (i < 0) throw new Error("ramo de venda não encontrado");
+    return bloco.slice(i, i + 200);
+  };
+
+  it("sdr_by_owner exige contato vinculado, como sdr_metrics", () => {
+    expect(ramoDeVenda(BY_OWNER)).toContain("d.contact_id IS NOT NULL");
+  });
+
+  it("sdr_metrics continua exigindo contato vinculado", () => {
+    expect(ramoDeVenda(METRICS)).toContain("d.contact_id IS NOT NULL");
+  });
+
+  /** Janela pelo fechamento nas duas: por `created_at` um mês fechado mudaria. */
+  it("as duas janelam por close_date", () => {
+    for (const bloco of [BY_OWNER, METRICS]) {
+      expect(ramoDeVenda(bloco)).toMatch(/_from IS NULL OR d\.close_date >= _from/);
+      expect(ramoDeVenda(bloco)).not.toMatch(/_from IS NULL OR d\.created_at >= _from/);
+    }
+  });
+
+  /**
+   * O alinhamento só vale enquanto ninguém redeclarar uma função do painel de
+   * volta ao critério antigo. As migrações ANTERIORES à correção ficam de fora
+   * de propósito: elas guardam o estado da época, e reescrever história não é
+   * uma opção.
+   */
+  it("nenhuma migração posterior reintroduz venda sem contato", () => {
+    const posteriores = readdirSync("supabase/migrations")
+      .filter((f) => f.endsWith(".sql") && f > CORRECAO);
+
+    for (const arquivo of posteriores) {
+      const sql = semComentarios(ler(`supabase/migrations/${arquivo}`));
+      const ganhos = (sql.match(/d\.status = 'won'/g) ?? []).length;
+      const comContato = (sql.match(/d\.status = 'won' AND d\.contact_id IS NOT NULL/g) ?? []).length;
+      expect(comContato, `${arquivo}: filtro de venda sem contact_id`).toBe(ganhos);
+    }
+  });
+
+  /** `CREATE OR REPLACE` não troca o tipo de retorno — e aqui ele não muda. */
+  it("a migração corrige sem DROP e mantém a assinatura", () => {
+    const sql = ler("supabase/migrations/20260927120200_criterio_vendas_sdr.sql");
+    expect(sql).not.toMatch(/^DROP FUNCTION/m);
+    expect(sql).toContain(
+      "RETURNS TABLE (pessoa text, leads int, abordagens int, reunioes int, vendas int)",
+    );
   });
 });
 
