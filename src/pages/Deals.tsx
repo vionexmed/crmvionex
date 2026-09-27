@@ -11,6 +11,7 @@ import { useContactsPicker } from "@/hooks/queries/useContacts";
 import { useCompanies } from "@/hooks/queries/useCompanies";
 import { useMembers } from "@/hooks/queries/useMembers";
 import { usePipelines, usePipelineStages, useSavePipelineStages } from "@/hooks/queries/usePipelines";
+import { useLossReasons } from "@/hooks/queries/useLossReasons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,8 +147,11 @@ export default function Deals() {
   // Loss reason modal
   const [lossModalOpen, setLossModalOpen] = useState(false);
   const [lossDealId, setLossDealId] = useState<string | null>(null);
-  const [lossReason, setLossReason] = useState("");
+  const [lossReasonId, setLossReasonId] = useState("");
   const [lossNote, setLossNote] = useState("");
+  // Só as ativas: oferecer um motivo desativado deixaria a org reintroduzi-lo
+  // em silêncio. Ver src/hooks/queries/useLossReasons.ts.
+  const { data: lossReasons, isLoading: lossReasonsLoading, isError: lossReasonsIsError } = useLossReasons(true);
 
   // Batch selection
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set());
@@ -390,16 +394,17 @@ export default function Deals() {
 
   const openLossModal = (dealId: string) => {
     setLossDealId(dealId);
-    setLossReason("");
+    setLossReasonId("");
     setLossNote("");
     setLossModalOpen(true);
   };
 
   const confirmLoss = async () => {
     if (!lossDealId) return;
-    const reason = lossNote ? `${lossReason}: ${lossNote}` : lossReason;
     try {
-      await updateStatus({ id: lossDealId, status: "lost", lossReason: reason });
+      // `loss_reason_id` carrega a categoria, `loss_reason` só a nota -- sem
+      // concatenar. Ver dealsApi.updateStatus.
+      await updateStatus({ id: lossDealId, status: "lost", lossReasonId, lossReasonNote: lossNote || null });
       setLossModalOpen(false);
       toast({ title: "Negócio marcado como perdido" });
     } catch (e: unknown) {
@@ -712,18 +717,24 @@ export default function Deals() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Motivo</Label>
-              <Select value={lossReason} onValueChange={setLossReason}>
-                <SelectTrigger><SelectValue placeholder="Selecionar motivo" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preço">Preço muito alto</SelectItem>
-                  <SelectItem value="Concorrência">Perdeu para concorrência</SelectItem>
-                  <SelectItem value="Timing">Timing inadequado</SelectItem>
-                  <SelectItem value="Budget">Sem orçamento</SelectItem>
-                  <SelectItem value="Fit">Produto não atende</SelectItem>
-                  <SelectItem value="Sem resposta">Sem resposta do cliente</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
+              {lossReasonsLoading ? (
+                <p className="text-xs text-muted-foreground">Carregando motivos...</p>
+              ) : lossReasonsIsError ? (
+                <p className="text-xs text-destructive">Não foi possível carregar os motivos cadastrados.</p>
+              ) : !lossReasons?.length ? (
+                <p className="text-xs text-muted-foreground">
+                  Nenhum motivo cadastrado para esta organização. Cadastre em Configurações → Funis e Etapas.
+                </p>
+              ) : (
+                <Select value={lossReasonId} onValueChange={setLossReasonId}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar motivo" /></SelectTrigger>
+                  <SelectContent>
+                    {lossReasons.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Observação (opcional)</Label>
@@ -732,7 +743,7 @@ export default function Deals() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLossModalOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmLoss} disabled={!lossReason}>Confirmar Perda</Button>
+            <Button variant="destructive" onClick={confirmLoss} disabled={!lossReasonId}>Confirmar Perda</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

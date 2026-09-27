@@ -29,6 +29,7 @@ import {
   ATIVIDADE_ICONE, ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_TIPOS_MANUAIS,
 } from "@/lib/atividade-tipos";
 import { useDealActivities, useCreateActivity, activitiesKeys } from "@/hooks/queries/useActivities";
+import { useLossReasons } from "@/hooks/queries/useLossReasons";
 import { OrcamentosDoNegocio } from "@/components/orcamentos/OrcamentosDoNegocio";
 import { usePipelineStages } from "@/hooks/queries/usePipelines";
 import { useMembers } from "@/hooks/queries/useMembers";
@@ -63,6 +64,11 @@ export default function DealDetail() {
   // Mesmo join cliente-side de Deals.tsx. Ver o comentário em lib/api/deals.ts.
   const { data: members = [] } = useMembers();
   const { data: companies = [] } = useCompanies();
+  // Ativas para o modal escolher; a lista COMPLETA (inclui desativadas) para
+  // achar o rótulo de um negócio já perdido, cujo motivo a org pode ter
+  // desativado depois. Ver src/hooks/queries/useLossReasons.ts.
+  const { data: lossReasons, isLoading: lossReasonsLoading, isError: lossReasonsIsError } = useLossReasons(true);
+  const { data: allLossReasons = [] } = useLossReasons(false);
 
   const updateDeal = useUpdateDeal();
   const updateDealStatus = useUpdateDealStatus();
@@ -78,7 +84,7 @@ export default function DealDetail() {
 
   // Loss modal
   const [lossModalOpen, setLossModalOpen] = useState(false);
-  const [lossReason, setLossReason] = useState("");
+  const [lossReasonId, setLossReasonId] = useState("");
   const [lossNote, setLossNote] = useState("");
 
   /**
@@ -234,9 +240,10 @@ export default function DealDetail() {
   };
 
   const confirmLoss = () => {
-    const reason = lossNote ? `${lossReason}: ${lossNote}` : lossReason;
+    // `loss_reason_id` carrega a categoria, `loss_reason` só a nota -- sem
+    // concatenar. Ver dealsApi.updateStatus.
     updateDealStatus.mutate(
-      { id: deal.id, status: "lost", lossReason: reason },
+      { id: deal.id, status: "lost", lossReasonId, lossReasonNote: lossNote || null },
       {
         onSuccess: () => {
           setLossModalOpen(false);
@@ -374,7 +381,11 @@ export default function DealDetail() {
               <Button variant="outline" onClick={markAsWon} className="text-success border-success/30 hover:bg-success/10">
                 <Trophy className="mr-2 h-4 w-4" />Ganho
               </Button>
-              <Button variant="outline" onClick={() => setLossModalOpen(true)} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+              <Button
+                variant="outline"
+                onClick={() => { setLossReasonId(""); setLossNote(""); setLossModalOpen(true); }}
+                className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              >
                 <XCircle className="mr-2 h-4 w-4" />Perdido
               </Button>
             </>
@@ -568,12 +579,24 @@ export default function DealDetail() {
                 <span className="text-muted-foreground">Criado em</span>
                 <span>{deal.created_at ? formatarData(deal.created_at) : "—"}</span>
               </div>
-              {deal.loss_reason && (
-                <div className="mt-2 rounded-md bg-destructive/10 p-2">
-                  <p className="text-xs font-medium text-destructive">Motivo da perda:</p>
-                  <p className="text-xs text-destructive/80">{deal.loss_reason}</p>
-                </div>
-              )}
+              {(deal.loss_reason_id || deal.loss_reason) && (() => {
+                // Prefere o rótulo do catálogo (via FK); linhas antigas nunca
+                // backfilled não têm `loss_reason_id` e caem no texto legado --
+                // que pode ser o antigo "Categoria: nota" concatenado. Nenhum
+                // dos dois é descartado.
+                const categoria = deal.loss_reason_id
+                  ? allLossReasons.find((r) => r.id === deal.loss_reason_id)?.label
+                  : null;
+                return (
+                  <div className="mt-2 rounded-md bg-destructive/10 p-2 space-y-0.5">
+                    <p className="text-xs font-medium text-destructive">Motivo da perda:</p>
+                    <p className="text-xs text-destructive/80">{categoria ?? deal.loss_reason}</p>
+                    {categoria && deal.loss_reason && (
+                      <p className="text-xs text-destructive/80">{deal.loss_reason}</p>
+                    )}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
@@ -589,18 +612,24 @@ export default function DealDetail() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Motivo</Label>
-              <Select value={lossReason} onValueChange={setLossReason}>
-                <SelectTrigger><SelectValue placeholder="Selecionar motivo" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preço">Preço muito alto</SelectItem>
-                  <SelectItem value="Concorrência">Perdeu para concorrência</SelectItem>
-                  <SelectItem value="Timing">Timing inadequado</SelectItem>
-                  <SelectItem value="Budget">Sem orçamento</SelectItem>
-                  <SelectItem value="Fit">Produto não atende</SelectItem>
-                  <SelectItem value="Sem resposta">Sem resposta do cliente</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
+              {lossReasonsLoading ? (
+                <p className="text-xs text-muted-foreground">Carregando motivos...</p>
+              ) : lossReasonsIsError ? (
+                <p className="text-xs text-destructive">Não foi possível carregar os motivos cadastrados.</p>
+              ) : !lossReasons?.length ? (
+                <p className="text-xs text-muted-foreground">
+                  Nenhum motivo cadastrado para esta organização. Cadastre em Configurações → Funis e Etapas.
+                </p>
+              ) : (
+                <Select value={lossReasonId} onValueChange={setLossReasonId}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar motivo" /></SelectTrigger>
+                  <SelectContent>
+                    {lossReasons.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Observação (opcional)</Label>
@@ -609,7 +638,7 @@ export default function DealDetail() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLossModalOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmLoss} disabled={!lossReason}>Confirmar Perda</Button>
+            <Button variant="destructive" onClick={confirmLoss} disabled={!lossReasonId}>Confirmar Perda</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

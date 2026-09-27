@@ -106,12 +106,16 @@ export function useUpdateDealStatus() {
     mutationFn: ({
       id,
       status,
-      lossReason,
+      lossReasonId,
+      lossReasonNote,
     }: {
       id: string;
       status: DealStatus;
-      lossReason?: string;
-    }) => dealsApi.updateStatus(id, status, lossReason),
+      /** Categoria do catálogo `loss_reasons`, quando `status` é "lost". */
+      lossReasonId?: string | null;
+      /** Texto livre opcional -- NÃO concatenado com a categoria (ver dealsApi.updateStatus). */
+      lossReasonNote?: string | null;
+    }) => dealsApi.updateStatus(id, status, lossReasonId, lossReasonNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: dealsKeys.all(orgId ?? "") }),
   });
 }

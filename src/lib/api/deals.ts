@@ -140,9 +140,26 @@ export const dealsApi = {
     if (error) throw error;
   },
 
-  updateStatus: async (id: string, status: DealStatus, lossReason?: string): Promise<void> => {
+  /**
+   * `lossReasonId` é a categoria do catálogo `loss_reasons`; `lossReasonNote`
+   * é o texto livre, opcional, digitado no modal.
+   *
+   * Os dois NÃO são mais concatenados num campo só. Isso era o que fazia o
+   * relatório de perdas agrupar por string inteira -- cada nota digitada virava
+   * um grupo novo, e "por que perdemos?" não tinha resposta confiável. Agora
+   * `loss_reason_id` carrega a categoria e `loss_reason` guarda só a nota.
+   */
+  updateStatus: async (
+    id: string,
+    status: DealStatus,
+    lossReasonId?: string | null,
+    lossReasonNote?: string | null,
+  ): Promise<void> => {
     const payload: DealUpdate = { status };
-    if (lossReason) payload.loss_reason = lossReason;
+    if (status === "lost") {
+      payload.loss_reason_id = lossReasonId ?? null;
+      payload.loss_reason = lossReasonNote ?? null;
+    }
     const { error } = await supabase.from(TABLES.DEALS).update(payload).eq("id", id);
     if (error) throw error;
   },
