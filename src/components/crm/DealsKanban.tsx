@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback, memo } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Trophy, XCircle, ChevronDown, ChevronRight, Pencil, Eye, Mail, Calendar } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatarDataCurta } from "@/lib/formato";
@@ -483,8 +484,12 @@ function WonLostDropZone({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all ${
-        isOver ? "border-primary bg-primary/10 scale-105" : "border-border bg-muted/10"
+      // SEM transform aqui -- CLAUDE.md documenta `scale-*` num wrapper de
+      // kanban como o gatilho exato que faz o DragOverlay (portal para
+      // document.body) fugir do cursor pela largura da sidebar. O destaque é
+      // só cor/anel, nunca escala.
+      className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
+        isOver ? "border-primary bg-primary/10 ring-2 ring-primary/30" : "border-border bg-muted/10"
       }`}
     >
       <Icon className={`h-5 w-5 ${color}`} />
@@ -619,18 +624,25 @@ export function DealsKanban({
           <WonLostDropZone id="lost-drop" label="Perdido" icon={XCircle} color="text-destructive" />
         </div>
 
-        <DragOverlay>
-          {activeDeal && (
-            <div className="w-[264px] sm:w-[288px] opacity-90">
-              <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
-                <p className="text-sm font-medium">{activeDeal.title}</p>
-                <p className="text-xs font-semibold text-foreground mt-0.5">
-                  {formatarMoeda(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
-                </p>
+        {/* No body, como no kanban de contatos: `.vx-page` anima `transform`,
+            e um ancestral com transform vira bloco de contenção para
+            `position: fixed` -- o overlay passa a se posicionar pelo `<main>`
+            e foge do cursor pela largura da sidebar. */}
+        {createPortal(
+          <DragOverlay>
+            {activeDeal && (
+              <div className="w-[264px] sm:w-[288px] opacity-90">
+                <div className="rounded-md border border-primary bg-card p-2.5 shadow-lg">
+                  <p className="text-sm font-medium">{activeDeal.title}</p>
+                  <p className="text-xs font-semibold text-foreground mt-0.5">
+                    {formatarMoeda(Number(activeDeal.value) || 0, activeDeal.currency || "BRL")}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-        </DragOverlay>
+            )}
+          </DragOverlay>,
+          document.body,
+        )}
       </DndContext>
 
       {/* Collapsible won/lost sections below kanban */}

@@ -18,14 +18,21 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Edit2, X, Phone, Mail,
-  Building2, Briefcase, Save, MapPin, Star, MessageCircle,
+  Building2, Briefcase, Save, MapPin, Star, MessageCircle, ShieldOff, ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { mensagemErro } from "@/lib/erro-supabase";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
   AREAS_ATUACAO, PAISES, CADASTRO_FIELDS, getContactOrigin,
   LIFECYCLE_LABELS, type LifecycleStage,
+  POTENCIAL_LABELS, type PotencialNivel,
+  INTERESSE_EDUCACAO_LABELS, type InteresseEducacao,
+  FAIXAS_PACIENTES_MES, faixaPacientesDe,
 } from "@/lib/contact-options";
 import {
   ATIVIDADE_ROTULO, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_TIPOS_MANUAIS,
@@ -34,7 +41,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { LoadingState, ErrorState } from "@/components/layout/EstadoDaLista";
 import { PageTabs } from "@/components/layout/PageTabs";
 import { Activity, Handshake, LayoutList, StickyNote } from "lucide-react";
-import { formatarData, formatarMoeda } from "@/lib/formato";
+import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/formato";
 import { SeloDeNegocio } from "@/components/crm/SeloDeNegocio";
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
@@ -127,6 +134,17 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
   const [falhou, setFalhou] = useState(false);
 
   /**
+   * Consentimento (LGPD). Duas ações, e as duas são explícitas de propósito:
+   * remover da lista exige motivo (é o que o rep vai justificar depois), e
+   * reverter é registrar um consentimento NOVO -- não existe "desmarcar a
+   * caixa", por isso o Dialog de confirmação, no mesmo padrão de Team.tsx.
+   */
+  const [optOutAberto, setOptOutAberto] = useState(false);
+  const [optOutMotivo, setOptOutMotivo] = useState("");
+  const [reconsentimentoAberto, setReconsentimentoAberto] = useState(false);
+  const [salvandoConsentimento, setSalvandoConsentimento] = useState(false);
+
+  /**
    * Uma frase para os três estados que antes eram um só.
    *
    * "Nenhum negócio vinculado" era exibido enquanto a consulta rodava E quando
@@ -180,9 +198,55 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
       });
       setEditing(false);
       setPhoneValid(true);
+      // Dialogs de consentimento não sobrevivem à troca de contato -- abrir o
+      // próximo contato com o Dialog do anterior ainda montado confirmaria a
+      // ação errada.
+      setOptOutAberto(false);
+      setOptOutMotivo("");
+      setReconsentimentoAberto(false);
       fetchRelated();
     }
   }, [contact, fetchRelated]);
+
+  const confirmarOptOut = async () => {
+    if (!contact || !optOutMotivo.trim()) return;
+    setSalvandoConsentimento(true);
+    const { error } = await supabase.from("contacts").update({
+      descadastrado_em: new Date().toISOString(),
+      descadastrado_motivo: optOutMotivo.trim(),
+    }).eq("id", contact.id);
+    setSalvandoConsentimento(false);
+    if (error) {
+      toast({ title: "Erro ao registrar", description: mensagemErro(error), variant: "destructive" });
+      return;
+    }
+    setOptOutAberto(false);
+    setOptOutMotivo("");
+    onUpdate();
+    toast({ title: "Contato descadastrado", description: "Sequências de e-mail e automações param de contatá-lo." });
+  };
+
+  /**
+   * NÃO é "reativar": é gravar um consentimento novo, por isso limpa o motivo
+   * do descadastro junto -- ele explicava a recusa anterior, e mantê-lo
+   * penduraria uma justificativa que não vale mais.
+   */
+  const confirmarNovoConsentimento = async () => {
+    if (!contact) return;
+    setSalvandoConsentimento(true);
+    const { error } = await supabase.from("contacts").update({
+      descadastrado_em: null,
+      descadastrado_motivo: null,
+    }).eq("id", contact.id);
+    setSalvandoConsentimento(false);
+    if (error) {
+      toast({ title: "Erro ao registrar", description: mensagemErro(error), variant: "destructive" });
+      return;
+    }
+    setReconsentimentoAberto(false);
+    onUpdate();
+    toast({ title: "Novo consentimento registrado" });
+  };
 
   const handleSave = async () => {
     if (!contact) return;
@@ -200,6 +264,15 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
       lifecycle_stage: form.lifecycle_stage as LifecycleStage,
       linkedin_url: form.linkedin_url,
       company_id: (form as any).company_id || null,
+      // Potencial além do equipamento -- ver o bloco "Potencial além do
+      // equipamento" da gaveta, mais abaixo, para o porquê de cada campo.
+      pacientes_mes_min: form.pacientes_mes_min ?? null,
+      pacientes_mes_max: form.pacientes_mes_max ?? null,
+      usa_ondas_choque: form.usa_ondas_choque ?? null,
+      equipamento_atual: form.equipamento_atual || null,
+      potencial_compra: form.potencial_compra || null,
+      potencial_aluguel: form.potencial_aluguel || null,
+      interesse_educacao: form.interesse_educacao || null,
       metadata: {
         ...existingMeta,
         pais: meta.pais,
@@ -311,6 +384,43 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
           </div>
         </div>
 
+        {/* Consentimento (LGPD) -- fora das abas e do modo de edição de
+            propósito: é uma restrição LEGAL, não um dado de CRM, e o rep
+            precisa vê-la ANTES de decidir ligar, não depois de abrir "Visão
+            geral". Backend já recusa envio automático com isto marcado; o que
+            faltava era o rep enxergar e poder operar pelo telefone. */}
+        {contact.descadastrado_em ? (
+          <div className="mx-6 mt-4 flex items-start gap-2.5 rounded-md border border-destructive/30 bg-destructive/10 p-3">
+            <ShieldOff className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <div className="flex-1 space-y-0.5 text-xs text-destructive">
+              <p className="font-medium">Descadastrado — não pode ser contatado por sequência ou automação</p>
+              <p>
+                Em {formatarDataHora(contact.descadastrado_em)}
+                {contact.descadastrado_motivo ? ` · ${contact.descadastrado_motivo}` : ""}
+              </p>
+            </div>
+            <Button
+              size="sm" variant="outline"
+              className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+              onClick={() => setReconsentimentoAberto(true)}
+            >
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Registrar novo consentimento
+            </Button>
+          </div>
+        ) : (
+          <div className="mx-6 mt-4">
+            <Button
+              size="sm" variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => setOptOutAberto(true)}
+            >
+              <ShieldOff className="mr-2 h-4 w-4" />
+              Remover da lista (pedido por telefone)
+            </Button>
+          </div>
+        )}
+
         <Tabs defaultValue="overview" className="p-4">
           <PageTabs
             abas={[
@@ -377,9 +487,12 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                 <div className="space-y-1"><Label className="text-xs">Email</Label>
                   <Input type="email" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
 
-                {/* Área de atuação */}
+                {/* "Especialidade", não "Área de atuação": é o MESMO campo
+                    (`title`) que a lista de Contatos já exibe e ordena numa
+                    coluna chamada "Especialidade". Dois nomes para um campo
+                    fazem o vendedor procurar a diferença que não existe. */}
                 <div className="space-y-1">
-                  <Label className="text-xs">Área de atuação</Label>
+                  <Label className="text-xs">Especialidade</Label>
                   <Select value={form.title || "__none__"} onValueChange={(v) => setForm({ ...form, title: v === "__none__" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
@@ -432,6 +545,119 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                       valor={meta.source}
                       aoMudar={(v) => setMeta({ ...meta, source: v })}
                     />
+                  </div>
+                </div>
+
+                {/* O que o lead vale ALÉM da venda do equipamento -- aluguel e
+                    educação médica são as duas frentes 360 que o sistema não
+                    tinha como registrar até estas colunas existirem. Nenhum
+                    Select tem valor padrão: "não informado" é uma resposta
+                    diferente de "baixo", e inventar uma inflaria os dois
+                    potenciais na primeira ficha aberta sem serem preenchidos. */}
+                <div className="space-y-3 rounded-md border border-border p-3">
+                  <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground">
+                    Potencial além do equipamento
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Pacientes/mês</Label>
+                      <Select
+                        value={faixaPacientesDe(form.pacientes_mes_min, form.pacientes_mes_max)?.value ?? "__none__"}
+                        onValueChange={(v) => {
+                          const faixa = FAIXAS_PACIENTES_MES.find((f) => f.value === v);
+                          setForm({
+                            ...form,
+                            pacientes_mes_min: faixa?.min ?? null,
+                            pacientes_mes_max: faixa?.max ?? null,
+                          });
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Não informado —</SelectItem>
+                          {FAIXAS_PACIENTES_MES.map((f) => (
+                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      {/* Três estados de verdade -- sim / não / não informado --
+                          por isso Select e não Switch: um Switch só tem dois. */}
+                      <Label className="text-xs">Já usa ondas de choque?</Label>
+                      <Select
+                        value={form.usa_ondas_choque === true ? "sim" : form.usa_ondas_choque === false ? "nao" : "__none__"}
+                        onValueChange={(v) => setForm({ ...form, usa_ondas_choque: v === "__none__" ? null : v === "sim" })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Não informado —</SelectItem>
+                          <SelectItem value="sim">Sim</SelectItem>
+                          <SelectItem value="nao">Não</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Equipamento atual</Label>
+                      <Input
+                        value={form.equipamento_atual || ""}
+                        onChange={(e) => setForm({ ...form, equipamento_atual: e.target.value })}
+                        placeholder="Ex: BTL, Storz, EMS"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Potencial de compra</Label>
+                      <Select
+                        value={form.potencial_compra || "__none__"}
+                        onValueChange={(v) => setForm({ ...form, potencial_compra: v === "__none__" ? null : (v as PotencialNivel) })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Não informado —</SelectItem>
+                          {(Object.keys(POTENCIAL_LABELS) as PotencialNivel[]).map((p) => (
+                            <SelectItem key={p} value={p}>{POTENCIAL_LABELS[p]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Potencial de aluguel</Label>
+                      <Select
+                        value={form.potencial_aluguel || "__none__"}
+                        onValueChange={(v) => setForm({ ...form, potencial_aluguel: v === "__none__" ? null : (v as PotencialNivel) })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Não informado —</SelectItem>
+                          {(Object.keys(POTENCIAL_LABELS) as PotencialNivel[]).map((p) => (
+                            <SelectItem key={p} value={p}>{POTENCIAL_LABELS[p]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Interesse em educação médica</Label>
+                    <Select
+                      value={form.interesse_educacao || "__none__"}
+                      onValueChange={(v) => setForm({ ...form, interesse_educacao: v === "__none__" ? null : (v as InteresseEducacao) })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Não informado —</SelectItem>
+                        {(Object.keys(INTERESSE_EDUCACAO_LABELS) as InteresseEducacao[]).map((i) => (
+                          <SelectItem key={i} value={i}>{INTERESSE_EDUCACAO_LABELS[i]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -526,6 +752,61 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
                           <div key={f.key} className="flex items-start justify-between gap-3 text-sm">
                             <span className="text-muted-foreground shrink-0">{f.label}</span>
                             <span className="text-right font-medium">{m[f.key]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* O que o lead vale ALÉM da venda do equipamento -- só
+                    aparece quando algum campo foi preenchido, para não abrir
+                    todo contato antigo (cadastrado antes destas colunas
+                    existirem) com uma seção vazia de "não informado". */}
+                {(() => {
+                  const faixa = faixaPacientesDe(contact.pacientes_mes_min, contact.pacientes_mes_max);
+                  const linhas: { chave: string; label: string; valor: string }[] = [];
+                  if (faixa) linhas.push({ chave: "pacientes", label: "Pacientes/mês", valor: faixa.label });
+                  if (contact.usa_ondas_choque !== null && contact.usa_ondas_choque !== undefined) {
+                    linhas.push({
+                      chave: "ondas", label: "Já usa ondas de choque?",
+                      valor: contact.usa_ondas_choque ? "Sim" : "Não",
+                    });
+                  }
+                  if (contact.equipamento_atual) {
+                    linhas.push({ chave: "equip", label: "Equipamento atual", valor: contact.equipamento_atual });
+                  }
+                  if (contact.potencial_compra) {
+                    linhas.push({
+                      chave: "compra", label: "Potencial de compra",
+                      valor: POTENCIAL_LABELS[contact.potencial_compra as PotencialNivel] ?? contact.potencial_compra,
+                    });
+                  }
+                  if (contact.potencial_aluguel) {
+                    linhas.push({
+                      chave: "aluguel", label: "Potencial de aluguel",
+                      valor: POTENCIAL_LABELS[contact.potencial_aluguel as PotencialNivel] ?? contact.potencial_aluguel,
+                    });
+                  }
+                  // 'nenhum' é resposta preenchida, mas não vale destacar numa
+                  // ficha que já é densa -- só o interesse de fato importa aqui.
+                  if (contact.interesse_educacao && contact.interesse_educacao !== "nenhum") {
+                    linhas.push({
+                      chave: "educacao", label: "Interesse em educação médica",
+                      valor: INTERESSE_EDUCACAO_LABELS[contact.interesse_educacao as InteresseEducacao] ?? contact.interesse_educacao,
+                    });
+                  }
+                  if (linhas.length === 0) return null;
+                  return (
+                    <div className="rounded-md border border-border p-3 space-y-2 mt-1">
+                      <p className="text-label font-semibold uppercase tracking-wider text-muted-foreground">
+                        Potencial além do equipamento
+                      </p>
+                      <div className="space-y-1.5">
+                        {linhas.map((l) => (
+                          <div key={l.chave} className="flex items-start justify-between gap-3 text-sm">
+                            <span className="text-muted-foreground shrink-0">{l.label}</span>
+                            <span className="text-right font-medium">{l.valor}</span>
                           </div>
                         ))}
                       </div>
@@ -642,6 +923,74 @@ export function ContactDrawer({ contact, onClose, onUpdate, companies }: Contact
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Remover da lista — pedido de opt-out feito por telefone. Motivo
+            obrigatório: é o que sustenta a decisão depois, se alguém
+            perguntar por que este contato parou de receber sequência. */}
+        <Dialog open={optOutAberto} onOpenChange={(aberto) => { if (!aberto) setOptOutAberto(false); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Remover {contact.first_name || "contato"} da lista?</DialogTitle>
+              <DialogDescription className="space-y-2 pt-1 text-left">
+                <span className="block">
+                  Sequências de e-mail e automações param de contatá-lo a partir de agora. A
+                  restrição já é aplicada pelo sistema — o que falta é registrar o pedido.
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Motivo</Label>
+              <Textarea
+                value={optOutMotivo}
+                onChange={(e) => setOptOutMotivo(e.target.value)}
+                placeholder="Ex: pediu por telefone para não receber mais e-mails"
+                rows={3}
+                className="text-sm"
+              />
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button variant="outline" onClick={() => setOptOutAberto(false)} disabled={salvandoConsentimento}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmarOptOut}
+                disabled={salvandoConsentimento || !optOutMotivo.trim()}
+              >
+                {salvandoConsentimento ? "Registrando…" : "Remover da lista"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reverter o descadastro é registrar um consentimento NOVO, não
+            destravar uma chave -- por isso o passo extra de confirmação,
+            mesmo padrão do Dialog de remoção de membro em Team.tsx. */}
+        <Dialog open={reconsentimentoAberto} onOpenChange={(aberto) => { if (!aberto) setReconsentimentoAberto(false); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Registrar novo consentimento?</DialogTitle>
+              <DialogDescription className="space-y-2 pt-1 text-left">
+                <span className="block">
+                  Isto não é "desfazer" o descadastro anterior — é confirmar que{" "}
+                  {contact.first_name || "o contato"} autorizou de novo o contato por e-mail e
+                  automação. O motivo do descadastro anterior será apagado.
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button variant="outline" onClick={() => setReconsentimentoAberto(false)} disabled={salvandoConsentimento}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarNovoConsentimento} disabled={salvandoConsentimento}>
+                {salvandoConsentimento ? "Registrando…" : "Registrar novo consentimento"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );

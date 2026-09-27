@@ -72,13 +72,23 @@ Deno.serve(async (req) => {
 
         const { data: contact } = await admin
           .from("contacts")
-          .select("id, first_name, last_name, email")
+          .select("id, first_name, last_name, email, descadastrado_em")
           .eq("id", enrollment.contact_id)
           .maybeSingle();
         if (!contact?.email) {
           await admin.from("email_sequence_enrollments")
             .update({ status: "bounced" }).eq("id", enrollment.id);
           summary.errors.push(`enrollment ${enrollment.id}: contato sem e-mail`);
+          continue;
+        }
+
+        // LGPD: quem revogou (ou nunca deu) autorização sai da sequência em
+        // vez de receber o próximo passo. Cancela em vez de pausar porque
+        // retomar exigiria um novo consentimento, não um religar de botão.
+        if (contact.descadastrado_em) {
+          await admin.from("email_sequence_enrollments")
+            .update({ status: "cancelled" }).eq("id", enrollment.id);
+          summary.errors.push(`enrollment ${enrollment.id}: contato descadastrado`);
           continue;
         }
 

@@ -93,6 +93,59 @@ export const ORIGIN_OPTIONS: { value: string; label: string }[] = [
 ];
 
 /**
+ * Potencial do contato ALÉM da venda do equipamento — as duas frentes de
+ * relacionamento 360 que não existiam no sistema até estas colunas existirem:
+ * alugar o equipamento, e virar aluno/palestrante/sede da educação médica.
+ *
+ * Fonte única dos rótulos e da faixa de pacientes/mês: dois lugares com listas
+ * divergentes já custaram um bug real neste arquivo (ver cabeçalho) —
+ * `especialidade` reusa `AREAS_ATUACAO` acima pelo mesmo motivo.
+ */
+export type PotencialNivel = "alto" | "medio" | "baixo" | "nenhum";
+
+export const POTENCIAL_LABELS: Record<PotencialNivel, string> = {
+  alto: "Alto", medio: "Médio", baixo: "Baixo", nenhum: "Nenhum",
+};
+
+export type InteresseEducacao = "nenhum" | "aluno" | "palestrante" | "sede_de_curso" | "pesquisa";
+
+export const INTERESSE_EDUCACAO_LABELS: Record<InteresseEducacao, string> = {
+  nenhum: "Nenhum",
+  aluno: "Aluno",
+  palestrante: "Palestrante",
+  sede_de_curso: "Sede de curso",
+  pesquisa: "Pesquisa",
+};
+
+/**
+ * Faixa de pacientes/mês, editada como UMA escolha e gravada como DOIS
+ * inteiros (`pacientes_mes_min`/`max`). "Mais de 60" não tem teto — `max: null`
+ * é a faixa aberta, não "não informado" (que é os dois campos nulos).
+ */
+export interface FaixaPacientes {
+  value: string;
+  label: string;
+  min: number;
+  max: number | null;
+}
+
+export const FAIXAS_PACIENTES_MES: FaixaPacientes[] = [
+  { value: "ate_10", label: "Até 10", min: 0, max: 10 },
+  { value: "10_30", label: "10 a 30", min: 10, max: 30 },
+  { value: "30_60", label: "30 a 60", min: 30, max: 60 },
+  { value: "mais_60", label: "Mais de 60", min: 60, max: null },
+];
+
+/** A faixa cujo (min, max) bate com o par gravado — null quando o par não
+ *  corresponde a nenhuma faixa conhecida (nenhuma informada, ou dado legado). */
+export function faixaPacientesDe(
+  min: number | null | undefined,
+  max: number | null | undefined,
+): FaixaPacientes | null {
+  return FAIXAS_PACIENTES_MES.find((f) => f.min === (min ?? null) && f.max === (max ?? null)) ?? null;
+}
+
+/**
  * Campos extras vindos de formulários de captação (ex.: Google Forms Likawave),
  * guardados em contacts.metadata. Rótulos amigáveis para exibição na ficha do
  * lead e do contato. Só os que tiverem valor são mostrados — contatos sem esses

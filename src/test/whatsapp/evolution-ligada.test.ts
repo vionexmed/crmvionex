@@ -50,6 +50,73 @@ describe("o envio passa pelo provedor", () => {
   });
 });
 
+/**
+ * A automação enviava para tabelas apagadas.
+ *
+ * A ação `send_whatsapp` de `process-automation` lia `whatsapp_instances` e
+ * lia/gravava `whatsapp_conversations` — as duas derrubadas por 20260513181405
+ * — e inseria `content`/`type`/`is_ai` em `whatsapp_messages`, que hoje tem
+ * `body`/`message_type`. Toda automação com ação de WhatsApp morria em
+ * "Nenhuma instância WhatsApp ativa encontrada", e o comentário de
+ * `_shared/whatsapp/types.ts` já apontava este arquivo como a sobra.
+ */
+describe("a automação envia pelo mesmo caminho que a tela", () => {
+  const src = semComentarios(ler(`${FN}/process-automation/index.ts`));
+
+  it("não toca em nenhuma das tabelas apagadas", () => {
+    expect(src).not.toContain("whatsapp_instances");
+    expect(src).not.toContain("whatsapp_conversations");
+  });
+
+  it("usa credencial e provedor, como whatsapp-send", () => {
+    expect(src).toContain("carregarCredencial");
+    expect(src).toContain("resolverProvedor");
+    expect(src).toMatch(/from\("whatsapp_connections"\)/);
+  });
+
+  it("grava whatsapp_messages com as colunas de hoje", () => {
+    const i = src.indexOf('from("whatsapp_messages")');
+    expect(i).toBeGreaterThan(-1);
+    const insercao = src.slice(i, i + 700);
+    expect(insercao).toMatch(/\bbody:/);
+    expect(insercao).toMatch(/message_type:/);
+    // As colunas do esquema antigo não existem mais.
+    expect(insercao).not.toMatch(/\bcontent:/);
+    expect(insercao).not.toMatch(/is_ai:/);
+    expect(insercao).not.toMatch(/conversation_id:/);
+  });
+
+  it("atribui a mensagem a uma pessoa e a uma conexão", () => {
+    // Sem isso o painel conta o envio e não sabe de quem é a abordagem.
+    expect(src).toContain("user_id: conexao.user_id");
+    expect(src).toContain("connection_id: conexao.id");
+  });
+
+  /**
+   * A guarda de LGPD. `contacts.descadastrado_em` vira coluna em
+   * 20260927120000, e todo disparador filtra por ela.
+   */
+  it("não envia para quem se descadastrou", () => {
+    expect(src).toContain("descadastrado_em");
+    expect((src.match(/contact\.descadastrado_em\) throw/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  /**
+   * A mensagem já chegou ao lead. Lançar por falha de GRAVAÇÃO faria o log da
+   * automação acusar erro para um envio que deu certo — e alguém reenviaria à
+   * mão, para uma pessoa que já recebeu.
+   */
+  it("falha ao registrar não vira falha de envio", () => {
+    const i = src.indexOf("erroDoRegistro");
+    const fim = src.indexOf('case "send_email_template"');
+    expect(i).toBeGreaterThan(-1);
+    expect(fim).toBeGreaterThan(i);
+    const cauda = src.slice(i, fim);
+    expect(cauda).toMatch(/log_error/);
+    expect(cauda).not.toMatch(/throw new Error/);
+  });
+});
+
 describe("o webhook atende os dois, e nenhum dos dois sem credencial", () => {
   const src = semComentarios(ler(`${FN}/whatsapp-webhook/index.ts`));
 

@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Mail, Plug, Loader2, Unplug, ShieldCheck, TriangleAlert } from "lucide-react";
 import { formatarDataHora } from "@/lib/formato";
+import { mensagemErro } from "@/lib/erro-supabase";
 
 type MinhaConexao = {
   id: string;
@@ -119,7 +120,9 @@ async function mensagemDaFalha(e: unknown): Promise<string> {
     if (typeof corpo?.message === "string") return corpo.message;
     if (typeof corpo?.error === "string") return corpo.error;
   }
-  return e instanceof Error ? e.message : "Não foi possível iniciar a conexão.";
+  // `PostgrestError` é objeto simples, não instância de `Error` -- o
+  // `instanceof` que estava aqui dava falso e descartava o diagnóstico real.
+  return mensagemErro(e);
 }
 
 export default function MyEmail() {

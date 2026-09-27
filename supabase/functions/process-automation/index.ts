@@ -2,6 +2,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { captureException } from "../_shared/sentry.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { sendViaOrgAccount, renderTemplate } from "../_shared/gmail-sender.ts";
+import {
+  carregarCredencial,
+  explicarAusencia,
+  resolverProvedor,
+} from "../_shared/whatsapp/index.ts";
 
 const log = createLogger("process-automation");
 
@@ -392,101 +397,134 @@ async function executeAction(supabase: any, orgId: string, action: any, payload:
       // Placeholder: in production, use push/email/slack
       return { notified: true, message: cfg.message };
 
+    /**
+     * Envio de WhatsApp pela automação.
+     *
+     * ERA CÓDIGO MORTO. Lia `whatsapp_instances` e escrevia
+     * `whatsapp_conversations` — as duas apagadas por 20260513181405 — e
+     * gravava `content`/`type`/`is_ai` em `whatsapp_messages`, que hoje tem
+     * `body`/`message_type`. Toda automação com ação de WhatsApp morria em
+     * "Nenhuma instância WhatsApp ativa encontrada". O comentário de
+     * `_shared/whatsapp/types.ts` já nomeava este arquivo como a sobra.
+     *
+     * Agora passa pelo MESMO caminho de `whatsapp-send`: credencial da
+     * organização por `carregarCredencial`, número por `whatsapp_connections`
+     * e envio pelo contrato de provedor. Sem variável de ambiente nova.
+     */
     case "send_whatsapp": {
-      // Determine phone number
       let phone = cfg.phone_override || "";
+      let contactId: string | null = null;
+      // De quem é o contato: define por qual número a mensagem sai.
+      let donoDoContato: string | null = null;
+      // Local, e não `cfg.message`: o objeto da ação é o MESMO em toda a
+      // rodada do lote, então escrever nele fazia o segundo contato receber a
+      // mensagem já personalizada com o nome do primeiro.
+      let mensagem = cfg.message || "";
+
       if (cfg.phone_source === "contact" && payload?.contact_id) {
-        const { data: contact } = await supabase.from("contacts").select("phone, first_name, last_name").eq("id", payload.contact_id).single();
+        const { data: contact } = await supabase
+          .from("contacts")
+          .select("id, phone, first_name, last_name, owner_id, descadastrado_em")
+          .eq("id", payload.contact_id)
+          .single();
         if (!contact?.phone) throw new Error("Contato sem telefone cadastrado");
+        if (contact.descadastrado_em) throw new Error("Contato não autoriza contato comercial (LGPD)");
         phone = contact.phone;
-        // Replace message variables
-        let msg = cfg.message || "";
-        msg = msg.replace(/\{\{nome\}\}/g, `${contact.first_name || ""} ${contact.last_name || ""}`.trim());
-        cfg.message = msg;
+        contactId = contact.id;
+        donoDoContato = contact.owner_id ?? null;
+        mensagem = mensagem.replace(
+          /\{\{nome\}\}/g,
+          `${contact.first_name || ""} ${contact.last_name || ""}`.trim(),
+        );
       }
       if (!phone) throw new Error("Nenhum telefone definido para envio");
+      if (!mensagem) mensagem = "Mensagem automática";
 
-      // Find default whatsapp instance
-      const { data: instance } = await supabase
-        .from("whatsapp_instances")
-        .select("id, server_url, api_key, instance_name")
+      const credencial = await carregarCredencial(supabase, orgId);
+      if (!credencial.ok) throw new Error(explicarAusencia(credencial.motivo));
+
+      // Automação não tem sessão de usuário, então não há "a conexão de quem
+      // clicou". Sai pelo número do DONO do contato quando ele tem um — é o
+      // número que a pessoa já reconhece — e por qualquer conexão ativa da
+      // organização quando não tem.
+      const { data: conexoes } = await supabase
+        .from("whatsapp_connections")
+        .select("id, user_id, phone_number_id, instance_name, display_phone_number")
         .eq("org_id", orgId)
-        .eq("is_active", true)
-        .order("is_default", { ascending: false })
-        .limit(1)
-        .single();
+        .eq("is_active", true);
 
-      if (!instance) throw new Error("Nenhuma instância WhatsApp ativa encontrada");
+      const ativas = (conexoes || []) as any[];
+      if (!ativas.length) {
+        throw new Error("Nenhum número de WhatsApp conectado nesta organização. Conecte um em Integrações.");
+      }
+      const conexao =
+        (donoDoContato && ativas.find((c) => c.user_id === donoDoContato)) || ativas[0];
 
-      // Send via Evolution API
-      const sendUrl = `${instance.server_url}/message/sendText/${instance.instance_name}`;
-      const resp = await fetch(sendUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: instance.api_key,
+      const destino = String(phone).replace(/\D/g, "");
+      const prov = resolverProvedor(credencial.cred.provider);
+      const envio = await prov.enviarTexto(
+        credencial.cred,
+        {
+          // Meta: phone_number_id. Evolution: nome da instância. Mesma
+          // preferência de `whatsapp-send`.
+          origem: (conexao.instance_name as string | null) ?? (conexao.phone_number_id as string),
+          para: destino,
         },
-        body: JSON.stringify({
-          number: phone.replace(/\D/g, ""),
-          text: cfg.message || "Mensagem automática",
-        }),
+        mensagem,
+      );
+
+      /** Sem registro, a conversa não mostra a mensagem e o painel não a conta. */
+      const registrar = (campos: Record<string, unknown>) =>
+        supabase.from("whatsapp_messages").insert({
+          org_id: orgId,
+          contact_id: contactId,
+          deal_id: payload?.deal_id || null,
+          user_id: conexao.user_id,
+          connection_id: conexao.id,
+          direction: "outbound",
+          from_number: (conexao.display_phone_number as string | null) ?? "",
+          to_number: destino,
+          body: mensagem,
+          message_type: "text",
+          ...campos,
+        });
+
+      if (!envio.ok) {
+        await registrar({
+          status: "failed",
+          error_message: (envio.erro ?? "").slice(0, 500),
+          raw: envio.bruto,
+        });
+        throw new Error(`send_whatsapp: ${envio.erro ?? "falha no envio"}`);
+      }
+
+      const { error: erroDoRegistro } = await registrar({
+        wa_message_id: envio.idMensagem,
+        status: "sent",
+        raw: envio.bruto,
       });
 
-      const respText = await resp.text();
-      if (!resp.ok) throw new Error(`WhatsApp send failed [${resp.status}]: ${respText.slice(0, 200)}`);
-
-      // Log message in whatsapp_messages
-      // Find or create conversation
-      const normalizedPhone = phone.replace(/\D/g, "");
-      let { data: conv } = await supabase
-        .from("whatsapp_conversations")
-        .select("id")
-        .eq("org_id", orgId)
-        .eq("phone_number", normalizedPhone)
-        .limit(1)
-        .single();
-
-      if (!conv) {
-        const { data: newConv } = await supabase
-          .from("whatsapp_conversations")
-          .insert({
-            org_id: orgId,
-            phone_number: normalizedPhone,
-            instance_id: instance.id,
-            instance_name: instance.instance_name,
-            status: "open",
-            mode: "human",
-            last_message: cfg.message,
-            last_message_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single();
-        conv = newConv;
-      }
-
-      if (conv) {
-        await supabase.from("whatsapp_messages").insert({
-          org_id: orgId,
-          conversation_id: conv.id,
-          direction: "outbound",
-          content: cfg.message,
-          type: "text",
-          status: "sent",
-          is_ai: false,
-        });
-      }
-
-      return { sent: true, phone: normalizedPhone };
+      // A MENSAGEM JÁ CHEGOU AO LEAD. Lançar por falha de gravação faria o log
+      // da automação acusar erro para um envio que deu certo — e alguém
+      // reenviaria à mão. O prejuízo (linha faltando na conversa) vai no
+      // resultado da ação, onde dá para ver sem virar "erro".
+      return {
+        sent: true,
+        phone: destino,
+        wa_message_id: envio.idMensagem,
+        ...(erroDoRegistro ? { log_error: erroDoRegistro.message } : {}),
+      };
     }
 
     case "send_email_template": {
       if (!payload?.contact_id) throw new Error("Sem contato para enviar e-mail");
       const { data: contact } = await supabase
         .from("contacts")
-        .select("id, first_name, last_name, email")
+        .select("id, first_name, last_name, email, descadastrado_em")
         .eq("id", payload.contact_id)
         .maybeSingle();
       if (!contact?.email) throw new Error("Contato sem e-mail cadastrado");
+      if (contact.descadastrado_em) throw new Error("Contato não autoriza contato comercial (LGPD)");
 
       let subject = cfg.subject || "";
       let bodyHtml = cfg.body_html || "";

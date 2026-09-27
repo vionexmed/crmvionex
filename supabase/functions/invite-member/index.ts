@@ -65,6 +65,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // O papel vem do corpo da requisição, então precisa ser validado aqui: o
+    // trigger handle_new_user grava em user_roles exatamente o que estiver em
+    // `invitations.role`, sem passar pela RLS que só deixa owner criar owner.
+    // Sem esta checagem, um admin convida `role: "owner"` e cunha um dono da
+    // organização -- escalação de privilégio dentro da própria org.
+    const papeisValidos = ["member", "admin", "owner"] as const;
+    const papel = papeisValidos.includes(role) ? role : "member";
+    if (papel === "owner" && callerRole.role !== "owner") {
+      return new Response(JSON.stringify({ error: "Só um owner pode convidar outro owner" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // IMPORTANTE: registrar o convite ANTES de enviar o e-mail —
     // o trigger handle_new_user lê a tabela invitations para atribuir
     // org e papel quando o convidado abre o link.
@@ -74,7 +88,7 @@ Deno.serve(async (req) => {
     const { error: recordError } = await serviceClient.from("invitations").insert({
       org_id,
       email,
-      role: role || "member",
+      role: papel,
       invited_by: callerId,
     });
     if (recordError) {
@@ -119,7 +133,7 @@ Deno.serve(async (req) => {
 
     const { data: inviteData, error: inviteError } =
       await serviceClient.auth.admin.inviteUserByEmail(email, {
-        data: { org_id, role: role || "member" },
+        data: { org_id, role: papel },
         redirectTo: destino,
       });
 

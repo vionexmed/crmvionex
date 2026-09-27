@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Key, Copy, EyeOff, Eye, Trash2 } from "lucide-react";
@@ -22,6 +25,9 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
   const [newKeyName, setNewKeyName] = useState("Default");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
+  // Apagava direto no clique -- diferente de revogar, apagar não tem volta:
+  // qualquer integração ainda usando a chave passa a falhar sem aviso prévio.
+  const [keyParaExcluir, setKeyParaExcluir] = useState<ApiKey | null>(null);
 
   const fetchKeys = useCallback(async () => {
     if (!orgId) return;
@@ -78,6 +84,12 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
     await supabase.from("api_keys").delete().eq("id", id);
     toast({ title: "Chave excluída" });
     fetchKeys();
+  };
+
+  const confirmarExclusaoKey = async () => {
+    if (!keyParaExcluir) return;
+    await deleteKey(keyParaExcluir.id);
+    setKeyParaExcluir(null);
   };
 
   return (
@@ -155,7 +167,7 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
                               <Eye className="h-3 w-3" />
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Excluir" onClick={() => deleteKey(k.id)}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Excluir" onClick={() => setKeyParaExcluir(k)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -203,6 +215,23 @@ export function ApiKeysTab({ orgId, userId }: { orgId: string | null; userId?: s
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmação de exclusão */}
+      <Dialog open={!!keyParaExcluir} onOpenChange={(aberto) => { if (!aberto) setKeyParaExcluir(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Excluir a chave "{keyParaExcluir?.name}"?</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            É irreversível. Qualquer integração ao vivo que ainda use esta chave passa a receber
+            401 na próxima chamada — revogar em vez de excluir permite reativar depois.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setKeyParaExcluir(null)}>Cancelar</Button>
+            <Button variant="destructive" size="sm" onClick={confirmarExclusaoKey}>Excluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

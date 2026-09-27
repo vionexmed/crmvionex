@@ -81,6 +81,9 @@ export default function Team() {
   const [teams, setTeams] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [newTeamName, setNewTeamName] = useState("");
+  // Excluir equipe disparava na hora, sem confirmação — ao contrário da
+  // remoção de membro, que já tem o Dialog abaixo. Mesmo padrão aqui.
+  const [teamParaExcluir, setTeamParaExcluir] = useState<{ id: string; name: string } | null>(null);
 
   const currentUserRole = useMemo(() => {
     const m = members.find((m) => m.id === user?.id);
@@ -274,6 +277,12 @@ export default function Team() {
     await supabase.from("teams").delete().eq("id", id);
     fetchAll();
     toast({ title: "Equipe excluída" });
+  };
+
+  const confirmarExclusaoTeam = async () => {
+    if (!teamParaExcluir) return;
+    await deleteTeam(teamParaExcluir.id);
+    setTeamParaExcluir(null);
   };
 
   const toggleTeamMember = async (teamId: string, uid: string) => {
@@ -550,7 +559,7 @@ export default function Team() {
                       {team.name}
                     </CardTitle>
                     {isAdmin && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteTeam(team.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setTeamParaExcluir({ id: team.id, name: team.name })}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -654,6 +663,24 @@ export default function Team() {
                   ? "Excluir conta e transferir"
                   : "Remover e transferir"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exclusão de equipe — mesmo padrão do Dialog de remoção de membro
+          acima: nomear o que vai embora antes de apagar. */}
+      <Dialog open={!!teamParaExcluir} onOpenChange={(aberto) => { if (!aberto) setTeamParaExcluir(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir "{teamParaExcluir?.name}"?</DialogTitle>
+            <DialogDescription>
+              A equipe é removida e os membros dela deixam de fazer parte dela. Ninguém perde acesso
+              ao CRM nem tem trabalho transferido — só o agrupamento em si desaparece.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setTeamParaExcluir(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmarExclusaoTeam}>Excluir equipe</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
