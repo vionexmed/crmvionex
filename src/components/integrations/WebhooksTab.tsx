@@ -33,6 +33,9 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
   const [webhooks, setWebhooks] = useState<WebhookRow[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: "", url: "", events: [] as string[], secret: "" });
+  // Excluía direto no clique, sem confirmação — um webhook mal apagado
+  // interrompe integração externa sem aviso nenhum do outro lado.
+  const [webhookParaExcluir, setWebhookParaExcluir] = useState<WebhookRow | null>(null);
 
   const fetchWebhooks = useCallback(async () => {
     if (!orgId) return;
@@ -58,6 +61,12 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
     await supabase.from("webhooks").delete().eq("id", id);
     toast({ title: "Webhook excluído" });
     fetchWebhooks();
+  };
+
+  const confirmarExclusaoWebhook = async () => {
+    if (!webhookParaExcluir) return;
+    await deleteWebhook(webhookParaExcluir.id);
+    setWebhookParaExcluir(null);
   };
 
   const toggleWebhook = async (id: string, active: boolean) => {
@@ -107,7 +116,13 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
                   </div>
                   <div className="flex items-center gap-1">
                     <Switch checked={wh.is_active} onCheckedChange={(v) => toggleWebhook(wh.id, v)} />
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteWebhook(wh.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label="Excluir webhook"
+                      onClick={() => setWebhookParaExcluir(wh)}
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
@@ -196,6 +211,23 @@ export function WebhooksTab({ orgId }: { orgId: string | null }) {
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowCreate(false)}>Cancelar</Button>
             <Button size="sm" onClick={createWebhook}>Criar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmação de exclusão */}
+      <Dialog open={!!webhookParaExcluir} onOpenChange={(aberto) => { if (!aberto) setWebhookParaExcluir(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Excluir "{webhookParaExcluir?.name}"?</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            A URL externa deixa de receber os eventos deste webhook. Se algo do outro lado depende
+            dele, vai parar de ser notificado sem aviso próprio.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setWebhookParaExcluir(null)}>Cancelar</Button>
+            <Button variant="destructive" size="sm" onClick={confirmarExclusaoWebhook}>Excluir</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TABLES, DEFAULT_PAGE_SIZE } from "@/lib/constants";
 import type { Database } from "@/integrations/supabase/types";
+import { buscarEmBlocos } from "@/lib/paginar";
 
 type Deal = Database["public"]["Tables"]["deals"]["Row"];
 export type DealInsert = Database["public"]["Tables"]["deals"]["Insert"];
@@ -103,6 +104,24 @@ export const dealsApi = {
     if (error) throw error;
     return { data: (data ?? []) as DealWithRelations[], count: count ?? 0 };
   },
+
+  /**
+   * Lista leve para pickers (select de negócio em Atividades). Pagina em
+   * blocos de 1000, no mesmo padrão de `contactsApi.listForPicker` -- o mesmo
+   * teto silencioso do PostgREST vale aqui, e `useDeals({ pageSize: 1000 })`
+   * já mordeu por isso.
+   */
+  listForPicker: async (
+    orgId: string,
+  ): Promise<Pick<Deal, "id" | "title" | "contact_id" | "company_id">[]> =>
+    buscarEmBlocos((inicio, fim) =>
+      supabase
+        .from(TABLES.DEALS)
+        .select("id, title, contact_id, company_id")
+        .eq("org_id", orgId)
+        .order("title", { ascending: true })
+        .range(inicio, fim),
+    ),
 
   create: async (deal: DealInsert): Promise<Deal> => {
     const { data, error } = await supabase.from(TABLES.DEALS).insert(deal).select().single();

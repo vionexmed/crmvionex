@@ -282,13 +282,13 @@ export default function SalesGoals() {
 
       {/* Month Navigator */}
       <div className="flex items-center justify-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navMonth(-1)}>
+        <Button variant="ghost" size="icon" aria-label="Mês anterior" onClick={() => navMonth(-1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-lg font-semibold min-w-[180px] text-center">
           {MONTHS[month - 1]} {year}
         </span>
-        <Button variant="ghost" size="icon" onClick={() => navMonth(1)}>
+        <Button variant="ghost" size="icon" aria-label="Próximo mês" onClick={() => navMonth(1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

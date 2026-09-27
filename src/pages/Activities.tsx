@@ -34,7 +34,7 @@ import {
 import { useMembers } from "@/hooks/queries/useMembers";
 import { useAllContacts } from "@/hooks/queries/useContacts";
 import { useCompanies } from "@/hooks/queries/useCompanies";
-import { useDeals } from "@/hooks/queries/useDeals";
+import { useDealsPicker } from "@/hooks/queries/useDeals";
 import type { Database } from "@/integrations/supabase/types";
 import {
   ATIVIDADE_ICONE, ATIVIDADE_JA_ACONTECEU, ATIVIDADE_ROTULO, ATIVIDADE_COR,
@@ -53,7 +53,9 @@ type Activity = Database["public"]["Tables"]["activities"]["Row"];
 type ActivityType = Database["public"]["Enums"]["activity_type"];
 type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type Company = Database["public"]["Tables"]["companies"]["Row"];
-type Deal = Database["public"]["Tables"]["deals"]["Row"];
+// Só os quatro campos que este arquivo lê -- vem de `dealsApi.listForPicker`,
+// que pagina em blocos e não do `Row` completo.
+type Deal = Pick<Database["public"]["Tables"]["deals"]["Row"], "id" | "title" | "contact_id" | "company_id">;
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 type ViewMode = "list" | "calendar";
@@ -117,8 +119,10 @@ export default function Activities() {
   // completo (esta tela usa `phone`).
   const { data: contacts = [] } = useAllContacts();
   const { data: companies = [] } = useCompanies();
-  const { data: dealsResult } = useDeals({ pageSize: 1000 });
-  const deals: Deal[] = (dealsResult?.data ?? []) as unknown as Deal[];
+  // `useDeals({ pageSize: 1000 })` reproduzia a mesma truncagem silenciosa do
+  // PostgREST que `useAllContacts` acima já existe para evitar. `useDealsPicker`
+  // pagina em blocos, sem teto.
+  const { data: deals = [] } = useDealsPicker();
   const { data: members = [] } = useMembers();
 
   const updateActivity = useUpdateActivity();
